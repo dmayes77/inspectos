@@ -1,0 +1,1504 @@
+// InspectOS Database Schema
+// Multi-tenant home inspection platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// MULTI-TENANCY
+// =============================================================================
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique // For public booking URLs
+  email     String
+  phone     String?
+  website   String?
+  logo      String?  // R2 URL
+
+  // Address
+  address   String?
+  city      String?
+  state     String?
+  zip       String?
+
+  // Stripe Connect
+  stripeAccountId   String?  @unique
+  stripeOnboarded   Boolean  @default(false)
+  stripePayoutsEnabled Boolean @default(false)
+
+  // Subscription
+  subscriptionTier    SubscriptionTier @default(PRO)
+  stripeCustomerId    String?  @unique
+  stripeSubscriptionId String?
+  subscriptionStatus  SubscriptionStatus @default(TRIALING)
+  billingCycle        BillingCycle @default(MONTHLY)
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  trialEndsAt         DateTime?
+  cancelAtPeriodEnd   Boolean @default(false)
+
+  // Seat management
+  includedSeats       Int @default(1)  // 1 for Pro, 5 for Team, 15 for Business
+  additionalSeats     Int @default(0)
+
+  // Settings (JSON for flexibility)
+  settings  Json     @default("{}")
+  // Example settings:
+  // {
+  //   "timezone": "America/New_York",
+  //   "currency": "usd",
+  //   "bookingLeadTime": 24, // hours
+  //   "defaultInspectionDuration": 180, // minutes
+  //   "autoSendReport": true,
+  //   "requirePaymentUpfront": false
+  // }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users        User[]
+  clients      Client[]
+  properties   Property[]
+  inspections  Inspection[]
+  templates    Template[]
+  agreements   Agreement[]
+  invites      Invite[]
+  services     Service[]
+  serviceAreas ServiceArea[]
+  bookings     Booking[]
+  payments     Payment[]
+  payouts      Payout[]
+  travelZones  TravelZone[]
+
+  @@index([slug])
+  @@index([stripeAccountId])
+}
+
+enum SubscriptionTier {
+  PRO       // 1 inspector, $79/mo
+  TEAM      // 5 inspectors, $159/mo
+  BUSINESS  // 15 inspectors, $279/mo
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+// =============================================================================
+// USERS & AUTH
+// =============================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  phone         String?
+  avatar        String?   // R2 URL
+  role          UserRole  @default(INSPECTOR)
+
+  // Auth (NextAuth)
+  emailVerified DateTime?
+  passwordHash  String?
+
+  // Inspector-specific
+  licenseNumber String?
+  certifications String[] // E.g., ["ASHI", "InterNACHI"]
+  bio           String?   @db.Text
+  color         String?   // Calendar color
+
+  // Company relation
+  companyId     String
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  accounts         Account[]
+  sessions         Session[]
+  inspections      Inspection[]      // Primary assigned inspections
+  inspectionAssignments InspectionInspector[] @relation("InspectionAssignments")
+  availability     Availability[]
+  notifications    Notification[]
+  devices          DeviceSync[]
+
+  @@index([companyId])
+  @@index([email])
+  @@index([role])
+}
+
+enum UserRole {
+  OWNER         // Full access, billing, can delete company
+  ADMIN         // Full access except billing
+  INSPECTOR     // Field work, own inspections
+  OFFICE_STAFF  // Scheduling, clients, no field work
+}
+
+// NextAuth.js models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Invite {
+  id        String   @id @default(cuid())
+  email     String
+  role      UserRole @default(INSPECTOR)
+  token     String   @unique @default(cuid())
+  expiresAt DateTime
+
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([companyId])
+}
+
+// =============================================================================
+// SERVICES & PRICING
+// =============================================================================
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String   // "Full Home Inspection", "Radon Testing"
+  description String?  @db.Text
+  type        InspectionType
+
+  // Pricing
+  basePrice   Int      // In cents
+  priceType   PriceType @default(FLAT)
+  pricePerSqft Int?    // For SQFT pricing, in cents
+
+  // Duration
+  duration    Int      @default(180) // Minutes
+  bufferTime  Int      @default(30)  // Minutes between appointments
+
+  // Availability
+  isActive    Boolean  @default(true)
+  isPublic    Boolean  @default(true) // Show on booking page
+
+  // Add-ons
+  isAddon     Boolean  @default(false)
+  parentId    String?
+  parent      Service? @relation("ServiceAddons", fields: [parentId], references: [id])
+  addons      Service[] @relation("ServiceAddons")
+
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  bookings    Booking[]
+  lineItems   LineItem[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([isActive, isPublic])
+}
+
+enum PriceType {
+  FLAT       // Fixed price
+  SQFT       // Price per square foot
+  HOURLY     // Price per hour
+  CUSTOM     // Quote required
+}
+
+model ServiceArea {
+  id        String   @id @default(cuid())
+  zipCode   String
+  city      String?
+  state     String?
+  isActive  Boolean  @default(true)
+
+  // Travel fee (if applicable)
+  travelFee Int?     // In cents
+
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, zipCode])
+  @@index([zipCode])
+}
+
+// =============================================================================
+// AVAILABILITY & SCHEDULING
+// =============================================================================
+
+model Availability {
+  id          String   @id @default(cuid())
+  dayOfWeek   Int      // 0 = Sunday, 6 = Saturday
+  startTime   String   // "09:00"
+  endTime     String   // "17:00"
+  isAvailable Boolean  @default(true)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayOfWeek])
+  @@index([userId])
+}
+
+model BlockedTime {
+  id          String   @id @default(cuid())
+  startAt     DateTime
+  endAt       DateTime
+  reason      String?
+  isAllDay    Boolean  @default(false)
+
+  // Can be company-wide or inspector-specific
+  companyId   String?
+  inspectorId String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
+  @@index([inspectorId])
+  @@index([startAt, endAt])
+}
+
+// =============================================================================
+// BOOKINGS
+// =============================================================================
+
+model Booking {
+  id          String   @id @default(cuid())
+  reference   String   @unique // BK-XXXXXX
+
+  // Status
+  status      BookingStatus @default(PENDING)
+
+  // Requested date/time
+  requestedDate DateTime
+  requestedTime String?  // "morning", "afternoon", or specific time
+
+  // Confirmed date/time (after approval)
+  confirmedAt   DateTime?
+  scheduledAt   DateTime?
+
+  // Client info (may not be a registered client yet)
+  clientName    String
+  clientEmail   String
+  clientPhone   String?
+
+  // Property info
+  propertyAddress String
+  propertyCity    String
+  propertyState   String
+  propertyZip     String
+  propertyType    PropertyType @default(SINGLE_FAMILY)
+  propertySqft    Int?
+  propertyYear    Int?
+
+  // Additional info
+  notes         String?  @db.Text
+  accessNotes   String?
+  realtorName   String?
+  realtorEmail  String?
+  realtorPhone  String?
+
+  // Source tracking
+  source        BookingSource @default(WEBSITE)
+  referralCode  String?
+
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  serviceId     String
+  service       Service  @relation(fields: [serviceId], references: [id])
+
+  // Linked inspection (created when booking is confirmed)
+  inspectionId  String?  @unique
+  inspection    Inspection? @relation(fields: [inspectionId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  addons        BookingAddon[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([clientEmail])
+  @@index([requestedDate])
+}
+
+enum BookingStatus {
+  PENDING       // Awaiting review
+  CONFIRMED     // Accepted, inspection created
+  RESCHEDULED   // Client requested reschedule
+  CANCELLED     // Cancelled by client or company
+  NO_SHOW       // Client didn't show up
+  COMPLETED     // Inspection completed
+}
+
+enum BookingSource {
+  WEBSITE       // Public booking page
+  PHONE         // Phone call
+  EMAIL         // Email request
+  REFERRAL      // Referral
+  REALTOR       // Realtor portal
+  REPEAT        // Repeat client
+}
+
+model BookingAddon {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId String
+  price     Int      // Price at time of booking
+
+  @@index([bookingId])
+}
+
+// =============================================================================
+// CLIENTS & PROPERTIES
+// =============================================================================
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+
+  // Client type
+  type      ClientType @default(HOMEBUYER)
+
+  // For realtor clients
+  company   String?  // Realty company name
+  license   String?  // Real estate license
+
+  // Marketing
+  source    String?  // How they found us
+  tags      String[] // Custom tags
+
+  companyId String
+  tenant    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  properties   Property[]
+  inspections  Inspection[]
+
+  @@index([companyId])
+  @@index([email])
+  @@index([type])
+}
+
+enum ClientType {
+  HOMEBUYER
+  SELLER
+  REALTOR
+  BUILDER
+  INVESTOR
+  PROPERTY_MANAGER
+}
+
+model Property {
+  id          String   @id @default(cuid())
+
+  // Address
+  address     String
+  unit        String?
+  city        String
+  state       String
+  zip         String
+
+  // Coordinates (for mapping)
+  latitude    Float?
+  longitude   Float?
+
+  // Property details
+  type        PropertyType @default(SINGLE_FAMILY)
+  yearBuilt   Int?
+  sqft        Int?
+  bedrooms    Int?
+  bathrooms   Float?
+  stories     Int?
+  garageSpaces Int?
+  lotSize     Float?   // Acres
+
+  // Foundation & Structure
+  foundationType  String?
+  roofType        String?
+  roofAge         Int?
+  exteriorType    String?
+  heatingType     String?
+  coolingType     String?
+
+  // Utilities
+  waterSource     String?  // Municipal, Well
+  sewerType       String?  // Municipal, Septic
+
+  // MLS info (optional)
+  mlsNumber   String?
+  listPrice   Int?
+
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  clientId    String?
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  inspections Inspection[]
+
+  @@index([companyId])
+  @@index([clientId])
+  @@index([zip])
+}
+
+enum PropertyType {
+  SINGLE_FAMILY
+  CONDO
+  TOWNHOUSE
+  MULTI_FAMILY
+  DUPLEX
+  TRIPLEX
+  FOURPLEX
+  COMMERCIAL
+  MOBILE_HOME
+  MANUFACTURED
+  NEW_CONSTRUCTION
+  LOG_HOME
+}
+
+// =============================================================================
+// INSPECTIONS
+// =============================================================================
+
+model Inspection {
+  id           String   @id @default(cuid())
+  number       String   // Human-readable: INS-2024-001
+
+  // Scheduling
+  scheduledAt  DateTime?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  duration     Int?     // Actual duration in minutes
+
+  status       InspectionStatus @default(SCHEDULED)
+  type         InspectionType   @default(FULL_HOME)
+
+  // Notes
+  notes        String?  @db.Text
+  accessNotes  String?  // Gate codes, lockbox, etc.
+  internalNotes String? @db.Text // Private notes
+
+  // Weather conditions (captured at inspection)
+  weather      Json?    // { temp, conditions, humidity, wind }
+
+  // Summary (generated)
+  summaryStats Json?    // { totalDefects, safetyItems, majorItems, photos }
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  propertyId   String
+  property     Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  clientId     String?
+  client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  inspectorId  String?
+  inspector    User?    @relation(fields: [inspectorId], references: [id], onDelete: SetNull)
+
+  templateId   String?
+  template     Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  rooms        Room[]
+  photos       Photo[]
+  defects      Defect[]
+  voiceNotes   VoiceNote[]
+  reports      Report[]
+  signatures   Signature[]
+  lineItems    LineItem[]
+  payments     Payment[]
+  booking      Booking?
+  inspectors   InspectionInspector[]
+  progress     InspectionProgress[]
+  clientAccess ClientAccess[]
+
+  @@unique([companyId, number])
+  @@index([companyId])
+  @@index([propertyId])
+  @@index([inspectorId])
+  @@index([clientId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+enum InspectionStatus {
+  DRAFT         // Being created
+  SCHEDULED     // Confirmed on calendar
+  IN_PROGRESS   // Inspector on site
+  COMPLETED     // Inspection done, report pending
+  REPORT_SENT   // Report delivered
+  CANCELLED     // Cancelled
+  ON_HOLD       // Temporarily paused
+}
+
+enum InspectionType {
+  FULL_HOME
+  PRE_LISTING
+  PRE_PURCHASE
+  NEW_CONSTRUCTION
+  PHASE_INSPECTION    // New construction phases
+  WARRANTY_1_YEAR
+  WARRANTY_2_YEAR
+  RE_INSPECTION
+  COMMERCIAL
+  RADON
+  MOLD
+  TERMITE_WDI
+  SEWER_SCOPE
+  WELL_WATER
+  POOL_SPA
+  STUCCO
+  THERMAL_IMAGING
+}
+
+// =============================================================================
+// INSPECTION DATA
+// =============================================================================
+
+model Room {
+  id           String   @id @default(cuid())
+  name         String   // Living Room, Master Bedroom, etc.
+  type         RoomType
+  floor        Int      @default(1)
+  order        Int      @default(0)
+  notes        String?  @db.Text
+  isComplete   Boolean  @default(false)
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  systems      SystemCheck[]
+  photos       Photo[]
+  defects      Defect[]
+  voiceNotes   VoiceNote[]
+
+  @@index([inspectionId])
+  @@index([type])
+}
+
+enum RoomType {
+  // Exterior
+  EXTERIOR_FRONT
+  EXTERIOR_REAR
+  EXTERIOR_LEFT
+  EXTERIOR_RIGHT
+  ROOF
+  GARAGE
+  DRIVEWAY
+  DECK_PATIO
+
+  // Interior - Common
+  LIVING_ROOM
+  DINING_ROOM
+  KITCHEN
+  FAMILY_ROOM
+  OFFICE
+  HALLWAY
+  STAIRS
+  FOYER
+
+  // Bedrooms
+  MASTER_BEDROOM
+  BEDROOM
+  GUEST_ROOM
+
+  // Bathrooms
+  MASTER_BATH
+  FULL_BATH
+  HALF_BATH
+
+  // Utility
+  LAUNDRY
+  UTILITY_ROOM
+  MECHANICAL_ROOM
+  FURNACE_ROOM
+
+  // Storage
+  ATTIC
+  BASEMENT
+  CRAWLSPACE
+  CLOSET
+  STORAGE
+
+  // Other
+  SUNROOM
+  BONUS_ROOM
+  LOFT
+  OTHER
+}
+
+model SystemCheck {
+  id           String   @id @default(cuid())
+  system       SystemCategory
+  component    String   // Outlets, Water Heater, etc.
+  condition    Condition @default(NOT_INSPECTED)
+  notes        String?  @db.Text
+  order        Int      @default(0)
+
+  roomId       String
+  room         Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  items        InspectionItem[]
+
+  @@index([roomId])
+  @@index([system])
+}
+
+// Granular checklist items (ASHI/InterNACHI compliance)
+model InspectionItem {
+  id           String   @id @default(cuid())
+  name         String   // "GFCI outlets tested", "Smoke detectors present"
+  description  String?
+  condition    Condition @default(NOT_INSPECTED)
+  notes        String?  @db.Text
+  order        Int      @default(0)
+
+  // From template
+  templateItemId String?
+
+  systemCheckId String
+  systemCheck   SystemCheck @relation(fields: [systemCheckId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([systemCheckId])
+}
+
+enum SystemCategory {
+  STRUCTURAL
+  ROOFING
+  EXTERIOR
+  ELECTRICAL
+  PLUMBING
+  HVAC
+  INSULATION
+  VENTILATION
+  INTERIOR
+  FIREPLACE
+  APPLIANCES
+  GARAGE
+  GROUNDS
+  POOL_SPA
+}
+
+enum Condition {
+  NOT_INSPECTED
+  SATISFACTORY
+  MARGINAL
+  DEFICIENT
+  NOT_PRESENT
+  SAFETY_HAZARD
+}
+
+model Defect {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  system       SystemCategory
+  severity     DefectSeverity @default(MINOR)
+
+  // Location
+  location     String?  // "North wall", "Above sink", etc.
+
+  // Recommendations
+  recommendation String? @db.Text
+  estimatedCost  Int?    // In cents
+  priority       Int     @default(0) // For sorting
+
+  // Flags
+  isSafetyHazard Boolean @default(false)
+  requiresImmediate Boolean @default(false)
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  roomId       String?
+  room         Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  photos       Photo[]
+  voiceNotes   VoiceNote[]
+
+  @@index([inspectionId])
+  @@index([roomId])
+  @@index([severity])
+  @@index([system])
+}
+
+enum DefectSeverity {
+  INFO         // Informational only
+  MINOR        // Maintenance item
+  MODERATE     // Should monitor
+  MAJOR        // Should be repaired
+  SAFETY       // Immediate safety concern
+}
+
+model Photo {
+  id           String   @id @default(cuid())
+  url          String   // R2 URL
+  thumbnailUrl String?  // R2 URL (optimized)
+  originalName String?
+
+  caption      String?
+  order        Int      @default(0)
+  iscover      Boolean  @default(false) // Cover photo for report
+
+  // Annotation data (for marking up photos)
+  annotations  Json?    // Array of annotation objects
+  // Example: [{ type: "arrow", x: 100, y: 200, text: "Crack" }]
+
+  // Metadata
+  takenAt      DateTime?
+  latitude     Float?
+  longitude    Float?
+  width        Int?
+  height       Int?
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  roomId       String?
+  room         Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  defectId     String?
+  defect       Defect?  @relation(fields: [defectId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([inspectionId])
+  @@index([roomId])
+  @@index([defectId])
+}
+
+model VoiceNote {
+  id           String   @id @default(cuid())
+  url          String   // R2 URL to audio file
+  duration     Int?     // Duration in seconds
+  format       String   @default("m4a") // m4a, mp3, wav
+
+  // Transcription
+  transcription String? @db.Text
+  isTranscribed Boolean @default(false)
+
+  // Context
+  notes        String?
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  roomId       String?
+  room         Room?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
+
+  defectId     String?
+  defect       Defect?  @relation(fields: [defectId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+
+  @@index([inspectionId])
+  @@index([roomId])
+}
+
+// =============================================================================
+// INSPECTION PROGRESS (Real-time sync for multi-inspector)
+// =============================================================================
+
+model InspectionProgress {
+  id           String   @id @default(cuid())
+
+  // What's being tracked
+  entityType   ProgressEntity
+  entityId     String   // Room ID, SystemCheck ID, etc.
+
+  // Status
+  status       ProgressStatus @default(NOT_STARTED)
+  completedAt  DateTime?
+
+  // Who's working on it
+  inspectorId  String?
+
+  // Sync metadata
+  lastSyncedAt DateTime @default(now())
+  deviceId     String?  // For conflict resolution
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([inspectionId, entityType, entityId])
+  @@index([inspectionId])
+  @@index([inspectorId])
+}
+
+enum ProgressEntity {
+  ROOM
+  SYSTEM_CHECK
+  INSPECTION_ITEM
+  PHOTO_CAPTURE
+  DEFECT_REVIEW
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  NEEDS_REVIEW
+}
+
+// =============================================================================
+// CLIENT PORTAL ACCESS
+// =============================================================================
+
+model ClientAccess {
+  id           String   @id @default(cuid())
+  token        String   @unique @default(cuid())
+
+  // Access control
+  email        String
+  phone        String?
+  pin          String?  // Optional 4-digit PIN for extra security
+
+  // Permissions
+  canViewReport     Boolean @default(true)
+  canDownloadPdf    Boolean @default(true)
+  canViewPhotos     Boolean @default(true)
+  canAddComments    Boolean @default(false)
+  canRequestRepairs Boolean @default(false)
+
+  // Expiration
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+
+  // Analytics
+  firstViewedAt DateTime?
+  lastViewedAt  DateTime?
+  viewCount     Int      @default(0)
+  downloadCount Int      @default(0)
+
+  // Device tracking
+  devices      Json?    // Array of device fingerprints
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  comments     ClientComment[]
+
+  @@index([token])
+  @@index([email])
+  @@index([inspectionId])
+}
+
+model ClientComment {
+  id           String   @id @default(cuid())
+  content      String   @db.Text
+
+  // What they're commenting on
+  defectId     String?
+  photoId      String?
+  roomId       String?
+
+  // Author
+  authorName   String
+  authorEmail  String?
+
+  // Moderation
+  isResolved   Boolean  @default(false)
+  resolvedAt   DateTime?
+  resolvedBy   String?
+
+  clientAccessId String
+  clientAccess   ClientAccess @relation(fields: [clientAccessId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([clientAccessId])
+  @@index([defectId])
+}
+
+// =============================================================================
+// MULTI-INSPECTOR SUPPORT
+// =============================================================================
+
+model InspectionInspector {
+  id           String   @id @default(cuid())
+  role         InspectorRole @default(LEAD)
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  inspectorId  String
+  inspector    User     @relation("InspectionAssignments", fields: [inspectorId], references: [id], onDelete: Cascade)
+
+  // Tracking
+  assignedAt   DateTime @default(now())
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  // Areas assigned (optional - for large commercial)
+  assignedAreas String[] // Room IDs or area names
+
+  @@unique([inspectionId, inspectorId])
+  @@index([inspectionId])
+  @@index([inspectorId])
+}
+
+enum InspectorRole {
+  LEAD        // Primary inspector
+  ASSISTANT   // Helping inspector
+  SPECIALIST  // Specific expertise (radon, mold, etc.)
+  TRAINEE     // Shadowing/learning
+}
+
+// =============================================================================
+// REPORTS & AGREEMENTS
+// =============================================================================
+
+model Report {
+  id           String   @id @default(cuid())
+  version      Int      @default(1)
+  title        String?
+
+  // PDF storage
+  pdfUrl       String?  // R2 URL
+  isDraft      Boolean  @default(true)
+
+  // Delivery
+  sentAt       DateTime?
+  sentTo       String[] // Email addresses
+  viewedAt     DateTime?
+  viewCount    Int      @default(0)
+  downloadCount Int     @default(0)
+
+  // Access token for client portal
+  accessToken  String   @unique @default(cuid())
+  expiresAt    DateTime?
+
+  // Report customization
+  includePhotos    Boolean @default(true)
+  includeSummary   Boolean @default(true)
+  includeComments  Boolean @default(true)
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([inspectionId])
+  @@index([accessToken])
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  name         String
+  type         TemplateType
+  description  String?
+
+  // Template source
+  standard     TemplateStandard? // ASHI, InterNACHI, custom
+  version      String?           // "2024.1"
+
+  isDefault    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  isSystem     Boolean  @default(false) // Pre-built vs custom
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  sections     TemplateSection[]
+  inspections  Inspection[]
+  agreements   Agreement[]
+
+  @@index([companyId])
+  @@index([type])
+  @@index([standard])
+}
+
+enum TemplateStandard {
+  ASHI         // American Society of Home Inspectors
+  INTERNACHI   // International Association of Certified Home Inspectors
+  STATE        // State-specific requirements
+  CUSTOM       // Company custom
+}
+
+model TemplateSection {
+  id           String   @id @default(cuid())
+  name         String   // "Electrical System", "Roofing"
+  description  String?
+  system       SystemCategory
+  order        Int      @default(0)
+
+  templateId   String
+  template     Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  items        TemplateItem[]
+
+  @@index([templateId])
+}
+
+model TemplateItem {
+  id           String   @id @default(cuid())
+  name         String   // "Service panel amperage"
+  description  String?  // "Check main panel amperage rating"
+  helpText     String?  // Additional guidance for inspector
+
+  // Inspection behavior
+  isRequired   Boolean  @default(false)
+  defaultCondition Condition @default(NOT_INSPECTED)
+
+  order        Int      @default(0)
+
+  sectionId    String
+  section      TemplateSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([sectionId])
+}
+
+enum TemplateType {
+  INSPECTION  // Checklist template
+  REPORT      // Report format
+  AGREEMENT   // Pre-inspection agreement
+  EMAIL       // Email templates
+  INVOICE     // Invoice template
+}
+
+model Agreement {
+  id           String   @id @default(cuid())
+  title        String
+  content      String   @db.Text // HTML or markdown
+  version      Int      @default(1)
+
+  // Agreement terms
+  requiresSignature Boolean @default(true)
+  isActive     Boolean  @default(true)
+
+  templateId   String?
+  template     Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  signatures   Signature[]
+
+  @@index([companyId])
+}
+
+model Signature {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?
+  role         String?  // "Client", "Inspector", "Realtor"
+
+  // Signature data
+  signatureData String? @db.Text // Base64 or SVG
+  signatureUrl  String? // R2 URL of signature image
+  signedAt      DateTime @default(now())
+
+  // Audit trail
+  ipAddress    String?
+  userAgent    String?
+
+  agreementId  String?
+  agreement    Agreement? @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+
+  inspectionId String?
+  inspection   Inspection? @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([agreementId])
+  @@index([inspectionId])
+}
+
+// =============================================================================
+// PAYMENTS
+// =============================================================================
+
+model LineItem {
+  id           String   @id @default(cuid())
+  description  String
+  quantity     Int      @default(1)
+  unitPrice    Int      // In cents
+  totalPrice   Int      // quantity * unitPrice
+
+  serviceId    String?
+  service      Service? @relation(fields: [serviceId], references: [id])
+
+  inspectionId String
+  inspection   Inspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+
+  @@index([inspectionId])
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  amount       Int      // In cents
+  currency     String   @default("usd")
+  status       PaymentStatus @default(PENDING)
+
+  // Stripe
+  stripePaymentIntentId String? @unique
+  stripeChargeId        String?
+  stripeRefundId        String?
+
+  // Payment method info
+  paymentMethod String?  // "card", "bank_transfer"
+  last4         String?
+  brand         String?  // "visa", "mastercard"
+
+  // Metadata
+  description   String?
+  receiptUrl    String?
+  receiptNumber String?
+
+  // Refunds
+  refundedAmount Int     @default(0)
+  refundedAt     DateTime?
+  refundReason   String?
+
+  // Fees
+  stripeFee      Int?    // Stripe processing fee
+  applicationFee Int?    // Platform fee (if applicable)
+  netAmount      Int?    // Amount after fees
+
+  inspectionId String?
+  inspection   Inspection? @relation(fields: [inspectionId], references: [id], onDelete: SetNull)
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  paidAt       DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([inspectionId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Payout {
+  id           String   @id @default(cuid())
+  amount       Int      // In cents
+  currency     String   @default("usd")
+  status       PayoutStatus @default(PENDING)
+
+  // Stripe
+  stripePayoutId String? @unique
+
+  // Destination
+  destination   String?  // Bank account last 4
+
+  // Timing
+  expectedAt    DateTime?
+  arrivedAt     DateTime?
+
+  // Reference
+  statementDescriptor String?
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([stripePayoutId])
+}
+
+enum PayoutStatus {
+  PENDING
+  IN_TRANSIT
+  PAID
+  FAILED
+  CANCELLED
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        NotificationType
+  title       String
+  message     String   @db.Text
+  data        Json?    // Additional context
+
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+}
+
+enum NotificationType {
+  BOOKING_NEW
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  INSPECTION_ASSIGNED
+  INSPECTION_REMINDER
+  INSPECTION_COMPLETED
+  REPORT_READY
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  REVIEW_RECEIVED
+  SYSTEM_ALERT
+}
+
+// =============================================================================
+// OFFLINE SYNC & DEVICE TRACKING
+// =============================================================================
+
+model DeviceSync {
+  id           String   @id @default(cuid())
+  deviceId     String   // Unique device identifier
+
+  // Device info
+  platform     String   // "ios", "android", "web"
+  appVersion   String?
+  osVersion    String?
+  deviceName   String?  // "John's iPhone"
+
+  // Sync state
+  lastSyncAt   DateTime @default(now())
+  pendingChanges Int    @default(0)
+  syncStatus   SyncStatus @default(SYNCED)
+
+  // Push notifications
+  pushToken    String?
+  pushEnabled  Boolean  @default(true)
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@index([deviceId])
+}
+
+enum SyncStatus {
+  SYNCED
+  PENDING
+  SYNCING
+  CONFLICT
+  ERROR
+}
+
+model SyncConflict {
+  id           String   @id @default(cuid())
+
+  // What conflicted
+  entityType   String   // "Inspection", "Defect", etc.
+  entityId     String
+  fieldName    String?  // Specific field, or null for whole entity
+
+  // Conflict details
+  localValue   Json
+  remoteValue  Json
+  localDeviceId  String
+  remoteDeviceId String?
+
+  // Resolution
+  resolution   ConflictResolution?
+  resolvedValue Json?
+  resolvedAt   DateTime?
+  resolvedBy   String?  // User ID
+
+  userId       String
+  inspectionId String?
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([inspectionId])
+  @@index([entityType, entityId])
+}
+
+enum ConflictResolution {
+  USE_LOCAL
+  USE_REMOTE
+  MERGE
+  MANUAL
+}
+
+// =============================================================================
+// SCHEDULING ENHANCEMENTS
+// =============================================================================
+
+model TravelZone {
+  id           String   @id @default(cuid())
+  name         String   // "Downtown", "Suburbs North"
+
+  // Geographic bounds (for auto-assignment)
+  zipCodes     String[]
+  centerLat    Float?
+  centerLng    Float?
+  radiusMiles  Float?
+
+  // Default travel times from office (minutes)
+  travelTimeFromOffice Int @default(30)
+
+  // Travel time matrix to other zones (JSON)
+  travelMatrix Json?    // { "zone_id": minutes }
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+// =============================================================================
+// AUDIT LOG
+// =============================================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // "CREATE", "UPDATE", "DELETE"
+  entityType  String   // "Inspection", "Payment", etc.
+  entityId    String
+  changes     Json?    // { field: { old: x, new: y } }
+
+  userId      String?
+  userEmail   String?
+  ipAddress   String?
+
+  companyId   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([companyId])
+  @@index([userId])
+  @@index([createdAt])
+}

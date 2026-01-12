@@ -1,0 +1,44 @@
+{
+  "name": "InspectOS",
+  "short_name": "InspectOS",
+  "description": "Enterprise-grade home inspection platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "New Inspection",
+      "short_name": "New",
+      "description": "Start a new inspection",
+      "url": "/inspector/inspections/new",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Schedule",
+      "short_name": "Schedule",
+      "description": "View your schedule",
+      "url": "/inspector/schedule",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
