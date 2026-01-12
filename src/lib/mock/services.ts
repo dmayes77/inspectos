@@ -12,7 +12,7 @@ export type Service = {
   status?: "active" | "inactive";
 };
 
-export let services: Service[] = [
+export const services: Service[] = [
   {
     serviceId: generateReadableId(), // was: "1",
     name: "Full Home Inspection",

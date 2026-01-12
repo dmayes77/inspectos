@@ -18,7 +18,7 @@ export type TeamMember = {
   customPermissions: string[];
 };
 
-export let teamMembers: TeamMember[] = [
+export const teamMembers: TeamMember[] = [
   {
     id: "1",
     teamMemberId: "1000000001",
