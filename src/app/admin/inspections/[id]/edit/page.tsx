@@ -153,7 +153,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
       pool: raw.pool === "yes" ? true : raw.pool === "no" ? false : undefined,
       notes: raw.notes ? String(raw.notes) : undefined,
     };
-    let idx: number | undefined;
+    // idx removed (unused)
     if (inspection) {
       console.log("Updating inspection:", inspection.inspectionId, payload);
       const idx = inspections.findIndex((i) => i.inspectionId === inspection.inspectionId);
