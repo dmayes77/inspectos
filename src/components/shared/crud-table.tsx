@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 export type CrudTableProps<T> = {
   title: string;
   description?: string;
-  columns: any;
+  columns: Record<string, unknown>;
   data: T[];
   searchKey?: string;
   searchPlaceholder?: string;

@@ -1,7 +1,7 @@
 // src/hooks/crud.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-export function useGet<T>(key: string, fetcher: () => Promise<T>, options?: any) {
+export function useGet<T>(key: string, fetcher: () => Promise<T>, options?: Record<string, unknown>) {
   return useQuery<T>({
     queryKey: [key],
     queryFn: fetcher,
@@ -9,7 +9,7 @@ export function useGet<T>(key: string, fetcher: () => Promise<T>, options?: any)
   });
 }
 
-export function usePost<T, U>(key: string, poster: (data: U) => Promise<T>, options?: any) {
+export function usePost<T, U>(key: string, poster: (data: U) => Promise<T>, options?: Record<string, unknown>) {
   const queryClient = useQueryClient();
   return useMutation<T, unknown, U>({
     mutationFn: poster,
@@ -18,7 +18,7 @@ export function usePost<T, U>(key: string, poster: (data: U) => Promise<T>, opti
   });
 }
 
-export function usePut<T, U>(key: string, putter: (data: U) => Promise<T>, options?: any) {
+export function usePut<T, U>(key: string, putter: (data: U) => Promise<T>, options?: Record<string, unknown>) {
   const queryClient = useQueryClient();
   return useMutation<T, unknown, U>({
     mutationFn: putter,
@@ -27,7 +27,7 @@ export function usePut<T, U>(key: string, putter: (data: U) => Promise<T>, optio
   });
 }
 
-export function usePatch<T, U>(key: string, patcher: (data: U) => Promise<T>, options?: any) {
+export function usePatch<T, U>(key: string, patcher: (data: U) => Promise<T>, options?: Record<string, unknown>) {
   const queryClient = useQueryClient();
   return useMutation<T, unknown, U>({
     mutationFn: patcher,
@@ -36,7 +36,7 @@ export function usePatch<T, U>(key: string, patcher: (data: U) => Promise<T>, op
   });
 }
 
-export function useDelete<T>(key: string, deleter: (id: string) => Promise<T>, options?: any) {
+export function useDelete<T>(key: string, deleter: (id: string) => Promise<T>, options?: Record<string, unknown>) {
   const queryClient = useQueryClient();
   return useMutation<T, unknown, string>({
     mutationFn: deleter,

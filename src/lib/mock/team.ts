@@ -215,7 +215,7 @@ export function createInvite(teamMemberId: string, expiresInHours = 48) {
   return token;
 }
 
-export async function activateTeamMember(token: string, newPassword: string, bcrypt: any) {
+export async function activateTeamMember(token: string, newPassword: string, bcrypt: { hash: Function }) {
   const tokenHash = sha256(token);
   const invite = invites.find((i) => i.tokenHash === tokenHash && !i.usedAt && i.expiresAt > Date.now());
   if (!invite) return { error: "Invalid or expired invite" };
@@ -227,7 +227,7 @@ export async function activateTeamMember(token: string, newPassword: string, bcr
   return { success: true };
 }
 
-export async function loginTeamMember(teamMemberId: string, password: string, bcrypt: any) {
+export async function loginTeamMember(teamMemberId: string, password: string, bcrypt: { compare: Function }) {
   if (!/^\d{10}$/.test(teamMemberId)) return null;
   const cred = credentials[teamMemberId];
   if (!cred) return null;
