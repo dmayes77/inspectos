@@ -120,10 +120,10 @@ export default function TeamMemberDetailPage() {
       <div className="space-y-6">
         {/* Back Button */}
         <Button variant="ghost" asChild>
-          <a href="/admin/team">
+          <Link href="/admin/team">
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back to Team
-          </a>
+          </Link>
         </Button>
 
         {/* Page Header - Restored with all details */}
