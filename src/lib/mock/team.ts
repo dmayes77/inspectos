@@ -1,3 +1,5 @@
+import crypto from "crypto";
+import { v4 as uuidv4Node } from "uuid";
 // Clean, minimal, valid TypeScript mock for team members
 
 export type TeamMember = {
@@ -124,8 +126,7 @@ function getRandomBytes(len: number): number[] {
     return Array.from(arr);
   } else {
     // Node.js
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return Array.from(require("crypto").randomBytes(len));
+    return Array.from(crypto.randomBytes(len));
   }
 }
 
@@ -141,8 +142,7 @@ function sha256(str: string): string {
     return str;
   } else {
     // Node.js
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("crypto").createHash("sha256").update(str).digest("hex");
+    return crypto.createHash("sha256").update(str).digest("hex");
   }
 }
 
@@ -150,8 +150,7 @@ function uuidv4(): string {
   if (typeof window !== "undefined" && window.crypto?.randomUUID) {
     return window.crypto.randomUUID();
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("uuid").v4();
+    return uuidv4Node();
   }
 }
 
