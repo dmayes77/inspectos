@@ -76,7 +76,7 @@ export default function ServicesAdminPage() {
       const service = allServices.find((s) => s.serviceId === id);
       return sum + (service?.price || 0);
     }, 0);
-    const packagePrice = parseFloat(form.price as any) || 0;
+    const packagePrice = parseFloat(String(form.price)) || 0;
     const discount = totalIndividualPrice - packagePrice;
     return { totalIndividualPrice, packagePrice, discount };
   };
@@ -101,8 +101,12 @@ export default function ServicesAdminPage() {
             toast.success("Service updated successfully");
             resetForm();
           },
-          onError: (error: any) => {
-            toast.error(error.message || "Failed to update service");
+          onError: (error: unknown) => {
+            if (error && typeof error === "object" && "message" in error) {
+              toast.error((error as { message?: string }).message || "Failed to update service");
+            } else {
+              toast.error("Failed to update service");
+            }
           },
         }
       );
@@ -112,8 +116,12 @@ export default function ServicesAdminPage() {
           toast.success(`${form.isPackage ? "Package" : "Service"} created successfully`);
           resetForm();
         },
-        onError: (error: any) => {
-          toast.error(error.message || "Failed to create service");
+        onError: (error: unknown) => {
+          if (error && typeof error === "object" && "message" in error) {
+            toast.error((error as { message?: string }).message || "Failed to create service");
+          } else {
+            toast.error("Failed to create service");
+          }
         },
       });
     }
@@ -151,8 +159,12 @@ export default function ServicesAdminPage() {
             resetForm();
           }
         },
-        onError: (error: any) => {
-          toast.error(error.message || "Failed to archive service");
+        onError: (error: unknown) => {
+          if (error && typeof error === "object" && "message" in error) {
+            toast.error((error as { message?: string }).message || "Failed to archive service");
+          } else {
+            toast.error("Failed to archive service");
+          }
         },
       });
     }

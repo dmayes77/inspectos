@@ -4,7 +4,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 
-
 import { ColumnDef } from "@tanstack/react-table";
 
 export type CrudTableProps<T> = {
