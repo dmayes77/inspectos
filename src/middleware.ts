@@ -11,6 +11,10 @@ import { getToken } from "next-auth/jwt";
  * 3. Enforces role-based access (Inspector vs Admin/Owner/Office)
  */
 export async function middleware(request: NextRequest) {
+  if (process.env.NODE_ENV !== "production") {
+    return NextResponse.next();
+  }
+
   const { pathname } = request.nextUrl;
 
   // Get the user session
