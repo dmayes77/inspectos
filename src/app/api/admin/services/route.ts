@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     const created = createService(body);
     return NextResponse.json({ serviceId: created.serviceId }, { status: 201 });
-  } catch (_err) {
+  } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

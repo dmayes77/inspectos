@@ -1,5 +1,4 @@
 // InspectOS Service Worker
-const CACHE_NAME = "inspectos-v1";
 const STATIC_CACHE = "inspectos-static-v1";
 const DYNAMIC_CACHE = "inspectos-dynamic-v1";
 
@@ -15,14 +14,6 @@ const PRECACHE_ASSETS = [
 
 // API routes that should bypass cache
 const API_ROUTES = ["/api/"];
-
-// Routes that work offline
-const OFFLINE_ROUTES = [
-  "/inspector",
-  "/inspector/inspections",
-  "/inspector/schedule",
-  "/inspector/profile",
-];
 
 // Install event - pre-cache static assets
 self.addEventListener("install", (event) => {

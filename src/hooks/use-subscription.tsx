@@ -122,7 +122,7 @@ export function useTierLimits(): TierLimits & {
   canAddInspector: boolean;
   canCreateTemplate: boolean;
 } {
-  const { tier, maxInspectors, maxTemplates } = useSubscription();
+  const { tier, maxTemplates } = useSubscription();
 
   return useMemo(() => {
     const limits = getLimits(tier);

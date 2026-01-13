@@ -7,6 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const mockCompany = {
   name: "Acme Home Inspections",
@@ -24,6 +31,7 @@ export default function BookingContactPage() {
     name: searchParams.get("name") || "",
     email: searchParams.get("email") || "",
     phone: searchParams.get("phone") || "",
+    clientType: searchParams.get("clientType") || "",
   });
 
   const handleChange = (field: string, value: string) => {
@@ -35,6 +43,7 @@ export default function BookingContactPage() {
     nextParams.set("name", formData.name);
     nextParams.set("email", formData.email);
     nextParams.set("phone", formData.phone);
+    nextParams.set("clientType", formData.clientType);
     return `/book/${slug}/${path}?${nextParams.toString()}`;
   };
 
@@ -84,6 +93,23 @@ export default function BookingContactPage() {
                 onChange={(event) => handleChange("phone", event.target.value)}
                 placeholder="(555) 123-4567"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientType">I am a</Label>
+              <Select
+                value={formData.clientType}
+                onValueChange={(value) => handleChange("clientType", value)}
+              >
+                <SelectTrigger id="clientType">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Homebuyer">Homebuyer</SelectItem>
+                  <SelectItem value="Real Estate Agent">Real Estate Agent</SelectItem>
+                  <SelectItem value="Seller">Seller</SelectItem>
+                  <SelectItem value="Investor">Investor</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>

@@ -50,7 +50,7 @@ export function AuthShell({
             </Link>
           </Button>
         ) : (
-          <div /> {/* Spacer */}
+          <div aria-hidden="true" />
         )}
 
         <Link href="/">

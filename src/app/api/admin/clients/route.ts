@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const created = addClient(body);
     return NextResponse.json({ data: created }, { status: 201 });
-  } catch (_err) {
+  } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

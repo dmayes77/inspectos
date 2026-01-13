@@ -76,7 +76,9 @@ export default function BookingReviewPage() {
   };
 
   const handleContinue = () => {
-    router.push(buildUrl("checkout"));
+    const clientType = searchParams.get("clientType") || "";
+    const skipPayment = clientType === "Real Estate Agent";
+    router.push(buildUrl(skipPayment ? "confirmed" : "checkout"));
   };
 
   const formatAppointment = () => {
