@@ -141,8 +141,9 @@ export default function ServiceDetailPage() {
           setEditing(false);
           setDiscountPercent(0);
         },
-        onError: (error: Error) => {
-          toast.error(error.message || "Failed to update service");
+        onError: (error: unknown) => {
+          const message = error instanceof Error ? error.message : "Failed to update service";
+          toast.error(message);
         },
       }
     );
@@ -155,8 +156,9 @@ export default function ServiceDetailPage() {
         setDeleteDialogOpen(false);
         router.push("/admin/services");
       },
-      onError: (error: Error) => {
-        toast.error(error.message || "Failed to delete service");
+      onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : "Failed to delete service";
+        toast.error(message);
         setDeleteDialogOpen(false);
       },
     });
