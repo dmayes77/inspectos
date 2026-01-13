@@ -74,11 +74,7 @@ const MONTHS = [
 
 const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-export default function BookSchedulePage({
-  params,
-}: {
-  params: Promise<{ companySlug: string }>;
-}) {
+export default function BookSchedulePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 

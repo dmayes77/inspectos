@@ -6,13 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   Check,
   X,
-  Users,
   Smartphone,
   FileText,
   Calendar,
-  BarChart3,
-  Headphones,
-  Zap,
   Shield,
 } from "lucide-react";
 

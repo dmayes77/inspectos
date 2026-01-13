@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Calendar, Plus, Trash, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
 
 const mockUser = {
   name: "Sarah Johnson",

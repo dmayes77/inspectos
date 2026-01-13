@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookingShell } from "@/components/layout/booking-shell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Home, TestTube, Wind, Zap, Droplets, Check } from "lucide-react";
+import { Home, TestTube, Wind, Droplets, Check } from "lucide-react";
 
 // Mock company data - would be fetched from API
 const mockCompany = {
@@ -75,11 +75,7 @@ const services = [
   },
 ];
 
-export default function BookServicePage({
-  params,
-}: {
-  params: Promise<{ companySlug: string }>;
-}) {
+export default function BookServicePage() {
   const router = useRouter();
   const [selectedMain, setSelectedMain] = useState<string | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);

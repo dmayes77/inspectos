@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Logo } from "@/components/brand/logo";
 
 interface BookingShellProps {
@@ -26,10 +27,12 @@ export function BookingShell({
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             {companyLogo ? (
-              <img
+              <Image
                 src={companyLogo}
                 alt={companyName}
-                className="h-10 w-auto"
+                width={40}
+                height={40}
+                className="h-10 w-auto object-contain"
               />
             ) : (
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-lg font-bold text-primary-foreground">

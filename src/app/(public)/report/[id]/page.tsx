@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { PublicShell } from "@/components/layout/public-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Download,
   AlertTriangle,
@@ -181,13 +178,7 @@ function SystemStatusIcon({ status }: { status: string }) {
   }
 }
 
-export default function ReportPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const [activeTab, setActiveTab] = useState("summary");
-
+export default function ReportPage() {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -196,12 +187,6 @@ export default function ReportPage({
       year: "numeric",
     });
   };
-
-  const allFindings = [
-    ...mockReport.findings.safety,
-    ...mockReport.findings.defects,
-    ...mockReport.findings.monitored,
-  ];
 
   return (
     <PublicShell showFooter={false}>

@@ -57,7 +57,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     return NextResponse.json({ data: updated });
-  } catch (err) {
+  } catch (_err) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

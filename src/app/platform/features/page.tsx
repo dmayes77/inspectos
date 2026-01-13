@@ -5,12 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import {
   Save,
-  Boxes,
   Smartphone,
-  FileText,
   Users,
   BarChart3,
   Zap,
@@ -57,19 +54,6 @@ const initialFeatures = {
 };
 
 type FeatureCategory = keyof typeof initialFeatures;
-
-function TierBadge({ tier }: { tier: string }) {
-  const colors: Record<string, string> = {
-    PRO: "bg-slate-600",
-    TEAM: "bg-blue-600",
-    BUSINESS: "bg-primary",
-  };
-  return (
-    <Badge className={`${colors[tier]} text-xs`}>
-      {tier}
-    </Badge>
-  );
-}
 
 export default function PlatformFeaturesPage() {
   const [features, setFeatures] = useState(initialFeatures);

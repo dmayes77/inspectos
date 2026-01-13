@@ -111,7 +111,7 @@ export async function checkConnectivity(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const response = await fetch(testUrl, {
+    await fetch(testUrl, {
       method: "HEAD",
       mode: "no-cors",
       signal: controller.signal,

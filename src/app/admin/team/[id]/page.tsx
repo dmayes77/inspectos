@@ -15,9 +15,7 @@ function getRoleDescription(role: string): string {
       return role;
   }
 }
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, UserX, CheckCircle, Lock } from "lucide-react";
-import { Shield, Unlock } from "lucide-react";
+import { Shield, Unlock, Lock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { permissionCategories, getPermissionsForRole } from "@/lib/permissions";
 

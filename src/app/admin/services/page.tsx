@@ -136,20 +136,6 @@ export default function ServicesAdminPage() {
     setShowPackageForm(false);
   };
 
-  const handleEdit = (service: Service) => {
-    setForm(service);
-    setEditingId(service.serviceId);
-    setSelectedServiceIds(service.includedServiceIds || []);
-    setDiscountPercent(0);
-    if (service.isPackage) {
-      setShowPackageForm(true);
-      setShowServiceForm(false);
-    } else {
-      setShowServiceForm(true);
-      setShowPackageForm(false);
-    }
-  };
-
   const handleArchive = (id: string) => {
     if (window.confirm("Archive this service? This will deactivate it but not permanently delete it.")) {
       deleteService.mutate(id, {

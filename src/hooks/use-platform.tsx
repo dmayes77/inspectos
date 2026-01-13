@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 
 export type Platform = "ios" | "android" | "web";

@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle,
   AlertTriangle,
@@ -17,7 +16,6 @@ import {
   Wrench,
   Camera,
   FileText,
-  Send,
   ChevronDown,
   ChevronUp,
   Home,

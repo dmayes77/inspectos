@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -37,7 +37,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
   const params = useParams();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { data: services = [], isLoading } = useServices() as { data: ServiceType[]; isLoading: boolean };
+  const { data: services = [] } = useServices() as { data: ServiceType[]; isLoading: boolean };
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
   const { data: clientsData = [] } = useGet("clients", async () => getClients());
@@ -89,7 +89,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
     setCalculatedPrice(total);
   }, [selectedTypeIds, services]);
 
-  const { street, city, state, zip } = useMemo(() => {
+  const getAddressParts = () => {
     if (!inspection) return { street: "", city: "", state: "", zip: "" };
     const addressParts = inspection.address.split(", ");
     const streetValue = addressParts[0] || "";
@@ -104,7 +104,9 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
       state: stateValue,
       zip: zipValue,
     };
-  }, [inspection]);
+  };
+
+  const { street, city, state, zip } = getAddressParts();
 
   // Early return after all hooks
   if (!inspection && !props.isNew) {

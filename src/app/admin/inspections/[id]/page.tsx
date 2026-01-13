@@ -20,7 +20,6 @@ import {
 import { ChevronLeft, Edit, Archive, FileText, MapPin, User, Calendar, DollarSign, ClipboardList } from "lucide-react";
 import { useServices, type Service } from "@/hooks/use-services";
 import { inspections } from "@/lib/mock/inspections";
-import type { Inspection } from "@/lib/mock/inspections";
 import { getTeamMembers, TeamMember } from "@/lib/mock/team";
 
 const mockUser = {

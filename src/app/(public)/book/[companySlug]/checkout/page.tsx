@@ -49,11 +49,7 @@ const FOUNDATION_TYPES = [
   "Unknown",
 ];
 
-export default function BookCheckoutPage({
-  params,
-}: {
-  params: Promise<{ companySlug: string }>;
-}) {
+export default function BookCheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 

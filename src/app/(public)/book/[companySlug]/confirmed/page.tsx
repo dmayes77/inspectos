@@ -1,7 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { BookingShell } from "@/components/layout/booking-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +10,6 @@ import {
   MapPin,
   User,
   Phone,
-  Mail,
   Download,
   CalendarPlus,
 } from "lucide-react";
@@ -56,14 +53,7 @@ const mockBooking = {
   },
 };
 
-export default function BookConfirmedPage({
-  params,
-}: {
-  params: Promise<{ companySlug: string }>;
-}) {
-  const searchParams = useSearchParams();
-  const bookingId = searchParams.get("booking");
-
+export default function BookConfirmedPage() {
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       weekday: "long",
@@ -83,13 +73,6 @@ export default function BookConfirmedPage({
 
   const handleAddToCalendar = () => {
     // Generate ICS file or open calendar link
-    const event = {
-      title: `Home Inspection - ${mockBooking.property.street}`,
-      start: mockBooking.scheduledAt,
-      duration: 180, // 3 hours in minutes
-      location: `${mockBooking.property.street}, ${mockBooking.property.city}, ${mockBooking.property.state} ${mockBooking.property.zip}`,
-    };
-
     // For demo, just alert
     alert("Calendar integration would open here");
   };

@@ -8,7 +8,6 @@ import {
   checkLocationPermissions,
   requestLocationPermissions,
   type LocationResult,
-  type Coordinates,
 } from "@/services/geolocation";
 
 export interface LocationState {

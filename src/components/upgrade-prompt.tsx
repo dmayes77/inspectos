@@ -16,9 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Check, Sparkles, Lock, ArrowRight, Zap } from "lucide-react";
 import type { SubscriptionTier } from "@prisma/client";
 import {
-  useCanAccessFeature,
   useFeatureAccess,
-  useUpgradeInfo,
   formatTierName,
   type Feature,
   FEATURES,

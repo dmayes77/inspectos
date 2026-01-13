@@ -133,7 +133,7 @@ export function useTierLimits(): TierLimits & {
       canAddInspector: true, // Will be updated by server check
       canCreateTemplate: maxTemplates === Infinity || true,
     };
-  }, [tier, maxInspectors, maxTemplates]);
+  }, [tier, maxTemplates]);
 }
 
 /**

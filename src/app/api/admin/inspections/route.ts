@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const created = createInspection(body);
 
     return NextResponse.json({ inspectionId: created.inspectionId }, { status: 201 });
-  } catch (err) {
+  } catch (_err) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

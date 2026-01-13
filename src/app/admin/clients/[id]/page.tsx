@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ChevronLeft, Edit, Trash2, Mail, Phone, User, DollarSign, ClipboardList, Calendar } from "lucide-react";
-import { useClientById, useDeleteClient, type Client } from "@/hooks/use-clients";
+import { useClientById, useDeleteClient } from "@/hooks/use-clients";
 
 const mockUser = {
   name: "Sarah Johnson",
