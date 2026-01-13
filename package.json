@@ -7,7 +7,8 @@
     "build": "env -u __NEXT_PRIVATE_STANDALONE_CONFIG -u NEXT_DEPLOYMENT_ID NODE_ENV=production next build",
     "start": "NODE_ENV=production next start",
     "lint": "eslint",
-    "generate:splash": "node scripts/generate-splash.mjs"
+    "generate:splash": "node scripts/generate-splash.mjs",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
