@@ -54,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden h-dvh`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PWAInitializer />
           <NativeAppInit />

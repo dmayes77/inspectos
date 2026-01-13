@@ -26,7 +26,7 @@ import {
 import { useNetwork } from "@/hooks/use-network";
 import { impactLight } from "@/services/haptics";
 
-interface InspectorShellProps {
+interface AppShellProps {
   children: ReactNode;
   title?: string;
   showBackButton?: boolean;
@@ -44,14 +44,27 @@ const navItems = [
   { href: "/inspector/jobs", icon: Briefcase, label: "Jobs" },
 ];
 
-export function InspectorShell({
+/**
+ * AppShell - Mobile-first application shell
+ *
+ * Generic app shell for mobile-first routes. Features:
+ * - Sidebar navigation
+ * - Fixed header with back button
+ * - Touch-optimized interactions
+ * - Haptic feedback
+ * - Online/offline indicator
+ * - Safe area handling
+ *
+ * Reusable for any mobile-first app routes (inspector, field work, etc.)
+ */
+export function AppShell({
   children,
   title = "InspectOS",
   showBackButton = false,
   onBack,
   headerActions,
   user,
-}: InspectorShellProps) {
+}: AppShellProps) {
   const pathname = usePathname();
   const { isOnline, connectionType } = useNetwork();
 

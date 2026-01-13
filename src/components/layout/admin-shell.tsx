@@ -15,6 +15,9 @@ import {
   Bell,
   Search,
   HardHat,
+  Building2,
+  Flag,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
@@ -41,7 +44,8 @@ interface AdminShellProps {
   };
 }
 
-const mainNav = [
+// Company admin navigation
+const companyMainNav = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Overview" },
   { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
   { href: "/admin/services", icon: ClipboardList, label: "Services" },
@@ -50,13 +54,51 @@ const mainNav = [
   { href: "/admin/templates", icon: FileText, label: "Templates" },
 ];
 
-const systemNav = [
+const companySystemNav = [
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
+// Platform admin navigation
+const platformMainNav = [
+  { href: "/platform", icon: LayoutDashboard, label: "Overview" },
+  { href: "/platform/companies", icon: Building2, label: "Companies" },
+  { href: "/platform/features", icon: Flag, label: "Features" },
+  { href: "/platform/pricing", icon: DollarSign, label: "Pricing" },
+];
+
+const platformSystemNav = [
+  { href: "/platform/content", icon: FileText, label: "Content" },
+];
+
+/**
+ * AdminShell - Desktop-dense admin interface
+ *
+ * Supports both company admin (/admin/*) and platform admin (/platform/*).
+ * Auto-detects context based on route and shows appropriate navigation.
+ *
+ * Features:
+ * - Collapsible sidebar
+ * - Keyboard shortcuts (⌘K search)
+ * - Notifications
+ * - User dropdown
+ * - Safe area handling
+ */
 export function AdminShell({ children, user }: AdminShellProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Auto-detect platform admin based on route
+  const isPlatformAdmin = pathname.startsWith('/platform');
+
+  // Select navigation based on context
+  const mainNav = isPlatformAdmin ? platformMainNav : companyMainNav;
+  const systemNav = isPlatformAdmin ? platformSystemNav : companySystemNav;
+
+  // Select home link based on context
+  const homeHref = isPlatformAdmin ? "/platform" : "/admin/overview";
+
+  // Select header context text
+  const contextLabel = isPlatformAdmin ? "Platform Admin" : user?.companyName;
 
   const NavLink = ({
     href,
@@ -97,7 +139,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
       >
         {/* Logo */}
         <div className="flex h-14 items-center border-b px-4">
-          <Link href="/admin/overview">
+          <Link href={homeHref}>
             <Logo
               size={collapsed ? "sm" : "md"}
               variant={collapsed ? "icon" : "full"}
@@ -183,9 +225,9 @@ export function AdminShell({ children, user }: AdminShellProps) {
                     <span className="text-sm font-medium">
                       {user?.name || "Admin"}
                     </span>
-                    {user?.companyName && (
+                    {contextLabel && (
                       <span className="text-xs text-muted-foreground">
-                        {user.companyName}
+                        {contextLabel}
                       </span>
                     )}
                   </div>
@@ -202,7 +244,7 @@ export function AdminShell({ children, user }: AdminShellProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/settings">
+                  <Link href={isPlatformAdmin ? "/platform/content" : "/admin/settings"}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </Link>

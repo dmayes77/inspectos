@@ -17,7 +17,7 @@ export type Inspection = {
   propertyType?: string;
   bedrooms?: number;
   bathrooms?: number;
-  stories?: number;
+  stories?: string;
   foundation?: string;
   garage?: string;
   pool?: boolean;
@@ -41,7 +41,7 @@ export const inspections: Inspection[] = [
     propertyType: "Single Family",
     bedrooms: 4,
     bathrooms: 2.5,
-    stories: 2,
+    stories: "2",
     foundation: "Slab",
     garage: "2-car",
     pool: false,
@@ -64,7 +64,7 @@ export const inspections: Inspection[] = [
     propertyType: "Townhouse",
     bedrooms: 3,
     bathrooms: 2,
-    stories: 2,
+    stories: "2",
     foundation: "Pier & Beam",
     garage: "1-car",
     pool: false,
@@ -86,7 +86,7 @@ export const inspections: Inspection[] = [
     propertyType: "Single Family",
     bedrooms: 5,
     bathrooms: 3,
-    stories: 2,
+    stories: "2",
     foundation: "Slab",
     garage: "3-car",
     pool: true,
@@ -108,7 +108,7 @@ export const inspections: Inspection[] = [
     propertyType: "Condo",
     bedrooms: 2,
     bathrooms: 2,
-    stories: 1,
+    stories: "1",
     foundation: "Slab",
     garage: "None",
     pool: false,
@@ -130,7 +130,7 @@ export const inspections: Inspection[] = [
     propertyType: "Single Family",
     bedrooms: 3,
     bathrooms: 2,
-    stories: 1,
+    stories: "1",
     foundation: "Slab",
     garage: "1-car",
     pool: false,
@@ -152,7 +152,7 @@ export const inspections: Inspection[] = [
     propertyType: "Single Family",
     bedrooms: 4,
     bathrooms: 2,
-    stories: 1,
+    stories: "1",
     foundation: "Pier & Beam",
     garage: "2-car",
     pool: true,

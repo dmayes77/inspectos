@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default function JobDetailPage() {
 
   if (!inspection) {
     return (
-      <InspectorShell title="Job Not Found" user={mockInspector} showBackButton onBack={() => router.back()}>
+      <AppShell title="Job Not Found" user={mockInspector} showBackButton onBack={() => router.back()}>
         <div className="flex flex-col items-center justify-center p-12">
           <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
           <p className="text-lg font-medium">Inspection not found</p>
@@ -37,7 +37,7 @@ export default function JobDetailPage() {
             Back to Jobs
           </Button>
         </div>
-      </InspectorShell>
+      </AppShell>
     );
   }
 
@@ -72,7 +72,7 @@ export default function JobDetailPage() {
   };
 
   return (
-    <InspectorShell
+    <AppShell
       title={property.address}
       user={mockInspector}
       showBackButton
@@ -303,6 +303,6 @@ export default function JobDetailPage() {
           </Card>
         </div>
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }

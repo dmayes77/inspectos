@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -148,7 +148,7 @@ export default function NewInspectionPage() {
   };
 
   return (
-    <InspectorShell
+    <AppShell
       title="New Inspection"
       user={mockInspector}
       showBackButton
@@ -502,6 +502,6 @@ export default function NewInspectionPage() {
           )}
         </div>
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }

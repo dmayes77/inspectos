@@ -1,72 +1,160 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
+import { Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PublicShellProps {
   children: ReactNode;
+  /** Show header navigation */
   showHeader?: boolean;
+  /** Show footer */
   showFooter?: boolean;
+  /** Use full width (no container) for content - useful for landing pages */
+  fullWidth?: boolean;
+  /** Add padding to content area */
+  padContent?: boolean;
+  /** Custom className for main content area */
+  contentClassName?: string;
 }
 
+const navigationLinks = [
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/about", label: "About" },
+];
+
+/**
+ * PublicShell - Website-like layout for all public routes
+ *
+ * Provides a traditional website experience with:
+ * - Sticky header with navigation
+ * - Mobile-responsive menu
+ * - Footer with links
+ * - Natural webpage scrolling
+ * - Safe area handling for notches/home indicators
+ * - Works seamlessly in web browsers and Capacitor native app
+ *
+ * Usage:
+ * ```tsx
+ * <PublicShell>
+ *   <YourContent />
+ * </PublicShell>
+ * ```
+ */
 export function PublicShell({
   children,
   showHeader = true,
   showFooter = true,
+  fullWidth = false,
+  padContent = false,
+  contentClassName,
 }: PublicShellProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="flex min-h-dvh flex-col bg-background">
       {/* Header */}
       {showHeader && (
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-area-inset-top safe-area-inset-left safe-area-inset-right">
           <div className="container flex h-14 items-center justify-between">
-            <Link href="/">
+            {/* Logo */}
+            <Link href="/" onClick={() => setMobileMenuOpen(false)}>
               <Logo size="md" />
             </Link>
 
+            {/* Desktop Navigation */}
             <nav className="hidden items-center gap-6 md:flex">
-              <Link
-                href="/features"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Features
-              </Link>
-              <Link
-                href="/pricing"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Pricing
-              </Link>
-              <Link
-                href="/about"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                About
-              </Link>
+              {navigationLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
 
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" asChild>
+            {/* Desktop Auth Buttons */}
+            <div className="hidden items-center gap-2 md:flex">
+              <Button variant="ghost" size="sm" asChild>
                 <Link href="/login">Sign in</Link>
               </Button>
-              <Button asChild>
+              <Button size="sm" asChild>
                 <Link href="/register">Get Started</Link>
               </Button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {mobileMenuOpen && (
+            <div className="border-t bg-background md:hidden">
+              <div className="container py-4 space-y-3">
+                {navigationLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="block py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <div className="flex flex-col gap-2 pt-4 border-t">
+                  <Button variant="ghost" size="sm" asChild className="justify-start">
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
+                      Sign in
+                    </Link>
+                  </Button>
+                  <Button size="sm" asChild className="justify-start">
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
+                      Get Started
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </header>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1">{children}</main>
+      {/* Main Content - Natural webpage scrolling */}
+      <main
+        className={cn(
+          "flex-1",
+          !fullWidth && "container",
+          padContent && "py-8",
+          contentClassName
+        )}
+      >
+        {children}
+      </main>
 
       {/* Footer */}
       {showFooter && (
-        <footer className="border-t bg-card">
+        <footer className="border-t bg-card safe-area-inset-bottom safe-area-inset-left safe-area-inset-right">
           <div className="container py-8">
             <div className="grid gap-8 md:grid-cols-4">
+              {/* Brand */}
               <div className="space-y-4">
                 <span className="text-lg font-bold">InspectOS</span>
                 <p className="text-sm text-muted-foreground">
@@ -74,66 +162,69 @@ export function PublicShell({
                 </p>
               </div>
 
+              {/* Product Links */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold">Product</h4>
                 <nav className="flex flex-col gap-2">
                   <Link
                     href="/features"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Features
                   </Link>
                   <Link
                     href="/pricing"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Pricing
                   </Link>
                   <Link
                     href="/integrations"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Integrations
                   </Link>
                 </nav>
               </div>
 
+              {/* Company Links */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold">Company</h4>
                 <nav className="flex flex-col gap-2">
                   <Link
                     href="/about"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     About
                   </Link>
                   <Link
                     href="/contact"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Contact
                   </Link>
                   <Link
                     href="/blog"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Blog
                   </Link>
                 </nav>
               </div>
 
+              {/* Legal Links */}
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold">Legal</h4>
                 <nav className="flex flex-col gap-2">
                   <Link
                     href="/privacy"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Privacy Policy
                   </Link>
                   <Link
                     href="/terms"
-                    className="text-sm text-muted-foreground hover:text-foreground"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Terms of Service
                   </Link>
@@ -141,6 +232,7 @@ export function PublicShell({
               </div>
             </div>
 
+            {/* Copyright */}
             <div className="mt-8 border-t pt-8 text-center text-sm text-muted-foreground">
               <p>&copy; {new Date().getFullYear()} InspectOS. All rights reserved.</p>
             </div>

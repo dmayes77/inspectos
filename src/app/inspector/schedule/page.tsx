@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,7 +123,7 @@ export default function SchedulePage() {
   };
 
   return (
-    <InspectorShell
+    <AppShell
       title="Schedule"
       user={mockInspector}
       headerActions={
@@ -313,6 +313,6 @@ export default function SchedulePage() {
           </div>
         )}
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }

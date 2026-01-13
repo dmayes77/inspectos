@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { NativeRedirect } from "@/components/native-redirect";
 import {
   CheckCircle,
   Camera,
@@ -19,8 +18,7 @@ import {
 
 export default function LandingPage() {
   return (
-    <NativeRedirect>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         {/* Navigation */}
       <header className="fixed top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -37,7 +35,7 @@ export default function LandingPage() {
             <Link href="#how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               How It Works
             </Link>
-            <Link href="#pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <Link href="/pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               Pricing
             </Link>
           </nav>
@@ -415,24 +413,56 @@ export default function LandingPage() {
             <div>
               <h4 className="mb-4 font-semibold">Product</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#features" className="hover:text-foreground">Features</Link></li>
-                <li><Link href="#pricing" className="hover:text-foreground">Pricing</Link></li>
-                <li><Link href="/demo" className="hover:text-foreground">Demo</Link></li>
+                <li>
+                  <Link href="#features" className="hover:text-foreground">
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="hover:text-foreground">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/demo" className="hover:text-foreground">
+                    Demo
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="mb-4 font-semibold">Company</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/about" className="hover:text-foreground">About</Link></li>
-                <li><Link href="/blog" className="hover:text-foreground">Blog</Link></li>
-                <li><Link href="/contact" className="hover:text-foreground">Contact</Link></li>
+                <li>
+                  <Link href="/about" className="hover:text-foreground">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className="hover:text-foreground">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-foreground">
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="mb-4 font-semibold">Legal</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/privacy" className="hover:text-foreground">Privacy</Link></li>
-                <li><Link href="/terms" className="hover:text-foreground">Terms</Link></li>
+                <li>
+                  <Link href="/privacy" className="hover:text-foreground">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-foreground">
+                    Terms
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
@@ -441,7 +471,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-      </div>
-    </NativeRedirect>
+
+    </div>
   );
 }

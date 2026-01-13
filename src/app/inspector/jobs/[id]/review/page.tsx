@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,14 +91,14 @@ export default function ReviewPage() {
 
   if (!inspection) {
     return (
-      <InspectorShell title="Not Found" user={mockInspector} showBackButton onBack={() => router.back()}>
+      <AppShell title="Not Found" user={mockInspector} showBackButton onBack={() => router.back()}>
         <div className="flex flex-col items-center justify-center p-12">
           <p className="text-lg font-medium">Inspection not found</p>
           <Button variant="outline" className="mt-4" onClick={() => router.back()}>
             Go Back
           </Button>
         </div>
-      </InspectorShell>
+      </AppShell>
     );
   }
 
@@ -150,7 +150,7 @@ export default function ReviewPage() {
   };
 
   return (
-    <InspectorShell
+    <AppShell
       title="Review Inspection"
       user={mockInspector}
       showBackButton
@@ -367,6 +367,6 @@ export default function ReviewPage() {
           </div>
         </div>
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }

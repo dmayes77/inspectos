@@ -6,6 +6,7 @@ import { BookingShell } from "@/components/layout/booking-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { getTeamMembers } from "@/lib/mock/team";
 
 // Mock company data
 const mockCompany = {
@@ -80,8 +81,19 @@ export default function BookSchedulePage() {
 
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(
+    searchParams.get("date")
+  );
+  const [selectedTime, setSelectedTime] = useState<string | null>(
+    searchParams.get("time")
+  );
+  const [selectedInspector, setSelectedInspector] = useState<string | null>(
+    searchParams.get("inspectorId")
+  );
+
+  const inspectors = getTeamMembers().filter(
+    (member) => member.role === "INSPECTOR" && member.status === "active"
+  );
 
   const calendarDays = getCalendarDays(currentYear, currentMonth);
 
@@ -125,11 +137,11 @@ export default function BookSchedulePage() {
   };
 
   const handleContinue = () => {
-    const service = searchParams.get("service");
-    const addons = searchParams.get("addons");
-    router.push(
-      `/book/${mockCompany.slug}/checkout?service=${service}${addons ? `&addons=${addons}` : ""}&date=${selectedDate}&time=${encodeURIComponent(selectedTime || "")}`
-    );
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (selectedDate) nextParams.set("date", selectedDate);
+    if (selectedTime) nextParams.set("time", selectedTime);
+    if (selectedInspector) nextParams.set("inspectorId", selectedInspector);
+    router.push(`/book/${mockCompany.slug}/review?${nextParams.toString()}`);
   };
 
   const handleBack = () => {
@@ -148,8 +160,8 @@ export default function BookSchedulePage() {
   };
 
   return (
-    <BookingShell companyName={mockCompany.name} currentStep={2}>
-      <div className="mx-auto max-w-3xl space-y-8">
+    <BookingShell companyName={mockCompany.name} currentStep={5} totalSteps={8}>
+      <div className="mx-auto max-w-4xl space-y-8">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight">Select Date & Time</h1>
@@ -158,7 +170,7 @@ export default function BookSchedulePage() {
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-2">
           {/* Calendar */}
           <Card>
             <CardContent className="p-6">
@@ -268,6 +280,44 @@ export default function BookSchedulePage() {
           </Card>
         </div>
 
+        <Card>
+          <CardContent className="space-y-4 p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Available Inspectors</h2>
+              <span className="text-sm text-muted-foreground">
+                {inspectors.length} available
+              </span>
+            </div>
+            <div className="grid gap-3">
+              {inspectors.map((inspector) => {
+                const isSelected = selectedInspector === inspector.teamMemberId;
+                return (
+                  <button
+                    key={inspector.teamMemberId}
+                    type="button"
+                    className={`flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : "hover:border-primary/50"
+                    }`}
+                    onClick={() => setSelectedInspector(inspector.teamMemberId)}
+                  >
+                    <div>
+                      <p className="font-medium">{inspector.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {inspector.location}
+                      </p>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {inspector.inspections} inspections
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Navigation */}
         <div className="flex items-center justify-between">
           <Button variant="outline" onClick={handleBack}>
@@ -277,10 +327,10 @@ export default function BookSchedulePage() {
 
           <Button
             size="lg"
-            disabled={!selectedDate || !selectedTime}
+            disabled={!selectedDate || !selectedTime || !selectedInspector}
             onClick={handleContinue}
           >
-            Continue to Checkout
+            Continue
           </Button>
         </div>
       </div>

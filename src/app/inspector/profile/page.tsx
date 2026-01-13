@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <InspectorShell title="Profile" user={mockInspector}>
+    <AppShell title="Profile" user={mockInspector}>
       <div className="p-6 max-w-2xl mx-auto space-y-6">
         {/* Profile Header */}
         <Card>
@@ -279,6 +279,6 @@ export default function ProfilePage() {
           InspectOS v1.0.0
         </p>
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }

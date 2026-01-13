@@ -148,7 +148,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
       yearBuilt: raw.yearBuilt ? Number(raw.yearBuilt) : undefined,
       bedrooms: raw.bedrooms ? Number(raw.bedrooms) : undefined,
       bathrooms: raw.bathrooms ? Number(raw.bathrooms) : undefined,
-      stories: raw.stories ? Number(raw.stories) : undefined,
+      stories: raw.stories ? String(raw.stories) : undefined,
       propertyType: raw.propertyType ? String(raw.propertyType) : undefined,
       foundation: raw.foundation ? String(raw.foundation) : undefined,
       garage: raw.garage ? String(raw.garage) : undefined,
@@ -176,6 +176,9 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
   };
 
   const poolDefaultValue = inspection && typeof inspection.pool === "boolean" ? (inspection.pool ? "yes" : "no") : undefined;
+  const storiesDefaultValue = inspection?.stories ? String(inspection.stories) : undefined;
+  const garageDefaultValue = inspection?.garage ? String(inspection.garage) : undefined;
+  const foundationDefaultValue = inspection?.foundation ? String(inspection.foundation) : undefined;
 
   return (
     <AdminShell user={mockUser}>
@@ -253,27 +256,90 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bedrooms">Bedrooms</Label>
-                    <Input id="bedrooms" name="bedrooms" type="number" placeholder="4" defaultValue={inspection ? inspection.bedrooms : ""} />
+                    <Input
+                      id="bedrooms"
+                      name="bedrooms"
+                      type="number"
+                      min="1"
+                      step="1"
+                      placeholder="4"
+                      defaultValue={inspection ? inspection.bedrooms : ""}
+                      onFocus={(event) => {
+                        if (!event.currentTarget.value) {
+                          event.currentTarget.value = "1";
+                        }
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="bathrooms">Bathrooms</Label>
-                    <Input id="bathrooms" name="bathrooms" type="number" step="0.5" placeholder="2.5" defaultValue={inspection ? inspection.bathrooms : ""} />
+                    <Input
+                      id="bathrooms"
+                      name="bathrooms"
+                      type="number"
+                      min="1"
+                      step="0.5"
+                      placeholder="2.5"
+                      defaultValue={inspection ? inspection.bathrooms : ""}
+                      onChange={(event) => {
+                        const numeric = Number(event.currentTarget.value);
+                        if (!Number.isNaN(numeric) && numeric > 4) {
+                          event.currentTarget.value = String(Math.round(numeric));
+                        }
+                      }}
+                      onFocus={(event) => {
+                        if (!event.currentTarget.value) {
+                          event.currentTarget.value = "1";
+                        }
+                      }}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="stories">Stories</Label>
-                    <Input id="stories" name="stories" type="number" placeholder="2" defaultValue={inspection ? inspection.stories : ""} />
+                    <Select name="stories" defaultValue={storiesDefaultValue}>
+                      <SelectTrigger id="stories">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="4+">4+</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="foundation">Foundation</Label>
-                    <Input id="foundation" name="foundation" placeholder="Slab" defaultValue={inspection ? inspection.foundation : ""} />
+                    <Select name="foundation" defaultValue={foundationDefaultValue}>
+                      <SelectTrigger id="foundation">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Slab">Slab</SelectItem>
+                        <SelectItem value="Crawl Space">Crawl Space</SelectItem>
+                        <SelectItem value="Basement">Basement</SelectItem>
+                        <SelectItem value="Pier & Beam">Pier & Beam</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="garage">Garage</Label>
-                    <Input id="garage" name="garage" placeholder="2-car" defaultValue={inspection ? inspection.garage : ""} />
+                    <Select name="garage" defaultValue={garageDefaultValue}>
+                      <SelectTrigger id="garage">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="1-car">1-car</SelectItem>
+                        <SelectItem value="2-car">2-car</SelectItem>
+                        <SelectItem value="3-car">3-car</SelectItem>
+                        <SelectItem value="4-car">4-car</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-2">

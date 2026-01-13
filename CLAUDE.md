@@ -58,11 +58,11 @@ Enterprise-grade SaaS platform for home inspection businesses. Multi-tenant arch
 ```
 src/
 ├── app/                      # Next.js App Router
-│   ├── (public)/            # Marketing, landing pages
-│   ├── (auth)/              # Login, register, forgot-password
-│   ├── (app)/               # Shared authenticated routes
-│   │   ├── admin/           # Admin/office dashboard
-│   │   └── inspector/       # Inspector mobile-first routes
+│   ├── (public)/            # Public routes (marketing, booking, reports)
+│   ├── (auth)/              # Login, register, invite
+│   ├── admin/               # Admin/office dashboard
+│   ├── inspector/           # Inspector mobile-first routes
+│   ├── platform/            # Platform admin (future)
 │   └── api/                 # API route handlers
 ├── components/
 │   ├── ui/                  # shadcn/ui primitives

@@ -6,6 +6,7 @@ export type Service = {
   name: string;
   description?: string;
   price?: number;
+  category?: "core" | "addon";
   isPackage?: boolean;
   includedServiceIds?: string[]; // for packages
   includes?: string[]; // List of what's included (features/deliverables)
@@ -18,6 +19,7 @@ export const services: Service[] = [
     name: "Full Home Inspection",
     description: "Comprehensive inspection of all major systems",
     price: 425,
+    category: "core",
     includes: [
       "Complete structural assessment",
       "All major systems inspection (HVAC, plumbing, electrical)",
@@ -32,6 +34,7 @@ export const services: Service[] = [
     name: "Pre-Listing Inspection",
     description: "Prepare your home for sale",
     price: 350,
+    category: "core",
     includes: ["Comprehensive home inspection", "Identify potential deal-breakers", "Repair priority recommendations", "Digital report for buyers"],
   },
   {
@@ -39,6 +42,7 @@ export const services: Service[] = [
     name: "Radon Test",
     description: "Test for radon gas levels",
     price: 150,
+    category: "addon",
     includes: ["48-hour continuous monitoring", "EPA-approved testing equipment", "Lab-certified results", "Mitigation recommendations if needed"],
   },
   {
@@ -46,6 +50,7 @@ export const services: Service[] = [
     name: "Mold Inspection",
     description: "Identify mold and moisture issues",
     price: 200,
+    category: "addon",
     includes: ["Visual inspection of all areas", "Moisture meter readings", "Air quality sampling", "Lab analysis of samples", "Remediation recommendations"],
   },
   {
@@ -53,6 +58,7 @@ export const services: Service[] = [
     name: "Termite Inspection",
     description: "Check for wood-destroying insects",
     price: 125,
+    category: "addon",
     includes: ["Interior and exterior inspection", "Crawl space examination", "Evidence documentation", "Treatment recommendations"],
   },
   {
@@ -60,6 +66,7 @@ export const services: Service[] = [
     name: "Pool/Spa Inspection",
     description: "Inspect pool and spa equipment",
     price: 100,
+    category: "addon",
     includes: ["Pump and filter inspection", "Heater and electrical check", "Surface and structure evaluation", "Safety equipment verification"],
   },
   {
@@ -67,6 +74,7 @@ export const services: Service[] = [
     name: "Sewer Scope",
     description: "Camera inspection of sewer line",
     price: 175,
+    category: "addon",
     includes: ["High-definition camera inspection", "Full sewer line assessment", "Video recording provided", "Blockage and damage identification"],
   },
   {
@@ -74,6 +82,7 @@ export const services: Service[] = [
     name: "4-Point Inspection",
     description: "Insurance-required inspection of critical systems",
     price: 175,
+    category: "core",
     includes: [
       "Roof condition assessment",
       "HVAC system evaluation",
@@ -88,6 +97,7 @@ export const services: Service[] = [
     name: "Wind Mitigation Inspection",
     description: "Inspection to qualify for insurance discounts",
     price: 125,
+    category: "core",
     includes: [
       "Roof covering evaluation",
       "Roof deck attachment inspection",
@@ -102,6 +112,7 @@ export const services: Service[] = [
     name: "Well Water Testing",
     description: "Comprehensive water quality analysis",
     price: 225,
+    category: "addon",
     includes: [
       "Water sample collection",
       "Lab analysis for contaminants",
@@ -116,6 +127,7 @@ export const services: Service[] = [
     name: "Septic System Inspection",
     description: "Complete septic system evaluation",
     price: 350,
+    category: "addon",
     includes: [
       "Tank location and access",
       "Liquid level measurement",
@@ -130,6 +142,7 @@ export const services: Service[] = [
     name: "Infrared Thermal Imaging",
     description: "Advanced diagnostic imaging service",
     price: 225,
+    category: "addon",
     includes: [
       "Thermal imaging of entire home",
       "Moisture intrusion detection",
@@ -144,6 +157,7 @@ export const services: Service[] = [
     name: "11th Month Warranty Inspection",
     description: "Pre-warranty expiration builder inspection",
     price: 400,
+    category: "core",
     includes: [
       "Complete home systems review",
       "Identify warranty-covered issues",
@@ -166,6 +180,7 @@ export function createService(data: Partial<Service>) {
     name: data.name || "New Service",
     description: data.description,
     price: data.price,
+    category: data.category ?? "core",
     isPackage: !!data.isPackage,
     includedServiceIds: data.includedServiceIds || [],
     status: "active",

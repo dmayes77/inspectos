@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PublicShell } from "@/components/layout/public-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -141,9 +140,40 @@ const faqs = [
 
 export default function PricingPage() {
   return (
-    <PublicShell>
+    <>
+      {/* Navigation */}
+      <header className="fixed top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-lg">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <Shield className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-semibold tracking-tight">InspectOS</span>
+          </Link>
+          <nav className="hidden items-center gap-6 md:flex">
+            <Link href="/#features" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              Features
+            </Link>
+            <Link href="/#how-it-works" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              How It Works
+            </Link>
+            <Link href="/pricing" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              Pricing
+            </Link>
+          </nav>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">Sign In</Link>
+            </Button>
+            <Button size="sm" asChild>
+              <Link href="/register">Start Free Trial</Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+
       {/* Hero */}
-      <section className="container py-16 text-center">
+      <section className="mx-auto max-w-6xl px-4 pt-32 pb-16 text-center">
         <Badge className="mb-4">Simple, transparent pricing</Badge>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
           Choose your plan
@@ -155,7 +185,7 @@ export default function PricingPage() {
       </section>
 
       {/* Pricing Cards */}
-      <section className="container pb-16">
+      <section className="mx-auto max-w-6xl px-4 pb-16">
         <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
           {plans.map((plan) => (
             <Card
@@ -232,7 +262,7 @@ export default function PricingPage() {
 
       {/* Highlights */}
       <section className="border-y bg-muted/30 py-16">
-        <div className="container">
+        <div className="mx-auto max-w-6xl px-4">
           <div className="grid gap-8 md:grid-cols-4">
             {highlights.map((highlight) => {
               const Icon = highlight.icon;
@@ -253,7 +283,7 @@ export default function PricingPage() {
       </section>
 
       {/* Comparison */}
-      <section className="container py-16">
+      <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold tracking-tight">
             Save thousands compared to competitors
@@ -311,7 +341,7 @@ export default function PricingPage() {
 
       {/* FAQ */}
       <section className="border-t bg-muted/30 py-16">
-        <div className="container">
+        <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto max-w-3xl">
             <h2 className="text-center text-3xl font-bold tracking-tight">
               Frequently Asked Questions
@@ -332,7 +362,7 @@ export default function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="container py-16 text-center">
+      <section className="mx-auto max-w-6xl px-4 py-16 text-center">
         <h2 className="text-3xl font-bold tracking-tight">
           Ready to modernize your inspections?
         </h2>
@@ -349,6 +379,83 @@ export default function PricingPage() {
           </Button>
         </div>
       </section>
-    </PublicShell>
+
+      {/* Footer */}
+      <footer className="border-t border-border py-12">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="grid gap-8 md:grid-cols-4">
+            <div>
+              <Link href="/" className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                  <Shield className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <span className="text-xl font-semibold tracking-tight">InspectOS</span>
+              </Link>
+              <p className="mt-4 text-sm text-muted-foreground">
+                The modern platform for home inspection businesses.
+              </p>
+            </div>
+            <div>
+              <h4 className="mb-4 font-semibold">Product</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/features" className="hover:text-foreground">
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/pricing" className="hover:text-foreground">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/demo" className="hover:text-foreground">
+                    Demo
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="mb-4 font-semibold">Company</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/about" className="hover:text-foreground">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className="hover:text-foreground">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contact" className="hover:text-foreground">
+                    Contact
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="mb-4 font-semibold">Legal</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/privacy" className="hover:text-foreground">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/terms" className="hover:text-foreground">
+                    Terms
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-12 border-t border-border pt-8 text-center text-sm text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} InspectOS. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </>
   );
 }

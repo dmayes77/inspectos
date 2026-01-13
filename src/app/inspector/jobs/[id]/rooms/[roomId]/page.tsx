@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,14 +111,14 @@ export default function RoomInspectionPage() {
 
   if (!inspection || !room) {
     return (
-      <InspectorShell title="Not Found" user={mockInspector} showBackButton onBack={() => router.back()}>
+      <AppShell title="Not Found" user={mockInspector} showBackButton onBack={() => router.back()}>
         <div className="flex flex-col items-center justify-center p-12">
           <p className="text-lg font-medium">Room not found</p>
           <Button variant="outline" className="mt-4" onClick={() => router.back()}>
             Go Back
           </Button>
         </div>
-      </InspectorShell>
+      </AppShell>
     );
   }
 
@@ -161,7 +161,7 @@ export default function RoomInspectionPage() {
   };
 
   return (
-    <InspectorShell
+    <AppShell
       title={room.name}
       user={mockInspector}
       showBackButton
@@ -388,6 +388,6 @@ export default function RoomInspectionPage() {
           </div>
         </div>
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { InspectorShell } from "@/components/layout/inspector-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export default function JobsPage() {
   const totalToday = todayJobs.length;
 
   return (
-    <InspectorShell
+    <AppShell
       title="Jobs"
       user={mockInspector}
       headerActions={
@@ -196,6 +196,6 @@ export default function JobsPage() {
           )}
         </div>
       </div>
-    </InspectorShell>
+    </AppShell>
   );
 }
