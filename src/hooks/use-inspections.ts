@@ -18,7 +18,7 @@ export type Inspection = {
   propertyType?: string;
   bedrooms?: number;
   bathrooms?: number;
-  stories?: number;
+  stories?: string;
   foundation?: string;
   garage?: string;
   pool?: boolean;
