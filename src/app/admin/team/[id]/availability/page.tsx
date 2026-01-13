@@ -39,7 +39,7 @@ const teamMembers = [
   { id: "6", teamMemberId: "ACM-1006", name: "Tom Anderson", role: "ADMIN" },
 ];
 
-let timeOffRequests = [
+const timeOffRequests = [
   {
     id: "1",
     type: "vacation",

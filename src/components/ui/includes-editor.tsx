@@ -55,7 +55,7 @@ export function IncludesEditor({ includes, onChange }: IncludesEditorProps) {
 
   return (
     <div className="space-y-3">
-      <Label>What's Included</Label>
+      <Label>What&apos;s Included</Label>
 
       {/* List of items */}
       <div className="space-y-2">
@@ -109,7 +109,7 @@ export function IncludesEditor({ includes, onChange }: IncludesEditorProps) {
 
       {includes.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          No items yet. Add what's included in this service or package.
+          No items yet. Add what&apos;s included in this service or package.
         </p>
       )}
     </div>

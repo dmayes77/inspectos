@@ -66,7 +66,7 @@ export default function ServiceDetailPage() {
           </Button>
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Service Not Found</h1>
-            <p className="text-muted-foreground">The service you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground">The service you&apos;re looking for doesn&apos;t exist.</p>
           </div>
         </div>
       </AdminShell>
@@ -116,7 +116,7 @@ export default function ServiceDetailPage() {
       const svc = allServices.find((s) => s.serviceId === id);
       return sum + (svc?.price || 0);
     }, 0);
-    const packagePrice = parseFloat(form.price as any) || 0;
+    const packagePrice = parseFloat(String(form.price)) || 0;
     const discount = totalIndividualPrice - packagePrice;
     return { totalIndividualPrice, packagePrice, discount };
   };
@@ -141,7 +141,7 @@ export default function ServiceDetailPage() {
           setEditing(false);
           setDiscountPercent(0);
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
           toast.error(error.message || "Failed to update service");
         },
       }
@@ -155,7 +155,7 @@ export default function ServiceDetailPage() {
         setDeleteDialogOpen(false);
         router.push("/admin/services");
       },
-      onError: (error: any) => {
+      onError: (error: Error) => {
         toast.error(error.message || "Failed to delete service");
         setDeleteDialogOpen(false);
       },
@@ -274,7 +274,7 @@ export default function ServiceDetailPage() {
           {service.includes && service.includes.length > 0 && (
             <Card className="md:col-span-2">
               <CardHeader>
-                <CardTitle>What's Included</CardTitle>
+                <CardTitle>What&apos;s Included</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="grid gap-2 md:grid-cols-2">
