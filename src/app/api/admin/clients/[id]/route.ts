@@ -3,9 +3,9 @@ import { getClientById, updateClient, deleteClient } from "@/lib/mock/clients";
 
 export async function GET(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { params } = await Promise.resolve(context);
+  const params = await context.params;
   const client = getClientById(params.id);
   if (!client) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -15,10 +15,10 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { params } = await Promise.resolve(context);
+    const params = await context.params;
     const body = await request.json();
     const updated = updateClient(params.id, body);
     if (!updated) {
@@ -32,9 +32,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { params } = await Promise.resolve(context);
+  const params = await context.params;
   const deleted = deleteClient(params.id);
   if (!deleted) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

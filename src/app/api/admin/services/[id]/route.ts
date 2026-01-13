@@ -7,9 +7,10 @@ import {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const body = await request.json();
 
     // Validation: If updating to a package, ensure services exist
@@ -63,8 +64,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const params = await context.params;
   const ok = deleteService(params.id);
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

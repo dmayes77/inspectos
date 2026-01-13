@@ -3,9 +3,9 @@ import { getInspectionById, updateInspection, deleteInspection } from "@/lib/moc
 
 export async function GET(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { params } = await Promise.resolve(context);
+  const params = await context.params;
   const inspection = getInspectionById(params.id);
   if (!inspection) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -15,10 +15,10 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { params } = await Promise.resolve(context);
+    const params = await context.params;
     const body = await request.json();
     const updated = updateInspection(params.id, body);
     if (!updated) {
@@ -32,9 +32,9 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { params } = await Promise.resolve(context);
+  const params = await context.params;
   const deleted = deleteInspection(params.id);
   if (!deleted) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
