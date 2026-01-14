@@ -43,6 +43,13 @@ export function AuthRedirect({
       try {
         // Check if we're in a native app
         const isNative = Capacitor.isNativePlatform();
+        const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+
+        if (bypassAuth) {
+          router.replace("/app-gate");
+          setShouldRender(false);
+          return;
+        }
 
         // Check if user is authenticated
         const response = await fetch("/api/auth/session");
@@ -64,11 +71,11 @@ export function AuthRedirect({
           setShouldRender(false);
         } else {
           // User is not authenticated
-          if (requireAuth || isNative) {
+          if (requireAuth || isNative || bypassAuth) {
             // Redirect to login if:
-            // 1. Auth is required for this page, OR
-            // 2. We're in the native app (native app users should never see marketing pages)
-            router.replace("/login");
+            // 1. Auth is required for this page
+            // 2. In native app, route to demo gate instead of marketing
+            router.replace(isNative || bypassAuth ? "/app-gate" : "/login");
             setShouldRender(false);
           } else {
             // Allow access to public page (web only)
@@ -79,8 +86,9 @@ export function AuthRedirect({
         console.error("Auth check failed:", error);
         // On error, redirect to login if auth required or in native app
         const isNative = Capacitor.isNativePlatform();
-        if (requireAuth || isNative) {
-          router.replace("/login");
+        const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+        if (requireAuth || isNative || bypassAuth) {
+          router.replace(isNative || bypassAuth ? "/app-gate" : "/login");
           setShouldRender(false);
         } else {
           setShouldRender(true);

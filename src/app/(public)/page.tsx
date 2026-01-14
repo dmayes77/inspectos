@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AuthRedirect } from "@/components/auth-redirect";
 import {
   CheckCircle,
   Camera,
@@ -18,7 +19,8 @@ import {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <AuthRedirect>
+      <div className="min-h-screen bg-background">
         {/* Navigation */}
       <header className="fixed top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
@@ -471,7 +473,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
     </div>
+    </AuthRedirect>
   );
 }

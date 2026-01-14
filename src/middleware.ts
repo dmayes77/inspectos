@@ -24,6 +24,7 @@ export async function middleware(request: NextRequest) {
 
   const publicRoutes = [
     "/",
+    "/app-gate",
     "/pricing",
     "/about",
     "/contact",
