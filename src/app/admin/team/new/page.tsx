@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,13 +110,10 @@ export default function NewTeamMemberPage() {
           </Link>
         </Button>
 
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Add Team Member</h1>
-          <p className="text-muted-foreground">
-            Create a new team member account with role and permissions
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Add Team Member"
+          description="Create a new team member account with role and permissions"
+        />
 
         {/* Next ID Alert */}
         <Alert>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -197,10 +198,10 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
           )}
         </Button>
 
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{inspection ? "Edit Inspection" : "New Inspection"}</h1>
-          <p className="text-muted-foreground">{inspection ? `Update inspection ${inspection.inspectionId}` : "Create a new inspection appointment"}</p>
-        </div>
+        <AdminPageHeader
+          title={inspection ? "Edit Inspection" : "New Inspection"}
+          description={inspection ? `Update inspection ${inspection.inspectionId}` : "Create a new inspection appointment"}
+        />
 
         {/* Form */}
         <form onSubmit={handleSubmit}>

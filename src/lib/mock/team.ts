@@ -5,6 +5,7 @@ import { v4 as uuidv4Node } from "uuid";
 export type TeamMember = {
   id: string;
   teamMemberId: string;
+  avatarUrl?: string;
   name: string;
   email: string;
   phone: string;
@@ -30,7 +31,7 @@ export const teamMembers: TeamMember[] = [
     location: "Austin, TX",
     inspections: 12,
     rating: 4.9,
-    certifications: ["TREC #12345"],
+    certifications: ["License #12345"],
     joinedDate: "Jan 2022",
     customPermissions: [],
   },
@@ -45,7 +46,7 @@ export const teamMembers: TeamMember[] = [
     location: "Austin, TX",
     inspections: 8,
     rating: 4.7,
-    certifications: ["TREC #23456"],
+    certifications: ["License #23456"],
     joinedDate: "Feb 2022",
     customPermissions: [],
   },
@@ -60,7 +61,7 @@ export const teamMembers: TeamMember[] = [
     location: "Round Rock, TX",
     inspections: 7,
     rating: 4.8,
-    certifications: ["TREC #34567"],
+    certifications: ["License #34567"],
     joinedDate: "Mar 2022",
     customPermissions: [],
   },
@@ -75,7 +76,7 @@ export const teamMembers: TeamMember[] = [
     location: "Austin, TX",
     inspections: 6,
     rating: 4.6,
-    certifications: ["TREC #45678"],
+    certifications: ["License #45678"],
     joinedDate: "Apr 2022",
     customPermissions: [],
   },
@@ -168,6 +169,7 @@ export function createTeamMember(data: Partial<TeamMember>) {
   const member: TeamMember = {
     id,
     teamMemberId,
+    avatarUrl: data.avatarUrl,
     name: data.name || "",
     email: data.email || "",
     phone: data.phone || "",

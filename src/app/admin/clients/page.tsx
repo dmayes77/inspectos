@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Mail, Phone, ClipboardList } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Mail, Phone, ClipboardList, Search } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
 import { useClients, type Client } from "@/hooks/use-clients";
@@ -92,46 +95,65 @@ const columns: ColumnDef<Client>[] = [
 
 export default function ClientsPage() {
   const { data: clientList = [], isLoading } = useClients();
+  const [mobileQuery, setMobileQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+
+  const filteredMobile = clientList.filter((client) => {
+    const matchesType = typeFilter === "all" || client.type === typeFilter;
+    if (!matchesType) return false;
+    if (!mobileQuery.trim()) return true;
+    const query = mobileQuery.toLowerCase();
+    return (
+      client.name.toLowerCase().includes(query) ||
+      client.email.toLowerCase().includes(query)
+    );
+  });
+
+  const typeOptions = [
+    { value: "all", label: "All" },
+    { value: "Homebuyer", label: "Homebuyer" },
+    { value: "Real Estate Agent", label: "Agent" },
+    { value: "Seller", label: "Seller" },
+  ];
 
   return (
     <AdminShell user={mockUser}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Clients</h1>
-            <p className="text-muted-foreground">Manage your client relationships</p>
-          </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Client
-          </Button>
-        </div>
+        <AdminPageHeader
+          title="Clients"
+          description="Manage your client relationships"
+          actions={
+            <Button className="sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Client
+            </Button>
+          }
+        />
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{clientList.length}</div>
-              <p className="text-sm text-muted-foreground">Total Clients</p>
+            <CardContent className="pt-4">
+              <div className="text-xl font-bold sm:text-2xl">{clientList.length}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Total Clients</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{clientList.filter((c) => c.type === "Real Estate Agent").length}</div>
-              <p className="text-sm text-muted-foreground">Real Estate Agents</p>
+            <CardContent className="pt-4">
+              <div className="text-xl font-bold sm:text-2xl">{clientList.filter((c) => c.type === "Real Estate Agent").length}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Real Estate Agents</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{clientList.reduce((acc, c) => acc + c.inspections, 0)}</div>
-              <p className="text-sm text-muted-foreground">Total Inspections</p>
+            <CardContent className="pt-4">
+              <div className="text-xl font-bold sm:text-2xl">{clientList.reduce((acc, c) => acc + c.inspections, 0)}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Total Inspections</p>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">${clientList.reduce((acc, c) => acc + c.totalSpent, 0).toLocaleString()}</div>
-              <p className="text-sm text-muted-foreground">Total Revenue</p>
+            <CardContent className="pt-4">
+              <div className="text-xl font-bold sm:text-2xl">${clientList.reduce((acc, c) => acc + c.totalSpent, 0).toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground sm:text-sm">Total Revenue</p>
             </CardContent>
           </Card>
         </div>
@@ -146,7 +168,72 @@ export default function ClientsPage() {
             {isLoading ? (
               <div className="py-12 text-center text-muted-foreground">Loading clients...</div>
             ) : (
-              <DataTable columns={columns} data={clientList} searchKey="name" searchPlaceholder="Search by client name..." />
+              <>
+                <div className="md:hidden space-y-4">
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={mobileQuery}
+                        onChange={(event) => setMobileQuery(event.target.value)}
+                        placeholder="Search clients..."
+                        className="pl-9"
+                      />
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {typeOptions.map((option) => (
+                        <Button
+                          key={option.value}
+                          type="button"
+                          variant={typeFilter === option.value ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setTypeFilter(option.value)}
+                        >
+                          {option.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  {filteredMobile.length === 0 ? (
+                    <div className="py-6 text-center text-sm text-muted-foreground">
+                      No clients found.
+                    </div>
+                  ) : (
+                    filteredMobile.map((client) => (
+                      <Link
+                        key={client.clientId}
+                        href={`/admin/clients/${client.clientId}`}
+                        className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold">{client.name}</p>
+                            <p className="text-xs text-muted-foreground">{client.email}</p>
+                          </div>
+                          <div className="shrink-0">{getTypeBadge(client.type)}</div>
+                        </div>
+                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span className="truncate">{client.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5" />
+                            <span>{client.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="h-3.5 w-3.5" />
+                            <span>{client.inspections} inspections</span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+                <div className="hidden md:block">
+                  <DataTable columns={columns} data={clientList} searchKey="name" searchPlaceholder="Search by client name..." />
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

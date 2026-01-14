@@ -4,7 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +71,7 @@ export default function EditTeamMemberPage() {
   const [selectedCertifications, setSelectedCertifications] = useState<string[]>(member?.certifications || []);
   const [customPermissions, setCustomPermissions] = useState<string[]>(member?.customPermissions || []);
   const [isSaving, setIsSaving] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(member?.avatarUrl || "");
 
   // Get role-based permissions
   const roleBasedPermissions = getPermissionsForRole(selectedRole);
@@ -96,8 +99,21 @@ export default function EditTeamMemberPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
+    let avatarUrl = avatarPreview;
+    if (avatarPreview && avatarPreview.startsWith("data:")) {
+      const response = await fetch(`/api/admin/team/${member.teamMemberId}/avatar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: avatarPreview }),
+      });
+      if (response.ok) {
+        const json = await response.json();
+        avatarUrl = json?.data?.avatarUrl || avatarPreview;
+      }
+    }
     await updateMember.mutateAsync({
       teamMemberId: member.teamMemberId,
+      avatarUrl,
       name: `${firstName} ${lastName}`.trim(),
       email: member.email,
       phone: member.phone,
@@ -115,6 +131,17 @@ export default function EditTeamMemberPage() {
 
   const toggleCertification = (cert: string) => {
     setSelectedCertifications((prev) => (prev.includes(cert) ? prev.filter((c) => c !== cert) : [...prev, cert]));
+  };
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      setAvatarPreview(result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const togglePermission = (permissionId: string) => {
@@ -150,13 +177,10 @@ export default function EditTeamMemberPage() {
           </Link>
         </Button>
 
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Edit {firstName} {lastName}
-          </h1>
-          <p className="text-muted-foreground">Update team member information and permissions</p>
-        </div>
+        <AdminPageHeader
+          title={`Edit ${firstName} ${lastName}`}
+          description="Update team member information and permissions"
+        />
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
@@ -166,10 +190,27 @@ export default function EditTeamMemberPage() {
               <CardDescription>Personal details and contact information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={avatarPreview} />
+                  <AvatarFallback className="bg-primary/10 text-lg text-primary">
+                    {`${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="space-y-2 text-center sm:text-left">
+                  <Label htmlFor="avatar" className="block text-center sm:text-left">Profile Photo</Label>
+                  <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarChange} />
+                  <p className="text-xs text-muted-foreground">PNG or JPG. Max 2MB (mock upload).</p>
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="teamMemberId">Team Member ID</Label>
-                <Input id="teamMemberId" defaultValue={member.teamMemberId} disabled className="bg-muted" />
-                <p className="text-xs text-muted-foreground">This ID is permanently assigned and cannot be changed</p>
+                <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
+                  <span className="font-medium">Team Member ID:</span>
+                  <span className="font-mono">{member.teamMemberId}</span>
+                </div>
+                <p className="text-center text-xs text-muted-foreground sm:text-left">
+                  This ID is permanently assigned and cannot be changed
+                </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -295,7 +336,7 @@ export default function EditTeamMemberPage() {
               {Object.entries(permissionCategories).map(([categoryKey, category]) => (
                 <div key={categoryKey}>
                   <h4 className="font-medium mb-3 flex items-center gap-2">{category.label}</h4>
-                  <div className="space-y-3 pl-4">
+                  <div className="space-y-3 pl-0 sm:pl-4">
                     {category.permissions.map((permission) => {
                       const isEnabled = isPermissionEnabled(permission.id);
                       const isFromRole = isPermissionFromRole(permission.id);
@@ -333,11 +374,11 @@ export default function EditTeamMemberPage() {
           </Card>
 
           {/* Actions */}
-          <div className="flex items-center justify-between">
-            <Button type="button" variant="outline" asChild>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <Button type="button" variant="outline" className="w-full sm:w-auto" asChild>
               <Link href={`/admin/team/${params.id}`}>Cancel</Link>
             </Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={isSaving}>
               <Save className="mr-2 h-4 w-4" />
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
+import { getTeamMembers, type TeamMember } from "@/lib/mock/team";
 
 const mockUser = {
   name: "Sarah Johnson",
@@ -30,14 +32,7 @@ const mockUser = {
   companyName: "Acme Home Inspections",
 };
 
-const teamMembers = [
-  { id: "1", teamMemberId: "ACM-1001", name: "Sarah Johnson", role: "OWNER" },
-  { id: "2", teamMemberId: "ACM-1002", name: "Mike Richardson", role: "INSPECTOR" },
-  { id: "3", teamMemberId: "ACM-1003", name: "James Wilson", role: "INSPECTOR" },
-  { id: "4", teamMemberId: "ACM-1004", name: "David Chen", role: "INSPECTOR" },
-  { id: "5", teamMemberId: "ACM-1005", name: "Jennifer Martinez", role: "OFFICE_STAFF" },
-  { id: "6", teamMemberId: "ACM-1006", name: "Tom Anderson", role: "ADMIN" },
-];
+const teamMembers = getTeamMembers();
 
 const timeOffRequests = [
   {
@@ -129,7 +124,7 @@ function getTypeLabel(type: string) {
 
 export default function TeamMemberAvailabilityPage() {
   const params = useParams();
-  const member = teamMembers.find((m) => m.id === params.id);
+  const member = teamMembers.find((m: TeamMember) => m.teamMemberId === params.id || m.id === params.id);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [addTimeOffOpen, setAddTimeOffOpen] = useState(false);
@@ -175,35 +170,37 @@ export default function TeamMemberAvailabilityPage() {
       <div className="space-y-6">
         {/* Back Button */}
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/admin/team/${params.id}`}>
+          <Link href={`/admin/team/${member.teamMemberId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Profile
           </Link>
         </Button>
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="" />
-              <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                {member.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">{member.name}&apos;s Availability</h1>
-              <p className="text-muted-foreground">Manage time off and working hours</p>
+        <AdminPageHeader
+          title={
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={member.avatarUrl} />
+                <AvatarFallback className="bg-primary/10 text-xl text-primary">
+                  {member.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{member.name}&apos;s Availability</h1>
+                <p className="text-muted-foreground">Manage time off and working hours</p>
+              </div>
             </div>
-          </div>
-
-          <Button onClick={() => setAddTimeOffOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Time Off
-          </Button>
-        </div>
+          }
+          actions={
+            <Button onClick={() => setAddTimeOffOpen(true)} className="sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Time Off
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-4">

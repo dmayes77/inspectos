@@ -1,23 +1,15 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  ClipboardList,
-  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
   Bell,
   Search,
-  HardHat,
-  Building2,
-  Flag,
-  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/brand/logo";
@@ -33,6 +25,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  companyMainNav,
+  companySystemNav,
+  platformMainNav,
+  platformSystemNav,
+  type NavItem,
+} from "@/components/layout/admin-nav";
+import { MobileAdminShell } from "@/components/layout/mobile-admin-shell";
 
 interface AdminShellProps {
   children: ReactNode;
@@ -43,32 +43,6 @@ interface AdminShellProps {
     companyName?: string;
   };
 }
-
-// Company admin navigation
-const companyMainNav = [
-  { href: "/admin/overview", icon: LayoutDashboard, label: "Overview" },
-  { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
-  { href: "/admin/services", icon: ClipboardList, label: "Services" },
-  { href: "/admin/team", icon: HardHat, label: "Team" },
-  { href: "/admin/clients", icon: Users, label: "Clients" },
-  { href: "/admin/templates", icon: FileText, label: "Templates" },
-];
-
-const companySystemNav = [
-  { href: "/admin/settings", icon: Settings, label: "Settings" },
-];
-
-// Platform admin navigation
-const platformMainNav = [
-  { href: "/platform", icon: LayoutDashboard, label: "Overview" },
-  { href: "/platform/companies", icon: Building2, label: "Companies" },
-  { href: "/platform/features", icon: Flag, label: "Features" },
-  { href: "/platform/pricing", icon: DollarSign, label: "Pricing" },
-];
-
-const platformSystemNav = [
-  { href: "/platform/content", icon: FileText, label: "Content" },
-];
 
 /**
  * AdminShell - Desktop-dense admin interface
@@ -86,6 +60,7 @@ const platformSystemNav = [
 export function AdminShell({ children, user }: AdminShellProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Auto-detect platform admin based on route
   const isPlatformAdmin = pathname.startsWith('/platform');
@@ -100,15 +75,23 @@ export function AdminShell({ children, user }: AdminShellProps) {
   // Select header context text
   const contextLabel = isPlatformAdmin ? "Platform Admin" : user?.companyName;
 
-  const NavLink = ({
-    href,
-    icon: Icon,
-    label,
-  }: {
-    href: string;
-    icon: typeof LayoutDashboard;
-    label: string;
-  }) => {
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    if (media.addEventListener) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
+
+  if (isMobile) {
+    return <MobileAdminShell user={user}>{children}</MobileAdminShell>;
+  }
+
+  const NavLink = ({ href, icon: Icon, label }: NavItem) => {
     const isActive = pathname === href || pathname.startsWith(`${href}/`);
     return (
       <Link

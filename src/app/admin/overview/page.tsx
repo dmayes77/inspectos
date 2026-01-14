@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -93,22 +94,21 @@ export default function OverviewPage() {
   return (
     <AdminShell user={mockUser}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {mockUser.name.split(" ")[0]}. Here&apos;s what&apos;s happening today.</p>
-          </div>
-          <Button asChild>
-            <Link href="/admin/inspections/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Inspection
-            </Link>
-          </Button>
-        </div>
+        <AdminPageHeader
+          title="Dashboard"
+          description={`Welcome back, ${mockUser.name.split(" ")[0]}. Here's what's happening today.`}
+          actions={
+            <Button asChild className="sm:w-auto">
+              <Link href="/admin/inspections/new">
+                <Plus className="mr-2 h-4 w-4" />
+                New Inspection
+              </Link>
+            </Button>
+          }
+        />
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((stat) => (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -116,8 +116,8 @@ export default function OverviewPage() {
                 <stat.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-xl font-bold sm:text-2xl">{stat.value}</div>
+                <p className="text-xs text-muted-foreground sm:text-sm">
                   <span className={stat.changeType === "positive" ? "text-green-600" : "text-red-600"}>{stat.change}</span> from last week
                 </p>
               </CardContent>

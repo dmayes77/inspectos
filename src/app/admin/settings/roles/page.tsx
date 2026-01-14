@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,21 +51,18 @@ export default function RolesPage() {
   return (
     <AdminShell user={mockUser}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Roles & Permissions</h1>
-            <p className="text-muted-foreground">
-              Manage roles and their default permissions
-            </p>
-          </div>
-          <Button asChild>
-            <Link href="/admin/settings/roles/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Custom Role
-            </Link>
-          </Button>
-        </div>
+        <AdminPageHeader
+          title="Roles & Permissions"
+          description="Manage roles and their default permissions"
+          actions={
+            <Button asChild className="sm:w-auto">
+              <Link href="/admin/settings/roles/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Create Custom Role
+              </Link>
+            </Button>
+          }
+        />
 
         {/* System Roles */}
         <div>

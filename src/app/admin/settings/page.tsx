@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,16 +27,13 @@ export default function SettingsPage() {
   return (
     <AdminShell user={mockUser}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your company settings and preferences
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Settings"
+          description="Manage your company settings and preferences"
+        />
 
         <Tabs defaultValue="company" className="space-y-6">
-          <TabsList>
+          <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:justify-start">
             <TabsTrigger value="company" className="gap-2">
               <Building className="h-4 w-4" />
               Company

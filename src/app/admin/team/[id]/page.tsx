@@ -28,6 +28,7 @@ const mockUser = {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -124,72 +125,84 @@ export default function TeamMemberDetailPage() {
           </Link>
         </Button>
 
-        {/* Page Header - Restored with all details */}
-        <div className="space-y-4">
-          <div className="flex items-start gap-6">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src="" />
-              <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                {member.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-semibold">{member.name}</h1>
-                {getRoleBadge(member.role)}
-                {getStatusBadge(member.status)}
-              </div>
-              <p className="text-sm text-muted-foreground mb-2">ID: {member.teamMemberId}</p>
-              <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="font-medium">Joined</span> {member.joinedDate}
-                </span>
-              </div>
-              {member.role && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  <span className="font-medium">Role:</span> {getRoleDescription(member.role)}
+        <AdminPageHeader
+          title={
+            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
+              <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
+                <AvatarImage src={member.avatarUrl} />
+                <AvatarFallback className="bg-primary/10 text-xl text-primary sm:text-2xl">
+                  {member.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
+                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{member.name}</h1>
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                    {getRoleBadge(member.role)}
+                    {getStatusBadge(member.status)}
+                  </div>
                 </div>
-              )}
+                <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
+                  <span className="font-medium">Team Member ID:</span>
+                  <span className="font-mono">{member.teamMemberId}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
+                  <span className="font-medium">Joined</span>
+                  <span>{member.joinedDate}</span>
+                </div>
+                {member.role ? (
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    <span className="font-medium">Role:</span> {getRoleDescription(member.role)}
+                  </div>
+                ) : null}
+                {member.certifications.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground sm:justify-start">
+                    <span className="font-medium">License:</span>
+                    <span>{member.certifications.join(", ")}</span>
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
-          <div className="flex gap-2 mt-4">
-            {(member.role === "INSPECTOR" || member.role === "OWNER" || member.role === "ADMIN") && (
-              <Button variant="outline" asChild>
-                <Link href={`/admin/team/${member.id}/schedule`}>
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  Schedule
+          }
+          actions={
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              {(member.role === "INSPECTOR" || member.role === "OWNER" || member.role === "ADMIN") ? (
+                <Button variant="outline" className="w-full sm:w-auto" asChild>
+                  <Link href={`/admin/team/${member.teamMemberId}/schedule`}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Schedule
+                  </Link>
+                </Button>
+              ) : null}
+              <Button variant="outline" className="w-full sm:w-auto" asChild>
+                <Link href={`/admin/team/${member.teamMemberId}/availability`}>
+                  <Star className="mr-2 h-4 w-4" />
+                  Availability
                 </Link>
               </Button>
-            )}
-            <Button variant="outline" asChild>
-              <Link href={`/admin/team/${member.id}/availability`}>
-                <Star className="mr-2 h-4 w-4" />
-                Availability
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href={`/admin/team/${member.teamMemberId}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
-            <Button variant="outline">
-              {/* Deactivate/Activate logic placeholder */}
-              {member.status === "active" ? "Deactivate" : "Activate"}
-            </Button>
-            <Button
-              variant="outline"
-              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          </div>
-        </div>
+              <Button className="w-full sm:w-auto" asChild>
+                <Link href={`/admin/team/${member.teamMemberId}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full sm:w-auto">
+                {member.status === "active" ? "Deactivate" : "Activate"}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full text-destructive hover:bg-destructive hover:text-destructive-foreground sm:w-auto"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          }
+        />
 
         {/* Details Row: Contact Info & Certifications */}
         <div className="flex flex-col md:flex-row gap-6">

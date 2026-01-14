@@ -12,6 +12,7 @@ import { getTeamMembers, createTeamMember, updateTeamMember, deleteTeamMember } 
 export type TeamMember = {
   id: string;
   teamMemberId: string;
+  avatarUrl?: string;
   name: string;
   email: string;
   phone: string;

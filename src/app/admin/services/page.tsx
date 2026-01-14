@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useServices, useCreateService, useUpdateService, useDeleteService, Service } from "@/hooks/use-services";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -159,46 +160,45 @@ export default function ServicesAdminPage() {
   return (
     <AdminShell user={mockUser}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Services & Packages</h1>
-            <p className="text-muted-foreground">Define individual services and create bundled packages</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => {
-                setShowServiceForm(true);
-                setShowPackageForm(false);
-                setForm({ isPackage: false });
-                setEditingId(null);
-                setDiscountPercent(0);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Service
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (individualServices.length === 0) {
-                  toast.error("Create at least one service before creating a package");
-                  return;
-                }
-                setShowPackageForm(true);
-                setShowServiceForm(false);
-                setForm({ isPackage: true });
-                setEditingId(null);
-                setSelectedServiceIds([]);
-                setDiscountPercent(0);
-              }}
-              disabled={individualServices.length === 0}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Package
-            </Button>
-          </div>
-        </div>
+        <AdminPageHeader
+          title="Services & Packages"
+          description="Define individual services and create bundled packages"
+          actions={
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+              <Button
+                onClick={() => {
+                  setShowServiceForm(true);
+                  setShowPackageForm(false);
+                  setForm({ isPackage: false });
+                  setEditingId(null);
+                  setDiscountPercent(0);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Service
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  if (individualServices.length === 0) {
+                    toast.error("Create at least one service before creating a package");
+                    return;
+                  }
+                  setShowPackageForm(true);
+                  setShowServiceForm(false);
+                  setForm({ isPackage: true });
+                  setEditingId(null);
+                  setSelectedServiceIds([]);
+                  setDiscountPercent(0);
+                }}
+                disabled={individualServices.length === 0}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Package
+              </Button>
+            </div>
+          }
+        />
 
         {individualServices.length === 0 && !showServiceForm && (
           <Card className="bg-muted/50">

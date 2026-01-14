@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,13 +132,10 @@ export default function NewRolePage() {
           </Link>
         </Button>
 
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Create Custom Role</h1>
-          <p className="text-muted-foreground">
-            Define a new role with specific permissions for your team
-          </p>
-        </div>
+        <AdminPageHeader
+          title="Create Custom Role"
+          description="Define a new role with specific permissions for your team"
+        />
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Role Templates */}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,11 +68,10 @@ export default function NewClientPage() {
           </Button>
         </div>
 
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">New Client</h1>
-          <p className="text-muted-foreground">Add a new client to your database</p>
-        </div>
+        <AdminPageHeader
+          title="New Client"
+          description="Add a new client to your database"
+        />
 
         {/* Create Form */}
         <Card>

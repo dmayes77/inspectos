@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,41 +133,43 @@ export default function RoleDetailPage() {
           </Link>
         </Button>
 
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-3xl font-semibold tracking-tight">{role.name}</h1>
-                {role.isSystem && (
-                  <Badge variant="secondary" className="text-xs">
-                    <Lock className="mr-1 h-3 w-3" />
-                    System Role
-                  </Badge>
-                )}
+        <AdminPageHeader
+          title={
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
+                <Shield className="h-8 w-8 text-primary" />
               </div>
-              <p className="text-muted-foreground">{role.description}</p>
-              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4" />
-                <span>{role.memberCount} team {role.memberCount === 1 ? 'member' : 'members'} with this role</span>
+              <div>
+                <div className="mb-1 flex items-center gap-3">
+                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{role.name}</h1>
+                  {role.isSystem ? (
+                    <Badge variant="secondary" className="text-xs">
+                      <Lock className="mr-1 h-3 w-3" />
+                      System Role
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="text-muted-foreground">{role.description}</p>
+                <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>{role.memberCount} team {role.memberCount === 1 ? "member" : "members"} with this role</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          {!role.isSystem && (
-            <Button
-              variant="outline"
-              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Delete Role
-            </Button>
-          )}
-        </div>
+          }
+          actions={
+            !role.isSystem ? (
+              <Button
+                variant="outline"
+                className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete Role
+              </Button>
+            ) : null
+          }
+        />
 
         {/* System Role Warning */}
         {role.isSystem && (

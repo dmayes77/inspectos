@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useServices, useUpdateService, useDeleteService, Service } from "@/hooks/use-services";
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,30 +176,31 @@ export default function ServiceDetailPage() {
           </Link>
         </Button>
 
-        {/* Page Header */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl font-semibold flex items-center gap-2">
+        <AdminPageHeader
+          title={
+            <span className="flex items-center gap-2">
               {service.name}
-              {service.isPackage && (
+              {service.isPackage ? (
                 <Badge variant="secondary">
-                  <Package className="h-3 w-3 mr-1" />
+                  <Package className="mr-1 h-3 w-3" />
                   Package
                 </Badge>
-              )}
-            </h1>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setEditing(true); setDiscountPercent(0); }}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          </div>
-        </div>
+              ) : null}
+            </span>
+          }
+          actions={
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+              <Button variant="outline" onClick={() => { setEditing(true); setDiscountPercent(0); }}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          }
+        />
 
         {/* Details Grid */}
         <div className="grid gap-6 md:grid-cols-2">

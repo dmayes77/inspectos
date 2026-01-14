@@ -1,4 +1,5 @@
 import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,17 +92,16 @@ export default function TemplatesPage() {
   return (
     <AdminShell user={mockUser}>
       <div className="space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
-            <p className="text-muted-foreground">Manage inspection checklists, agreements, and report templates</p>
-          </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            New Template
-          </Button>
-        </div>
+        <AdminPageHeader
+          title="Templates"
+          description="Manage inspection checklists, agreements, and report templates"
+          actions={
+            <Button className="sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              New Template
+            </Button>
+          }
+        />
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
