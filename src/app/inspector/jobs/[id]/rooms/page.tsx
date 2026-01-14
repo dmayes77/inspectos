@@ -228,10 +228,10 @@ export default function RoomsListPage() {
         </div>
       }
     >
-      <div className="p-6 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-6 max-w-4xl space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {/* Progress Summary */}
         <Card>
-          <CardContent className="p-5">
+          <CardContent className="p-4 sm:p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground">Overall Progress</p>
@@ -243,7 +243,7 @@ export default function RoomsListPage() {
               </div>
             </div>
             <Progress value={progressPercent} className="h-2" />
-            <div className="flex items-center gap-6 mt-4 text-sm">
+            <div className="flex flex-wrap items-center gap-4 mt-4 text-sm">
               <div className="flex items-center gap-2">
                 <Camera className="h-4 w-4 text-muted-foreground" />
                 <span>{totalPhotos} photos</span>
@@ -261,7 +261,7 @@ export default function RoomsListPage() {
         {/* Property Address */}
         <div className="text-center py-2">
           <p className="text-sm text-muted-foreground">Inspecting</p>
-          <p className="font-medium">{inspection.property.address}</p>
+          <p className="font-medium text-sm sm:text-base">{inspection.property.address}</p>
         </div>
 
         {/* Room Lists by Category */}
@@ -289,7 +289,7 @@ export default function RoomsListPage() {
         {/* Complete Inspection Button */}
         {progressPercent >= 80 && (
           <div className="sticky bottom-0 pt-4 pb-4 bg-gradient-to-t from-background via-background to-transparent">
-            <Button size="lg" className="w-full h-14 text-lg" asChild>
+            <Button size="lg" className="w-full h-12 sm:h-14 sm:text-lg" asChild>
               <Link href={`/inspector/jobs/${inspectionId}/review`}>
                 <CheckCircle className="mr-2 h-5 w-5" />
                 Review & Complete
@@ -411,8 +411,8 @@ function RoomSection({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <span className="text-sm text-muted-foreground">
+        <h2 className="text-base font-semibold sm:text-lg">{title}</h2>
+        <span className="text-xs text-muted-foreground sm:text-sm">
           {completedCount}/{rooms.length}
         </span>
       </div>
@@ -433,7 +433,7 @@ function RoomSection({
                 room.status === "in_progress" && "bg-amber-50 border-amber-200"
               )}>
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                     {/* Status Icon */}
                     <div className="shrink-0">
                       {getStatusIcon(room.status)}
@@ -452,11 +452,11 @@ function RoomSection({
 
                     {/* Room Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <p className="font-medium">{room.name}</p>
                         {getStatusBadge(room.status)}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                         <span>{room.itemsCompleted}/{room.itemsTotal} items</span>
                         {room.photosCount > 0 && (
                           <span className="flex items-center gap-1">
@@ -477,7 +477,7 @@ function RoomSection({
                     </div>
 
                     {/* Chevron */}
-                    <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground self-end sm:self-auto" />
                   </div>
                 </CardContent>
               </Card>

@@ -71,7 +71,7 @@ export default function ProfilePage() {
 
   return (
     <AppShell title="Profile" user={mockInspector}>
-      <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {/* Profile Header */}
         <Card>
           <CardContent className="pt-6">
@@ -107,25 +107,25 @@ export default function ProfilePage() {
         </Card>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Card>
             <CardContent className="pt-4 text-center">
               <FileText className="h-5 w-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold">{inspectorProfile.stats.totalInspections.toLocaleString()}</p>
+              <p className="text-xl font-bold sm:text-2xl">{inspectorProfile.stats.totalInspections.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Total Jobs</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
               <Calendar className="h-5 w-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold">{inspectorProfile.stats.thisMonth}</p>
+              <p className="text-xl font-bold sm:text-2xl">{inspectorProfile.stats.thisMonth}</p>
               <p className="text-xs text-muted-foreground">This Month</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 text-center">
               <Star className="h-5 w-5 mx-auto mb-1 text-primary" />
-              <p className="text-2xl font-bold">{inspectorProfile.stats.avgRating}</p>
+              <p className="text-xl font-bold sm:text-2xl">{inspectorProfile.stats.avgRating}</p>
               <p className="text-xs text-muted-foreground">Avg Rating</p>
             </CardContent>
           </Card>
@@ -134,7 +134,7 @@ export default function ProfilePage() {
         {/* Contact Info */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-base">Contact Information</CardTitle>
                 <CardDescription className="text-xs mt-1">

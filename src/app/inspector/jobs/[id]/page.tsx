@@ -17,6 +17,7 @@ import {
   Play,
   CheckCircle,
   AlertCircle,
+  MessageSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { getInspectionById, mockInspector } from "@/lib/mock-data";
@@ -71,6 +72,11 @@ export default function JobDetailPage() {
     window.open(`https://maps.apple.com/?daddr=${address}`, "_blank");
   };
 
+  const handleTextClient = () => {
+    impactLight();
+    window.location.href = `sms:${client.phone}`;
+  };
+
   return (
     <AppShell
       title={property.address}
@@ -78,17 +84,17 @@ export default function JobDetailPage() {
       showBackButton
       onBack={() => router.back()}
     >
-      <div className="p-6 max-w-4xl space-y-6">
+      <div className="p-4 sm:p-6 max-w-4xl space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {/* Status Banner */}
         {status === "scheduled" && (
           <Card className="bg-primary text-primary-foreground">
-            <CardContent className="flex items-center justify-between p-5">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div>
                 <p className="text-sm font-medium opacity-90">Scheduled for</p>
                 <p className="text-xl font-semibold">{formatTime(scheduledAt)}</p>
                 <p className="text-sm opacity-90">{formatDate(scheduledAt)}</p>
               </div>
-              <Button size="lg" variant="secondary" className="h-14 px-8 text-lg" onClick={handleStartInspection}>
+              <Button size="lg" variant="secondary" className="h-12 w-full px-6 text-base sm:h-14 sm:w-auto sm:text-lg" onClick={handleStartInspection}>
                 <Play className="mr-2 h-5 w-5" />
                 Start Inspection
               </Button>
@@ -98,12 +104,12 @@ export default function JobDetailPage() {
 
         {status === "in_progress" && (
           <Card className="bg-amber-500 text-white">
-            <CardContent className="flex items-center justify-between p-5">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div>
                 <p className="text-sm font-medium opacity-90">In Progress</p>
                 <p className="text-lg font-semibold">Continue where you left off</p>
               </div>
-              <Button size="lg" variant="secondary" className="h-14 px-8 text-lg" onClick={handleStartInspection}>
+              <Button size="lg" variant="secondary" className="h-12 w-full px-6 text-base sm:h-14 sm:w-auto sm:text-lg" onClick={handleStartInspection}>
                 <Play className="mr-2 h-5 w-5" />
                 Continue
               </Button>
@@ -113,7 +119,7 @@ export default function JobDetailPage() {
 
         {status === "completed" && (
           <Card className="bg-green-600 text-white">
-            <CardContent className="flex items-center justify-between p-5">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-8 w-8" />
                 <div>
@@ -121,7 +127,7 @@ export default function JobDetailPage() {
                   <p className="text-sm opacity-90">Report ready for delivery</p>
                 </div>
               </div>
-              <Button size="lg" variant="secondary" className="h-12 px-6" asChild>
+              <Button size="lg" variant="secondary" className="h-12 w-full px-6 sm:w-auto" asChild>
                 <Link href={`/inspector/jobs/${inspection.id}/review`}>
                   <FileText className="mr-2 h-5 w-5" />
                   View Report
@@ -142,11 +148,11 @@ export default function JobDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="font-semibold text-lg">{property.address}</p>
+                <p className="font-semibold text-base sm:text-lg">{property.address}</p>
                 <p className="text-muted-foreground">{property.city}, {property.state} {property.zipCode}</p>
               </div>
 
-              <Button variant="outline" className="w-full h-12" onClick={handleGetDirections}>
+              <Button variant="outline" className="w-full h-11 sm:h-12" onClick={handleGetDirections}>
                 <Navigation className="mr-2 h-5 w-5" />
                 Get Directions
               </Button>
@@ -204,22 +210,29 @@ export default function JobDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="font-semibold text-lg">{client.name}</p>
+                <p className="font-semibold text-base sm:text-lg">{client.name}</p>
               </div>
 
               <div className="space-y-3">
                 <a
                   href={`tel:${client.phone}`}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors"
+                  className="flex items-center gap-3 rounded-lg border p-3 text-sm hover:bg-muted transition-colors sm:text-base"
                   onClick={() => impactLight()}
                 >
                   <Phone className="h-5 w-5 text-primary" />
                   <span>{client.phone}</span>
                 </a>
+                <button
+                  className="flex w-full items-center gap-3 rounded-lg border p-3 text-left text-sm hover:bg-muted transition-colors sm:text-base"
+                  onClick={handleTextClient}
+                >
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  <span>Text {client.name.split(" ")[0]}</span>
+                </button>
 
                 <a
                   href={`mailto:${client.email}`}
-                  className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted transition-colors"
+                  className="flex items-center gap-3 rounded-lg border p-3 text-sm hover:bg-muted transition-colors sm:text-base"
                   onClick={() => impactLight()}
                 >
                   <Mail className="h-5 w-5 text-primary" />

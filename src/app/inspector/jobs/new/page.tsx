@@ -42,6 +42,14 @@ const steps: { id: Step; title: string; icon: React.ReactNode }[] = [
   { id: "schedule", title: "Schedule", icon: <Calendar className="h-4 w-4" /> },
 ];
 
+const stateOptions = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+];
+
 interface FormData {
   // Client
   clientName: string;
@@ -154,11 +162,17 @@ export default function NewInspectionPage() {
       showBackButton
       onBack={() => router.push("/inspector/jobs")}
     >
-      <div className="p-6 max-w-2xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {/* Progress Steps */}
         <div className="space-y-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Step {currentStepIndex + 1} of {steps.length}
+            </span>
+            <span>{steps[currentStepIndex].title}</span>
+          </div>
           <Progress value={progress} className="h-2" />
-          <div className="flex justify-between">
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:justify-between">
             {steps.map((step, index) => {
               const isActive = step.id === currentStep;
               const isCompleted = index < currentStepIndex;
@@ -174,7 +188,7 @@ export default function NewInspectionPage() {
                   )}
                 >
                   <div className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
+                    "flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors sm:h-10 sm:w-10",
                     isActive && "border-primary bg-primary text-primary-foreground",
                     isCompleted && "border-green-600 bg-green-600 text-white",
                     !isActive && !isCompleted && "border-muted-foreground"
@@ -263,7 +277,7 @@ export default function NewInspectionPage() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="city">City *</Label>
                     <Input
@@ -279,20 +293,21 @@ export default function NewInspectionPage() {
                       <SelectTrigger id="state">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="TX">TX</SelectItem>
-                        <SelectItem value="CA">CA</SelectItem>
-                        <SelectItem value="FL">FL</SelectItem>
-                        <SelectItem value="NY">NY</SelectItem>
-                      </SelectContent>
+                    <SelectContent>
+                      {stateOptions.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="zipCode">ZIP Code *</Label>
-                    <Input
-                      id="zipCode"
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="zipCode">ZIP Code *</Label>
+                      <Input
+                        id="zipCode"
                       placeholder="78701"
                       value={formData.zipCode}
                       onChange={(e) => updateFormData("zipCode", e.target.value)}
@@ -313,7 +328,7 @@ export default function NewInspectionPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="sqft">Sq. Ft.</Label>
                     <Input
@@ -348,7 +363,7 @@ export default function NewInspectionPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="bedrooms">Bedrooms</Label>
                     <Select value={formData.bedrooms} onValueChange={(v) => updateFormData("bedrooms", v)}>
@@ -421,7 +436,7 @@ export default function NewInspectionPage() {
             {/* Schedule Step */}
             {currentStep === "schedule" && (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="date">Date *</Label>
                     <Input
@@ -478,28 +493,30 @@ export default function NewInspectionPage() {
         </Card>
 
         {/* Navigation Buttons */}
-        <div className="flex gap-3">
-          {currentStepIndex > 0 && (
-            <Button variant="outline" size="lg" className="flex-1 h-12" onClick={goPrev}>
+        <div className="sticky bottom-0 z-10 -mx-4 border-t bg-background px-4 py-4 sm:static sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+          <div className="flex items-center gap-3">
+            {currentStepIndex > 0 && (
+            <Button variant="outline" size="lg" className="flex-1 h-14 rounded-xl" onClick={goPrev}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-          )}
-          {currentStepIndex < steps.length - 1 ? (
-            <Button size="lg" className="flex-1 h-12" onClick={goNext}>
+            )}
+            {currentStepIndex < steps.length - 1 ? (
+            <Button size="lg" className="flex-1 h-14 rounded-xl shadow-sm" onClick={goNext}>
               Next
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
-          ) : (
-            <Button
-              size="lg"
-              className="flex-1 h-12"
-              onClick={handleSubmit}
-              disabled={isSubmitting || !formData.date || formData.selectedServices.length === 0}
-            >
+            ) : (
+              <Button
+                size="lg"
+                className="flex-1 h-14 rounded-xl shadow-sm"
+                onClick={handleSubmit}
+                disabled={isSubmitting || !formData.date || formData.selectedServices.length === 0}
+              >
               {isSubmitting ? "Creating..." : "Create Inspection"}
             </Button>
           )}
+          </div>
         </div>
       </div>
     </AppShell>

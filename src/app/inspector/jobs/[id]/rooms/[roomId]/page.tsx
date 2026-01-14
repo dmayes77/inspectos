@@ -175,7 +175,7 @@ export default function RoomInspectionPage() {
     >
       <div className="flex flex-col h-full">
         {/* Progress Bar - Fixed at top */}
-        <div className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+        <div className="sticky top-0 z-10 bg-background border-b px-4 py-3 sm:px-6 sm:py-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">
@@ -188,10 +188,10 @@ export default function RoomInspectionPage() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Quick Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <Button variant="outline" className="flex-1" onClick={() => handleTakePhoto("")}>
                 <Camera className="mr-2 h-4 w-4" />
                 Add Room Photo
@@ -258,13 +258,13 @@ export default function RoomInspectionPage() {
                             </div>
 
                             {/* Quick Status Buttons (visible on row) */}
-                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                              {statusOptions.map((option) => (
-                                <button
-                                  key={option.status}
-                                  onClick={() => handleStatusChange(item.id, option.status)}
-                                  className={cn(
-                                    "p-2 rounded-lg border transition-all",
+                          <div className="flex flex-wrap items-center gap-1" onClick={e => e.stopPropagation()}>
+                            {statusOptions.map((option) => (
+                              <button
+                                key={option.status}
+                                onClick={() => handleStatusChange(item.id, option.status)}
+                                className={cn(
+                                  "p-2 rounded-lg border transition-all",
                                     item.status === option.status
                                       ? option.bgColor
                                       : "bg-background hover:bg-muted border-transparent"
@@ -350,8 +350,8 @@ export default function RoomInspectionPage() {
         </div>
 
         {/* Room Navigation - Fixed at bottom */}
-        <div className="sticky bottom-0 border-t bg-background px-6 py-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+        <div className="sticky bottom-0 border-t bg-background px-4 py-3 sm:px-6 sm:py-4">
+          <div className="max-w-4xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button
               variant="outline"
               size="lg"

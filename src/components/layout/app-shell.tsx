@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNetwork } from "@/hooks/use-network";
 import { impactLight } from "@/services/haptics";
+import { MobileAppShell } from "@/components/layout/mobile-app-shell";
 
 interface AppShellProps {
   children: ReactNode;
@@ -67,6 +68,19 @@ export function AppShell({
 }: AppShellProps) {
   const pathname = usePathname();
   const { isOnline, connectionType } = useNetwork();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    if (media.addEventListener) {
+      media.addEventListener("change", update);
+      return () => media.removeEventListener("change", update);
+    }
+    media.addListener(update);
+    return () => media.removeListener(update);
+  }, []);
 
   const handleNavClick = () => {
     impactLight();
@@ -76,6 +90,19 @@ export function AppShell({
     impactLight();
     onBack?.();
   };
+
+  if (isMobile) {
+    return (
+      <MobileAppShell
+        title={title}
+        showBackButton={showBackButton}
+        onBack={onBack}
+        headerActions={headerActions}
+      >
+        {children}
+      </MobileAppShell>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex bg-background">

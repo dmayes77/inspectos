@@ -156,11 +156,11 @@ export default function ReviewPage() {
       showBackButton
       onBack={() => router.push(`/jobs/${inspectionId}/rooms`)}
     >
-      <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {/* Property Header */}
         <Card>
-          <CardContent className="p-5">
-            <div className="flex items-start gap-4">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
               <div className="shrink-0 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                 <Home className="h-6 w-6 text-primary" />
               </div>
@@ -169,7 +169,7 @@ export default function ReviewPage() {
                 <p className="text-sm text-muted-foreground">
                   {inspection.property.city}, {inspection.property.state} {inspection.property.zipCode}
                 </p>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center justify-center gap-4 mt-2 text-sm text-muted-foreground sm:justify-start">
                   <span className="flex items-center gap-1">
                     <User className="h-4 w-4" />
                     {inspection.client.name}
@@ -198,7 +198,7 @@ export default function ReviewPage() {
             </div>
             <Progress value={progressPercent} className="h-3" />
 
-            <div className="grid grid-cols-3 gap-4 pt-2">
+            <div className="grid grid-cols-2 gap-4 pt-2 sm:grid-cols-3">
               <div className="text-center">
                 <p className="text-2xl font-semibold">{completedRooms}/{totalRooms}</p>
                 <p className="text-sm text-muted-foreground">Rooms</p>
@@ -207,7 +207,7 @@ export default function ReviewPage() {
                 <p className="text-2xl font-semibold">{totalPhotos}</p>
                 <p className="text-sm text-muted-foreground">Photos</p>
               </div>
-              <div className="text-center">
+              <div className="text-center sm:col-auto col-span-2 sm:col-span-1">
                 <p className="text-2xl font-semibold">{totalDefects}</p>
                 <p className="text-sm text-muted-foreground">Defects</p>
               </div>
@@ -224,10 +224,35 @@ export default function ReviewPage() {
           </CardContent>
         </Card>
 
+        {/* Readiness Checklist */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Ready to Submit</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Rooms completed</span>
+              <span className="font-medium">{completedRooms}/{totalRooms}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Items inspected</span>
+              <span className="font-medium">{completedItems}/{totalItems}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Photos</span>
+              <span className="font-medium">{totalPhotos}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Defects logged</span>
+              <span className="font-medium">{totalDefects}</span>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Defects Summary */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center gap-2 justify-between">
               <CardTitle className="text-lg">Defects Found</CardTitle>
               <div className="flex items-center gap-2">
                 {safetyDefects > 0 && (
@@ -338,7 +363,7 @@ export default function ReviewPage() {
               )}
             </Button>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Button
                 variant="outline"
                 size="lg"

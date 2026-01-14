@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, Edit, Archive, FileText, MapPin, User, Calendar, DollarSign, ClipboardList } from "lucide-react";
+import { ChevronLeft, Edit, Archive, FileText, MapPin, User, Calendar, ClipboardList } from "lucide-react";
 import { useServices, type Service } from "@/hooks/use-services";
 import { inspections } from "@/lib/mock/inspections";
 

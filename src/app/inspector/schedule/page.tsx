@@ -42,6 +42,22 @@ function formatDayName(date: Date, short = false) {
   });
 }
 
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getDate() === b.getDate() &&
+    a.getMonth() === b.getMonth() &&
+    a.getFullYear() === b.getFullYear()
+  );
+}
+
+function formatDayLabel(date: Date) {
+  return date.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 function getStatusBadge(status: string) {
   switch (status) {
     case "scheduled":
@@ -84,6 +100,34 @@ export default function SchedulePage() {
       counts[dateKey] = (counts[dateKey] || 0) + 1;
     });
     return counts;
+  }, []);
+
+  const agendaSections = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+
+    const inRange = mockInspections.filter((insp) => {
+      const date = new Date(insp.scheduledAt);
+      return date >= start && date <= end;
+    });
+
+    const todayList = inRange.filter((insp) => isSameDay(insp.scheduledAt, start));
+    const tomorrow = new Date(start);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowList = inRange.filter((insp) => isSameDay(insp.scheduledAt, tomorrow));
+    const restList = inRange.filter(
+      (insp) => !isSameDay(insp.scheduledAt, start) && !isSameDay(insp.scheduledAt, tomorrow)
+    );
+
+    return {
+      today: todayList.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime()),
+      tomorrow: tomorrowList.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime()),
+      upcoming: restList.sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime()),
+    };
   }, []);
 
   const goToPrevWeek = () => {
@@ -135,183 +179,172 @@ export default function SchedulePage() {
         </Button>
       }
     >
-      <div className="p-6 max-w-5xl mx-auto">
-        {/* Week Navigation */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToPrevWeek}
-              className="shrink-0"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-
-            {/* Week Days Strip */}
-            <div className="flex-1">
-              <div className="flex gap-2">
-                {weekDates.map((date, index) => {
-                  const dateKey = date.toDateString();
-                  const count = inspectionCountsByDate[dateKey] || 0;
-                  const isTodayDate = isToday(date);
-                  const isSelectedDate = isSelected(date);
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => selectDate(date)}
-                      className={cn(
-                        "flex-1 flex flex-col items-center justify-center p-3 rounded-lg transition-all",
-                        isSelectedDate
-                          ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                          : isTodayDate
-                            ? "bg-primary/10 text-primary font-semibold border-2 border-primary"
-                            : "bg-card border hover:bg-muted hover:border-primary/50"
-                      )}
-                    >
-                      <span className="text-xs font-medium mb-1">
-                        {formatDayName(date, true)}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-2xl font-bold mb-1",
-                          isSelectedDate
-                            ? "text-primary-foreground"
-                            : isTodayDate
-                              ? "text-primary"
-                              : "text-foreground"
-                        )}
-                      >
-                        {date.getDate()}
-                      </span>
-                      {count > 0 && (
-                        <Badge
-                          variant={isSelectedDate ? "secondary" : "outline"}
-                          className={cn(
-                            "text-xs px-2 h-5",
-                            isSelectedDate && "bg-primary-foreground/20 text-primary-foreground"
-                          )}
-                        >
-                          {count} {count === 1 ? "job" : "jobs"}
-                        </Badge>
-                      )}
-                    </button>
-                  );
-                })}
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {/* Agenda View */}
+        <div className="space-y-6">
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Today</h2>
               </div>
+              <Badge variant="outline" className="text-xs">
+                {agendaSections.today.length} {agendaSections.today.length === 1 ? "job" : "jobs"}
+              </Badge>
             </div>
-
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToNextWeek}
-              className="shrink-0"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Selected Date Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-            <h2 className="text-xl font-semibold">{formatSelectedDateHeader()}</h2>
-          </div>
-          {selectedDateInspections.length > 0 && (
-            <Badge variant="outline" className="text-sm">
-              {selectedDateInspections.length}{" "}
-              {selectedDateInspections.length === 1 ? "Inspection" : "Inspections"}
-            </Badge>
-          )}
-        </div>
-
-        {/* Timeline/Agenda */}
-        {selectedDateInspections.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                <CalendarIcon className="h-8 w-8 text-muted-foreground" />
+            {agendaSections.today.length === 0 ? (
+              <Card>
+                <CardContent className="p-4 text-sm text-muted-foreground">
+                  You&apos;re free today.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {agendaSections.today.map((job, index) => (
+                  <Link
+                    key={job.id}
+                    href={`/inspector/jobs/${job.id}`}
+                    onClick={() => impactLight()}
+                    className="block"
+                  >
+                    <Card className="transition-all hover:shadow-md hover:border-primary/50">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-base font-semibold text-primary">{formatTime(job.scheduledAt)}</span>
+                            <div className="flex items-center gap-2">
+                              {index === 0 && <Badge variant="outline" className="border-primary text-primary">Next</Badge>}
+                              {getStatusBadge(job.status)}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {job.property.address}, {job.property.city}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <User className="h-3.5 w-3.5" />
+                                {job.client.name}
+                              </span>
+                              <span>{job.property.sqft.toLocaleString()} sqft</span>
+                              <Badge variant="secondary" className="text-xs">
+                                {job.services[0]?.name || "Inspection"}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
               </div>
-              <p className="text-xl font-medium mb-1">No inspections scheduled</p>
-              <p className="text-muted-foreground mb-4">
-                {isToday(selectedDate) ? "You're free today!" : "This day is available"}
-              </p>
-              <Button asChild>
-                <Link href="/inspector/jobs/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Schedule Inspection
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {selectedDateInspections.map((job, index) => (
-              <Link
-                key={job.id}
-                href={`/inspector/jobs/${job.id}`}
-                onClick={() => impactLight()}
-                className="block"
-              >
-                <Card className="transition-all hover:shadow-md hover:border-primary/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      {/* Time */}
-                      <div className="text-center shrink-0 w-20">
-                        <p className="text-lg font-semibold text-primary whitespace-nowrap">
-                          {formatTime(job.scheduledAt)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          ~{job.estimatedDuration}h
-                        </p>
-                      </div>
+            )}
+          </section>
 
-                      {/* Divider */}
-                      <div className="h-10 w-px bg-border shrink-0" />
-
-                      {/* Details */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-sm text-primary">
-                            #{job.id.replace("insp_", "")}
-                          </span>
-                          <span className="font-medium truncate">
-                            {job.property.address}, {job.property.city}, {job.property.state}{" "}
-                            {job.property.zipCode}
-                          </span>
-                          {index === 0 && isToday(selectedDate) && (
-                            <Badge
-                              variant="outline"
-                              className="border-primary text-primary shrink-0"
-                            >
-                              Next
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tomorrow</h2>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {agendaSections.tomorrow.length} {agendaSections.tomorrow.length === 1 ? "job" : "jobs"}
+              </Badge>
+            </div>
+            {agendaSections.tomorrow.length === 0 ? (
+              <Card>
+                <CardContent className="p-4 text-sm text-muted-foreground">No inspections scheduled.</CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {agendaSections.tomorrow.map((job) => (
+                  <Link
+                    key={job.id}
+                    href={`/inspector/jobs/${job.id}`}
+                    onClick={() => impactLight()}
+                    className="block"
+                  >
+                    <Card className="transition-all hover:shadow-md hover:border-primary/50">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-base font-semibold text-primary">{formatTime(job.scheduledAt)}</span>
+                            {getStatusBadge(job.status)}
+                          </div>
+                          <p className="font-medium">
+                            {job.property.address}, {job.property.city}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3.5 w-3.5" />
+                              {job.client.name}
+                            </span>
+                            <span>{job.property.sqft.toLocaleString()} sqft</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {job.services[0]?.name || "Inspection"}
                             </Badge>
-                          )}
-                          {getStatusBadge(job.status)}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <User className="h-3.5 w-3.5" />
-                            {job.client.name}
-                          </span>
-                          <span>{job.property.sqft.toLocaleString()} sqft</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {job.services[0]?.name || "Inspection"}
-                          </Badge>
-                        </div>
-                      </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
 
-                      {/* Chevron */}
-                      <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Next 7 Days</h2>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {agendaSections.upcoming.length} {agendaSections.upcoming.length === 1 ? "job" : "jobs"}
+              </Badge>
+            </div>
+            {agendaSections.upcoming.length === 0 ? (
+              <Card>
+                <CardContent className="p-4 text-sm text-muted-foreground">No inspections scheduled.</CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {agendaSections.upcoming.map((job) => (
+                  <Link
+                    key={job.id}
+                    href={`/inspector/jobs/${job.id}`}
+                    onClick={() => impactLight()}
+                    className="block"
+                  >
+                    <Card className="transition-all hover:shadow-md hover:border-primary/50">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">{formatDayLabel(job.scheduledAt)}</span>
+                            <span className="text-sm font-medium text-primary">{formatTime(job.scheduledAt)}</span>
+                          </div>
+                          <p className="font-medium">
+                            {job.property.address}, {job.property.city}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3.5 w-3.5" />
+                              {job.client.name}
+                            </span>
+                            <span>{job.property.sqft.toLocaleString()} sqft</span>
+                            <Badge variant="secondary" className="text-xs">
+                              {job.services[0]?.name || "Inspection"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </AppShell>
   );
