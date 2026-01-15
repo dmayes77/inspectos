@@ -204,10 +204,11 @@ const OFFLINE_QUEUE_KEY = "offline-sync-queue";
 
 export interface OfflineAction {
   id: string;
-  type: "create" | "update" | "delete";
+  type: "create" | "update" | "delete" | "upload";
   entity: string;
   data: Record<string, unknown>;
   timestamp: number;
+  attempts?: number;
 }
 
 export async function addToOfflineQueue(action: Omit<OfflineAction, "id" | "timestamp">): Promise<void> {

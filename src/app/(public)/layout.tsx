@@ -8,12 +8,6 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isLandingPage = pathname === "/";
   const isPricingPage = pathname === "/pricing";
-  const isBookingRoute = pathname.startsWith("/book/");
-  const isReportRoute = pathname.startsWith("/report/");
-
-  if (isBookingRoute || isReportRoute) {
-    return <>{children}</>;
-  }
 
   return (
     <PublicShell

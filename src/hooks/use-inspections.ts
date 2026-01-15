@@ -1,29 +1,6 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
 import { getInspections, addInspection, updateInspection, deleteInspection } from "@/lib/mock/inspections";
-
-export type Inspection = {
-  inspectionId: string;
-  address: string;
-  client: string;
-  clientId: string;
-  inspector: string;
-  inspectorId: string;
-  date: string;
-  time: string;
-  types: string[];
-  status: string;
-  price: number;
-  sqft?: number;
-  yearBuilt?: number;
-  propertyType?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  stories?: string;
-  foundation?: string;
-  garage?: string;
-  pool?: boolean;
-  notes?: string;
-};
+import type { Inspection } from "@/types/inspection";
 
 export function useInspections() {
   return useGet<Inspection[]>("inspections", async () => Promise.resolve(getInspections()));

@@ -5,6 +5,7 @@ import { PWAInitializer } from "@/components/pwa-initializer";
 import { NativeAppInit } from "@/components/native-app-init";
 import { DeviceGate } from "@/components/device-gate";
 import { ReactQueryProvider } from "@/components/providers/query-provider";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,13 +55,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-dvh overflow-x-hidden bg-background text-foreground`}
+        style={{ overscrollBehaviorY: "none" }}
+      >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <PWAInitializer />
           <NativeAppInit />
           {/* React Query provider: client-side wrapper so hooks like `useQuery` work in pages */}
           <ReactQueryProvider>
-            <DeviceGate>{children}</DeviceGate>
+            <ErrorBoundary>
+              <DeviceGate>{children}</DeviceGate>
+            </ErrorBoundary>
           </ReactQueryProvider>
         </ThemeProvider>
       </body>

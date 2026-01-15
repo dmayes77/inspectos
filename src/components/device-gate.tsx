@@ -14,10 +14,10 @@ interface DeviceGateProps {
  * - Web browsers (desktop, tablet, mobile)
  *
  * UI adaptation is handled by pattern-based shells:
- * - AppShell: Mobile-first, touch-optimized
- * - AdminShell: Desktop-dense, responsive (works on tablets too)
+ * - AppShell: Adaptive app UI for /admin, /platform, /inspector
  * - PublicShell: Website experience
  * - BookingShell: Client-facing booking flow
+ * - ReportShell: Client-facing reports
  * - AuthShell: Authentication pages
  *
  * No device blocking needed - the app is fully responsive.

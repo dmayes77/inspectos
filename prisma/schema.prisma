@@ -141,6 +141,7 @@ model User {
   availability     Availability[]
   notifications    Notification[]
   devices          DeviceSync[]
+  deviceTokens     DeviceToken[]
 
   @@index([companyId])
   @@index([email])
@@ -1447,6 +1448,35 @@ enum ConflictResolution {
   USE_REMOTE
   MERGE
   MANUAL
+}
+
+// =============================================================================
+// PUSH + IDEMPOTENCY SUPPORT
+// =============================================================================
+
+model DeviceToken {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform   String   // "ios"
+  token      String   @unique
+  enabled    Boolean  @default(true)
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model IdempotencyKey {
+  key          String   @id
+  userId       String
+  route        String
+  requestHash  String
+  statusCode   Int?
+  responseBody Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, route])
 }
 
 // =============================================================================

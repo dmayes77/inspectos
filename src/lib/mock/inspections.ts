@@ -1,28 +1,5 @@
 import { generateReadableId } from "@/lib/id-generator";
-
-export type Inspection = {
-  inspectionId: string;
-  address: string;
-  client: string;
-  clientId: string;
-  inspector: string;
-  inspectorId: string;
-  date: string;
-  time: string;
-  types: string[];
-  status: string;
-  price: number;
-  sqft?: number;
-  yearBuilt?: number;
-  propertyType?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  stories?: string;
-  foundation?: string;
-  garage?: string;
-  pool?: boolean;
-  notes?: string;
-};
+import type { Inspection } from "@/types/inspection";
 export const inspections: Inspection[] = [
   {
     inspectionId: "G6P7-R8T9",

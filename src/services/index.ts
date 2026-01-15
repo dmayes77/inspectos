@@ -81,6 +81,19 @@ export {
   selectionEnd,
 } from "./haptics";
 
+// Push Notifications
+export {
+  checkPushPermission,
+  requestPushPermission,
+  registerForPush,
+  addPushListeners,
+  type PushPermissionState,
+  type PushRegistration,
+} from "./push";
+
+// Biometrics (stub)
+export { checkBiometrics, requestBiometricAuth, type BiometricStatus } from "./biometrics";
+
 // App State
 export {
   addAppStateListener,
