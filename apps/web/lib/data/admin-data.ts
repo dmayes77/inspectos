@@ -1,4 +1,4 @@
-import type { Inspection } from "@/types/inspection";
+import type { Inspection, LegacyInspection } from "@/types/inspection";
 import type { Client } from "@/hooks/use-clients";
 import type { TeamMember } from "@/hooks/use-team";
 import type { Service } from "@/hooks/use-services";
@@ -18,11 +18,11 @@ export async function fetchInspections(): Promise<Inspection[]> {
   return result.data;
 }
 
-export async function fetchInspectionById(inspectionId: string): Promise<Inspection | null> {
+export async function fetchInspectionById(inspectionId: string): Promise<LegacyInspection | null> {
   const response = await fetch(`/api/admin/inspections/${inspectionId}`);
   if (!response.ok) return null;
   const result = await response.json();
-  return result.data;
+  return result.data as LegacyInspection;
 }
 
 export async function createInspection(data: Partial<Inspection> & { types?: string[]; type?: string }): Promise<Inspection> {
