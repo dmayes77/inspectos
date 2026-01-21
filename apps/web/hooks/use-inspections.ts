@@ -12,14 +12,14 @@ export function useInspections() {
 }
 
 export function useCreateInspection() {
-  return usePost<Inspection, Partial<Inspection> & { types?: string[]; type?: string }>(
+  return usePost<Inspection, Record<string, unknown>>(
     "inspections",
     async (data) => createInspection(data)
   );
 }
 
 export function useUpdateInspection() {
-  return usePut<Inspection | null, { inspectionId: string } & Partial<Inspection>>(
+  return usePut<Inspection | null, { inspectionId: string } & Record<string, unknown>>(
     "inspections",
     async (data) => updateInspectionById(data)
   );

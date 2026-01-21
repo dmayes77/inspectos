@@ -25,7 +25,7 @@ export async function fetchInspectionById(inspectionId: string): Promise<LegacyI
   return result.data as LegacyInspection;
 }
 
-export async function createInspection(data: Partial<Inspection> & { types?: string[]; type?: string }): Promise<Inspection> {
+export async function createInspection(data: Record<string, unknown>): Promise<Inspection> {
   const response = await fetch("/api/admin/inspections", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -40,7 +40,7 @@ export async function createInspection(data: Partial<Inspection> & { types?: str
 }
 
 export async function updateInspectionById(
-  data: { inspectionId: string } & Partial<Inspection>
+  data: { inspectionId: string } & Record<string, unknown>
 ): Promise<Inspection | null> {
   const response = await fetch(`/api/admin/inspections/${data.inspectionId}`, {
     method: "PUT",
