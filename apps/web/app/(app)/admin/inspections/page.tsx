@@ -55,6 +55,45 @@ function getStatusTriggerClasses(status: string) {
   }
 }
 
+const getInspectionId = (inspection: Inspection) => {
+  return (inspection as Inspection & { inspectionId?: string }).id ?? (inspection as Inspection & { inspectionId?: string }).inspectionId ?? "";
+};
+
+const getInspectionAddress = (inspection: Inspection) => {
+  const property = inspection.job?.property;
+  if (property) {
+    return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
+      .filter(Boolean)
+      .join(", ");
+  }
+  const legacyAddress = (inspection as Inspection & { address?: string }).address;
+  return legacyAddress ?? "Property unavailable";
+};
+
+const getInspectionClientName = (inspection: Inspection) => {
+  return inspection.job?.client?.name ?? (inspection as Inspection & { client?: string }).client ?? "Unknown client";
+};
+
+const getInspectionInspectorName = (inspection: Inspection) => {
+  return inspection.inspector?.full_name ?? inspection.inspector?.email ?? (inspection as Inspection & { inspector?: string }).inspector ?? "Unassigned";
+};
+
+const getInspectionDateTime = (inspection: Inspection) => {
+  const scheduledDate = inspection.job?.scheduled_date ?? (inspection as Inspection & { date?: string }).date ?? "";
+  const scheduledTime = inspection.job?.scheduled_time ?? (inspection as Inspection & { time?: string }).time ?? "";
+  return {
+    dateLabel: scheduledDate ? formatDateShort(scheduledDate) : "Unscheduled",
+    timeLabel: scheduledTime ? `at ${formatTime12(scheduledTime)}` : "",
+  };
+};
+
+const getInspectionServiceIds = (inspection: Inspection) => {
+  const jobServiceIds = inspection.job?.selected_service_ids;
+  if (Array.isArray(jobServiceIds) && jobServiceIds.length > 0) return jobServiceIds;
+  const legacyTypes = (inspection as Inspection & { types?: string[] }).types;
+  return Array.isArray(legacyTypes) ? legacyTypes : [];
+};
+
 const columns = (
   onStatusChange: (inspectionId: string, status: string) => void,
   getStatus: (inspectionId: string, currentStatus: string) => string,
@@ -73,15 +112,10 @@ const columns = (
     header: "Property",
     enableSorting: false,
     cell: ({ row }) => {
-      const property = row.original.job?.property;
-      const address = property
-        ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
-            .filter(Boolean)
-            .join(", ")
-        : "Property unavailable";
+      const address = getInspectionAddress(row.original);
       return (
         <Link
-          href={`/admin/inspections/${row.original.id}`}
+          href={`/admin/inspections/${getInspectionId(row.original)}`}
           className="flex items-start gap-2 max-w-xs hover:text-foreground"
         >
           <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -99,7 +133,7 @@ const columns = (
     cell: ({ row }) => (
       <div className="flex items-start gap-2 max-w-xs">
         <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-        <span className="text-sm">{row.original.job?.client?.name || "Unknown client"}</span>
+        <span className="text-sm">{getInspectionClientName(row.original)}</span>
       </div>
     ),
   },
@@ -109,7 +143,7 @@ const columns = (
     enableSorting: true,
     cell: ({ row }) => (
       <div className="text-sm max-w-xs">
-        {row.original.inspector?.full_name || row.original.inspector?.email || "Unassigned"}
+        {getInspectionInspectorName(row.original)}
       </div>
     ),
   },
@@ -119,10 +153,15 @@ const columns = (
     enableSorting: true,
     cell: ({ row }) => (
       <div className="text-sm">
-        <div>{row.original.job?.scheduled_date ? formatDateShort(row.original.job.scheduled_date) : "Unscheduled"}</div>
-        <div className="text-muted-foreground">
-          {row.original.job?.scheduled_time ? formatTime12(row.original.job.scheduled_time) : "—"}
-        </div>
+        {(() => {
+          const { dateLabel, timeLabel } = getInspectionDateTime(row.original);
+          return (
+            <>
+              <div>{dateLabel}</div>
+              <div className="text-muted-foreground">{timeLabel || "—"}</div>
+            </>
+          );
+        })()}
       </div>
     ),
   },
@@ -131,7 +170,7 @@ const columns = (
     header: "Type",
     enableSorting: false,
     cell: ({ row }) => {
-      const selectedServices = row.original.job?.selected_service_ids || [];
+      const selectedServices = getInspectionServiceIds(row.original);
       const label = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
       return <Badge variant="outline">{label}</Badge>;
     },
@@ -270,7 +309,7 @@ export default function InspectionsPage() {
     statusOverrides[inspectionId] ?? currentStatus ?? "scheduled";
 
   const handleStatusChange = (inspectionId: string, status: string) => {
-    const current = inspections.find((i) => i.id === inspectionId);
+    const current = inspections.find((i) => getInspectionId(i) === inspectionId);
     const previousStatus = current?.status ?? "scheduled";
 
     setStatusOverrides((prev) => ({ ...prev, [inspectionId]: status }));
@@ -380,18 +419,13 @@ export default function InspectionsPage() {
                     </div>
                   ) : (
                     filteredMobile.map((inspection, index) => {
-                      const property = inspection.job?.property;
-                      const address = property
-                        ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
-                            .filter(Boolean)
-                            .join(", ")
-                        : "Property unavailable";
-                      const selectedServices = inspection.job?.selected_service_ids || [];
+                      const address = getInspectionAddress(inspection);
+                      const selectedServices = getInspectionServiceIds(inspection);
                       const serviceLabel = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
                       return (
                       <Link
-                        key={inspection.id ?? inspection.job_id ?? inspection.template_id ?? `inspection-${index}`}
-                        href={`/admin/inspections/${inspection.id}`}
+                        key={getInspectionId(inspection) || `inspection-${index}`}
+                        href={`/admin/inspections/${getInspectionId(inspection)}`}
                         className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -409,24 +443,23 @@ export default function InspectionsPage() {
                               className={cn(
                                 "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
                                 getStatusTriggerClasses(
-                                  getStatusValue(inspection.id, inspection.status)
+                                  getStatusValue(getInspectionId(inspection), inspection.status)
                                 )
                               )}
                             >
-                              {getStatusLabel(getStatusValue(inspection.id, inspection.status))}
+                              {getStatusLabel(getStatusValue(getInspectionId(inspection), inspection.status))}
                             </span>
                           </div>
                         </div>
                         <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <User className="h-3.5 w-3.5" />
-                            <span>{inspection.job?.client?.name || "Unknown client"}</span>
+                            <span>{getInspectionClientName(inspection)}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Clock className="h-3.5 w-3.5" />
                             <span>
-                              {inspection.job?.scheduled_date ? formatDateShort(inspection.job.scheduled_date) : "Unscheduled"}{" "}
-                              {inspection.job?.scheduled_time ? `at ${formatTime12(inspection.job.scheduled_time)}` : ""}
+                              {getInspectionDateTime(inspection).dateLabel} {getInspectionDateTime(inspection).timeLabel}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
