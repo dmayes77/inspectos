@@ -17,7 +17,7 @@ export async function fetchLeads(): Promise<LeadRecord[]> {
     throw new Error("Failed to load leads.");
   }
   const result = await response.json();
-  return result.data;
+  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function fetchLeadById(leadId: string): Promise<LeadRecord | null> {
@@ -26,7 +26,7 @@ export async function fetchLeadById(leadId: string): Promise<LeadRecord | null> 
     return null;
   }
   const result = await response.json();
-  return result.data;
+  return (result.data ?? result) as LeadRecord;
 }
 
 export async function createLead(data: Partial<LeadRecord>): Promise<LeadRecord> {

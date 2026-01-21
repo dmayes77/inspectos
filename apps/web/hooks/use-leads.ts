@@ -15,7 +15,7 @@ export type Lead = {
 };
 
 export function useLeads() {
-  return useGet<Lead[]>("leads", async () => fetchLeads());
+  return useGet<Lead[]>("leads", async () => (await fetchLeads()) ?? [], { initialData: [] });
 }
 
 export function useLeadById(leadId: string) {
