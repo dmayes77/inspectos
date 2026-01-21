@@ -15,14 +15,14 @@ export async function fetchInspections(): Promise<Inspection[]> {
     throw new Error("Failed to load inspections.");
   }
   const result = await response.json();
-  return result.data;
+  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function fetchInspectionById(inspectionId: string): Promise<LegacyInspection | null> {
   const response = await fetch(`/api/admin/inspections/${inspectionId}`);
   if (!response.ok) return null;
   const result = await response.json();
-  return result.data as LegacyInspection;
+  return (result.data ?? result) as LegacyInspection;
 }
 
 export async function createInspection(data: Record<string, unknown>): Promise<Inspection> {
@@ -73,7 +73,7 @@ export async function fetchClients(): Promise<Client[]> {
     throw new Error("Failed to load clients.");
   }
   const result = await response.json();
-  return result.data;
+  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function fetchClientById(clientId: string): Promise<Client | null> {
@@ -149,7 +149,7 @@ export async function fetchServices(): Promise<Service[]> {
     throw new Error("Failed to load services.");
   }
   const result = await response.json();
-  return result.data;
+  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function fetchInspectors(): Promise<{ teamMemberId: string; name: string }[]> {
@@ -158,7 +158,7 @@ export async function fetchInspectors(): Promise<{ teamMemberId: string; name: s
     throw new Error("Failed to load inspectors.");
   }
   const result = await response.json();
-  return result.data;
+  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function createService(data: Partial<Service>): Promise<Service> {
