@@ -1,0 +1,169 @@
+/**
+ * Centralized Inspection type definitions
+ * Aligned with database schema (supabase/migrations/001_initial_schema.sql)
+ */
+
+/**
+ * Database-aligned Inspection type
+ */
+export interface Inspection {
+  id: string;
+  job_id: string;
+  tenant_id: string;
+  template_id: string;
+  template_version: number;
+  inspector_id: string;
+  status: InspectionStatusValue;
+  started_at: string | null;
+  completed_at: string | null;
+  weather_conditions: string | null;
+  temperature: string | null;
+  present_parties: string[] | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined relations
+  job?: {
+    id: string;
+    scheduled_date: string;
+    scheduled_time: string | null;
+    duration_minutes: number;
+    status: string;
+    selected_service_ids?: string[] | null;
+    property?: Property;
+    client?: Client | null;
+  };
+  template?: {
+    id: string;
+    name: string;
+    description: string | null;
+  };
+  inspector?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  };
+}
+
+/**
+ * Property type from database
+ */
+export interface Property {
+  id: string;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  state: string;
+  zip_code: string;
+  property_type: 'residential' | 'commercial' | 'multi-family' | 'other';
+  year_built: number | null;
+  square_feet: number | null;
+}
+
+/**
+ * Client type from database
+ */
+export interface Client {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+}
+
+/**
+ * Inspection status values (aligned with database CHECK constraint)
+ */
+export const InspectionStatus = {
+  DRAFT: 'draft',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed',
+  SUBMITTED: 'submitted',
+} as const;
+
+export type InspectionStatusValue = (typeof InspectionStatus)[keyof typeof InspectionStatus];
+
+/**
+ * Legacy type for backwards compatibility with mock data
+ * @deprecated Use Inspection type instead
+ */
+export interface LegacyInspection {
+  inspectionId: string;
+  address: string;
+  client: string;
+  clientId: string;
+  jobId?: string;
+  inspector: string;
+  inspectorId: string;
+  date: string;
+  time: string;
+  types: string[];
+  status: string;
+  price: number;
+  sqft?: number;
+  yearBuilt?: number;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  stories?: string;
+  foundation?: string;
+  garage?: string;
+  pool?: boolean;
+  notes?: string;
+  durationMinutes?: number;
+}
+
+/**
+ * Convert legacy inspection to new format
+ */
+export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspection> {
+  return {
+    id: legacy.inspectionId,
+    job_id: legacy.jobId || '',
+    inspector_id: legacy.inspectorId,
+    status: legacy.status as InspectionStatusValue,
+    notes: legacy.notes || null,
+    job: {
+      id: legacy.jobId || '',
+      scheduled_date: legacy.date,
+      scheduled_time: legacy.time,
+      duration_minutes: legacy.durationMinutes || 120,
+      status: 'scheduled',
+      property: {
+        id: '',
+        address_line1: legacy.address,
+        address_line2: null,
+        city: '',
+        state: '',
+        zip_code: '',
+        property_type: (legacy.propertyType as Property['property_type']) || 'residential',
+        year_built: legacy.yearBuilt || null,
+        square_feet: legacy.sqft || null,
+      },
+      client: {
+        id: legacy.clientId,
+        name: legacy.client,
+        email: null,
+        phone: null,
+        company: null,
+      },
+    },
+    inspector: {
+      id: legacy.inspectorId,
+      full_name: legacy.inspector,
+      email: '',
+      avatar_url: null,
+    },
+  };
+}
+
+/**
+ * Format property address for display
+ */
+export function formatAddress(property: Property): string {
+  const parts = [property.address_line1];
+  if (property.address_line2) parts.push(property.address_line2);
+  parts.push(`${property.city}, ${property.state} ${property.zip_code}`);
+  return parts.join(', ');
+}

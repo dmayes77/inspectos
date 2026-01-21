@@ -1,0 +1,594 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* =============================================================================
+   INSPECTOS DESIGN SYSTEM
+   Aesthetic: Apple-inspired refinement with Slate + Orange palette
+   Mode: Light only (MVP)
+   ============================================================================= */
+
+@custom-variant dark (&:is(.dark *));
+
+/* -----------------------------------------------------------------------------
+   Theme Configuration (Tailwind v4)
+   ----------------------------------------------------------------------------- */
+@theme inline {
+  /* ==========================================================================
+     Breakpoints: iPad-first (no phone support)
+     - No 'sm' breakpoint - minimum is iPad portrait (810px)
+     - Phones will see DeviceGate component instead
+     ========================================================================== */
+  --breakpoint-md: 810px;   /* iPad 10.2" portrait (minimum supported) */
+  --breakpoint-lg: 1024px;  /* iPad landscape / Small laptop */
+  --breakpoint-xl: 1280px;  /* Desktop (admin UI optimal) */
+  --breakpoint-2xl: 1536px; /* Large desktop */
+
+  /* Base colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Semantic colors */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  /* UI elements */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Border radius (Apple-inspired: subtle, not too rounded) */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* InspectOS Brand Colors */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+}
+
+/* -----------------------------------------------------------------------------
+   Light Mode (Primary - optimized for outdoor/sunlight use)
+   ----------------------------------------------------------------------------- */
+:root {
+  /* Base radius */
+  --radius: 0.5rem;
+
+  /* Slate palette (cool gray with subtle blue undertone)
+     Reference hex values:
+     50: #f8fafc, 100: #f1f5f9, 200: #e2e8f0, 300: #cbd5e1
+     400: #94a3b8, 500: #64748b, 600: #475569, 700: #334155
+     800: #1e293b, 900: #0f172a, 950: #020617 */
+  --slate-50: oklch(0.984 0.003 247);
+  --slate-100: oklch(0.968 0.007 247);
+  --slate-200: oklch(0.929 0.013 247);
+  --slate-300: oklch(0.869 0.022 247);
+  --slate-400: oklch(0.704 0.04 247);
+  --slate-500: oklch(0.554 0.046 247);
+  --slate-600: oklch(0.446 0.043 247);
+  --slate-700: oklch(0.372 0.044 247);
+  --slate-800: oklch(0.279 0.041 247);
+  --slate-900: oklch(0.208 0.042 265);
+  --slate-950: oklch(0.129 0.042 265);
+
+  /* Orange palette (construction/safety - high visibility)
+     Reference hex values:
+     50: #fff7ed, 100: #ffedd5, 200: #fed7aa, 300: #fdba74
+     400: #fb923c, 500: #f97316, 600: #ea580c, 700: #c2410c
+     800: #9a3412, 900: #7c2d12, 950: #431407 */
+  --orange-50: oklch(0.98 0.016 73);
+  --orange-100: oklch(0.954 0.038 75);
+  --orange-200: oklch(0.901 0.076 70);
+  --orange-300: oklch(0.837 0.128 66);
+  --orange-400: oklch(0.75 0.183 55);
+  --orange-500: oklch(0.705 0.191 47);
+  --orange-600: oklch(0.646 0.222 41);
+  --orange-700: oklch(0.553 0.195 38);
+  --orange-800: oklch(0.47 0.157 37);
+  --orange-900: oklch(0.408 0.123 38);
+  --orange-950: oklch(0.266 0.079 36);
+
+  /* Emerald (Success - passed items) - #10b981 */
+  --emerald-500: oklch(0.696 0.17 162);
+
+  /* Amber (Warning - attention needed) - #f59e0b */
+  --amber-500: oklch(0.769 0.188 70);
+
+  /* Red (Danger - defects, errors) - #ef4444 */
+  --red-500: oklch(0.637 0.237 25);
+
+  /* Semantic mapping */
+  --background: oklch(0.995 0 0);
+  --foreground: var(--slate-900);
+
+  --card: oklch(1 0 0);
+  --card-foreground: var(--slate-900);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--slate-900);
+
+  /* Primary = Orange (actions, CTAs) */
+  --primary: var(--orange-600);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary = Slate (subtle actions) */
+  --secondary: var(--slate-100);
+  --secondary-foreground: var(--slate-800);
+
+  /* Muted = Light slate (backgrounds, disabled states) */
+  --muted: var(--slate-100);
+  --muted-foreground: var(--slate-500);
+
+  /* Accent = Orange light (highlights, hover states) */
+  --accent: var(--orange-100);
+  --accent-foreground: var(--orange-800);
+
+  /* Destructive = Red for errors/delete */
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(1 0 0);
+
+  /* Borders and inputs (subtle, Apple-like) */
+  --border: var(--slate-200);
+  --input: var(--slate-200);
+  --ring: var(--orange-500);
+
+  /* Brand colors */
+  --brand: var(--orange-600);
+  --brand-foreground: oklch(1 0 0);
+
+  /* Status colors */
+  --success: oklch(0.627 0.194 149);
+  --success-foreground: oklch(1 0 0);
+  --warning: oklch(0.769 0.188 70);
+  --warning-foreground: var(--slate-900);
+  --info: oklch(0.623 0.214 259);
+  --info-foreground: oklch(1 0 0);
+
+  /* Charts (construction/inspection themed) */
+  --chart-1: var(--orange-500);
+  --chart-2: var(--slate-500);
+  --chart-3: oklch(0.627 0.194 149);
+  --chart-4: oklch(0.623 0.214 259);
+  --chart-5: oklch(0.769 0.188 70);
+
+  /* Sidebar (admin dashboard) */
+  --sidebar: var(--slate-50);
+  --sidebar-foreground: var(--slate-800);
+  --sidebar-primary: var(--orange-600);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: var(--orange-50);
+  --sidebar-accent-foreground: var(--orange-800);
+  --sidebar-border: var(--slate-200);
+  --sidebar-ring: var(--orange-500);
+
+  /* Shadows (Apple-inspired: subtle, layered) */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-md: 0 4px 6px oklch(0 0 0 / 0.05), 0 2px 4px oklch(0 0 0 / 0.04);
+  --shadow-lg: 0 10px 15px oklch(0 0 0 / 0.06), 0 4px 6px oklch(0 0 0 / 0.04);
+  --shadow-xl: 0 20px 25px oklch(0 0 0 / 0.08), 0 8px 10px oklch(0 0 0 / 0.04);
+
+  /* Inspector-specific (high contrast for outdoor use) */
+  --inspector-bg: oklch(0.985 0 0);
+  --inspector-surface: oklch(1 0 0);
+  --inspector-action: var(--orange-600);
+  --inspector-action-hover: var(--orange-700);
+  --inspector-success: oklch(0.527 0.194 149);
+  --inspector-warning: var(--orange-500);
+  --inspector-danger: oklch(0.577 0.245 27);
+}
+
+/* -----------------------------------------------------------------------------
+   Admin Density (enterprise/operations focused)
+   ----------------------------------------------------------------------------- */
+.admin-dense {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.admin-dense [data-slot="card"] {
+  gap: 0.75rem;
+  padding-block: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.admin-dense [data-slot="card-header"] {
+  gap: 0.25rem;
+  padding-inline: 1rem;
+}
+
+.admin-dense [data-slot="card-content"],
+.admin-dense [data-slot="card-footer"] {
+  padding-inline: 1rem;
+}
+
+.admin-dense [data-slot="card-footer"] {
+  padding-top: 0.75rem;
+}
+
+.admin-dense [data-slot="card-title"] {
+  font-size: 0.95rem;
+}
+
+.admin-dense [data-slot="card-description"] {
+  font-size: 0.75rem;
+}
+
+.admin-dense .admin-page-header h1 {
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+
+.admin-dense .admin-page-header p {
+  font-size: 0.875rem;
+}
+
+
+/* -----------------------------------------------------------------------------
+   Dark Mode (preserved for future, not active in MVP)
+   ----------------------------------------------------------------------------- */
+.dark {
+  --background: var(--slate-950);
+  --foreground: var(--slate-50);
+
+  --card: var(--slate-900);
+  --card-foreground: var(--slate-50);
+
+  --popover: var(--slate-900);
+  --popover-foreground: var(--slate-50);
+
+  --primary: var(--orange-500);
+  --primary-foreground: var(--slate-950);
+
+  --secondary: var(--slate-800);
+  --secondary-foreground: var(--slate-100);
+
+  --muted: var(--slate-800);
+  --muted-foreground: var(--slate-400);
+
+  --accent: var(--slate-800);
+  --accent-foreground: var(--orange-400);
+
+  --destructive: oklch(0.704 0.191 22);
+  --destructive-foreground: oklch(1 0 0);
+
+  --border: var(--slate-800);
+  --input: var(--slate-800);
+  --ring: var(--orange-500);
+
+  --sidebar: var(--slate-900);
+  --sidebar-foreground: var(--slate-100);
+  --sidebar-primary: var(--orange-500);
+  --sidebar-primary-foreground: var(--slate-950);
+  --sidebar-accent: var(--slate-800);
+  --sidebar-accent-foreground: var(--slate-100);
+  --sidebar-border: var(--slate-800);
+  --sidebar-ring: var(--orange-500);
+}
+
+/* -----------------------------------------------------------------------------
+   Base Styles
+   ----------------------------------------------------------------------------- */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overscroll-behavior-y: auto;
+    overscroll-behavior-x: none;
+  }
+
+  /* Focus states (subtle, brand-tinted; keyboard only) */
+  :focus-visible {
+    @apply outline-none ring-1 ring-ring/40 ring-offset-1 ring-offset-background;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Selection color */
+  ::selection {
+    background: oklch(0.901 0.076 70 / 0.3);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Typography Scale (Apple-inspired)
+   ----------------------------------------------------------------------------- */
+@layer base {
+  h1 {
+    @apply text-4xl font-semibold tracking-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold tracking-tight;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold tracking-tight;
+    letter-spacing: -0.015em;
+  }
+
+  h4 {
+    @apply text-xl font-semibold;
+    letter-spacing: -0.01em;
+  }
+
+  h5 {
+    @apply text-lg font-medium;
+  }
+
+  h6 {
+    @apply text-base font-medium;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+
+  /* Small text for labels, captions */
+  small {
+    @apply text-sm text-muted-foreground;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Component Utilities
+   ----------------------------------------------------------------------------- */
+@layer utilities {
+  /* Glass effect for modals/overlays */
+  .glass {
+    background: oklch(1 0 0 / 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Subtle card shadow (Apple-like) */
+  .shadow-card {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-card-hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  /* ==========================================================================
+     Inspector UI - Touch-optimized (from system overview)
+     - Button height: 56px minimum
+     - Input height: 48px minimum
+     - Tap target: 44px × 44px minimum
+     - Card padding: 16px
+     - Section gap: 24px
+     ========================================================================== */
+  .btn-inspector {
+    @apply min-h-14 min-w-14 text-lg font-medium;
+  }
+
+  .input-inspector {
+    @apply min-h-12 text-base;
+  }
+
+  .tap-target {
+    @apply min-h-11 min-w-11;
+  }
+
+  .card-inspector {
+    @apply p-4;
+  }
+
+  .section-gap-inspector {
+    @apply space-y-6;
+  }
+
+  /* ==========================================================================
+     Admin UI - Dense (from system overview)
+     - Button height: 36px
+     - Input height: 36px
+     - Table row: 48px
+     - Card padding: 16px
+     - Section gap: 16px
+     ========================================================================== */
+  .btn-admin {
+    @apply h-9 text-sm font-medium;
+  }
+
+  .input-admin {
+    @apply h-9 text-sm;
+  }
+
+  .table-row-admin {
+    @apply h-12;
+  }
+
+  .card-admin {
+    @apply p-4;
+  }
+
+  .section-gap-admin {
+    @apply space-y-4;
+  }
+
+  /* High contrast mode for outdoor use */
+  .high-contrast {
+    --foreground: var(--slate-950);
+    --muted-foreground: var(--slate-700);
+  }
+
+  /* Status indicators */
+  .status-dot {
+    @apply inline-block h-2 w-2 rounded-full;
+  }
+
+  .status-dot-success {
+    background: var(--success);
+  }
+
+  .status-dot-warning {
+    background: var(--warning);
+  }
+
+  .status-dot-danger {
+    background: var(--destructive);
+  }
+
+  .status-dot-info {
+    background: var(--info);
+  }
+
+  /* Smooth transitions (Apple-like) */
+  .transition-apple {
+    transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding for mobile (iOS notch, Dynamic Island, home indicator) */
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-inset-left {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .safe-area-inset-right {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Margin variants */
+  .safe-area-margin-top {
+    margin-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-area-margin-bottom {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* For fixed bottom navigation */
+  .safe-area-pb-nav {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Min-height with safe area */
+  .min-h-safe {
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Animation Keyframes
+   ----------------------------------------------------------------------------- */
+@layer utilities {
+  @keyframes subtle-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-subtle-pulse {
+    animation: subtle-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+}

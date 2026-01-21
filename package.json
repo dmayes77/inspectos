@@ -1,0 +1,32 @@
+{
+  "name": "inspectos-app",
+  "private": true,
+  "packageManager": "pnpm@9",
+  "scripts": {
+    "dev:web": "pnpm -C apps/web dev",
+    "dev:api": "pnpm -C apps/api dev --port 4000",
+    "dev:mobile": "pnpm -C apps/mobile dev",
+    "lint": "pnpm -r lint",
+    "lint:fix": "pnpm -r lint --fix",
+    "typecheck": "pnpm -r exec tsc --noEmit",
+    "test": "pnpm -C apps/web test:run",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "bash -c 'cd apps/web && pnpm exec tsc --noEmit'"
+    ],
+    "apps/api/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "bash -c 'cd apps/api && pnpm exec tsc --noEmit'"
+    ],
+    "apps/mobile/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+"use client";
+
+import { AdminShell } from "@/components/layout/admin-shell";
+import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BarChart3, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { mockAdminUser } from "@/lib/constants/mock-users";
+import { getReportMetrics } from "@/lib/mock/erp";
+
+export default function ReportsPage() {
+  const metrics = getReportMetrics();
+  return (
+    <AdminShell user={mockAdminUser}>
+      <div className="space-y-6">
+        <AdminPageHeader
+          title="Reports"
+          description="Business performance, revenue, and inspector productivity"
+          actions={
+            <Button className="sm:w-auto" variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          }
+        />
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Monthly Revenue</p>
+              <p className="mt-2 text-2xl font-semibold">${metrics.paidRevenue.toFixed(2)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Inspection Volume</p>
+              <p className="mt-2 text-2xl font-semibold">{metrics.inspectionVolume}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Conversion Rate</p>
+              <p className="mt-2 text-2xl font-semibold">{metrics.conversionRate}%</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Analytics</CardTitle>
+            <CardDescription>Visualize trends across your business.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+              <BarChart3 className="h-10 w-10 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Reports dashboard coming next</p>
+                <p className="text-xs text-muted-foreground">
+                  Outstanding invoices: {metrics.outstandingInvoices}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AdminShell>
+  );
+}

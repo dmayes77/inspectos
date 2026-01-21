@@ -1,0 +1,78 @@
+/*
+ * InspectOS Ionic theme variables
+ * Palette: Slate + Orange (outdoor-friendly contrast)
+ */
+
+:root {
+  --ion-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --ion-background-color: #f8fafc;
+  --ion-text-color: #0f172a;
+
+  --ion-color-primary: #ea580c;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #cf4f0b;
+  --ion-color-primary-tint: #ef7a33;
+
+  --ion-color-secondary: #f1f5f9;
+  --ion-color-secondary-contrast: #334155;
+  --ion-color-secondary-shade: #d9dde2;
+  --ion-color-secondary-tint: #f3f6fb;
+
+  --ion-color-tertiary: #ffedd5;
+  --ion-color-tertiary-contrast: #7c2d12;
+  --ion-color-tertiary-shade: #e2d4c0;
+  --ion-color-tertiary-tint: #ffefd9;
+
+  --ion-color-success: #10b981;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-shade: #0fa572;
+  --ion-color-success-tint: #34c995;
+
+  --ion-color-warning: #f59e0b;
+  --ion-color-warning-contrast: #0f172a;
+  --ion-color-warning-shade: #d88b0a;
+  --ion-color-warning-tint: #f7ad2e;
+
+  --ion-color-danger: #ef4444;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-shade: #d13c3c;
+  --ion-color-danger-tint: #f26868;
+
+  --ion-color-light: #f1f5f9;
+  --ion-color-light-contrast: #334155;
+  --ion-color-light-shade: #d9dde2;
+  --ion-color-light-tint: #f3f6fb;
+
+  --ion-color-medium: #64748b;
+  --ion-color-medium-contrast: #ffffff;
+  --ion-color-medium-shade: #586879;
+  --ion-color-medium-tint: #7a8aa1;
+
+  --ion-color-dark: #0f172a;
+  --ion-color-dark-contrast: #ffffff;
+  --ion-color-dark-shade: #0d1424;
+  --ion-color-dark-tint: #273048;
+
+  --ion-card-background: #ffffff;
+}
+
+.inspectos-toolbar {
+  --background: var(--ion-color-dark);
+  --color: #ffffff;
+}
+
+.inspectos-offline-banner {
+  background: #f59e0b;
+  color: #0f172a;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inspectos-content {
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 12px;
+  --padding-bottom: 16px;
+}

@@ -1,0 +1,7 @@
+"use client";
+
+import { WorkflowEditor } from "@/components/workflows/workflow-editor";
+
+export default function WorkflowDetailPage() {
+  return <WorkflowEditor />;
+}

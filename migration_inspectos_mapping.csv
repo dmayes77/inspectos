@@ -1,0 +1,327 @@
+path,target,notes
+.claude/settings.json,shared,needs review
+.claude/settings.local.json,shared,needs review
+.env,shared,needs review
+.env.example,shared,needs review
+.github/copilot-instructions.md,shared,needs review
+.gitignore,shared,needs review
+.npm-cache/_logs/2026-01-14T17_47_51_382Z-debug-0.log,shared,needs review
+.npm-cache/_logs/2026-01-14T17_48_28_789Z-debug-0.log,shared,needs review
+.npm-cache/_update-notifier-last-checked,shared,needs review
+.prettierignore,shared,needs review
+.prettierrc,shared,needs review
+android/.gitignore,mobile,native project files
+android/app/.gitignore,mobile,native project files
+android/app/build.gradle,mobile,native project files
+android/app/capacitor.build.gradle,mobile,native project files
+android/app/proguard-rules.pro,mobile,native project files
+android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java,mobile,native project files
+android/app/src/main/AndroidManifest.xml,mobile,native project files
+android/app/src/main/assets/capacitor.config.json,mobile,native project files
+android/app/src/main/assets/capacitor.plugins.json,mobile,native project files
+android/app/src/main/assets/public/cordova.js,mobile,native project files
+android/app/src/main/assets/public/cordova_plugins.js,mobile,native project files
+android/app/src/main/assets/public/index.html,mobile,native project files
+android/app/src/main/java/app/inspectos/MainActivity.java,mobile,native project files
+android/app/src/main/res/drawable-hdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-land-hdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-land-mdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-land-xhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-land-xxhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-land-xxxhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-mdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-port-hdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-port-mdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-port-xhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-port-xxhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-port-xxxhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml,mobile,native project files
+android/app/src/main/res/drawable-xhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-xxhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable-xxxhdpi/splash.png,mobile,native project files
+android/app/src/main/res/drawable/ic_launcher_background.xml,mobile,native project files
+android/app/src/main/res/drawable/splash.png,mobile,native project files
+android/app/src/main/res/layout/activity_main.xml,mobile,native project files
+android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml,mobile,native project files
+android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml,mobile,native project files
+android/app/src/main/res/mipmap-hdpi/ic_launcher.png,mobile,native project files
+android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png,mobile,native project files
+android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png,mobile,native project files
+android/app/src/main/res/mipmap-mdpi/ic_launcher.png,mobile,native project files
+android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png,mobile,native project files
+android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png,mobile,native project files
+android/app/src/main/res/mipmap-xhdpi/ic_launcher.png,mobile,native project files
+android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png,mobile,native project files
+android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png,mobile,native project files
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png,mobile,native project files
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png,mobile,native project files
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png,mobile,native project files
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png,mobile,native project files
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png,mobile,native project files
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png,mobile,native project files
+android/app/src/main/res/values/ic_launcher_background.xml,mobile,native project files
+android/app/src/main/res/values/strings.xml,mobile,native project files
+android/app/src/main/res/values/styles.xml,mobile,native project files
+android/app/src/main/res/xml/config.xml,mobile,native project files
+android/app/src/main/res/xml/file_paths.xml,mobile,native project files
+android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java,mobile,native project files
+android/build.gradle,mobile,native project files
+android/capacitor-cordova-android-plugins/build.gradle,mobile,native project files
+android/capacitor-cordova-android-plugins/cordova.variables.gradle,mobile,native project files
+android/capacitor-cordova-android-plugins/src/main/AndroidManifest.xml,mobile,native project files
+android/capacitor-cordova-android-plugins/src/main/java/.gitkeep,mobile,native project files
+android/capacitor-cordova-android-plugins/src/main/res/.gitkeep,mobile,native project files
+android/capacitor.settings.gradle,mobile,native project files
+android/gradle.properties,mobile,native project files
+android/gradle/wrapper/gradle-wrapper.jar,mobile,native project files
+android/gradle/wrapper/gradle-wrapper.properties,mobile,native project files
+android/gradlew,mobile,native project files
+android/gradlew.bat,mobile,native project files
+android/settings.gradle,mobile,native project files
+android/variables.gradle,mobile,native project files
+apps/mobile/README.md,mobile,legacy mobile docs
+apps/web/README.md,web,legacy web app docs
+archive/public-site/src/app/(booking)/book/[companySlug]/addons/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/checkout/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/confirmed/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/contact/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/property/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/review/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/schedule/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/book/[companySlug]/service/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(booking)/layout.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(public)/layout.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(public)/offline/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(public)/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(public)/pricing/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(report)/layout.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(report)/report/[id]/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/app/(report)/report/[id]/pay/page.tsx,web,archived public site (optional to port)
+archive/public-site/src/components/layout/booking-shell.tsx,web,archived public site (optional to port)
+archive/public-site/src/components/layout/public-shell.tsx,web,archived public site (optional to port)
+archive/public-site/src/components/layout/report-shell.tsx,web,archived public site (optional to port)
+capacitor.config.ts,shared,repo config
+components.json,shared,repo config
+docs/ARCHITECTURE.md,shared,needs review
+docs/CLAUDE.md,shared,needs review
+docs/CODE_REVIEW.md,shared,needs review
+docs/DRY_REFACTORING.md,shared,needs review
+docs/DRY_REFACTORING_COMPLETE.md,shared,needs review
+docs/DRY_REFACTORING_PROGRESS.md,shared,needs review
+docs/IMPLEMENTATION-SUMMARY.md,shared,needs review
+docs/INSTALL_PACKAGES.md,shared,needs review
+docs/PACKAGE_SETUP_COMPLETE.md,shared,needs review
+docs/README.md,shared,needs review
+docs/SHELL-STRATEGY.md,shared,needs review
+docs/SHELLS.md,shared,needs review
+docs/inspectos-pricing.md,shared,needs review
+docs/inspectos-system-overview.md,shared,needs review
+eslint.config.mjs,shared,repo config
+ios/.gitignore,mobile,native project files
+ios/App/.DS_Store,mobile,native project files
+ios/App/App.xcodeproj/project.pbxproj,mobile,native project files
+ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist,mobile,native project files
+ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved,mobile,native project files
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/davidmayes.xcuserdatad/UserInterfaceState.xcuserstate,mobile,native project files
+ios/App/App.xcodeproj/xcuserdata/davidmayes.xcuserdatad/xcschemes/xcschememanagement.plist,mobile,native project files
+ios/App/App/AppDelegate.swift,mobile,native project files
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png,mobile,native project files
+ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json,mobile,native project files
+ios/App/App/Assets.xcassets/Contents.json,mobile,native project files
+ios/App/App/Assets.xcassets/Splash.imageset/Contents.json,mobile,native project files
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png,mobile,native project files
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png,mobile,native project files
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png,mobile,native project files
+ios/App/App/Base.lproj/LaunchScreen.storyboard,mobile,native project files
+ios/App/App/Base.lproj/Main.storyboard,mobile,native project files
+ios/App/App/Info.plist,mobile,native project files
+ios/App/App/capacitor.config.json,mobile,native project files
+ios/App/App/config.xml,mobile,native project files
+ios/App/App/public/cordova.js,mobile,native project files
+ios/App/App/public/cordova_plugins.js,mobile,native project files
+ios/App/App/public/index.html,mobile,native project files
+ios/App/CapApp-SPM/.gitignore,mobile,native project files
+ios/App/CapApp-SPM/.swiftpm/xcode/xcuserdata/davidmayes.xcuserdatad/xcschemes/xcschememanagement.plist,mobile,native project files
+ios/App/CapApp-SPM/Package.swift,mobile,native project files
+ios/App/CapApp-SPM/README.md,mobile,native project files
+ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift,mobile,native project files
+ios/capacitor-cordova-ios-plugins/CordovaPluginsResources.podspec,mobile,native project files
+ios/capacitor-cordova-ios-plugins/resources/.gitkeep,mobile,native project files
+ios/capacitor-cordova-ios-plugins/sources/.gitkeep,mobile,native project files
+ios/debug.xcconfig,mobile,native project files
+next-env.d.ts,shared,repo config
+next.config.mjs,shared,repo config
+package-lock.json,shared,repo config
+package.json,shared,repo config
+packages/shared/README.md,shared,package
+postcss.config.mjs,shared,repo config
+prisma.config.ts,shared,repo config
+prisma/schema.prisma,shared,needs review
+public/apple-icon.svg,web,public assets
+public/favicon.svg,web,public assets
+public/file.svg,web,public assets
+public/globe.svg,web,public assets
+public/icon.svg,web,public assets
+public/manifest.json,web,public assets
+public/next.svg,web,public assets
+public/sw.js,web,public assets
+public/test.js,web,public assets
+public/vercel.svg,web,public assets
+public/window.svg,web,public assets
+scripts/generate-splash.mjs,shared,needs review
+src/app/(app)/admin/clients/[id]/edit/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/clients/[id]/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/clients/new/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/clients/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/inspections/[id]/edit/page-with-rhf.tsx.example,web,Next.js page/layout
+src/app/(app)/admin/inspections/[id]/edit/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/inspections/[id]/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/inspections/new/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/inspections/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/overview/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/services/[id]/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/services/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/settings/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/settings/roles/[id]/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/settings/roles/new/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/settings/roles/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/team/[id]/availability/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/team/[id]/edit/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/team/[id]/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/team/[id]/schedule/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/team/new/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/team/page.tsx,web,Next.js page/layout
+src/app/(app)/admin/templates/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/jobs/[id]/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/jobs/[id]/review/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/jobs/[id]/rooms/[roomId]/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/jobs/[id]/rooms/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/jobs/new/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/jobs/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/profile/page.tsx,web,Next.js page/layout
+src/app/(app)/inspector/schedule/page.tsx,web,Next.js page/layout
+src/app/(app)/layout.tsx,web,Next.js page/layout
+src/app/(app)/platform/companies/page.tsx,web,Next.js page/layout
+src/app/(app)/platform/content/page.tsx,web,Next.js page/layout
+src/app/(app)/platform/features/page.tsx,web,Next.js page/layout
+src/app/(app)/platform/layout.tsx,web,Next.js page/layout
+src/app/(app)/platform/page.tsx,web,Next.js page/layout
+src/app/(app)/platform/pricing/page.tsx,web,Next.js page/layout
+src/app/(auth)/app-gate/page.tsx,web,Next.js page/layout
+src/app/(auth)/layout.tsx,web,Next.js page/layout
+src/app/(auth)/login/page.tsx,web,Next.js page/layout
+src/app/api/admin/clients/[id]/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/clients/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/inspections/[id]/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/inspections/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/services/[id]/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/services/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/team/[id]/avatar/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/team/[id]/route.ts,api,Next.js API route to port to apps/api
+src/app/api/admin/team/route.ts,api,Next.js API route to port to apps/api
+src/app/api/auth/[...nextauth]/route.ts,api,Next.js API route to port to apps/api
+src/app/api/inspections/route.ts,api,Next.js API route to port to apps/api
+src/app/api/push/register/route.ts,api,Next.js API route to port to apps/api
+src/app/design-system/page.tsx,web,Next.js page/layout
+src/app/globals.css,web,Next.js page/layout
+src/app/layout.tsx,web,Next.js page/layout
+src/components/auth-redirect.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/brand/logo.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/demo/demo-login-gate.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/device-gate.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/error-boundary.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/admin-nav.ts,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/admin-page-header.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/app-shell.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/auth-shell.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/index.ts,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/mobile-app-shell.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/layout/mobile-header.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/native-app-init.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/native-redirect.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/providers/query-provider.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/pwa-initializer.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/shared/crud-table.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/theme-provider.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/alert-dialog.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/alert.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/avatar.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/badge.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/button.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/card.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/checkbox.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/client-inline-form.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/data-table.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/dialog.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/dropdown-menu.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/includes-editor.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/input.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/label.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/offline-banner.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/progress.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/scroll-area.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/select.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/separator.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/sheet.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/sonner.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/switch.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/tabs.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/ui/textarea.tsx,web,UI/components (adapt to web or mobile patterns)
+src/components/upgrade-prompt.tsx,web,UI/components (adapt to web or mobile patterns)
+src/hooks/crud.ts,web,React hook (likely web)
+src/hooks/use-camera.tsx,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-clients.ts,web,React hook (likely web)
+src/hooks/use-inspection.ts,web,React hook (likely web)
+src/hooks/use-inspections.ts,web,React hook (likely web)
+src/hooks/use-location.tsx,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-network.tsx,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-offline-storage.tsx,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-platform.tsx,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-pull-to-refresh.ts,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-service-worker.tsx,mobile,Capacitor/PWA-oriented hook
+src/hooks/use-services.ts,web,React hook (likely web)
+src/hooks/use-subscription.tsx,web,React hook (likely web)
+src/hooks/use-team.ts,web,React hook (likely web)
+src/lib/api/idempotency.ts,api,server-side lib
+src/lib/auth.ts,web,Next.js auth/middleware
+src/lib/constants/mock-users.ts,shared,shared lib/utility
+src/lib/constants/property-options.ts,shared,shared lib/utility
+src/lib/db.ts,api,server-side lib
+src/lib/env.server.ts,api,server-side lib
+src/lib/env.ts,shared,shared lib/utility
+src/lib/id-generator.ts,shared,shared lib/utility
+src/lib/mock-data.ts,shared,shared lib/utility
+src/lib/mock/clients.ts,shared,shared lib/utility
+src/lib/mock/inspections.ts,shared,shared lib/utility
+src/lib/mock/services.ts,shared,shared lib/utility
+src/lib/mock/team.ts,shared,shared lib/utility
+src/lib/outbox.ts,shared,shared lib/utility
+src/lib/permissions.ts,shared,shared lib/utility
+src/lib/subscription.ts,api,server-side lib
+src/lib/team-member-id.ts,shared,shared lib/utility
+src/lib/utils.ts,shared,shared lib/utility
+src/lib/utils/address.ts,shared,shared lib/utility
+src/lib/utils/dates.ts,shared,shared lib/utility
+src/lib/utils/errors.ts,shared,shared lib/utility
+src/lib/utils/formatters.ts,shared,shared lib/utility
+src/lib/utils/pricing.ts,shared,shared lib/utility
+src/lib/validations/inspection.ts,shared,shared lib/utility
+src/middleware.ts,shared,needs review
+src/services/app-state.ts,mobile,Capacitor service
+src/services/biometrics.ts,mobile,Capacitor service
+src/services/camera.ts,mobile,Capacitor service
+src/services/geolocation.ts,mobile,Capacitor service
+src/services/haptics.ts,mobile,Capacitor service
+src/services/index.ts,mobile,Capacitor service
+src/services/network.ts,mobile,Capacitor service
+src/services/push.ts,mobile,Capacitor service
+src/services/storage.ts,mobile,Capacitor service
+src/stores/ui-store.ts,shared,needs review
+src/types/inspection.ts,shared,shared types
+src/types/next-auth.d.ts,shared,shared types
+src/types/service.ts,shared,shared types
+tsconfig.json,shared,repo config
+tsconfig.tsbuildinfo,shared,needs review
