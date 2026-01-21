@@ -190,7 +190,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
         createMutation.mutate(payload, {
           onSuccess: (data) => {
             toast.success("Inspection created successfully");
-            router.push(data?.inspectionId ? `/admin/inspections/${data.inspectionId}` : "/admin/inspections");
+            router.push(data?.id ? `/admin/inspections/${data.id}` : "/admin/inspections");
           },
           onError: (error) => {
             const errorMessage = error instanceof Error ? error.message : "Failed to create inspection";
