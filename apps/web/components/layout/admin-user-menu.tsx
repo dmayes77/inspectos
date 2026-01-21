@@ -34,7 +34,7 @@ export function AdminUserMenu({ user, contextLabel, settingsHref }: AdminUserMen
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 px-2">
+        <Button variant="ghost" className="flex items-center gap-2 px-2" suppressHydrationWarning>
           <Avatar className="h-7 w-7">
             <AvatarImage src={user?.avatarUrl} />
             <AvatarFallback className="text-xs">{initials}</AvatarFallback>
