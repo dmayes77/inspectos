@@ -8,7 +8,7 @@ import {
 import type { Inspection } from "@/types/inspection";
 
 export function useInspections() {
-  return useGet<Inspection[]>("inspections", async () => fetchInspections());
+  return useGet<Inspection[]>("inspections", async () => (await fetchInspections()) ?? []);
 }
 
 export function useCreateInspection() {

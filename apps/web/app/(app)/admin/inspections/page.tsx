@@ -378,7 +378,7 @@ export default function InspectionsPage() {
                       No inspections yet.
                     </div>
                   ) : (
-                    filteredMobile.map((inspection) => {
+                    filteredMobile.map((inspection, index) => {
                       const property = inspection.job?.property;
                       const address = property
                         ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
@@ -389,7 +389,7 @@ export default function InspectionsPage() {
                       const serviceLabel = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
                       return (
                       <Link
-                        key={inspection.id}
+                        key={inspection.id ?? inspection.job_id ?? inspection.template_id ?? `inspection-${index}`}
                         href={`/admin/inspections/${inspection.id}`}
                         className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
                       >
