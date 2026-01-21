@@ -1,8 +1,8 @@
 import { generateReadableId } from "@/lib/id-generator";
 import { services, SERVICE_IDS } from "@/lib/mock/services";
 import { normalizeServiceIds } from "@/lib/utils/services";
-import type { Inspection } from "@/types/inspection";
-export const inspections: Inspection[] = [
+import type { LegacyInspection } from "@/types/inspection";
+export const inspections: LegacyInspection[] = [
   {
     inspectionId: "G6P7-R8T9",
     address: "123 Oak Street, Austin TX 78701",
