@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { vi, expect } from "vitest";
+import { vi, expect, beforeEach } from "vitest";
 import * as React from "react";
 import * as matchers from "@testing-library/jest-dom/matchers";
 
@@ -7,7 +7,7 @@ import * as matchers from "@testing-library/jest-dom/matchers";
 expect.extend(matchers);
 
 // Enable React 19 act environment
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
