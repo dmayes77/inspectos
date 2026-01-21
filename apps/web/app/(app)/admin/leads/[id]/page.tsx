@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,7 @@ const stageOptions = [
   { value: "lost", label: "Lost" },
 ];
 
-export default function LeadDetailPage() {
+function LeadDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const { id } = params as { id: string };
@@ -291,5 +291,13 @@ export default function LeadDetailPage() {
         </AlertDialog>
       </div>
     </AdminShell>
+  );
+}
+
+export default function LeadDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
+      <LeadDetailPageContent />
+    </Suspense>
   );
 }

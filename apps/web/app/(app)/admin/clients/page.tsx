@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -94,7 +94,7 @@ const columns: ColumnDef<Client>[] = [
   },
 ];
 
-export default function ClientsPage() {
+function ClientsPageContent() {
   const { data: clientList = [] as Client[], isLoading } = useClients();
   const { data: leads = [] as Lead[], isLoading: leadsLoading } = useLeads();
   const [mobileQuery, setMobileQuery] = useState("");
@@ -315,5 +315,13 @@ export default function ClientsPage() {
         </Tabs>
       </div>
     </AdminShell>
+  );
+}
+
+export default function ClientsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
+      <ClientsPageContent />
+    </Suspense>
   );
 }
