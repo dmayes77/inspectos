@@ -143,7 +143,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
       }
 
       // Build payload with proper typing (no type assertions needed)
-      const payload: Partial<Inspection> & { types?: string[] } = {
+      const payload: Partial<LegacyInspection> & { types?: string[] } = {
         address: formatAddress({
           street: toString(getString(raw.street)) || "",
           city: toString(getString(raw.city)) || "",
