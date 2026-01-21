@@ -28,7 +28,7 @@ import { booleanToYesNo, yesNoToBoolean, toString, toNumber } from "@/lib/utils/
 import { inspectionSchema } from "@/lib/validations/inspection";
 import { toast } from "sonner";
 import type { ServiceType } from "@/types/service";
-import type { Inspection } from "@/types/inspection";
+import type { LegacyInspection } from "@/types/inspection";
 
 // Helper function to safely extract string from FormData (defined outside component for performance)
 const getString = (value: FormDataEntryValue | undefined): string | undefined => {
@@ -62,7 +62,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
 
   // Get inspection by ID
   const inspectionId = typeof params.id === "string" ? params.id : undefined;
-  const { data: inspection } = useGet<Inspection | null>(inspectionId ? `inspection-${inspectionId}` : "inspection-new", async () => {
+  const { data: inspection } = useGet<LegacyInspection | null>(inspectionId ? `inspection-${inspectionId}` : "inspection-new", async () => {
     if (!inspectionId || props.isNew) return null;
     return fetchInspectionById(inspectionId);
   });
