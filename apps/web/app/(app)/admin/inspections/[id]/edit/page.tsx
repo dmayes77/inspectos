@@ -37,25 +37,6 @@ const getString = (value: FormDataEntryValue | undefined): string | undefined =>
 
 // Memoized service checkbox component to prevent unnecessary re-renders
 const ServiceCheckbox = ({ service, checked, onToggle }: { service: ServiceType; checked: boolean; onToggle: (id: string, checked: boolean) => void }) => {
-  if (!inspection && !props.isNew) {
-    return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/inspections">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Inspections
-            </Link>
-          </Button>
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-semibold mb-2">Inspection Not Found</h1>
-            <p className="text-muted-foreground">The inspection you are looking for does not exist.</p>
-          </div>
-        </div>
-      </AdminShell>
-    );
-  }
-
   return (
     <label className="flex items-center gap-2">
       <Checkbox name="types" value={service.serviceId} checked={checked} onCheckedChange={(isChecked) => onToggle(service.serviceId, isChecked === true)} />
