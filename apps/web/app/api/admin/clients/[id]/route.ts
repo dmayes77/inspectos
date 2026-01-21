@@ -52,19 +52,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
   const payload = validation.data;
 
+  // Build update object with only provided fields
+  const updateData: Record<string, unknown> = {};
+  if (payload.name !== undefined) updateData.name = payload.name;
+  if (payload.email !== undefined) updateData.email = payload.email;
+  if (payload.phone !== undefined) updateData.phone = payload.phone;
+  if (payload.type !== undefined) updateData.type = payload.type;
+  if (payload.company !== undefined) updateData.company = payload.company;
+  if (payload.notes !== undefined) updateData.notes = payload.notes;
+
   const { data, error } = await supabaseAdmin
     .from("clients")
-    .update({
-      name: payload.name,
-      email: payload.email ?? null,
-      phone: payload.phone ?? null,
-      type: payload.type ?? null,
-      company: payload.company ?? null,
-      notes: payload.notes ?? null,
-      inspections_count: payload.inspections ?? 0,
-      last_inspection_date: payload.lastInspection || null,
-      total_spent: payload.totalSpent ?? 0,
-    })
+    .update(updateData)
     .eq("tenant_id", tenantId)
     .eq("id", id)
     .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent")

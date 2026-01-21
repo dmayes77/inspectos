@@ -70,7 +70,8 @@ export async function GET() {
   });
 
   const mapped = (inspections ?? []).map((row) => {
-    const job = row.job as {
+    // Supabase types nested relations as arrays, use unknown to convert
+    const job = row.job as unknown as {
       id: string;
       status: string;
       scheduled_date: string;

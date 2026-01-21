@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const tagAssignmentScopeSchema = z.enum(["lead", "client", "inspection", "invoice", "job", "payment", "service", "template"], {
-  errorMap: () => ({ message: "Invalid tag scope" }),
+  message: "Invalid tag scope",
 });
 
 export const createTagAssignmentSchema = z.object({

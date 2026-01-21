@@ -10,7 +10,7 @@ export const createLeadSchema = z.object({
     .nullable(),
   stage: z
     .enum(["new", "contacted", "qualified", "proposal", "won", "lost"], {
-      errorMap: () => ({ message: "Invalid lead stage" }),
+      message: "Invalid lead stage",
     })
     .optional()
     .default("new"),

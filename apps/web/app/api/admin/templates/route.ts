@@ -214,7 +214,7 @@ export async function POST(request: Request) {
         },
       ],
     },
-  ], null);
+  ], []);
 
   return NextResponse.json(mappedTemplate);
 }

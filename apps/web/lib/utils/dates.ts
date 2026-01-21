@@ -11,7 +11,7 @@ import { format, parse, isValid, formatDistanceToNow, isPast, isFuture } from "d
 export function formatDate(date: string | Date, formatStr: string = "MMM d, yyyy"): string {
   try {
     const dateObj = typeof date === "string" ? parse(date, "yyyy-MM-dd", new Date()) : date;
-    if (!isValid(dateObj)) return date;
+    if (!isValid(dateObj)) return String(date);
     return format(dateObj, formatStr);
   } catch {
     return String(date);

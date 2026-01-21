@@ -6,7 +6,7 @@ const templateItemSchema = z.object({
   name: z.string().min(1, "Item name is required").max(255, "Item name is too long"),
   description: z.string().max(1000, "Description is too long").optional().nullable(),
   itemType: z.enum(["checkbox", "rating", "text", "number", "select", "photo"], {
-    errorMap: () => ({ message: "Invalid item type" }),
+    message: "Invalid item type",
   }),
   options: z.array(z.string().min(1, "Option cannot be empty").max(255, "Option is too long")).optional().nullable(),
   isRequired: z.boolean().optional(),
@@ -31,7 +31,7 @@ export const createTemplateStubSchema = z.object({
 export const updateTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required").max(255, "Name is too long").optional(),
   description: z.string().max(1000, "Description is too long").optional().nullable(),
-  type: z.enum(["inspection", "agreement", "report"], { errorMap: () => ({ message: "Invalid template type" }) }).optional(),
+  type: z.enum(["inspection", "agreement", "report"], { message: "Invalid template type" }).optional(),
   standard: z.string().max(255, "Standard is too long").optional().nullable(),
   isDefault: z.boolean().optional(),
   usageCount: z.coerce.number().int().min(0, "Usage count must be 0 or greater").optional(),

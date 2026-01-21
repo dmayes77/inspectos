@@ -146,7 +146,7 @@ export function getInspections({ search }: { search?: string } = {}) {
   return inspections;
 }
 
-export function createInspection(data: Partial<Inspection> & { types?: string[]; type?: string }) {
+export function createInspection(data: Partial<LegacyInspection> & { types?: string[]; type?: string }) {
   const inspectionId = generateReadableId();
 
   const now = new Date();
@@ -155,7 +155,7 @@ export function createInspection(data: Partial<Inspection> & { types?: string[];
     types.push(SERVICE_IDS.fullHome);
   }
 
-  const ins: Inspection = {
+  const ins: LegacyInspection = {
     inspectionId,
     address: (data.address as string) || "",
     client: (data.client as string) || "",
@@ -187,7 +187,7 @@ export function getInspectionById(inspectionId: string) {
   return inspections.find((i) => i.inspectionId === inspectionId) || null;
 }
 
-export function updateInspection(inspectionId: string, data: Partial<Inspection>) {
+export function updateInspection(inspectionId: string, data: Partial<LegacyInspection>) {
   const idx = inspections.findIndex((i) => i.inspectionId === inspectionId);
   if (idx === -1) return null;
   inspections[idx] = { ...inspections[idx], ...data };

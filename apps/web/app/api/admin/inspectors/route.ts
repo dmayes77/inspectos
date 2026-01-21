@@ -15,10 +15,14 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const inspectors = (data ?? []).map((row) => ({
-    teamMemberId: row.profiles?.id ?? row.user_id,
-    name: row.profiles?.full_name ?? row.profiles?.email ?? "Unknown",
-  }));
+  const inspectors = (data ?? []).map((row) => {
+    // Supabase types nested relations as arrays, but single() returns an object
+    const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+    return {
+      teamMemberId: profile?.id ?? row.user_id,
+      name: profile?.full_name ?? profile?.email ?? "Unknown",
+    };
+  });
 
   return NextResponse.json(inspectors);
 }

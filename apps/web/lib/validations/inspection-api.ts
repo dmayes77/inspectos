@@ -29,13 +29,13 @@ export const createInspectionSchema = z.object({
 
 export const updateInspectionSchema = createInspectionSchema.partial().extend({
   status: z.enum(["scheduled", "in_progress", "completed", "pending_report"], {
-    errorMap: () => ({ message: "Invalid inspection status" }),
+    message: "Invalid inspection status",
   }).optional(),
 });
 
 export const updateInspectionStatusSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "pending_report"], {
-    errorMap: () => ({ message: "Invalid inspection status" }),
+    message: "Invalid inspection status",
   }).optional(),
   notes: z.string().max(5000, "Notes are too long").optional().nullable(),
 });

@@ -14,14 +14,18 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const mapped = (data ?? []).map((invoice) => ({
-    invoiceId: invoice.id,
-    clientName: invoice.client?.name ?? "",
-    amount: Number(invoice.total ?? 0),
-    issuedDate: invoice.issued_at ? new Date(invoice.issued_at).toISOString().slice(0, 10) : "",
-    dueDate: invoice.due_at ? new Date(invoice.due_at).toISOString().slice(0, 10) : "",
-    status: invoice.status,
-  }));
+  const mapped = (data ?? []).map((invoice) => {
+    // Supabase types nested relations as arrays, but single() returns an object
+    const client = Array.isArray(invoice.client) ? invoice.client[0] : invoice.client;
+    return {
+      invoiceId: invoice.id,
+      clientName: client?.name ?? "",
+      amount: Number(invoice.total ?? 0),
+      issuedDate: invoice.issued_at ? new Date(invoice.issued_at).toISOString().slice(0, 10) : "",
+      dueDate: invoice.due_at ? new Date(invoice.due_at).toISOString().slice(0, 10) : "",
+      status: invoice.status,
+    };
+  });
 
   return NextResponse.json(mapped);
 }

@@ -123,7 +123,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   await supabaseAdmin.from("template_sections").delete().eq("template_id", id);
 
-  const sectionPayloads = sections.map((section: TemplateSection, index: number) => ({
+  const sectionPayloads = sections.map((section, index: number) => ({
     template_id: id,
     name: section.name,
     description: section.description ?? null,
@@ -151,7 +151,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   insertedSections.forEach((sectionRow, index) => {
     const sectionItems = sections[index]?.items ?? [];
-    sectionItems.forEach((item: TemplateItem, itemIndex: number) => {
+    sectionItems.forEach((item, itemIndex: number) => {
       itemPayloads.push({
         section_id: sectionRow.id,
         name: item.name,

@@ -62,7 +62,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: error?.message ?? "Inspection not found." }, { status: 404 });
   }
 
-  const job = row.job as {
+  // Supabase types nested relations as arrays but .maybeSingle() returns objects
+  const job = row.job as unknown as {
     id: string;
     status: string;
     scheduled_date: string;

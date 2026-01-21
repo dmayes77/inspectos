@@ -280,7 +280,7 @@ export async function POST() {
         return NextResponse.json({ error: propertyError?.message ?? "Failed to seed properties." }, { status: 500 });
       }
       propertyId = createdProperty.id;
-      propertyMap.set(propertyKey, propertyId);
+      propertyMap.set(propertyKey, propertyId!);
     }
 
     const serviceNames =

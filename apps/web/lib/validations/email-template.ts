@@ -6,7 +6,7 @@ export const createEmailTemplateSchema = z.object({
   body: z.string().min(1, "Body is required").max(50000, "Body is too long"),
   category: z
     .enum(["scheduling", "confirmation", "reminder", "report", "invoice", "follow_up", "other"], {
-      errorMap: () => ({ message: "Invalid category" }),
+      message: "Invalid category",
     })
     .optional()
     .nullable(),

@@ -68,6 +68,7 @@ type WorkflowAction = {
 type WorkflowConditions = {
   includeTagIds?: string[];
   excludeTagIds?: string[];
+  statusEquals?: string;
 };
 
 function SortableAction({
@@ -181,12 +182,14 @@ export function WorkflowEditor() {
     });
   };
 
-  const handleDragEnd = (event: { active: { id: string }; over?: { id: string } | null }) => {
+  const handleDragEnd = (event: { active: { id: string | number }; over?: { id: string | number } | null }) => {
     if (!event.over || event.active.id === event.over.id) return;
     setForm((prev) => {
       const actions = [...(prev.actions ?? [])] as WorkflowAction[];
-      const oldIndex = actions.findIndex((action) => action.id === event.active.id);
-      const newIndex = actions.findIndex((action) => action.id === event.over?.id);
+      const activeId = String(event.active.id);
+      const overId = String(event.over?.id);
+      const oldIndex = actions.findIndex((action) => action.id === activeId);
+      const newIndex = actions.findIndex((action) => action.id === overId);
       if (oldIndex === -1 || newIndex === -1) return prev;
       return { ...prev, actions: arrayMove(actions, oldIndex, newIndex) };
     });

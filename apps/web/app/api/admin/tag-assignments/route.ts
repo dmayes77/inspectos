@@ -9,9 +9,9 @@ import {
   tagAssignmentQuerySchema,
 } from "@/lib/validations/tag-assignment";
 
-const formatValidationErrors = (issues: { path: (string | number)[]; message: string }[]) =>
+const formatValidationErrors = (issues: { path: PropertyKey[]; message: string }[]) =>
   issues.map((issue) => ({
-    field: issue.path.join("."),
+    field: issue.path.map(String).join("."),
     message: issue.message,
   }));
 

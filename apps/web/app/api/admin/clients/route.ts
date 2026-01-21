@@ -58,9 +58,6 @@ export async function POST(request: Request) {
       type: payload.type ?? null,
       company: payload.company ?? null,
       notes: payload.notes ?? null,
-      inspections_count: payload.inspections ?? 0,
-      last_inspection_date: payload.lastInspection || null,
-      total_spent: payload.totalSpent ?? 0,
     })
     .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent")
     .single();
