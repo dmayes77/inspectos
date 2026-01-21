@@ -197,7 +197,7 @@ export default function ServiceDetailPage() {
 
     const parsed = serviceSchema.safeParse(payload);
     if (!parsed.success) {
-      toast.error(parsed.error.errors[0]?.message || "Please check the service details.");
+      toast.error(parsed.error.issues[0]?.message || "Please check the service details.");
       return;
     }
 
