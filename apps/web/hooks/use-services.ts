@@ -5,7 +5,11 @@ import type { ServiceType as Service } from "@/types/service";
 export type { Service };
 
 export function useServices() {
-  return useGet<Service[]>("services", async () => (await fetchServices()) ?? []);
+  return useGet<Service[]>(
+    "services",
+    async () => (await fetchServices()) ?? [],
+    { initialData: [] }
+  );
 }
 
 export function useCreateService() {

@@ -35,6 +35,7 @@ type SavedView = {
 };
 
 function getStatusLabel(status: string) {
+  if (!status) return "Unknown";
   const match = inspectionStatusOptions.find((option) => option.value === status);
   return match?.label ?? status;
 }
@@ -266,7 +267,7 @@ export default function InspectionsPage() {
   };
 
   const getStatusValue = (inspectionId: string, currentStatus: string) =>
-    statusOverrides[inspectionId] ?? currentStatus;
+    statusOverrides[inspectionId] ?? currentStatus ?? "scheduled";
 
   const handleStatusChange = (inspectionId: string, status: string) => {
     const current = inspections.find((i) => i.id === inspectionId);
