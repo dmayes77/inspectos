@@ -138,7 +138,7 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
       });
 
       if (!validation.success) {
-        toast.error(validation.error.errors[0]?.message || "Please check the inspection details.");
+        toast.error(validation.error.issues[0]?.message || "Please check the inspection details.");
         return;
       }
 
