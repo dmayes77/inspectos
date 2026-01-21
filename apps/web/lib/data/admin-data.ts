@@ -84,7 +84,7 @@ export async function fetchClientById(clientId: string): Promise<Client | null> 
     return null;
   }
   const result = await response.json();
-  return result.data;
+  return (result.data ?? result) as Client;
 }
 
 export async function createClient(data: Omit<Client, "clientId" | "archived">): Promise<Client> {

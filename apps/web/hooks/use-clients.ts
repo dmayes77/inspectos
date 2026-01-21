@@ -39,5 +39,9 @@ export function useDeleteClient() {
 }
 
 export function useClientById(clientId: string) {
-  return useGet<Client | null>(`client-${clientId}`, async () => fetchClientById(clientId));
+  return useGet<Client | null>(
+    `client-${clientId}`,
+    async () => (await fetchClientById(clientId)) ?? null,
+    { initialData: null }
+  );
 }
