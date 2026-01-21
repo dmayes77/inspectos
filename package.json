@@ -1,7 +1,7 @@
 {
   "name": "inspectos-app",
   "private": true,
-  "packageManager": "pnpm@9",
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev:web": "pnpm -C apps/web dev",
     "dev:api": "pnpm -C apps/api dev --port 4000",
