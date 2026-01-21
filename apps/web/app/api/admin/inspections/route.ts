@@ -16,8 +16,10 @@ const buildAddress = (property: {
   zip_code: string;
 }) => `${property.address_line1}, ${property.city}, ${property.state} ${property.zip_code}`;
 
-export async function GET() {
-  const tenantId = getTenantId();
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const tenantParam = url.searchParams.get("tenant");
+  const tenantId = tenantParam || getTenantId();
   const { data: inspections, error } = await supabaseAdmin
     .from("inspections")
     .select(
