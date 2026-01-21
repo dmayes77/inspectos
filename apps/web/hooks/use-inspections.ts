@@ -28,3 +28,5 @@ export function useUpdateInspection() {
 export function useDeleteInspection() {
   return useDelete<boolean>("inspections", async (inspectionId: string) => deleteInspectionById(inspectionId));
 }
+
+export type { Inspection };
