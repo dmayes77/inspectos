@@ -21,5 +21,5 @@ export function useConnectIntegration() {
 }
 
 export function useDisconnectIntegration() {
-  return useDelete<void, string>("integrations", async (id) => disconnectIntegration(id));
+  return useDelete<void>("integrations", async (id) => disconnectIntegration(id));
 }
