@@ -53,13 +53,15 @@ export async function GET() {
 
     const property = Array.isArray(order.property) ? order.property[0] : order.property;
 
+    const inspector = Array.isArray(order.inspector) ? order.inspector[0] : order.inspector;
+
     return {
       id: order.id,
       date: order.scheduled_date ?? "",
       time: normalizeTime(order.scheduled_time ?? null),
       address: property ? buildAddress(property) : "",
-      inspector: order.inspector?.full_name ?? "",
-      inspectorId: order.inspector?.id ?? "",
+      inspector: inspector?.full_name ?? "",
+      inspectorId: inspector?.id ?? "",
       status: order.status,
       type: primary?.name ?? "Inspection",
       price: totalPrice,
