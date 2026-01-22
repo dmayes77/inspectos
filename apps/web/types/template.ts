@@ -32,6 +32,7 @@ export type Template = {
   description?: string;
   type: "inspection" | "agreement" | "report";
   standard?: string | null;
+  isActive?: boolean;
   serviceId?: string | null;
   serviceName?: string | null;
   serviceIds?: string[];

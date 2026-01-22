@@ -109,6 +109,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       description: payload.description ?? null,
       type: payload.type ?? "inspection",
       standard: payload.standard ?? "Custom",
+      is_active: payload.isActive ?? true,
       is_default: payload.isDefault ?? false,
       usage_count: payload.usageCount ?? 0,
     })

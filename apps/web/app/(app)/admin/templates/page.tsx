@@ -70,7 +70,7 @@ export default function TemplatesPage() {
 
   const handleArchive = (templateId: string, templateName: string) => {
     updateMutation.mutate(
-      { id: templateId, data: { is_active: false } },
+      { id: templateId, data: { isActive: false } },
       {
         onSuccess: () => {
           toast.success(`"${templateName}" archived`);

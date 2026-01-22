@@ -11,6 +11,7 @@ type TemplateRow = {
   description: string | null;
   type: "inspection" | "agreement" | "report" | null;
   standard: string | null;
+  is_active: boolean | null;
   is_default: boolean | null;
   usage_count: number | null;
   updated_at: string;
@@ -40,6 +41,7 @@ const mapTemplate = (
   description: row.description ?? undefined,
   type: row.type ?? "inspection",
   standard: row.standard ?? "Custom",
+  isActive: row.is_active ?? true,
   isDefault: row.is_default ?? false,
   usageCount: row.usage_count ?? 0,
   lastModified: new Date(row.updated_at).toLocaleDateString("en-US", {
@@ -62,7 +64,7 @@ export async function GET() {
   const { data: templateRows, error: templateError } = await supabaseAdmin
     .from("templates")
     .select(
-      "id, name, description, type, standard, is_default, usage_count, updated_at, template_sections(id, template_id, name, description, sort_order, template_items(id, section_id, name, description, item_type, options, is_required, sort_order))"
+      "id, name, description, type, standard, is_active, is_default, usage_count, updated_at, template_sections(id, template_id, name, description, sort_order, template_items(id, section_id, name, description, item_type, options, is_required, sort_order))"
     )
     .eq("tenant_id", tenantId)
     .eq("is_active", true);

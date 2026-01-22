@@ -33,6 +33,7 @@ export const updateTemplateSchema = z.object({
   description: z.string().max(1000, "Description is too long").optional().nullable(),
   type: z.enum(["inspection", "agreement", "report"], { message: "Invalid template type" }).optional(),
   standard: z.string().max(255, "Standard is too long").optional().nullable(),
+  isActive: z.boolean().optional(),
   isDefault: z.boolean().optional(),
   usageCount: z.coerce.number().int().min(0, "Usage count must be 0 or greater").optional(),
   sections: z.array(templateSectionSchema).optional(),
