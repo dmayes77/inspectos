@@ -4,7 +4,6 @@ import {
   CreditCard,
   Receipt,
   Workflow,
-  Target,
   LayoutDashboard,
   Users,
   ClipboardList,
@@ -15,6 +14,9 @@ import {
   Flag,
   DollarSign,
   Tag,
+  ShoppingCart,
+  UserCheck,
+  MapPin,
 } from "lucide-react";
 
 export type NavItem = {
@@ -30,7 +32,7 @@ export type NavSection = {
 
 export const companyPinnedNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Overview" },
-  { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
+  { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
   { href: "/admin/clients", icon: Users, label: "Contacts" },
 ];
@@ -41,27 +43,41 @@ export const companyNavSections: NavSection[] = [
     items: [
       { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
       { href: "/admin/payments", icon: CreditCard, label: "Payments" },
-      { href: "/admin/billing", icon: CreditCard, label: "Billing" },
-      { href: "/admin/accounting", icon: DollarSign, label: "Accounting" },
+      { href: "/admin/payouts", icon: DollarSign, label: "Payouts" },
     ],
   },
   {
     label: "Operations",
     items: [
+      { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
+      { href: "/admin/properties", icon: MapPin, label: "Properties" },
       { href: "/admin/services", icon: ClipboardList, label: "Services" },
-      { href: "/admin/templates", icon: FileText, label: "Templates" },
+      { href: "/admin/templates", icon: FileText, label: "Inspection Templates" },
       { href: "/admin/tags", icon: Tag, label: "Tags" },
-      { href: "/admin/email-templates", icon: FileText, label: "Email Templates" },
       { href: "/admin/workflows", icon: Workflow, label: "Workflows" },
+      { href: "/admin/automations", icon: Workflow, label: "Automations" },
+    ],
+  },
+  {
+    label: "Communications",
+    items: [
+      { href: "/admin/communications", icon: FileText, label: "Communications" },
+      { href: "/admin/email-templates", icon: FileText, label: "Email Templates" },
+    ],
+  },
+  {
+    label: "Documents & Reports",
+    items: [
       { href: "/admin/documents", icon: FileText, label: "Documents" },
       { href: "/admin/reports", icon: BarChart3, label: "Reports" },
-      { href: "/admin/automations", icon: Workflow, label: "Automations" },
     ],
   },
   {
     label: "People",
     items: [
       { href: "/admin/team", icon: HardHat, label: "Team" },
+      { href: "/admin/agencies", icon: Building2, label: "Agencies" },
+      { href: "/admin/agents", icon: UserCheck, label: "Agents" },
       { href: "/admin/hr", icon: Users, label: "HR & Payroll" },
       { href: "/admin/vendors", icon: Building2, label: "Vendors" },
     ],
@@ -99,11 +115,11 @@ export const platformSystemNav: NavItem[] = [
 
 export const companyMobileNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Home" },
-  { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
+  { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
   { href: "/admin/clients", icon: Users, label: "Contacts" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
-  { href: "/admin/team", icon: HardHat, label: "Team" },
+  { href: "/admin/reports", icon: BarChart3, label: "Reports" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 

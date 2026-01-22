@@ -109,7 +109,7 @@ export function AdminShell({
         />
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="mx-auto w-full max-w-7xl px-4 py-4 md:px-5 overflow-x-hidden">
+          <div className="admin-content mx-auto w-full max-w-none px-4 py-4 md:px-6 overflow-x-hidden">
             {children}
           </div>
         </main>

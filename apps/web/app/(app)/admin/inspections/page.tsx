@@ -55,10 +55,6 @@ function getStatusTriggerClasses(status: string) {
   }
 }
 
-const getInspectionId = (inspection: Inspection) => {
-  return (inspection as Inspection & { inspectionId?: string }).id ?? (inspection as Inspection & { inspectionId?: string }).inspectionId ?? "";
-};
-
 const getInspectionAddress = (inspection: Inspection) => {
   const property = inspection.job?.property;
   if (property) {
@@ -66,21 +62,20 @@ const getInspectionAddress = (inspection: Inspection) => {
       .filter(Boolean)
       .join(", ");
   }
-  const legacyAddress = (inspection as Inspection & { address?: string }).address;
-  return legacyAddress ?? "Property unavailable";
+  return "Property unavailable";
 };
 
 const getInspectionClientName = (inspection: Inspection) => {
-  return inspection.job?.client?.name ?? (inspection as Inspection & { client?: string }).client ?? "Unknown client";
+  return inspection.job?.client?.name ?? "Unknown client";
 };
 
 const getInspectionInspectorName = (inspection: Inspection) => {
-  return inspection.inspector?.full_name ?? inspection.inspector?.email ?? (inspection as Inspection & { inspector?: string }).inspector ?? "Unassigned";
+  return inspection.inspector?.full_name ?? inspection.inspector?.email ?? "Unassigned";
 };
 
 const getInspectionDateTime = (inspection: Inspection) => {
-  const scheduledDate = inspection.job?.scheduled_date ?? (inspection as Inspection & { date?: string }).date ?? "";
-  const scheduledTime = inspection.job?.scheduled_time ?? (inspection as Inspection & { time?: string }).time ?? "";
+  const scheduledDate = inspection.job?.scheduled_date ?? "";
+  const scheduledTime = inspection.job?.scheduled_time ?? "";
   return {
     dateLabel: scheduledDate ? formatDateShort(scheduledDate) : "Unscheduled",
     timeLabel: scheduledTime ? `at ${formatTime12(scheduledTime)}` : "",
@@ -90,14 +85,26 @@ const getInspectionDateTime = (inspection: Inspection) => {
 const getInspectionServiceIds = (inspection: Inspection) => {
   const jobServiceIds = inspection.job?.selected_service_ids;
   if (Array.isArray(jobServiceIds) && jobServiceIds.length > 0) return jobServiceIds;
-  const legacyTypes = (inspection as Inspection & { types?: string[] }).types;
-  return Array.isArray(legacyTypes) ? legacyTypes : [];
+  return [];
+};
+
+const getInspectionPrice = (
+  inspection: Inspection,
+  serviceMap: Map<string, { serviceId: string; name: string }>
+) => {
+  const serviceIds = getInspectionServiceIds(inspection);
+  if (!serviceIds.length) return 0;
+  return serviceIds.reduce((sum, id) => {
+    const entry = serviceMap.get(id);
+    const price = (entry as { price?: number } | undefined)?.price ?? 0;
+    return sum + price;
+  }, 0);
 };
 
 const columns = (
   onStatusChange: (inspectionId: string, status: string) => void,
   getStatus: (inspectionId: string, currentStatus: string) => string,
-  serviceMap: Map<string, { serviceId: string; name: string }>
+  serviceMap: Map<string, { serviceId: string; name: string; price: number }>
 ): ColumnDef<Inspection>[] => [
   {
     id: "address",
@@ -115,7 +122,7 @@ const columns = (
       const address = getInspectionAddress(row.original);
       return (
         <Link
-          href={`/admin/inspections/${getInspectionId(row.original)}`}
+          href={`/admin/inspections/${row.original.id}`}
           className="flex items-start gap-2 max-w-xs hover:text-foreground"
         >
           <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
@@ -179,43 +186,53 @@ const columns = (
     accessorKey: "status",
     header: "Status",
     enableSorting: true,
-    cell: ({ row }) => (
-      <Select
-        value={getStatus(row.original.id, row.original.status)}
-        onValueChange={(value) => onStatusChange(row.original.id, value)}
-      >
-        <SelectTrigger
-          className={cn(
-            "h-8 w-[160px] font-medium shadow-none",
-            getStatusTriggerClasses(getStatus(row.original.id, row.original.status))
-          )}
+    cell: ({ row }) => {
+      const inspectionId = row.original.id;
+      const currentStatus = getStatus(inspectionId, row.original.status);
+      return (
+        <Select
+          value={currentStatus}
+          onValueChange={(value) => onStatusChange(inspectionId, value)}
         >
-          <SelectValue>{getStatusLabel(getStatus(row.original.id, row.original.status))}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {inspectionStatusOptions
-            .filter((option) => option.value !== "all")
-            .map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
-    ),
+          <SelectTrigger
+            className={cn(
+              "h-8 w-[160px] font-medium shadow-none",
+              getStatusTriggerClasses(currentStatus)
+            )}
+          >
+            <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {inspectionStatusOptions
+              .filter((option) => option.value !== "all")
+              .map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      );
+    },
   },
   {
     accessorKey: "price",
     header: "Price",
     enableSorting: true,
-    cell: () => <div className="text-sm font-medium">$0</div>,
+    cell: ({ row }) => {
+      const amount = getInspectionPrice(row.original, serviceMap);
+      return <div className="text-sm font-medium">${amount.toFixed(2)}</div>;
+    },
   },
 ];
 
 export default function InspectionsPage() {
-  const { data, isLoading, isError } = useInspections();
+  const { data, isLoading, isError, error } = useInspections();
   const { data: services = [] } = useServices();
-  const serviceMap = useMemo(() => createServiceMap(services), [services]);
+  const serviceMap = useMemo(() => createServiceMap(services), [services]) as Map<
+    string,
+    { serviceId: string; name: string; price: number }
+  >;
   const updateInspection = useUpdateInspection();
   const inspections = data ?? [];
   const [mobileQuery, setMobileQuery] = useState(() => {
@@ -309,7 +326,7 @@ export default function InspectionsPage() {
     statusOverrides[inspectionId] ?? currentStatus ?? "scheduled";
 
   const handleStatusChange = (inspectionId: string, status: string) => {
-    const current = inspections.find((i) => getInspectionId(i) === inspectionId);
+    const current = inspections.find((i) => i.id === inspectionId);
     const previousStatus = current?.status ?? "scheduled";
 
     setStatusOverrides((prev) => ({ ...prev, [inspectionId]: status }));
@@ -385,7 +402,14 @@ export default function InspectionsPage() {
           </CardHeader>
           <CardContent>
             {isError ? (
-              <div className="text-red-500">Failed to load inspections.</div>
+              <div className="text-red-500">
+                Failed to load inspections.
+                {error instanceof Error && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {error.message}
+                  </span>
+                )}
+              </div>
             ) : (
               <>
                 <div className="md:hidden space-y-4">
@@ -422,10 +446,11 @@ export default function InspectionsPage() {
                       const address = getInspectionAddress(inspection);
                       const selectedServices = getInspectionServiceIds(inspection);
                       const serviceLabel = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
+                      const inspectionPrice = getInspectionPrice(inspection, serviceMap);
                       return (
                       <Link
-                        key={getInspectionId(inspection) || `inspection-${index}`}
-                        href={`/admin/inspections/${getInspectionId(inspection)}`}
+                        key={inspection.id || `inspection-${index}`}
+                        href={`/admin/inspections/${inspection.id}`}
                         className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -442,12 +467,10 @@ export default function InspectionsPage() {
                             <span
                               className={cn(
                                 "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                                getStatusTriggerClasses(
-                                  getStatusValue(getInspectionId(inspection), inspection.status)
-                                )
+                                getStatusTriggerClasses(getStatusValue(inspection.id, inspection.status))
                               )}
                             >
-                              {getStatusLabel(getStatusValue(getInspectionId(inspection), inspection.status))}
+                              {getStatusLabel(getStatusValue(inspection.id, inspection.status))}
                             </span>
                           </div>
                         </div>
@@ -464,10 +487,10 @@ export default function InspectionsPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">
-                              {serviceLabel}
+                              {serviceLabel || "—"}
                             </Badge>
                             <span className="font-semibold text-foreground">
-                              $0
+                              ${inspectionPrice.toFixed(2)}
                             </span>
                           </div>
                         </div>

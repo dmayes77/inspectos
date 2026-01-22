@@ -8,7 +8,7 @@ export function useServices() {
   return useGet<Service[]>(
     "services",
     async () => (await fetchServices()) ?? [],
-    { initialData: [] }
+    { placeholderData: [] }
   );
 }
 

@@ -10,9 +10,7 @@ import {
 } from "@/lib/mock/team";
 
 export async function fetchInspections(): Promise<Inspection[]> {
-  const tenantId = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID;
-  const url = tenantId ? `/api/admin/inspections?tenant=${tenantId}` : "/api/admin/inspections";
-  const response = await fetch(url);
+  const response = await fetch("/api/admin/inspections");
   if (!response.ok) {
     throw new Error("Failed to load inspections.");
   }

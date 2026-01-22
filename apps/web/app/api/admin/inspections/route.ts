@@ -9,17 +9,67 @@ const normalizeTime = (time?: string | null) => {
   return time.slice(0, 5);
 };
 
-const buildAddress = (property: {
-  address_line1: string;
-  city: string;
-  state: string;
-  zip_code: string;
-}) => `${property.address_line1}, ${property.city}, ${property.state} ${property.zip_code}`;
+const unwrap = <T>(value: T | T[] | null | undefined): T | null => {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+};
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const tenantParam = url.searchParams.get("tenant");
   const tenantId = tenantParam || getTenantId();
+  const debug = url.searchParams.get("debug") === "1";
+
+  if (debug) {
+    const [inspectionsCount, jobsCount, ordersCount] = await Promise.all([
+      supabaseAdmin.from("inspections").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+      supabaseAdmin.from("jobs").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+      supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    ]);
+
+    return NextResponse.json({
+      tenantId,
+      counts: {
+        inspections: inspectionsCount.count ?? 0,
+        jobs: jobsCount.count ?? 0,
+        orders: ordersCount.count ?? 0,
+      },
+      errors: {
+        inspections: inspectionsCount.error?.message ?? null,
+        jobs: jobsCount.error?.message ?? null,
+        orders: ordersCount.error?.message ?? null,
+      },
+    });
+  }
+
+  if (url.searchParams.get("debug") === "2") {
+    const { data: raw, error: rawError } = await supabaseAdmin
+      .from("inspections")
+      .select(
+        `
+          id,
+          status,
+          notes,
+          inspector:profiles(id, full_name, email, avatar_url),
+          job:jobs(
+            id,
+            status,
+            scheduled_date,
+            scheduled_time,
+            duration_minutes,
+            template_id,
+            selected_service_ids,
+            client:clients(id, name),
+            property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
+            inspector:profiles(id, full_name, email, avatar_url)
+          )
+        `
+      )
+      .eq("tenant_id", tenantId)
+      .limit(3);
+
+    return NextResponse.json({ tenantId, error: rawError?.message ?? null, sample: raw ?? [] });
+  }
   const { data: inspections, error } = await supabaseAdmin
     .from("inspections")
     .select(
@@ -27,7 +77,8 @@ export async function GET(request: Request) {
         id,
         status,
         notes,
-          job:jobs(
+        inspector:profiles(id, full_name, email, avatar_url),
+        job:jobs(
           id,
           status,
           scheduled_date,
@@ -37,7 +88,17 @@ export async function GET(request: Request) {
           selected_service_ids,
           client:clients(id, name),
           property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
-          inspector:profiles(id, full_name)
+          inspector:profiles(id, full_name, email, avatar_url)
+        ),
+        order:orders(
+          id,
+          status,
+          scheduled_date,
+          scheduled_time,
+          duration_minutes,
+          client:clients(id, name),
+          property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
+          inspector:profiles(id, full_name, email, avatar_url)
         )
       `
     )
@@ -47,115 +108,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const templateIds = Array.from(
-    new Set(
-      (inspections ?? [])
-        .map((row) => (row.job as { template_id?: string | null })?.template_id)
-        .filter(Boolean) as string[]
-    )
-  );
-
-  const { data: services } = await supabaseAdmin
-    .from("services")
-    .select("id, name, price, duration_minutes, template_id")
-    .eq("tenant_id", tenantId)
-    .in("template_id", templateIds.length ? templateIds : ["00000000-0000-0000-0000-000000000000"])
-    .eq("is_active", true);
-
-  const selectedServiceIds = Array.from(
-    new Set(
-      (inspections ?? [])
-        .flatMap((row) => ((row.job as { selected_service_ids?: string[] | null })?.selected_service_ids ?? []))
-        .filter(Boolean)
-    )
-  );
-
-  const { data: selectedServices } = await supabaseAdmin
-    .from("services")
-    .select("id, name, price, duration_minutes")
-    .eq("tenant_id", tenantId)
-    .in("id", selectedServiceIds.length ? selectedServiceIds : ["00000000-0000-0000-0000-000000000000"])
-    .eq("is_active", true);
-
-  const { data: selectedPackages } = await supabaseAdmin
-    .from("packages")
-    .select("id, name, price, duration_minutes")
-    .eq("tenant_id", tenantId)
-    .in("id", selectedServiceIds.length ? selectedServiceIds : ["00000000-0000-0000-0000-000000000000"])
-    .eq("is_active", true);
-
-  const servicesByTemplate = new Map<string, { id: string; name: string; price: number; duration: number }[]>();
-  (services ?? []).forEach((service) => {
-    const list = servicesByTemplate.get(service.template_id) ?? [];
-    list.push({
-      id: service.id,
-      name: service.name,
-      price: Number(service.price ?? 0),
-      duration: service.duration_minutes ?? 0,
-    });
-    servicesByTemplate.set(service.template_id, list);
-  });
-
-  const selectedServiceMap = new Map<string, { id: string; name: string; price: number; duration: number }>();
-  (selectedServices ?? []).forEach((service) => {
-    selectedServiceMap.set(service.id, {
-      id: service.id,
-      name: service.name,
-      price: Number(service.price ?? 0),
-      duration: service.duration_minutes ?? 0,
-    });
-  });
-
-  (selectedPackages ?? []).forEach((pkg) => {
-    selectedServiceMap.set(pkg.id, {
-      id: pkg.id,
-      name: pkg.name,
-      price: Number(pkg.price ?? 0),
-      duration: pkg.duration_minutes ?? 0,
-    });
-  });
-
   const mapped = (inspections ?? []).map((row) => {
-    // Supabase types nested relations as arrays, use unknown to convert
-    const job = row.job as unknown as {
-      id: string;
-      status: string;
-      scheduled_date: string;
-      scheduled_time: string | null;
-      duration_minutes: number | null;
-      template_id: string | null;
-      selected_service_ids?: string[] | null;
-      client: { id: string; name: string } | null;
-      property: {
-        address_line1: string;
-        city: string;
-        state: string;
-          zip_code: string;
-          property_type?: string | null;
-          year_built?: number | null;
-          square_feet?: number | null;
-          bedrooms?: number | null;
-          bathrooms?: number | null;
-          stories?: string | null;
-          foundation?: string | null;
-          garage?: string | null;
-          pool?: boolean | null;
-      } | null;
-      inspector: { id: string; full_name: string | null } | null;
-    };
-
-    const selectedIds = job?.selected_service_ids ?? [];
-    const selectedList = selectedIds.map((id) => selectedServiceMap.get(id)).filter(Boolean) as {
-      id: string;
-      name: string;
-      price: number;
-      duration: number;
-    }[];
-    const serviceList = job?.template_id ? servicesByTemplate.get(job.template_id) ?? [] : [];
-    const activeList = selectedList.length > 0 ? selectedList : serviceList;
-    const price = activeList.reduce((sum, svc) => sum + svc.price, 0);
-    const duration = activeList.reduce((sum, svc) => sum + svc.duration, 0) || job?.duration_minutes || 0;
-
+    const rawJob = unwrap(row.job) ?? unwrap(row.order);
+    const job = rawJob
+      ? {
+          ...rawJob,
+          client: unwrap(rawJob.client),
+          property: unwrap(rawJob.property),
+          inspector: unwrap(rawJob.inspector),
+        }
+      : null;
     const status =
       row.status === "submitted"
         ? "pending_report"
@@ -164,29 +126,16 @@ export async function GET(request: Request) {
         : row.status;
 
     return {
-      inspectionId: row.id,
-      jobId: job?.id ?? "",
-      address: job?.property ? buildAddress(job.property) : "",
-      client: job?.client?.name ?? "",
-      clientId: job?.client?.id ?? "",
-      inspector: job?.inspector?.full_name ?? "",
-      inspectorId: job?.inspector?.id ?? "",
-      date: job?.scheduled_date ?? "",
-      time: normalizeTime(job?.scheduled_time ?? null),
-      types: selectedList.length > 0 ? selectedList.map((svc) => svc.id) : serviceList.map((svc) => svc.id),
+      id: row.id,
       status,
-      price,
-      sqft: job?.property?.square_feet ?? undefined,
-      yearBuilt: job?.property?.year_built ?? undefined,
-      propertyType: job?.property?.property_type ?? undefined,
-      bedrooms: job?.property?.bedrooms ?? undefined,
-      bathrooms: job?.property?.bathrooms ?? undefined,
-      stories: job?.property?.stories ?? undefined,
-      foundation: job?.property?.foundation ?? undefined,
-      garage: job?.property?.garage ?? undefined,
-      pool: job?.property?.pool ?? undefined,
-      notes: row.notes ?? undefined,
-      durationMinutes: duration,
+      notes: row.notes,
+      inspector: unwrap(row.inspector),
+      job: job
+        ? {
+          ...job,
+          scheduled_time: normalizeTime(job.scheduled_time ?? null),
+          }
+        : null,
     };
   });
 

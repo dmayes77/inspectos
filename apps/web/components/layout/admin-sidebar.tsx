@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,27 +54,35 @@ export function AdminSidebar({
     return defaults;
   };
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => getDefaultOpenSections());
+
+  useEffect(() => {
     const defaults = getDefaultOpenSections();
-    if (typeof window === "undefined") return defaults;
     const stored = window.localStorage.getItem(OPEN_SECTIONS_STORAGE_KEY);
-    if (!stored) return defaults;
+    if (!stored) {
+      setOpenSections(defaults);
+      return;
+    }
     try {
       const parsed = JSON.parse(stored) as Record<string, boolean>;
       const activeLabel = getActiveSectionLabel();
-      return activeLabel ? { ...parsed, [activeLabel]: true } : parsed;
+      const merged = { ...defaults, ...parsed };
+      setOpenSections(activeLabel ? { ...merged, [activeLabel]: true } : merged);
     } catch {
-      return defaults;
+      setOpenSections(defaults);
     }
-  });
+  }, [pathname, navSections]);
 
   const toggleSection = (label: string) => {
     setOpenSections((prev) => {
       const isOpening = !prev[label];
+      const keys = Array.from(new Set([...Object.keys(prev), label]));
       const next = Object.fromEntries(
-        Object.keys(prev).map((key) => [key, key === label ? isOpening : false])
+        keys.map((key) => [key, key === label ? isOpening : false])
       ) as Record<string, boolean>;
-      window.localStorage.setItem(OPEN_SECTIONS_STORAGE_KEY, JSON.stringify(next));
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(OPEN_SECTIONS_STORAGE_KEY, JSON.stringify(next));
+      }
       return next;
     });
   };

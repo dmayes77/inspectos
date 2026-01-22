@@ -224,8 +224,32 @@
    Admin Density (enterprise/operations focused)
    ----------------------------------------------------------------------------- */
 .admin-dense {
-  font-size: 0.875rem;
-  line-height: 1.4;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.admin-dense .text-xs {
+  font-size: 0.6875rem;
+}
+
+.admin-dense .text-sm {
+  font-size: 0.75rem;
+}
+
+.admin-dense .text-base {
+  font-size: 0.8125rem;
+}
+
+.admin-dense .text-lg {
+  font-size: 0.9375rem;
+}
+
+.admin-dense .text-xl {
+  font-size: 1.0625rem;
+}
+
+.admin-dense .text-2xl {
+  font-size: 1.25rem;
 }
 
 .admin-dense [data-slot="card"] {
@@ -249,20 +273,30 @@
 }
 
 .admin-dense [data-slot="card-title"] {
-  font-size: 0.95rem;
+  font-size: 0.875rem;
 }
 
 .admin-dense [data-slot="card-description"] {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
 }
 
 .admin-dense .admin-page-header h1 {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   line-height: 1.2;
 }
 
 .admin-dense .admin-page-header p {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+}
+
+.admin-content {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.admin-content > * {
+  grid-column: 1 / -1;
 }
 
 

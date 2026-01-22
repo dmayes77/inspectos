@@ -37,7 +37,7 @@ import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 export default function ServiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { data: allServices = [] } = useServices();
+  const { data: allServices = [], isLoading, isError, error } = useServices();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
   const service = allServices.find((s) => s.serviceId === params.id);
@@ -73,6 +73,35 @@ export default function ServiceDetailPage() {
   const includesValue = form.includes ?? service?.includes ?? [];
   const resolvedSelectedServiceIds = selectedServiceIds.length ? selectedServiceIds : service?.includedServiceIds ?? [];
   const resolvedTemplateSelection = templateSelection || service?.templateId || "none";
+
+  if (isLoading) {
+    return (
+      <AdminShell user={mockAdminUser}>
+        <div className="py-12 text-center text-muted-foreground">Loading service...</div>
+      </AdminShell>
+    );
+  }
+
+  if (isError) {
+    return (
+      <AdminShell user={mockAdminUser}>
+        <div className="space-y-6">
+          <Button variant="ghost" asChild>
+            <Link href="/admin/services">
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Back to Services
+            </Link>
+          </Button>
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-semibold mb-2">Service Error</h1>
+            <p className="text-muted-foreground">
+              {error instanceof Error ? error.message : "Failed to load service."}
+            </p>
+          </div>
+        </div>
+      </AdminShell>
+    );
+  }
 
   if (!service) {
     return (

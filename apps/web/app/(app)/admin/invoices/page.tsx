@@ -4,14 +4,18 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FilePlus } from "lucide-react";
+import { FilePlus, ArrowRight } from "lucide-react";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { Badge } from "@/components/ui/badge";
 import { useInvoices } from "@/hooks/use-invoices";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
+import { useOrders } from "@/hooks/use-orders";
+import Link from "next/link";
 
 export default function InvoicesPage() {
   const { data: invoices = [], isLoading } = useInvoices();
+  const { data: orders = [] } = useOrders();
+  const hasInvoices = invoices.length > 0;
   const totals = invoices.reduce(
     (acc, invoice) => {
       if (invoice.status === "paid") acc.paid += invoice.amount;
@@ -21,6 +25,20 @@ export default function InvoicesPage() {
     },
     { outstanding: 0, paid: 0, overdue: 0 }
   );
+  const orderTotals = orders.reduce(
+    (acc, order) => {
+      if (order.payment_status === "paid") acc.paid += order.total;
+      if (order.payment_status === "unpaid" || order.payment_status === "partial") {
+        acc.outstanding += order.total;
+        acc.unpaidCount += 1;
+      }
+      return acc;
+    },
+    { outstanding: 0, paid: 0, unpaidCount: 0 }
+  );
+  const outstandingTotal = hasInvoices ? totals.outstanding : orderTotals.outstanding;
+  const paidTotal = hasInvoices ? totals.paid : orderTotals.paid;
+  const overdueTotal = hasInvoices ? totals.overdue : 0;
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
@@ -28,9 +46,11 @@ export default function InvoicesPage() {
           title="Invoices"
           description="Generate invoices, track balances, and send payment reminders"
           actions={
-            <Button className="sm:w-auto">
-              <FilePlus className="mr-2 h-4 w-4" />
-              New Invoice
+            <Button className="sm:w-auto" asChild>
+              <Link href="/admin/orders?payment_status=unpaid">
+                <FilePlus className="mr-2 h-4 w-4" />
+                New Invoice
+              </Link>
             </Button>
           }
         />
@@ -39,19 +59,19 @@ export default function InvoicesPage() {
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Outstanding</p>
-              <p className="mt-2 text-2xl font-semibold">${totals.outstanding.toFixed(2)}</p>
+              <p className="mt-2 text-2xl font-semibold">${outstandingTotal.toFixed(2)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Paid</p>
-              <p className="mt-2 text-2xl font-semibold">${totals.paid.toFixed(2)}</p>
+              <p className="mt-2 text-2xl font-semibold">${paidTotal.toFixed(2)}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Overdue</p>
-              <p className="mt-2 text-2xl font-semibold">${totals.overdue.toFixed(2)}</p>
+              <p className="mt-2 text-2xl font-semibold">${overdueTotal.toFixed(2)}</p>
             </CardContent>
           </Card>
         </div>
@@ -68,7 +88,20 @@ export default function InvoicesPage() {
               </div>
             ) : invoices.length === 0 ? (
               <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                No invoices yet. Create an invoice from an inspection or package.
+                No invoices yet. Create an invoice from an order.
+                {orderTotals.unpaidCount > 0 && (
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {orderTotals.unpaidCount} unpaid orders ready to invoice
+                    </span>
+                    <Button variant="link" className="h-auto p-0" asChild>
+                      <Link href="/admin/orders">
+                        Review orders
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               invoices.map((invoice) => (

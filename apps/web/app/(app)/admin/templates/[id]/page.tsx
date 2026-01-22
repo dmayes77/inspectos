@@ -76,7 +76,7 @@ export default function TemplateEditorPage() {
           <Button variant="ghost" asChild>
             <Link href="/admin/templates">
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Templates
+              Back to Inspection Templates
             </Link>
           </Button>
           <Card>
@@ -96,7 +96,7 @@ export default function TemplateEditorPage() {
           <Button variant="ghost" asChild>
             <Link href="/admin/templates">
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Templates
+              Back to Inspection Templates
             </Link>
           </Button>
           <Card>
@@ -224,7 +224,7 @@ export default function TemplateEditorPage() {
         <Button variant="ghost" asChild>
           <Link href="/admin/templates">
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Templates
+            Back to Inspection Templates
           </Link>
         </Button>
 

@@ -17,5 +17,5 @@ export async function fetchScheduleItems(): Promise<ScheduleItem[]> {
     throw new Error("Failed to load schedule.");
   }
   const result = await response.json();
-  return result.data;
+  return Array.isArray(result) ? result : (result.data ?? []);
 }

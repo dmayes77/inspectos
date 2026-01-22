@@ -1,5 +1,5 @@
 export const getTenantId = () => {
-  const tenantId = process.env.SUPABASE_TENANT_ID;
+  const tenantId = process.env.SUPABASE_TENANT_ID || process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID;
   if (!tenantId) {
     throw new Error("SUPABASE_TENANT_ID is required to scope admin data.");
   }

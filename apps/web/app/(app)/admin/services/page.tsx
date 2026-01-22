@@ -25,7 +25,7 @@ import { can } from "@/lib/admin/permissions";
 import { useCreateTemplateStub, useTemplates } from "@/hooks/use-templates";
 
 export default function ServicesAdminPage() {
-  const { data: allServices = [], isLoading } = useServices();
+  const { data: allServices = [], isLoading, isError, error } = useServices();
   const createService = useCreateService();
   const updateService = useUpdateService();
   const deleteService = useDeleteService();
@@ -541,7 +541,16 @@ export default function ServicesAdminPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {allServices.length === 0 && !isLoading ? (
+            {isError ? (
+              <div className="text-red-500">
+                Failed to load services.
+                {error instanceof Error && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {error.message}
+                  </span>
+                )}
+              </div>
+            ) : allServices.length === 0 && !isLoading ? (
               <div className="rounded-lg border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No services yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">

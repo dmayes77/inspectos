@@ -8,11 +8,12 @@
 
 -- Sample Tenant
 INSERT INTO tenants (id, name, slug) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Acme Home Inspections', 'acme');
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Demo Company', 'demo')
+ON CONFLICT (id) DO NOTHING;
 
 -- Sample Template: Standard Home Inspection
 INSERT INTO templates (id, tenant_id, name, description, version) VALUES
-  ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'Standard Home Inspection', 'Complete residential home inspection template', 1);
+  ('22222222-2222-2222-2222-222222222222', 'f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Standard Home Inspection', 'Complete residential home inspection template', 1);
 
 -- Template Sections
 INSERT INTO template_sections (id, template_id, name, description, sort_order) VALUES
@@ -109,21 +110,21 @@ UPDATE template_items SET options = '[
 
 -- Defect Library
 INSERT INTO defect_library (tenant_id, category, name, description, severity, recommendation) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Roofing', 'Missing Shingles', 'One or more shingles are missing from the roof', 'moderate', 'Replace missing shingles to prevent water intrusion'),
-  ('11111111-1111-1111-1111-111111111111', 'Roofing', 'Damaged Flashing', 'Flashing around penetrations is damaged or improperly sealed', 'moderate', 'Repair or replace flashing and seal properly'),
-  ('11111111-1111-1111-1111-111111111111', 'Roofing', 'Clogged Gutters', 'Gutters are clogged with debris', 'minor', 'Clean gutters and downspouts'),
-  ('11111111-1111-1111-1111-111111111111', 'Electrical', 'Open Junction Box', 'Junction box is missing cover', 'major', 'Install proper cover on junction box'),
-  ('11111111-1111-1111-1111-111111111111', 'Electrical', 'Double-Tapped Breaker', 'Two wires connected to single breaker terminal', 'major', 'Install proper tandem breaker or separate circuits'),
-  ('11111111-1111-1111-1111-111111111111', 'Electrical', 'Missing GFCI', 'GFCI protection missing in required location', 'major', 'Install GFCI outlet or breaker'),
-  ('11111111-1111-1111-1111-111111111111', 'Plumbing', 'Active Leak', 'Water actively leaking from pipe or fixture', 'major', 'Repair leak immediately to prevent water damage'),
-  ('11111111-1111-1111-1111-111111111111', 'Plumbing', 'Corroded Pipes', 'Supply or drain pipes show significant corrosion', 'moderate', 'Monitor and plan for replacement'),
-  ('11111111-1111-1111-1111-111111111111', 'Plumbing', 'Slow Drain', 'Drain is slow to empty', 'minor', 'Clear drain blockage'),
-  ('11111111-1111-1111-1111-111111111111', 'HVAC', 'Dirty Filter', 'Air filter is dirty and restricting airflow', 'minor', 'Replace air filter'),
-  ('11111111-1111-1111-1111-111111111111', 'HVAC', 'No Cooling', 'AC system not producing cold air', 'major', 'Have HVAC technician evaluate and repair'),
-  ('11111111-1111-1111-1111-111111111111', 'Exterior', 'Wood Rot', 'Wood components show signs of rot or decay', 'moderate', 'Replace affected wood and address moisture source'),
-  ('11111111-1111-1111-1111-111111111111', 'Exterior', 'Improper Grading', 'Ground slopes toward foundation', 'moderate', 'Regrade to slope away from foundation'),
-  ('11111111-1111-1111-1111-111111111111', 'Foundation', 'Crack in Foundation', 'Visible crack in foundation wall or slab', 'moderate', 'Monitor crack; consult structural engineer if widening'),
-  ('11111111-1111-1111-1111-111111111111', 'Foundation', 'Water Staining', 'Evidence of water intrusion in basement/crawlspace', 'moderate', 'Address drainage and waterproofing'),
-  ('11111111-1111-1111-1111-111111111111', 'Safety', 'Missing Smoke Detector', 'Smoke detector missing or non-functional', 'safety', 'Install working smoke detector immediately'),
-  ('11111111-1111-1111-1111-111111111111', 'Safety', 'Missing CO Detector', 'Carbon monoxide detector missing where required', 'safety', 'Install CO detector near sleeping areas'),
-  ('11111111-1111-1111-1111-111111111111', 'Safety', 'Missing Handrail', 'Stairway missing required handrail', 'safety', 'Install handrail for safety');
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Roofing', 'Missing Shingles', 'One or more shingles are missing from the roof', 'moderate', 'Replace missing shingles to prevent water intrusion'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Roofing', 'Damaged Flashing', 'Flashing around penetrations is damaged or improperly sealed', 'moderate', 'Repair or replace flashing and seal properly'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Roofing', 'Clogged Gutters', 'Gutters are clogged with debris', 'minor', 'Clean gutters and downspouts'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Electrical', 'Open Junction Box', 'Junction box is missing cover', 'major', 'Install proper cover on junction box'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Electrical', 'Double-Tapped Breaker', 'Two wires connected to single breaker terminal', 'major', 'Install proper tandem breaker or separate circuits'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Electrical', 'Missing GFCI', 'GFCI protection missing in required location', 'major', 'Install GFCI outlet or breaker'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Plumbing', 'Active Leak', 'Water actively leaking from pipe or fixture', 'major', 'Repair leak immediately to prevent water damage'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Plumbing', 'Corroded Pipes', 'Supply or drain pipes show significant corrosion', 'moderate', 'Monitor and plan for replacement'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Plumbing', 'Slow Drain', 'Drain is slow to empty', 'minor', 'Clear drain blockage'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'HVAC', 'Dirty Filter', 'Air filter is dirty and restricting airflow', 'minor', 'Replace air filter'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'HVAC', 'No Cooling', 'AC system not producing cold air', 'major', 'Have HVAC technician evaluate and repair'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Exterior', 'Wood Rot', 'Wood components show signs of rot or decay', 'moderate', 'Replace affected wood and address moisture source'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Exterior', 'Improper Grading', 'Ground slopes toward foundation', 'moderate', 'Regrade to slope away from foundation'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Foundation', 'Crack in Foundation', 'Visible crack in foundation wall or slab', 'moderate', 'Monitor crack; consult structural engineer if widening'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Foundation', 'Water Staining', 'Evidence of water intrusion in basement/crawlspace', 'moderate', 'Address drainage and waterproofing'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Safety', 'Missing Smoke Detector', 'Smoke detector missing or non-functional', 'safety', 'Install working smoke detector immediately'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Safety', 'Missing CO Detector', 'Carbon monoxide detector missing where required', 'safety', 'Install CO detector near sleeping areas'),
+  ('f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3', 'Safety', 'Missing Handrail', 'Stairway missing required handrail', 'safety', 'Install handrail for safety');

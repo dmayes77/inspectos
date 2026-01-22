@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
@@ -55,14 +55,32 @@ const mapPackage = (row: PackageRow, items: PackageItemRow[]) => ({
   status: row.is_active ? "active" : "inactive",
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const tenantId = getTenantId();
+  const debug = request.nextUrl.searchParams.get("debug") === "1";
+
+  if (debug) {
+    const [servicesCount, packagesCount] = await Promise.all([
+      supabaseAdmin.from("services").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+      supabaseAdmin.from("packages").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    ]);
+    return NextResponse.json({
+      tenantId,
+      counts: {
+        services: servicesCount.count ?? 0,
+        packages: packagesCount.count ?? 0,
+      },
+      errors: {
+        services: servicesCount.error?.message ?? null,
+        packages: packagesCount.error?.message ?? null,
+      },
+    });
+  }
 
   const { data: services, error: servicesError } = await supabaseAdmin
     .from("services")
     .select("*")
     .eq("tenant_id", tenantId)
-    .eq("is_active", true)
     .order("name");
 
   if (servicesError) {
@@ -73,7 +91,6 @@ export async function GET() {
     .from("packages")
     .select("*")
     .eq("tenant_id", tenantId)
-    .eq("is_active", true)
     .order("name");
 
   if (packagesError) {

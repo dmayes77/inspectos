@@ -1,84 +1,135 @@
+"use client";
+
+import { useMemo } from "react";
+import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, DollarSign, Users, TrendingUp, Calendar, Clock, MapPin, ArrowRight, Plus } from "lucide-react";
-import Link from "next/link";
+import {
+  ClipboardList,
+  DollarSign,
+  Users,
+  TrendingUp,
+  Calendar,
+  Clock,
+  MapPin,
+  ArrowRight,
+  Plus,
+} from "lucide-react";
 
 import { mockAdminUser } from "@/lib/constants/mock-users";
-import { inspectionStatusBadge } from "@/lib/admin/badges";
 import { can } from "@/lib/admin/permissions";
 import { formatTime12 } from "@/lib/utils/dates";
-import { getServiceNamesByIds } from "@/lib/utils/services";
+import { useOrders } from "@/hooks/use-orders";
+import { useClients } from "@/hooks/use-clients";
 
-const stats = [
-  {
-    title: "Inspections This Week",
-    value: "24",
-    change: "+12%",
-    changeType: "positive" as const,
-    icon: ClipboardList,
-  },
-  {
-    title: "Revenue This Week",
-    value: "$9,450",
-    change: "+8%",
-    changeType: "positive" as const,
-    icon: DollarSign,
-  },
-  {
-    title: "Active Clients",
-    value: "156",
-    change: "+3",
-    changeType: "positive" as const,
-    icon: Users,
-  },
-  {
-    title: "Avg. Completion Time",
-    value: "2.4h",
-    change: "-15min",
-    changeType: "positive" as const,
-    icon: TrendingUp,
-  },
-];
+const formatStatusLabel = (status?: string | null) => {
+  if (!status) return "—";
+  return status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
-import { inspections } from "@/lib/mock/inspections";
-import { services } from "@/lib/mock/services";
+const getOrderAddress = (order: {
+  property?: {
+    address_line1?: string;
+    address_line2?: string | null;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+  };
+}) => {
+  const property = order.property;
+  if (!property) return "Property unavailable";
+  return [
+    property.address_line1,
+    property.address_line2,
+    `${property.city}, ${property.state} ${property.zip_code}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
 
-// Filter today's inspections from the real mock data
-const today = new Date().toISOString().slice(0, 10);
-const todayInspections = inspections.filter((i) => i.date === today);
-
-const recentActivity = [
-  {
-    id: 1,
-    action: "Report delivered",
-    details: "123 Oak Street - John Smith",
-    time: "2 hours ago",
-  },
-  {
-    id: 2,
-    action: "Payment received",
-    details: "$425.00 from Sarah Chen",
-    time: "3 hours ago",
-  },
-  {
-    id: 3,
-    action: "New booking",
-    details: "Full inspection - 789 Cedar Lane",
-    time: "5 hours ago",
-  },
-  {
-    id: 4,
-    action: "Inspection completed",
-    details: "321 Pine Road - James Wilson",
-    time: "6 hours ago",
-  },
-];
-
+const getServiceSummary = (order: { inspection?: { services?: Array<{ name: string }> } | null }) => {
+  const services = order.inspection?.services ?? [];
+  if (services.length === 0) return "No services";
+  if (services.length === 1) return services[0].name;
+  return `${services[0].name} +${services.length - 1}`;
+};
 
 export default function OverviewPage() {
+  const { data: orders = [], isLoading: ordersLoading } = useOrders();
+  const { data: clients = [] } = useClients();
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((order) => order.scheduled_date === today);
+
+  const stats = useMemo(() => {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const inspectionsThisWeek = orders.filter((order) => {
+      if (!order.scheduled_date) return false;
+      const date = new Date(order.scheduled_date);
+      return date >= weekAgo;
+    }).length;
+
+    const revenueThisWeek = orders
+      .filter((order) => order.scheduled_date && new Date(order.scheduled_date) >= weekAgo)
+      .reduce((sum, order) => sum + order.total, 0);
+
+    const outstandingOrders = orders.filter((order) => order.payment_status === "unpaid");
+    const outstandingTotal = outstandingOrders.reduce((sum, order) => sum + order.total, 0);
+    const outstandingCount = outstandingOrders.length;
+
+    return [
+      {
+        title: "Inspections This Week",
+        value: inspectionsThisWeek.toString(),
+        change: ordersLoading ? "—" : "Updated",
+        changeType: "positive" as const,
+        icon: ClipboardList,
+      },
+      {
+        title: "Revenue This Week",
+        value: `$${revenueThisWeek.toLocaleString()}`,
+        change: ordersLoading ? "—" : "Updated",
+        changeType: "positive" as const,
+        icon: DollarSign,
+      },
+      {
+        title: "Active Clients",
+        value: clients.length.toString(),
+        change: ordersLoading ? "—" : "Updated",
+        changeType: "positive" as const,
+        icon: Users,
+      },
+      {
+        title: "Outstanding Invoices",
+        value: `$${outstandingTotal.toLocaleString()}`,
+        change: outstandingCount ? `${outstandingCount} unpaid` : "All caught up",
+        changeType: "positive" as const,
+        icon: TrendingUp,
+      },
+    ];
+  }, [clients.length, orders, ordersLoading]);
+
+  const recentActivity = useMemo(() => {
+    return orders
+      .slice()
+      .sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1))
+      .slice(0, 4)
+      .map((order) => ({
+        id: order.id,
+        action: `Order ${formatStatusLabel(order.status)}`,
+        details: `${getOrderAddress(order)} • ${order.client?.name ?? "No client"}`,
+        time: new Date(order.updated_at).toLocaleString(),
+      }));
+  }, [orders]);
+
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
@@ -87,17 +138,16 @@ export default function OverviewPage() {
           description={`Welcome back, ${mockAdminUser.name.split(" ")[0]}. Here's what's happening today.`}
           actions={
             can(mockAdminUser.role, "create_inspections") ? (
-            <Button asChild className="sm:w-auto">
-              <Link href="/admin/inspections/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Inspection
-              </Link>
-            </Button>
+              <Button asChild className="sm:w-auto">
+                <Link href="/admin/orders/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Order
+                </Link>
+              </Button>
             ) : null
           }
         />
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((stat) => (
             <Card key={stat.title}>
@@ -108,27 +158,28 @@ export default function OverviewPage() {
               <CardContent>
                 <div className="text-xl font-bold sm:text-2xl">{stat.value}</div>
                 <p className="text-xs text-muted-foreground sm:text-sm">
-                  <span className={stat.changeType === "positive" ? "text-green-600" : "text-red-600"}>{stat.change}</span> from last week
+                  <span className={stat.changeType === "positive" ? "text-green-600" : "text-red-600"}>
+                    {stat.change}
+                  </span>{" "}
+                  from last week
                 </p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Today's Inspections - Takes 2 columns */}
           <Card className="lg:col-span-2">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Today&apos;s Inspections
+                  Today&apos;s Orders
                 </CardTitle>
-                <CardDescription>{todayInspections.length} inspections scheduled for today</CardDescription>
+                <CardDescription>{todayOrders.length} orders scheduled for today</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/inspections">
+                <Link href="/admin/orders">
                   View All
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -136,41 +187,52 @@ export default function OverviewPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {todayInspections.map((inspection) => (
-                  <div key={inspection.inspectionId} className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50">
+                {todayOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                  >
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                         <Clock className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">{formatTime12(inspection.time)}</span>
-                          {inspectionStatusBadge(inspection.status)}
+                          <span className="font-medium">
+                            {formatTime12(order.scheduled_time ?? "09:00")}
+                          </span>
+                          <Badge variant="outline">{formatStatusLabel(order.status)}</Badge>
                         </div>
                         <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          {inspection.address}
+                          {getOrderAddress(order)}
                         </div>
                         <div className="mt-1 flex items-center gap-2 text-sm">
-                          <span className="text-muted-foreground">{inspection.inspector}</span>
+                          <span className="text-muted-foreground">
+                            {order.inspector?.full_name ?? "Unassigned"}
+                          </span>
                           <Badge variant="outline" className="text-xs">
-                            {inspection.types && inspection.types.length > 0 ? getServiceNamesByIds(inspection.types, services).join(", ") : "N/A"}
+                            {getServiceSummary(order)}
                           </Badge>
                         </div>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/inspections/${inspection.inspectionId}`}>
+                      <Link href={`/admin/orders/${order.id}`}>
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
                   </div>
                 ))}
+                {todayOrders.length === 0 && (
+                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    No orders scheduled today.
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Activity */}
           <Card>
             <CardHeader>
               <CardTitle>Recent Activity</CardTitle>
@@ -188,22 +250,26 @@ export default function OverviewPage() {
                     </div>
                   </div>
                 ))}
+                {recentActivity.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No recent activity yet.</p>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Stats Row */}
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Pending Reports</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3</div>
+              <div className="text-2xl font-bold">
+                {orders.filter((order) => order.status === "pending_report").length}
+              </div>
               <p className="text-xs text-muted-foreground">Awaiting review and delivery</p>
               <Button variant="link" className="mt-2 h-auto p-0" asChild>
-                <Link href="/admin/inspections?status=pending_report">View pending →</Link>
+                <Link href="/admin/orders?status=pending_report">View pending →</Link>
               </Button>
             </CardContent>
           </Card>
@@ -213,23 +279,47 @@ export default function OverviewPage() {
               <CardTitle className="text-sm font-medium">Outstanding Invoices</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$2,150</div>
-              <p className="text-xs text-muted-foreground">5 invoices unpaid</p>
+              <div className="text-2xl font-bold">
+                ${orders.filter((order) => order.payment_status === "unpaid").reduce((sum, order) => sum + order.total, 0).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {orders.filter((order) => order.payment_status === "unpaid").length} invoices unpaid
+              </p>
               <Button variant="link" className="mt-2 h-auto p-0" asChild>
-                <Link href="/admin/settings/billing">View invoices →</Link>
+                <Link href="/admin/invoices">View invoices →</Link>
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Team Availability</CardTitle>
+              <CardTitle className="text-sm font-medium">Today&apos;s Schedule</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2/3</div>
-              <p className="text-xs text-muted-foreground">Inspectors available tomorrow</p>
+              <div className="text-2xl font-bold">{todayOrders.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {(() => {
+                  const assignedInspectors = new Set(
+                    todayOrders
+                      .filter((o) => o.inspector?.id)
+                      .map((o) => o.inspector?.id)
+                  );
+                  const unassigned = todayOrders.filter((o) => !o.inspector?.id).length;
+                  if (assignedInspectors.size === 0 && unassigned === 0) {
+                    return "No orders scheduled";
+                  }
+                  const parts = [];
+                  if (assignedInspectors.size > 0) {
+                    parts.push(`${assignedInspectors.size} inspector${assignedInspectors.size > 1 ? "s" : ""} working`);
+                  }
+                  if (unassigned > 0) {
+                    parts.push(`${unassigned} unassigned`);
+                  }
+                  return parts.join(" • ");
+                })()}
+              </p>
               <Button variant="link" className="mt-2 h-auto p-0" asChild>
-                <Link href="/admin/team">Manage team →</Link>
+                <Link href="/admin/schedule">View schedule →</Link>
               </Button>
             </CardContent>
           </Card>
