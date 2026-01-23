@@ -15,6 +15,7 @@ import { AdminNotifications } from "@/components/layout/admin-notifications";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { AdminHeader } from "@/components/layout/admin-header";
 import { AdminMobileNav } from "@/components/layout/admin-mobile-nav";
+import { useSettings } from "@/hooks/use-settings";
 
 interface AdminShellProps {
   children: ReactNode;
@@ -32,7 +33,7 @@ interface AdminShellProps {
 
 export function AdminShell({
   children,
-  title = "InspectOS",
+  title,
   showBackButton = false,
   onBack,
   headerActions,
@@ -43,8 +44,14 @@ export function AdminShell({
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { data: settings } = useSettings();
 
   const isPlatformAdmin = pathname.startsWith("/platform");
+  const businessName = settings?.company?.name || undefined;
+  const businessLogo = settings?.branding?.logoUrl || undefined;
+  const timeZone =
+    settings?.company?.timezone ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
   const mainNav = isPlatformAdmin ? platformMainNav : companyMainNav;
   const pinnedNav = isPlatformAdmin ? [] : companyPinnedNav;
   const navSections = isPlatformAdmin ? [] : companyNavSections;
@@ -52,6 +59,15 @@ export function AdminShell({
   const homeHref = isPlatformAdmin ? "/platform" : "/admin/overview";
   const contextLabel = isPlatformAdmin ? "Platform Admin" : user?.companyName;
   const settingsHref = isPlatformAdmin ? "/platform/content" : "/admin/settings";
+  const allNavItems = useMemo(
+    () => [
+      ...mainNav,
+      ...pinnedNav,
+      ...navSections.flatMap((section) => section.items),
+      ...systemNav,
+    ],
+    [mainNav, pinnedNav, navSections, systemNav]
+  );
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -81,6 +97,15 @@ export function AdminShell({
     ];
   }, [mainNav, systemNav]);
 
+  const resolvedTitle = useMemo(() => {
+    if (title) return title;
+    const match = allNavItems
+      .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+      .sort((a, b) => b.href.length - a.href.length)[0];
+    if (match?.label) return match.label;
+    return isPlatformAdmin ? "Platform" : "Overview";
+  }, [title, allNavItems, pathname, isPlatformAdmin]);
+
   return (
     <div className="admin-shell admin-dense flex h-dvh overflow-hidden bg-background safe-area-inset-left safe-area-inset-right">
       <AdminSidebar
@@ -92,17 +117,20 @@ export function AdminShell({
         systemNav={systemNav}
         isPlatformAdmin={isPlatformAdmin}
         pathname={pathname}
+        businessName={businessName}
+        businessLogo={businessLogo}
       />
 
       <div className="flex flex-1 flex-col overflow-hidden safe-area-inset-top">
         <AdminHeader
-          title={title}
+          title={resolvedTitle}
           showBackButton={showBackButton}
           onBack={onBack}
           headerActions={headerActions}
           user={user}
           contextLabel={contextLabel}
           settingsHref={settingsHref}
+          timeZone={timeZone}
           onOpenMobileNav={() => setMobileNavOpen(true)}
           onOpenCommand={() => setCommandOpen(true)}
           onOpenNotifications={() => setNotificationsOpen(true)}
@@ -124,6 +152,8 @@ export function AdminShell({
         systemNav={systemNav}
         isPlatformAdmin={isPlatformAdmin}
         pathname={pathname}
+        businessName={businessName}
+        businessLogo={businessLogo}
       />
 
       <AdminCommandPalette open={commandOpen} onOpenChange={setCommandOpen} items={commandItems} />

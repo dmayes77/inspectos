@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Bell, ChevronLeft, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminUserMenu } from "@/components/layout/admin-user-menu";
@@ -17,6 +17,7 @@ interface AdminHeaderProps {
   };
   contextLabel?: string;
   settingsHref: string;
+  timeZone: string;
   onOpenMobileNav: () => void;
   onOpenCommand: () => void;
   onOpenNotifications: () => void;
@@ -30,10 +31,36 @@ export function AdminHeader({
   user,
   contextLabel,
   settingsHref,
+  timeZone,
   onOpenMobileNav,
   onOpenCommand,
   onOpenNotifications,
 }: AdminHeaderProps) {
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeLabel = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      weekday: "long",
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const parts = formatter.formatToParts(now);
+    const byType = new Map(parts.map((part) => [part.type, part.value]));
+    const date = `${byType.get("weekday")} ${byType.get("month")} ${byType.get("day")} ${byType.get("year")}`;
+    const time = `${byType.get("hour")}:${byType.get("minute")}:${byType.get("second")} ${byType.get("dayPeriod")}`;
+    return `${date} ${time}`;
+  }, [now, timeZone]);
+
   return (
     <header className="flex h-12 items-center justify-between border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-3">
@@ -55,7 +82,7 @@ export function AdminHeader({
             <ChevronLeft className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-lg font-semibold">{title}</h1>
+        <h1 className="text-lg font-semibold tabular-nums">{timeLabel}</h1>
       </div>
 
       <div className="flex items-center gap-3">

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/brand/logo";
 import { AdminNavLink } from "@/components/layout/admin-nav-link";
 import {
   Sheet,
@@ -24,6 +24,8 @@ interface AdminMobileNavProps {
   systemNav: NavItem[];
   isPlatformAdmin: boolean;
   pathname: string;
+  businessName?: string;
+  businessLogo?: string;
 }
 
 export function AdminMobileNav({
@@ -35,6 +37,8 @@ export function AdminMobileNav({
   systemNav,
   isPlatformAdmin,
   pathname,
+  businessName,
+  businessLogo,
 }: AdminMobileNavProps) {
   const getActiveSectionLabel = () => {
     const match = navSections.find((section) =>
@@ -89,7 +93,24 @@ export function AdminMobileNav({
       <SheetContent side="left" className="w-72 p-0 flex flex-col">
         <SheetHeader className="border-b">
           <SheetTitle className="px-4 py-4">
-            <Logo size="sm" />
+            <div className="flex items-center gap-2">
+              {businessLogo ? (
+                <Image
+                  src={businessLogo}
+                  alt={businessName || "Logo"}
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shrink-0">
+                  {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
+                </div>
+              )}
+              <span className="font-semibold text-sm truncate">
+                {businessName || "InspectOS"}
+              </span>
+            </div>
           </SheetTitle>
         </SheetHeader>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useSettings } from "../../hooks/use-settings";
+import { useSettings } from "@/hooks/use-settings";
 
 function hexToOklch(hex: string): string | null {
   // Remove # if present

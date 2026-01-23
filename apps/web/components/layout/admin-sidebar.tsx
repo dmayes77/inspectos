@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/brand/logo";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AdminNavLink } from "@/components/layout/admin-nav-link";
@@ -21,6 +21,8 @@ interface AdminSidebarProps {
   systemNav: NavItem[];
   isPlatformAdmin: boolean;
   pathname: string;
+  businessName?: string;
+  businessLogo?: string;
 }
 
 export function AdminSidebar({
@@ -32,6 +34,8 @@ export function AdminSidebar({
   systemNav,
   isPlatformAdmin,
   pathname,
+  businessName,
+  businessLogo,
 }: AdminSidebarProps) {
   const [navQuery, setNavQuery] = useState("");
 
@@ -111,8 +115,30 @@ export function AdminSidebar({
       )}
     >
       <div className="flex h-12 items-center border-b px-4">
-        <Link href={homeHref}>
-          <Logo size={collapsed ? "sm" : "md"} variant={collapsed ? "icon" : "full"} />
+        <Link href={homeHref} className="flex items-center gap-2 min-w-0">
+          {businessLogo ? (
+            <Image
+              src={businessLogo}
+              alt={businessName || "Logo"}
+              width={collapsed ? 24 : 32}
+              height={collapsed ? 24 : 32}
+              className="object-contain"
+            />
+          ) : (
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shrink-0",
+                collapsed ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
+              )}
+            >
+              {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
+            </div>
+          )}
+          {!collapsed && (
+            <span className="font-semibold text-sm truncate">
+              {businessName || "InspectOS"}
+            </span>
+          )}
         </Link>
       </div>
 
