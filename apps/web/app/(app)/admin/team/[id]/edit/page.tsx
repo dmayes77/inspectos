@@ -76,8 +76,8 @@ export default function EditTeamMemberPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [selectedRole, setSelectedRole] = useState("INSPECTOR");
-  const [selectedStatus, setSelectedStatus] = useState("active");
+  const [selectedRole, setSelectedRole] = useState<TeamMember["role"]>("INSPECTOR");
+  const [selectedStatus, setSelectedStatus] = useState<TeamMember["status"]>("active");
   const [selectedCertifications, setSelectedCertifications] = useState<string[]>([]);
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
