@@ -143,7 +143,7 @@ export function AdminShell({
         isPlatformAdmin={isPlatformAdmin}
         pathname={pathname}
         businessName={businessName}
-        businessLogo={businessLogo}
+        businessLogo={businessLogo ?? undefined}
       />
 
       <div className="flex flex-1 flex-col overflow-hidden safe-area-inset-top">
@@ -178,7 +178,7 @@ export function AdminShell({
         isPlatformAdmin={isPlatformAdmin}
         pathname={pathname}
         businessName={businessName}
-        businessLogo={businessLogo}
+        businessLogo={businessLogo ?? undefined}
       />
 
       <AdminCommandPalette open={commandOpen} onOpenChange={setCommandOpen} items={commandItems} />
