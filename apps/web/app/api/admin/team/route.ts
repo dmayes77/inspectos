@@ -72,15 +72,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: { message: "Email is required." } }, { status: 400 });
   }
 
-  const { data: userResult, error: userError } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-  if (userError || !userResult?.user) {
+  const { data: usersResult, error: userError } = await supabaseAdmin.auth.admin.listUsers({
+    page: 1,
+    perPage: 200,
+  });
+  const user = usersResult?.users?.find((candidate) => candidate.email?.toLowerCase() === email);
+  if (userError || !user) {
     return NextResponse.json(
       { error: { message: "Auth user not found. Create the user in Supabase Auth first." } },
       { status: 400 }
     );
   }
 
-  const userId = userResult.user.id;
+  const userId = user.id;
 
   const phone = typeof payload?.phone === "string" ? payload.phone.trim() : undefined;
 
