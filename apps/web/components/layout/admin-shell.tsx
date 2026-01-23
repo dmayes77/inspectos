@@ -44,14 +44,31 @@ export function AdminShell({
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { data: settings } = useSettings();
+  const [clientTimeZone, setClientTimeZone] = useState("UTC");
+  const [mounted, setMounted] = useState(false);
+  const [ready, setReady] = useState(false);
+  const { data: settings, isLoading } = useSettings();
+
+  // Detect client timezone and mark as mounted
+  useEffect(() => {
+    setClientTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    setMounted(true);
+  }, []);
+
+  // Once settings are loaded, wait a tick before showing UI to let branding apply
+  useEffect(() => {
+    if (mounted && !isLoading && settings) {
+      // Use requestAnimationFrame to ensure branding CSS has been applied
+      requestAnimationFrame(() => {
+        setReady(true);
+      });
+    }
+  }, [mounted, isLoading, settings]);
 
   const isPlatformAdmin = pathname.startsWith("/platform");
-  const businessName = settings?.company?.name || undefined;
-  const businessLogo = settings?.branding?.logoUrl || undefined;
-  const timeZone =
-    settings?.company?.timezone ||
-    Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const businessName = settings?.company?.name;
+  const businessLogo = settings?.branding?.logoUrl;
+  const timeZone = settings?.company?.timezone || clientTimeZone;
   const mainNav = isPlatformAdmin ? platformMainNav : companyMainNav;
   const pinnedNav = isPlatformAdmin ? [] : companyPinnedNav;
   const navSections = isPlatformAdmin ? [] : companyNavSections;
@@ -106,8 +123,16 @@ export function AdminShell({
     return isPlatformAdmin ? "Platform" : "Overview";
   }, [title, allNavItems, pathname, isPlatformAdmin]);
 
+  const showLoading = !ready;
+
   return (
-    <div className="admin-shell admin-dense flex h-dvh overflow-hidden bg-background safe-area-inset-left safe-area-inset-right">
+    <div className="relative h-dvh w-full">
+      {showLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background">
+          <div className="text-muted-foreground">Loading...</div>
+        </div>
+      )}
+      <div className="admin-shell admin-dense flex h-dvh overflow-hidden bg-background safe-area-inset-left safe-area-inset-right">
       <AdminSidebar
         collapsed={collapsed}
         homeHref={homeHref}
@@ -158,6 +183,7 @@ export function AdminShell({
 
       <AdminCommandPalette open={commandOpen} onOpenChange={setCommandOpen} items={commandItems} />
       <AdminNotifications open={notificationsOpen} onOpenChange={setNotificationsOpen} />
+      </div>
     </div>
   );
 }

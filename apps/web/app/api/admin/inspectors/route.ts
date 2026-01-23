@@ -9,7 +9,7 @@ export async function GET() {
     .from("tenant_members")
     .select("user_id, role, profiles(id, full_name, email)")
     .eq("tenant_id", tenantId)
-    .in("role", ["inspector", "owner", "admin"]);
+    .in("role", ["inspector"]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

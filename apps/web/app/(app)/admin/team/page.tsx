@@ -15,6 +15,11 @@ import { mockAdminUser } from "@/lib/constants/mock-users";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { can } from "@/lib/admin/permissions";
 
+function formatShortMemberId(id?: string | null) {
+  if (!id) return "TM-0000";
+  const clean = id.replace(/-/g, "").toUpperCase();
+  return `TM-${clean.slice(-4).padStart(4, "0")}`;
+}
 
 export default function TeamPage() {
   const { data: teamMembers = [], isLoading } = useTeamMembers();
@@ -159,15 +164,19 @@ export default function TeamPage() {
                       <div>
                         <CardTitle className="text-base">{member.name}</CardTitle>
                         <CardDescription className="flex flex-col gap-1 mt-1">
-                          <span className="text-xs font-mono">{member.teamMemberId}</span>
-                          <div>{teamRoleBadge(member.role)}</div>
+                          <span className="text-xs text-muted-foreground">
+                            {formatShortMemberId(member.id || member.teamMemberId)}
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {teamRoleBadge(member.role)}
+                            {teamStatusBadge(member.status)}
+                          </div>
                         </CardDescription>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
-                      {teamStatusBadge(member.status)}
                       <div className="flex gap-1">
                         {member.certifications.map((cert) => (
                           <Badge key={cert} variant="outline" className="text-xs">

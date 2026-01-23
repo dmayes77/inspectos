@@ -43,15 +43,26 @@ import { Mail, Phone, MapPin, Star, ClipboardList, ChevronLeft, Edit, Trash2 } f
 import { useState } from "react";
 import { useTeamMembers, useUpdateTeamMember, useDeleteTeamMember, TeamMember } from "@/hooks/use-team";
 
+function formatShortMemberId(id?: string | null) {
+  if (!id) return "TM-0000";
+  const clean = id.replace(/-/g, "").toUpperCase();
+  return `TM-${clean.slice(-4).padStart(4, "0")}`;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-fA-F-]{36}$/.test(value);
+}
 
 export default function TeamMemberDetailPage() {
   const params = useParams();
   const router = useRouter();
-
   const { data: teamMembers = [] } = useTeamMembers();
   const updateMember = useUpdateTeamMember();
   const deleteMember = useDeleteTeamMember();
-  const member = teamMembers.find((m) => m.teamMemberId.toLowerCase() === String(params.id).toLowerCase());
+  const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const member = teamMembers.find((m) => m.teamMemberId.toLowerCase() === memberId.toLowerCase());
+  const resolvedMemberId = member?.teamMemberId && isUuid(member.teamMemberId) ? member.teamMemberId : "";
   const [form, setForm] = useState<Partial<TeamMember>>(member || {});
   const [editing, setEditing] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -59,7 +70,7 @@ export default function TeamMemberDetailPage() {
   // Fix: define memberRolePermissions after member is available
   const memberRolePermissions = member ? getPermissionsForRole(member.role) : [];
 
-  if (!member) {
+  if (!member || !resolvedMemberId) {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="p-8">Not found.</div>
@@ -73,12 +84,18 @@ export default function TeamMemberDetailPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMember.mutate({ teamMemberId: member.teamMemberId, ...form });
+    if (!resolvedMemberId) {
+      return;
+    }
+    updateMember.mutate({ teamMemberId: resolvedMemberId, ...form });
     setEditing(false);
   };
 
   const handleDelete = () => {
-    deleteMember.mutate(member.teamMemberId);
+    if (!resolvedMemberId) {
+      return;
+    }
+    deleteMember.mutate(resolvedMemberId);
     setDeleteDialogOpen(false);
     router.push("/admin/team");
   };
@@ -114,9 +131,8 @@ export default function TeamMemberDetailPage() {
                     {teamStatusBadge(member.status)}
                   </div>
                 </div>
-                <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
-                  <span className="font-medium">Team Member ID:</span>
-                  <span className="font-mono">{member.teamMemberId}</span>
+                <div className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {formatShortMemberId(member.id || member.teamMemberId)}
                 </div>
                 <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
                   <span className="font-medium">Joined</span>

@@ -152,6 +152,7 @@ export interface UpdateOrderInput {
   scheduled_date?: string | null;
   scheduled_time?: string | null;
   duration_minutes?: number;
+  services?: OrderService[];
   subtotal?: number;
   discount?: number;
   tax?: number;

@@ -2,12 +2,6 @@ import type { Inspection, LegacyInspection } from "@/types/inspection";
 import type { Client } from "@/hooks/use-clients";
 import type { TeamMember } from "@/hooks/use-team";
 import type { Service } from "@/hooks/use-services";
-import {
-  getTeamMembers,
-  createTeamMember as createMockTeamMember,
-  updateTeamMember,
-  deleteTeamMember,
-} from "@/lib/mock/team";
 
 export async function fetchInspections(): Promise<Inspection[]> {
   const response = await fetch("/api/admin/inspections");
@@ -126,21 +120,80 @@ export async function deleteClientById(clientId: string): Promise<boolean> {
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  return Promise.resolve(getTeamMembers());
+  const response = await fetch("/api/admin/team");
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error?.error?.message || "Failed to load team members.");
+  }
+  const result = await response.json();
+  return result.data ?? [];
 }
 
 export async function createTeamMember(data: Partial<TeamMember>): Promise<TeamMember> {
-  return Promise.resolve(createMockTeamMember(data));
+  const response = await fetch("/api/admin/team", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: data.role,
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error?.error?.message || "Failed to create team member.");
+  }
+  const result = await response.json();
+  return {
+    id: result.data?.user_id ?? "",
+    teamMemberId: result.data?.user_id ?? "",
+    avatarUrl: data.avatarUrl,
+    name: data.name ?? "",
+    email: data.email ?? "",
+    phone: data.phone ?? "",
+    role: data.role ?? "INSPECTOR",
+    status: data.status ?? "active",
+    location: data.location ?? "",
+    inspections: data.inspections ?? 0,
+    rating: data.rating ?? null,
+    certifications: data.certifications ?? [],
+    joinedDate: data.joinedDate ?? "",
+    customPermissions: data.customPermissions ?? [],
+  };
 }
 
 export async function updateTeamMemberById(
   data: { teamMemberId: string } & Partial<TeamMember>
 ): Promise<TeamMember | null> {
-  return Promise.resolve(updateTeamMember(data.teamMemberId, data));
+  const memberId = data.teamMemberId?.trim();
+  if (!memberId || memberId === "undefined") {
+    throw new Error("Missing team member id.");
+  }
+  if (!/^[0-9a-fA-F-]{36}$/.test(memberId)) {
+    throw new Error("Invalid team member id.");
+  }
+  const response = await fetch(`/api/admin/team/${memberId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error?.error?.message || "Failed to update team member.");
+  }
+  return data as TeamMember;
 }
 
 export async function deleteTeamMemberById(teamMemberId: string): Promise<boolean> {
-  return Promise.resolve(deleteTeamMember(teamMemberId));
+  const response = await fetch(`/api/admin/team/${teamMemberId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error?.error?.message || "Failed to delete team member.");
+  }
+  return true;
 }
 
 export async function fetchServices(): Promise<Service[]> {

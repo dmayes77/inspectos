@@ -497,7 +497,7 @@ export default function SettingsPage() {
                     <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed bg-muted overflow-hidden group">
                       {branding.logoUrl ? (
                         <>
-                          <Image src={branding.logoUrl} alt="Logo" fill className="object-contain p-1" />
+                          <Image src={branding.logoUrl} alt="Logo" fill sizes="64px" className="object-contain p-1" />
                           <button
                             type="button"
                             onClick={handleLogoRemove}

@@ -137,18 +137,16 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   }, [settings?.branding?.primaryColor]);
 
   useEffect(() => {
-    const companyName = settings?.company?.name?.trim();
-    document.title = companyName ? `${companyName} Dashboard` : "InspectOS Dashboard";
+    document.title = "InspectOS";
 
-    const logoUrl = settings?.branding?.logoUrl || null;
+    const logoUrl = "/favicon.svg";
     if (logoUrl !== lastLogoRef.current) {
       faviconVersionRef.current += 1;
       lastLogoRef.current = logoUrl;
     }
     const version = faviconVersionRef.current;
-    const baseUrl = logoUrl || "/favicon.svg";
-    const separator = baseUrl.includes("?") ? "&" : "?";
-    const faviconUrl = `${baseUrl}${separator}v=${version}`;
+    const separator = logoUrl.includes("?") ? "&" : "?";
+    const faviconUrl = `${logoUrl}${separator}v=${version}`;
 
     const inferType = (url: string) => {
       const clean = url.split("?")[0];
@@ -171,7 +169,11 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
     document
       .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
-      .forEach((link) => link.remove());
+      .forEach((link) => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      });
 
     iconLinks.forEach(({ rel, href, type: linkType, sizes }) => {
       const link = document.createElement("link");
@@ -181,7 +183,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       if (sizes) link.sizes = sizes;
       document.head.appendChild(link);
     });
-  }, [settings?.branding?.logoUrl, settings?.company?.name]);
+  }, []);
 
   return <>{children}</>;
 }

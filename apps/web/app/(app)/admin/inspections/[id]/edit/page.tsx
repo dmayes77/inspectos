@@ -97,6 +97,13 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
     return calculateServiceTotal(resolvedTypeIds, services);
   }, [resolvedTypeIds, services]);
 
+  const { coreServices, addonServices, packageServices } = useMemo(() => {
+    const core = services.filter((service) => service.category === "core" && !service.isPackage);
+    const addons = services.filter((service) => service.category === "addon" && !service.isPackage);
+    const packages = services.filter((service) => service.isPackage);
+    return { coreServices: core, addonServices: addons, packageServices: packages };
+  }, [services]);
+
   // Memoize client and inspector lookups
   const clientObj = useMemo(() => {
     return clients.find((c) => c.clientId === resolvedClientId);
@@ -495,11 +502,13 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
               <CardHeader>
                 <CardTitle>Inspection Details</CardTitle>
                 <div className="text-muted-foreground text-sm mb-2">Set the inspection type, date, and time</div>
-                <div className="space-y-2">
-                  <Label>Services</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Array.isArray(services) &&
-                      services.map((service) => {
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Core Services</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {coreServices.map((service) => {
                         const checked = resolvedTypeIds.includes(service.serviceId);
                         return (
                           <ServiceCheckbox
@@ -510,10 +519,41 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
                           />
                         );
                       })}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Add-ons</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {addonServices.map((service) => {
+                        const checked = resolvedTypeIds.includes(service.serviceId);
+                        return (
+                          <ServiceCheckbox
+                            key={service.serviceId}
+                            service={service}
+                            checked={checked}
+                            onToggle={handleServiceToggle}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Packages</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {packageServices.map((service) => {
+                        const checked = resolvedTypeIds.includes(service.serviceId);
+                        return (
+                          <ServiceCheckbox
+                            key={service.serviceId}
+                            service={service}
+                            checked={checked}
+                            onToggle={handleServiceToggle}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="date">Date</Label>

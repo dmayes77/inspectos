@@ -94,19 +94,21 @@ export function AdminMobileNav({
         <SheetHeader className="border-b">
           <SheetTitle className="px-4 py-4">
             <div className="flex items-center gap-2">
-              {businessLogo ? (
-                <Image
-                  src={businessLogo}
-                  alt={businessName || "Logo"}
-                  width={32}
-                  height={32}
-                  className="object-contain"
-                />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                  {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
-                </div>
-              )}
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-lg shrink-0">
+                {businessLogo ? (
+                  <Image
+                    src={businessLogo}
+                    alt={businessName || "Logo"}
+                    fill
+                    sizes="32px"
+                    className="object-contain"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full w-full rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+                    {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
+                  </div>
+                )}
+              </div>
               <span className="font-semibold text-sm truncate">
                 {businessName || "InspectOS"}
               </span>

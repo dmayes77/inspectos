@@ -43,6 +43,7 @@ export const updateOrderSchema = z.object({
   scheduled_date: z.string().optional().nullable(),
   scheduled_time: z.string().optional().nullable(),
   duration_minutes: z.number().int().positive().optional(),
+  services: z.array(orderServiceSchema).min(1).optional(),
   subtotal: z.number().min(0).optional(),
   discount: z.number().min(0).optional(),
   tax: z.number().min(0).optional(),

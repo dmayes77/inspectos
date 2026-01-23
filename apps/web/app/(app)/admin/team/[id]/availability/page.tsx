@@ -24,10 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
-import { getTeamMembers, type TeamMember } from "@/lib/mock/team";
+import { useTeamMembers, type TeamMember } from "@/hooks/use-team";
 import { mockAdminUser } from "@/lib/constants/mock-users";
-
-const teamMembers = getTeamMembers();
 
 const timeOffRequests = [
   {
@@ -119,7 +117,10 @@ function getTypeLabel(type: string) {
 
 export default function TeamMemberAvailabilityPage() {
   const params = useParams();
-  const member = teamMembers.find((m: TeamMember) => m.teamMemberId === params.id || m.id === params.id);
+  const { data: teamMembers = [] } = useTeamMembers();
+  const member = teamMembers.find(
+    (m: TeamMember) => m.teamMemberId === params.id || m.id === params.id
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [addTimeOffOpen, setAddTimeOffOpen] = useState(false);

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       inspector:profiles(id, full_name, email, avatar_url),
       inspection:inspections(
         id, order_id, status, started_at, completed_at,
-        services:inspection_services(id, name, status, price, template_id)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
       )
     `)
     .eq("tenant_id", tenantId)
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       order_id: order.id,
       template_id: payload.services[0]?.template_id ?? null,
       template_version: 1,
-      inspector_id: payload.inspector_id ?? tenantId, // Placeholder if no inspector yet
+      inspector_id: payload.inspector_id ?? null,
       status: "draft",
     })
     .select()
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
       inspector:profiles(id, full_name, email),
       inspection:inspections(
         id, order_id, status,
-        services:inspection_services(id, name, status, price, template_id)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
       )
     `)
     .eq("id", order.id)

@@ -36,9 +36,11 @@ export function AdminHeader({
   onOpenCommand,
   onOpenNotifications,
 }: AdminHeaderProps) {
+  const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
+    setMounted(true);
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
@@ -82,7 +84,9 @@ export function AdminHeader({
             <ChevronLeft className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-lg font-semibold tabular-nums">{timeLabel}</h1>
+        <h1 className="text-lg font-semibold tabular-nums" suppressHydrationWarning>
+          {mounted ? timeLabel : "Loading time..."}
+        </h1>
       </div>
 
       <div className="flex items-center gap-3">

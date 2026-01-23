@@ -21,7 +21,7 @@ export async function GET(
       inspector:profiles(id, full_name, email, avatar_url),
       inspection:inspections(
         id, order_id, status, started_at, completed_at, weather_conditions, temperature, notes,
-        services:inspection_services(id, name, status, price, duration_minutes, template_id, notes, sort_order)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id, notes, sort_order)
       ),
       invoices(id, status, total, issued_at, due_at)
     `)
@@ -62,6 +62,18 @@ export async function PUT(
   if (payload.scheduled_date !== undefined) updateData.scheduled_date = payload.scheduled_date;
   if (payload.scheduled_time !== undefined) updateData.scheduled_time = payload.scheduled_time;
   if (payload.duration_minutes !== undefined) updateData.duration_minutes = payload.duration_minutes;
+  if (payload.services) {
+    const subtotal = payload.services.reduce((sum, service) => sum + service.price, 0);
+    const duration = payload.services.reduce(
+      (sum, service) => sum + (service.duration_minutes ?? 0),
+      0
+    );
+    if (payload.subtotal === undefined) updateData.subtotal = subtotal;
+    if (payload.total === undefined) updateData.total = subtotal;
+    if (payload.duration_minutes === undefined && duration > 0) {
+      updateData.duration_minutes = duration;
+    }
+  }
   if (payload.subtotal !== undefined) updateData.subtotal = payload.subtotal;
   if (payload.discount !== undefined) updateData.discount = payload.discount;
   if (payload.tax !== undefined) updateData.tax = payload.tax;
@@ -90,7 +102,7 @@ export async function PUT(
       inspector:profiles(id, full_name, email),
       inspection:inspections(
         id, order_id, status,
-        services:inspection_services(id, name, status, price, template_id)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
       )
     `)
     .single();
@@ -100,6 +112,56 @@ export async function PUT(
       { error: { message: error?.message ?? "Failed to update order." } },
       { status: 500 }
     );
+  }
+
+  if (payload.services) {
+    let inspectionId = data.inspection?.id ?? null;
+    if (!inspectionId) {
+      const { data: createdInspection, error: inspectionError } = await supabaseAdmin
+        .from("inspections")
+        .insert({
+          tenant_id: tenantId,
+          order_id: data.id,
+          template_id: payload.services[0]?.template_id ?? null,
+          template_version: 1,
+          inspector_id: data.inspector_id ?? null,
+          status: "draft",
+        })
+        .select("id")
+        .single();
+
+      if (inspectionError || !createdInspection) {
+        return NextResponse.json(
+          { error: { message: inspectionError?.message ?? "Failed to create inspection." } },
+          { status: 500 }
+        );
+      }
+      inspectionId = createdInspection.id;
+    }
+
+    await supabaseAdmin.from("inspection_services").delete().eq("inspection_id", inspectionId);
+
+    const inspectionServices = payload.services.map((service, index) => ({
+      inspection_id: inspectionId,
+      service_id: service.service_id,
+      template_id: service.template_id ?? null,
+      name: service.name,
+      price: service.price,
+      duration_minutes: service.duration_minutes ?? null,
+      status: "pending" as const,
+      sort_order: index,
+    }));
+
+    const { error: servicesError } = await supabaseAdmin
+      .from("inspection_services")
+      .insert(inspectionServices);
+
+    if (servicesError) {
+      return NextResponse.json(
+        { error: { message: servicesError.message } },
+        { status: 500 }
+      );
+    }
   }
 
   return NextResponse.json({ data });

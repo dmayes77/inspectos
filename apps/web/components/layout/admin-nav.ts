@@ -15,7 +15,6 @@ import {
   DollarSign,
   Tag,
   ShoppingCart,
-  UserCheck,
   MapPin,
 } from "lucide-react";
 
@@ -39,14 +38,6 @@ export const companyPinnedNav: NavItem[] = [
 
 export const companyNavSections: NavSection[] = [
   {
-    label: "Finance",
-    items: [
-      { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
-      { href: "/admin/payments", icon: CreditCard, label: "Payments" },
-      { href: "/admin/payouts", icon: DollarSign, label: "Payouts" },
-    ],
-  },
-  {
     label: "Operations",
     items: [
       { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
@@ -56,6 +47,14 @@ export const companyNavSections: NavSection[] = [
       { href: "/admin/tags", icon: Tag, label: "Tags" },
       { href: "/admin/workflows", icon: Workflow, label: "Workflows" },
       { href: "/admin/automations", icon: Workflow, label: "Automations" },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { href: "/admin/team", icon: HardHat, label: "Team" },
+      { href: "/admin/partners", icon: Building2, label: "Partners" },
+      { href: "/admin/vendors", icon: Building2, label: "Vendors" },
     ],
   },
   {
@@ -73,13 +72,11 @@ export const companyNavSections: NavSection[] = [
     ],
   },
   {
-    label: "People",
+    label: "Finance",
     items: [
-      { href: "/admin/team", icon: HardHat, label: "Team" },
-      { href: "/admin/agencies", icon: Building2, label: "Agencies" },
-      { href: "/admin/agents", icon: UserCheck, label: "Agents" },
-      { href: "/admin/hr", icon: Users, label: "HR & Payroll" },
-      { href: "/admin/vendors", icon: Building2, label: "Vendors" },
+      { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
+      { href: "/admin/payments", icon: CreditCard, label: "Payments" },
+      { href: "/admin/payouts", icon: DollarSign, label: "Payouts" },
     ],
   },
   {

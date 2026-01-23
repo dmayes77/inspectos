@@ -14,9 +14,7 @@ import { mockAdminUser } from "@/lib/constants/mock-users";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
 import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
 
-import { getTeamMembers } from "@/lib/mock/team";
-
-const teamMembers = getTeamMembers();
+import { useTeamMembers } from "@/hooks/use-team";
 
 const upcomingInspections = [
   {
@@ -104,6 +102,7 @@ const pastInspections = [
 
 export default function TeamMemberSchedulePage() {
   const params = useParams();
+  const { data: teamMembers = [] } = useTeamMembers();
   const member = teamMembers.find((m) => m.teamMemberId === params.id);
 
   if (!member) {

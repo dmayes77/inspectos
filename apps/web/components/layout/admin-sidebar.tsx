@@ -116,24 +116,26 @@ export function AdminSidebar({
     >
       <div className="flex h-12 items-center border-b px-4">
         <Link href={homeHref} className="flex items-center gap-2 min-w-0">
-          {businessLogo ? (
-            <Image
-              src={businessLogo}
-              alt={businessName || "Logo"}
-              width={collapsed ? 24 : 32}
-              height={collapsed ? 24 : 32}
-              className="object-contain"
-            />
-          ) : (
-            <div
-              className={cn(
-                "flex items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold shrink-0",
-                collapsed ? "h-6 w-6 text-xs" : "h-8 w-8 text-sm"
-              )}
-            >
-              {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
-            </div>
-          )}
+          <div
+            className={cn(
+              "relative flex items-center justify-center rounded-lg shrink-0",
+              collapsed ? "h-6 w-6" : "h-8 w-8"
+            )}
+          >
+            {businessLogo ? (
+              <Image
+                src={businessLogo}
+                alt={businessName || "Logo"}
+                fill
+                sizes="32px"
+                className="object-contain"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full w-full rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+                {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
+              </div>
+            )}
+          </div>
           {!collapsed && (
             <span className="font-semibold text-sm truncate">
               {businessName || "InspectOS"}

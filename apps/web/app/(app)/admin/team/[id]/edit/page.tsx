@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -25,6 +25,16 @@ import { Save } from "lucide-react";
 import { Lock } from "lucide-react";
 import { permissionCategories } from "@/lib/permissions";
 import { mockAdminUser } from "@/lib/constants/mock-users";
+
+function formatShortMemberId(id?: string | null) {
+  if (!id) return "TM-0000";
+  const clean = id.replace(/-/g, "").toUpperCase();
+  return `TM-${clean.slice(-4).padStart(4, "0")}`;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-fA-F-]{36}$/.test(value);
+}
 
 const roles = [
   {
@@ -56,17 +66,22 @@ export default function EditTeamMemberPage() {
   const router = useRouter();
   const { data: teamMembers = [] } = useTeamMembers();
   const updateMember = useUpdateTeamMember();
-  const member = teamMembers.find((m) => m.teamMemberId.toLowerCase() === String(params.id).toLowerCase());
+  const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const member = teamMembers.find((m) => m.teamMemberId.toLowerCase() === memberId.toLowerCase());
+  const resolvedMemberId = member?.teamMemberId && isUuid(member.teamMemberId) ? member.teamMemberId : "";
 
   // Parse name into first/last for editing
-  const [firstName, setFirstName] = useState(member?.name?.split(" ")[0] || "");
-  const [lastName, setLastName] = useState(member?.name?.split(" ").slice(1).join(" ") || "");
-  const [selectedRole, setSelectedRole] = useState(member?.role || "INSPECTOR");
-  const [selectedStatus, setSelectedStatus] = useState(member?.status || "active");
-  const [selectedCertifications, setSelectedCertifications] = useState<string[]>(member?.certifications || []);
-  const [customPermissions, setCustomPermissions] = useState<string[]>(member?.customPermissions || []);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [selectedRole, setSelectedRole] = useState("INSPECTOR");
+  const [selectedStatus, setSelectedStatus] = useState("active");
+  const [selectedCertifications, setSelectedCertifications] = useState<string[]>([]);
+  const [customPermissions, setCustomPermissions] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [avatarPreview, setAvatarPreview] = useState(member?.avatarUrl || "");
+  const [avatarPreview, setAvatarPreview] = useState("");
 
   // Get role-based permissions
   const roleBasedPermissions = getPermissionsForRole(selectedRole);
@@ -74,7 +89,21 @@ export default function EditTeamMemberPage() {
   // Merge role permissions with custom permissions
   const allEnabledPermissions = Array.from(new Set([...roleBasedPermissions, ...customPermissions]));
 
-  if (!member) {
+  useEffect(() => {
+    if (!member) return;
+    const [first, ...rest] = member.name.split(" ");
+    setFirstName(first || "");
+    setLastName(rest.join(" "));
+    setEmail(member.email || "");
+    setPhone(member.phone || "");
+    setSelectedRole(member.role || "INSPECTOR");
+    setSelectedStatus(member.status || "active");
+    setSelectedCertifications(member.certifications || []);
+    setCustomPermissions(member.customPermissions || []);
+    setAvatarPreview(member.avatarUrl || "");
+  }, [member]);
+
+  if (!member || !resolvedMemberId) {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="flex flex-col items-center justify-center py-12">
@@ -96,7 +125,11 @@ export default function EditTeamMemberPage() {
     setIsSaving(true);
     let avatarUrl = avatarPreview;
     if (avatarPreview && avatarPreview.startsWith("data:")) {
-      const response = await fetch(`/api/admin/team/${member.teamMemberId}/avatar`, {
+      if (!resolvedMemberId) {
+        setIsSaving(false);
+        return;
+      }
+      const response = await fetch(`/api/admin/team/${resolvedMemberId}/avatar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avatarUrl: avatarPreview }),
@@ -106,12 +139,16 @@ export default function EditTeamMemberPage() {
         avatarUrl = json?.data?.avatarUrl || avatarPreview;
       }
     }
+    if (!resolvedMemberId) {
+      setIsSaving(false);
+      return;
+    }
     await updateMember.mutateAsync({
-      teamMemberId: member.teamMemberId,
+      teamMemberId: resolvedMemberId,
       avatarUrl,
       name: `${firstName} ${lastName}`.trim(),
-      email: member.email,
-      phone: member.phone,
+      email,
+      phone,
       role: selectedRole,
       status: selectedStatus,
       certifications: selectedCertifications,
@@ -121,7 +158,7 @@ export default function EditTeamMemberPage() {
       rating: member.rating,
       joinedDate: member.joinedDate,
     });
-    router.push(`/admin/team/${params.id}`);
+    router.push(`/admin/team/${resolvedMemberId}`);
   };
 
   const toggleCertification = (cert: string) => {
@@ -166,7 +203,7 @@ export default function EditTeamMemberPage() {
       <div className="space-y-6 max-w-4xl">
         {/* Back Button */}
         <Button variant="ghost" size="sm" asChild>
-          <Link href={`/admin/team/${params.id}`}>
+          <Link href={`/admin/team/${resolvedMemberId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Profile
           </Link>
@@ -182,9 +219,12 @@ export default function EditTeamMemberPage() {
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
-              <CardDescription>Personal details and contact information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <CardDescription>Personal details and contact information</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {formatShortMemberId(member.id || member.teamMemberId)}
+              </div>
               <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={avatarPreview} />
@@ -197,15 +237,6 @@ export default function EditTeamMemberPage() {
                   <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarChange} />
                   <p className="text-xs text-muted-foreground">PNG or JPG. Max 2MB (mock upload).</p>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
-                  <span className="font-medium">Team Member ID:</span>
-                  <span className="font-mono">{member.teamMemberId}</span>
-                </div>
-                <p className="text-center text-xs text-muted-foreground sm:text-left">
-                  This ID is permanently assigned and cannot be changed
-                </p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -222,11 +253,23 @@ export default function EditTeamMemberPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
-                  <Input id="email" type="email" defaultValue={member.email} required />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone *</Label>
-                  <Input id="phone" type="tel" defaultValue={member.phone} required />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
 
