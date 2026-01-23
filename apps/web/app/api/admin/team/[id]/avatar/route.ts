@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   const payload = await request.json();
   const avatarUrl = typeof payload?.avatarUrl === "string" ? payload.avatarUrl : null;
 
@@ -12,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const { data, error } = await supabaseAdmin
     .from("profiles")
     .update({ avatar_url: avatarUrl })
-    .eq("id", params.id)
+    .eq("id", id)
     .select("id, avatar_url")
     .single();
 
