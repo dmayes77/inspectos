@@ -10,6 +10,44 @@ export interface AddressParts {
   zip: string;
 }
 
+const normalizeWord = (value: string) => {
+  if (!value) return value;
+  const clean = value.replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  if (/^[a-z]{1,2}$/i.test(clean)) {
+    return clean.toUpperCase();
+  }
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+};
+
+const normalizeTitleCase = (value: string) => {
+  if (!value) return "";
+  return value
+    .split(" ")
+    .filter(Boolean)
+    .map((word) =>
+      word
+        .split("-")
+        .map((segment) => normalizeWord(segment))
+        .join("-")
+    )
+    .join(" ");
+};
+
+const normalizeState = (value: string) => {
+  const trimmed = value.trim().toUpperCase();
+  return trimmed.slice(0, 2);
+};
+
+export function normalizeAddressParts(parts: Partial<AddressParts>): AddressParts {
+  return {
+    street: normalizeTitleCase(parts.street ?? ""),
+    city: normalizeTitleCase(parts.city ?? ""),
+    state: normalizeState(parts.state ?? ""),
+    zip: (parts.zip ?? "").trim(),
+  };
+}
+
 /**
  * Parse a full address string into its components
  * Expected format: "123 Main St, City State ZIP"
@@ -38,12 +76,12 @@ export function parseAddress(address: string): AddressParts {
   const state = tokens.pop() || "";
   const cityFromRest = tokens.join(" ");
 
-  return {
+  return normalizeAddressParts({
     street,
     city: cityFromRest || city,
     state,
     zip,
-  };
+  });
 }
 
 /**

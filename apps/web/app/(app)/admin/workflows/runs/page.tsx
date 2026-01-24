@@ -4,11 +4,9 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { useWorkflowRuns } from "@/hooks/use-workflow-runs";
 import { mockAdminUser } from "@/lib/constants/mock-users";
-import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
 
 export default function WorkflowRunsPage() {
   const { data: runs = [] } = useWorkflowRuns();
@@ -16,12 +14,7 @@ export default function WorkflowRunsPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <Button variant="ghost" asChild>
-          <Link href="/admin/workflows">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Workflows
-          </Link>
-        </Button>
+        <BackButton href="/admin/workflows" label="Back to Workflows" variant="ghost" />
 
         <AdminPageHeader title="Workflow Runs" description="Execution history for automation workflows" />
 

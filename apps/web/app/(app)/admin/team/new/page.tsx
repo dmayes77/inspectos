@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ArrowLeft, Save, Shield, Info } from "lucide-react";
+import { Save, Shield, Info } from "lucide-react";
 import { generateNextTeamMemberId, type TeamMemberRole } from "@/lib/team-member-id";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
@@ -98,12 +99,7 @@ export default function NewTeamMemberPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6 max-w-4xl">
         {/* Back Button */}
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/team">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Team
-          </Link>
-        </Button>
+        <BackButton href="/admin/team" label="Back to Team" variant="ghost" size="sm" />
 
         <AdminPageHeader
           title="Add Team Member"

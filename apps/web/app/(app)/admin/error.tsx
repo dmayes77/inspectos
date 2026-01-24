@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 export default function AdminError({
   error,
@@ -44,12 +44,7 @@ export default function AdminError({
               <RefreshCw className="mr-2 h-4 w-4" />
               Try again
             </Button>
-            <Button variant="outline" asChild>
-              <Link href="/admin">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Link>
-            </Button>
+            <BackButton href="/admin" label="Back to Dashboard" variant="outline" />
           </div>
         </CardContent>
       </Card>

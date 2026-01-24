@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { OrderForm } from "@/components/orders/order-form";
 import { useOrderById } from "@/hooks/use-orders";
@@ -25,11 +24,7 @@ export default function EditOrderPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/orders">
-              Back to Orders
-            </Link>
-          </Button>
+          <BackButton href="/admin/orders" label="Back to Orders" variant="ghost" />
           <div className="text-center py-12 text-muted-foreground">Order not found.</div>
         </div>
       </AdminShell>

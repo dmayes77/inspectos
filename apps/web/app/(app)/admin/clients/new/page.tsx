@@ -7,10 +7,10 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft } from "lucide-react";
 import { useCreateClient } from "@/hooks/use-clients";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
@@ -55,12 +55,7 @@ export default function NewClientPage() {
       <div className="space-y-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/clients">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Clients
-            </Link>
-          </Button>
+          <BackButton href="/admin/clients" label="Back to Clients" variant="ghost" />
         </div>
 
         <AdminPageHeader

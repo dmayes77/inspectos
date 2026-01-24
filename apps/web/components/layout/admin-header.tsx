@@ -54,12 +54,11 @@ export function AdminHeader({
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
     });
     const parts = formatter.formatToParts(now);
     const byType = new Map(parts.map((part) => [part.type, part.value]));
     const date = `${byType.get("weekday")} ${byType.get("month")} ${byType.get("day")} ${byType.get("year")}`;
-    const time = `${byType.get("hour")}:${byType.get("minute")}:${byType.get("second")} ${byType.get("dayPeriod")}`;
+    const time = `${byType.get("hour")}:${byType.get("minute")} ${byType.get("dayPeriod")}`;
     return `${date} ${time}`;
   }, [now, timeZone]);
 

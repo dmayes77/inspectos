@@ -54,7 +54,7 @@ export interface Property {
   city: string;
   state: string;
   zip_code: string;
-  property_type: 'residential' | 'commercial' | 'multi-family' | 'other';
+  property_type: 'single-family' | 'condo-townhome' | 'multi-family' | 'manufactured' | 'commercial';
   year_built: number | null;
   square_feet: number | null;
   notes: string | null;

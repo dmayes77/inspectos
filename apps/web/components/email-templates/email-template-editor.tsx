@@ -2,15 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft } from "lucide-react";
 import { useCreateEmailTemplate, useEmailTemplates, useUpdateEmailTemplate } from "@/hooks/use-email-templates";
 import type { EmailTemplate } from "@/types/email-template";
 import { mockAdminUser } from "@/lib/constants/mock-users";
@@ -73,12 +72,11 @@ export function EmailTemplateEditor() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <Button variant="ghost" asChild>
-          <Link href="/admin/email-templates">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Email Templates
-          </Link>
-        </Button>
+        <BackButton
+          href="/admin/email-templates"
+          label="Back to Email Templates"
+          variant="ghost"
+        />
 
         <AdminPageHeader
           title={isNew ? "New Email Template" : "Edit Email Template"}

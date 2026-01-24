@@ -7,114 +7,22 @@ import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
-import { ColumnDef } from "@tanstack/react-table";
-import { Plus, MapPin, Search, Home, Building, User, Calendar } from "lucide-react";
-import { useProperties, formatPropertyAddress, type Property } from "@/hooks/use-properties";
+import { Plus, MapPin, Search, User } from "lucide-react";
+import { useProperties, formatPropertyAddress } from "@/hooks/use-properties";
 import { mockAdminUser } from "@/lib/constants/mock-users";
+import { propertiesTableColumns } from "@/components/properties/properties-table-columns";
+import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
 
 const propertyTypeOptions = [
   { value: "all", label: "All Types" },
-  { value: "residential", label: "Residential" },
+  { value: "single-family", label: "Single-Family" },
+  { value: "condo-townhome", label: "Condo / Townhome" },
   { value: "commercial", label: "Commercial" },
   { value: "multi-family", label: "Multi-Family" },
-  { value: "other", label: "Other" },
-];
-
-function getPropertyTypeIcon(type: string) {
-  switch (type) {
-    case "residential":
-      return <Home className="h-4 w-4 text-blue-500" />;
-    case "commercial":
-      return <Building className="h-4 w-4 text-purple-500" />;
-    case "multi-family":
-      return <Building className="h-4 w-4 text-amber-500" />;
-    default:
-      return <MapPin className="h-4 w-4 text-gray-500" />;
-  }
-}
-
-const columns: ColumnDef<Property>[] = [
-  {
-    id: "address",
-    header: "Address",
-    cell: ({ row }) => (
-      <Link
-        href={`/admin/properties/${row.original.id}`}
-        className="flex items-start gap-2 font-medium hover:underline"
-      >
-        {getPropertyTypeIcon(row.original.property_type)}
-        <div>
-          <p>{row.original.address_line1}</p>
-          {row.original.address_line2 && (
-            <p className="text-sm text-muted-foreground">{row.original.address_line2}</p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {row.original.city}, {row.original.state} {row.original.zip_code}
-          </p>
-        </div>
-      </Link>
-    ),
-  },
-  {
-    accessorKey: "property_type",
-    header: "Type",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="capitalize">
-        {row.original.property_type.replace("-", " ")}
-      </Badge>
-    ),
-  },
-  {
-    id: "client",
-    header: "Owner/Contact",
-    cell: ({ row }) =>
-      row.original.client ? (
-        <Link
-          href={`/admin/clients/${row.original.client.id}`}
-          className="flex items-center gap-2 text-sm hover:underline"
-        >
-          <User className="h-3.5 w-3.5 text-muted-foreground" />
-          {row.original.client.name}
-        </Link>
-      ) : (
-        <span className="text-muted-foreground">—</span>
-      ),
-  },
-  {
-    accessorKey: "year_built",
-    header: "Year Built",
-    cell: ({ row }) => (
-      <span className="text-sm">
-        {row.original.year_built ?? <span className="text-muted-foreground">—</span>}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "square_feet",
-    header: "Size",
-    cell: ({ row }) => (
-      <span className="text-sm">
-        {row.original.square_feet ? (
-          `${row.original.square_feet.toLocaleString()} sqft`
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        )}
-      </span>
-    ),
-  },
-  {
-    id: "created",
-    header: "Added",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Calendar className="h-3.5 w-3.5" />
-        {new Date(row.original.created_at).toLocaleDateString()}
-      </div>
-    ),
-  },
+  { value: "manufactured", label: "Manufactured" },
 ];
 
 export default function PropertiesPage() {
@@ -137,11 +45,12 @@ export default function PropertiesPage() {
   }, [properties, searchQuery, typeFilter]);
 
   const stats = useMemo(() => {
-    const residential = properties.filter((p) => p.property_type === "residential").length;
+    const singleFamily = properties.filter((p) => p.property_type === "single-family").length;
+    const condoTownhome = properties.filter((p) => p.property_type === "condo-townhome").length;
     const commercial = properties.filter((p) => p.property_type === "commercial").length;
     const multiFamily = properties.filter((p) => p.property_type === "multi-family").length;
-    const other = properties.filter((p) => p.property_type === "other").length;
-    return { residential, commercial, multiFamily, other, total: properties.length };
+    const manufactured = properties.filter((p) => p.property_type === "manufactured").length;
+    return { singleFamily, condoTownhome, commercial, multiFamily, manufactured, total: properties.length };
   }, [properties]);
 
   return (
@@ -161,23 +70,23 @@ export default function PropertiesPage() {
         />
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-5">
+        <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Properties</CardDescription>
+              <CardDescription>Total</CardDescription>
               <CardTitle className="text-2xl">{stats.total}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Residential</CardDescription>
-              <CardTitle className="text-2xl">{stats.residential}</CardTitle>
+              <CardDescription>Single-Family</CardDescription>
+              <CardTitle className="text-2xl">{stats.singleFamily}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Commercial</CardDescription>
-              <CardTitle className="text-2xl">{stats.commercial}</CardTitle>
+              <CardDescription>Condo / Townhome</CardDescription>
+              <CardTitle className="text-2xl">{stats.condoTownhome}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
@@ -188,8 +97,14 @@ export default function PropertiesPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Other</CardDescription>
-              <CardTitle className="text-2xl">{stats.other}</CardTitle>
+              <CardDescription>Manufactured</CardDescription>
+              <CardTitle className="text-2xl">{stats.manufactured}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Commercial</CardDescription>
+              <CardTitle className="text-2xl">{stats.commercial}</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -255,12 +170,53 @@ export default function PropertiesPage() {
                 </Button>
               </div>
             ) : (
-              <DataTable
-                columns={columns}
-                data={filteredProperties}
-                searchKey="address"
-                searchPlaceholder="Search by address..."
-              />
+              <>
+                <div className="space-y-3 md:hidden">
+                  {filteredProperties.map((property) => (
+                    <Link
+                      key={property.id}
+                      href={`/admin/properties/${property.id}`}
+                      className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex items-start gap-3">
+                        <PropertyTypeIcon type={property.property_type} />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-semibold leading-tight">{property.address_line1}</p>
+                              {property.address_line2 && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {property.address_line2}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {property.city}, {property.state} {property.zip_code}
+                              </p>
+                            </div>
+                            <Badge variant="outline" className="shrink-0 capitalize">
+                              {property.property_type.replace("-", " ")}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                            <span className="inline-flex items-center gap-1.5">
+                              <User className="h-3.5 w-3.5" />
+                              {property.client?.name ?? "No client"}
+                            </span>
+                            <span>
+                              {property.square_feet
+                                ? `${property.square_feet.toLocaleString()} sqft`
+                                : "Size —"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+                <div className="hidden md:block">
+                  <DataTable columns={propertiesTableColumns} data={filteredProperties} />
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

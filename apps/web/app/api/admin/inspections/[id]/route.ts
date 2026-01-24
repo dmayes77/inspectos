@@ -49,7 +49,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           template_id,
           selected_service_ids,
           client:clients(id, name),
-          property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
+          property:properties(
+            address_line1, city, state, zip_code, property_type, year_built, square_feet,
+            bedrooms, bathrooms, stories, foundation, garage, pool,
+            basement, lot_size_acres, heating_type, cooling_type, roof_type,
+            building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+            number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+          ),
           inspector:profiles(id, full_name)
         )
       `
@@ -381,7 +387,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         city: addressParts.city || "Unknown",
         state: addressParts.state || "",
         zip_code: addressParts.zip || "00000",
-        property_type: payload.propertyType ?? "residential",
+        property_type: payload.propertyType ?? "single-family",
         year_built: payload.yearBuilt ?? null,
         square_feet: payload.sqft ?? null,
         bedrooms: payload.bedrooms ?? null,

@@ -5,17 +5,7 @@ import { inspections as mockInspections } from "@/lib/mock/inspections";
 import { clients as mockClients } from "@/lib/mock/clients";
 import { services as mockServices } from "@/lib/mock/services";
 import { teamMembers } from "@/lib/mock/team";
-
-const parseAddress = (address: string) => {
-  const [line1Raw, restRaw, altRaw] = address.split(",").map((part) => part.trim());
-  const line1 = line1Raw || address;
-  const rest = altRaw ? `${restRaw ?? ""} ${altRaw}`.trim() : restRaw ?? "";
-  const parts = rest.split(" ").filter(Boolean);
-  const zip = parts.pop() ?? "";
-  const state = parts.pop() ?? "";
-  const city = parts.join(" ") || "Unknown";
-  return { line1, city, state, zip };
-};
+import { parseAddress } from "@/lib/utils/address";
 
 const mapJobStatus = (status: string) => {
   if (status === "in_progress") return "in_progress";
@@ -255,8 +245,8 @@ export async function POST() {
     const clientId = clientMap.get(clientKey);
     if (!clientId) continue;
 
-    const { line1, city, state, zip } = parseAddress(inspection.address);
-    const propertyKey = `${line1}|${city}|${state}|${zip}`.toLowerCase();
+    const { street, city, state, zip } = parseAddress(inspection.address);
+    const propertyKey = `${street}|${city}|${state}|${zip}`.toLowerCase();
     let propertyId = propertyMap.get(propertyKey);
 
     if (!propertyId) {
@@ -265,11 +255,11 @@ export async function POST() {
         .insert({
           tenant_id: tenantId,
           client_id: clientId,
-          address_line1: line1,
+          address_line1: street,
           city,
           state,
           zip_code: zip || "00000",
-          property_type: "residential",
+          property_type: "single-family",
           year_built: inspection.yearBuilt ?? null,
           square_feet: inspection.sqft ?? null,
         })

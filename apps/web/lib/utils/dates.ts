@@ -106,3 +106,25 @@ export function getTodayDate(): string {
 export function getCurrentTime(): string {
   return format(new Date(), "HH:mm");
 }
+
+/**
+ * Format ISO timestamp to readable date
+ * @param timestamp ISO 8601 timestamp string
+ */
+export function formatTimestamp(timestamp: string | Date, formatStr: string = "MMM d, yyyy"): string {
+  try {
+    const dateObj = typeof timestamp === "string" ? new Date(timestamp) : timestamp;
+    if (!isValid(dateObj)) return String(timestamp);
+    return format(dateObj, formatStr);
+  } catch {
+    return String(timestamp);
+  }
+}
+
+/**
+ * Format ISO timestamp to readable date and time
+ * @param timestamp ISO 8601 timestamp string
+ */
+export function formatTimestampFull(timestamp: string | Date): string {
+  return formatTimestamp(timestamp, "MMM d, yyyy 'at' h:mm a");
+}

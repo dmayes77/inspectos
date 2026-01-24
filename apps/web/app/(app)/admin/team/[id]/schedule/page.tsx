@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, MapPin, Clock, Home, Plus, CheckCircle, AlertCircle, XCircle } from "lucide-react";
+import { Calendar, MapPin, Clock, Home, Plus, CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
 import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
@@ -111,12 +112,7 @@ export default function TeamMemberSchedulePage() {
         <div className="flex flex-col items-center justify-center py-12">
           <h1 className="text-2xl font-semibold mb-2">Team Member Not Found</h1>
           <p className="text-muted-foreground mb-6">The team member you&apos;re looking for doesn&apos;t exist.</p>
-          <Button asChild>
-            <Link href="/admin/team">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Team
-            </Link>
-          </Button>
+          <BackButton href="/admin/team" label="Back to Team" />
         </div>
       </AdminShell>
     );
@@ -126,12 +122,13 @@ export default function TeamMemberSchedulePage() {
     <AdminShell user={mockAdminUser}>
       <div className="section-gap-admin">
         {/* Back Button */}
-        <Button variant="ghost" size="sm" className="btn-admin" asChild>
-          <Link href={`/admin/team/${member.teamMemberId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Profile
-          </Link>
-        </Button>
+        <BackButton
+          href={`/admin/team/${member.teamMemberId}`}
+          label="Back to Profile"
+          variant="ghost"
+          size="sm"
+          className="btn-admin"
+        />
 
         <AdminPageHeader
           title={

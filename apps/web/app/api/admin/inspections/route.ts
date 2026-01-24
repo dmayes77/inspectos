@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { createInspectionSchema } from "@/lib/validations/inspection-api";
+import { parseAddress } from "@/lib/utils/address";
 
 const normalizeTime = (time?: string | null) => {
   if (!time) return "";
@@ -60,7 +61,13 @@ export async function GET(request: Request) {
             template_id,
             selected_service_ids,
             client:clients(id, name),
-            property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
+            property:properties(
+              address_line1, city, state, zip_code, property_type, year_built, square_feet,
+              bedrooms, bathrooms, stories, foundation, garage, pool,
+              basement, lot_size_acres, heating_type, cooling_type, roof_type,
+              building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+              number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+            ),
             inspector:profiles(id, full_name, email, avatar_url)
           )
         `
@@ -87,7 +94,13 @@ export async function GET(request: Request) {
           template_id,
           selected_service_ids,
           client:clients(id, name),
-          property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
+          property:properties(
+            address_line1, city, state, zip_code, property_type, year_built, square_feet,
+            bedrooms, bathrooms, stories, foundation, garage, pool,
+            basement, lot_size_acres, heating_type, cooling_type, roof_type,
+            building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+            number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+          ),
           inspector:profiles(id, full_name, email, avatar_url)
         ),
         order:orders(
@@ -97,7 +110,13 @@ export async function GET(request: Request) {
           scheduled_time,
           duration_minutes,
           client:clients(id, name),
-          property:properties(address_line1, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool),
+          property:properties(
+            address_line1, city, state, zip_code, property_type, year_built, square_feet,
+            bedrooms, bathrooms, stories, foundation, garage, pool,
+            basement, lot_size_acres, heating_type, cooling_type, roof_type,
+            building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+            number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+          ),
           inspector:profiles(id, full_name, email, avatar_url)
         )
       `
@@ -141,17 +160,6 @@ export async function GET(request: Request) {
 
   return NextResponse.json(mapped);
 }
-
-const parseAddress = (address: string) => {
-  const [line1Raw, restRaw, altRaw] = address.split(",").map((part) => part.trim());
-  const line1 = line1Raw || address;
-  const rest = altRaw ? `${restRaw ?? ""} ${altRaw}`.trim() : restRaw ?? "";
-  const parts = rest.split(" ").filter(Boolean);
-  const zip = parts.pop() ?? "";
-  const state = parts.pop() ?? "";
-  const city = parts.join(" ") || "Unknown";
-  return { line1, city, state, zip };
-};
 
 export async function POST(request: Request) {
   const tenantId = getTenantId();
@@ -198,12 +206,12 @@ export async function POST(request: Request) {
     (serviceRows?.reduce((sum, svc) => sum + (svc.duration_minutes ?? 0), 0) ?? 0) +
     (packageRows?.reduce((sum, pkg) => sum + (pkg.duration_minutes ?? 0), 0) ?? 0);
 
-  const { line1, city, state, zip } = parseAddress(payload.address ?? "");
+  const { street, city, state, zip } = parseAddress(payload.address ?? "");
   const { data: existingProperty } = await supabaseAdmin
     .from("properties")
     .select("id, client_id")
     .eq("tenant_id", tenantId)
-    .eq("address_line1", line1)
+    .eq("address_line1", street)
     .eq("city", city)
     .eq("state", state)
     .eq("zip_code", zip || "00000")
@@ -216,11 +224,11 @@ export async function POST(request: Request) {
       .insert({
         tenant_id: tenantId,
         client_id: payload.clientId ?? null,
-        address_line1: line1,
+        address_line1: street,
         city,
         state,
         zip_code: zip || "00000",
-        property_type: payload.propertyType ?? "residential",
+        property_type: payload.propertyType ?? "single-family",
         year_built: payload.yearBuilt ?? null,
         square_feet: payload.sqft ?? null,
         bedrooms: payload.bedrooms ?? null,

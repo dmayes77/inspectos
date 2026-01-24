@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useServices, useUpdateService, useDeleteService, Service } from "@/hooks/use-services";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, Edit, Trash2, Package, Check } from "lucide-react";
+import { Edit, Trash2, Package, Check } from "lucide-react";
 import { toast } from "sonner";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { calculatePackageDiscount } from "@/lib/utils/pricing";
@@ -86,12 +86,7 @@ export default function ServiceDetailPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/services">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Services
-            </Link>
-          </Button>
+          <BackButton href="/admin/services" label="Back to Services" variant="ghost" />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Service Error</h1>
             <p className="text-muted-foreground">
@@ -107,12 +102,7 @@ export default function ServiceDetailPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/services">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Services
-            </Link>
-          </Button>
+          <BackButton href="/admin/services" label="Back to Services" variant="ghost" />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Service Not Found</h1>
             <p className="text-muted-foreground">The service you&apos;re looking for doesn&apos;t exist.</p>
@@ -265,12 +255,7 @@ export default function ServiceDetailPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" asChild>
-          <Link href="/admin/services">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Services & Packages
-          </Link>
-        </Button>
+          <BackButton href="/admin/services" label="Back to Services & Packages" variant="ghost" />
 
         <AdminPageHeader
           title={

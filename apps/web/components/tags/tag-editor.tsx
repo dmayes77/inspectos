@@ -2,16 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft } from "lucide-react";
 import { useCreateTag, useTags, useUpdateTag } from "@/hooks/use-tags";
 import type { Tag, TagScope, TagType } from "@/types/tag";
 import { mockAdminUser } from "@/lib/constants/mock-users";
@@ -97,12 +96,7 @@ export function TagEditor() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <Button variant="ghost" asChild>
-          <Link href="/admin/tags">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Tags
-          </Link>
-        </Button>
+        <BackButton href="/admin/tags" label="Back to Tags" variant="ghost" />
 
         <AdminPageHeader
           title={isNew ? "New Tag" : "Edit Tag"}

@@ -6,12 +6,13 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Workflow as WorkflowIcon, Trash2, Mail, Tag, Clock, Bell, ArrowDown, ArrowUp, ChevronLeft, Users } from "lucide-react";
+import { Plus, Workflow as WorkflowIcon, Trash2, Mail, Tag, Clock, Bell, ArrowDown, ArrowUp, Users } from "lucide-react";
 import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -21,7 +22,6 @@ import { useEmailTemplates } from "@/hooks/use-email-templates";
 import type { Workflow, WorkflowScope, WorkflowTriggerType } from "@/types/workflow";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { toast } from "sonner";
-import Link from "next/link";
 
 const scopeOptions: { value: WorkflowScope; label: string }[] = [
   { value: "lead", label: "Lead" },
@@ -245,12 +245,7 @@ export function WorkflowEditor() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <Button variant="ghost" asChild>
-          <Link href="/admin/workflows">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Workflows
-          </Link>
-        </Button>
+        <BackButton href="/admin/workflows" label="Back to Workflows" variant="ghost" />
 
         <AdminPageHeader
           title={existing ? "Edit Workflow" : "New Workflow"}

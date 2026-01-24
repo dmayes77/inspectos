@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,7 +116,8 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   useEffect(() => {
     if (mode !== "edit" || selectedServiceIds.length > 0) return;
-    const existing = order?.inspection?.services ?? [];
+    const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
+    const existing = inspection?.services ?? [];
     if (existing.length === 0) return;
 
     const fromIds = existing
@@ -137,7 +138,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     if (byName.length > 0) {
       setSelectedServiceIds(Array.from(new Set(byName)));
     }
-  }, [mode, order?.inspection?.services, selectedServiceIds.length, serviceNameMap]);
+  }, [mode, order?.inspection, selectedServiceIds.length, serviceNameMap]);
 
   const selectedServices = useMemo(() => {
     return services.filter((service) => selectedServiceIds.includes(service.serviceId));
@@ -282,18 +283,47 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   return (
     <div className="space-y-4">
-      <AdminPageHeader
-        title={mode === "edit" && order ? `Edit ${order.order_number}` : "New Order"}
+      <PageHeader
+        breadcrumb={
+          <>
+            <Link href="/admin/overview" className="hover:text-foreground">
+              Overview
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <Link href="/admin/orders" className="hover:text-foreground">
+              Orders
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span>{mode === "edit" && order ? "Edit" : "New"}</span>
+          </>
+        }
+        title={mode === "edit" && order ? order.order_number : "New Order"}
+        meta={
+          <>
+            <Badge className="text-xs px-2 py-0.5">{formatStatusLabel(form.status)}</Badge>
+            <Badge variant="outline" className="text-xs px-2 py-0.5">
+              {formatStatusLabel(form.payment_status)}
+            </Badge>
+            {(order?.created_at || order?.source) ? (
+              <span className="text-xs text-muted-foreground">
+                {order?.created_at ? `Created ${new Date(order.created_at).toLocaleDateString()}` : ""}
+                {order?.created_at && order?.source ? " • " : ""}
+                {order?.source ? `Source: ${order.source}` : ""}
+              </span>
+            ) : null}
+          </>
+        }
         description="Capture the core order details, then confirm services and schedule."
+        backHref="/admin/orders"
         actions={
-          <div className="flex items-center gap-2">
+          <>
             <Button variant="ghost" asChild>
               <Link href={cancelHref}>Cancel</Link>
             </Button>
             <Button onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? "Saving..." : primaryActionLabel}
             </Button>
-          </div>
+          </>
         }
       />
 

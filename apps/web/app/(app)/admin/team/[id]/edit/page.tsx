@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -18,7 +19,6 @@ import type { TeamMember } from "@/hooks/use-team";
 
 import { useTeamMembers, useUpdateTeamMember } from "@/hooks/use-team";
 import { getPermissionsForRole } from "@/lib/permissions";
-import { ArrowLeft } from "lucide-react";
 import { Shield } from "lucide-react";
 import { Unlock } from "lucide-react";
 import { Save } from "lucide-react";
@@ -109,12 +109,7 @@ export default function EditTeamMemberPage() {
         <div className="flex flex-col items-center justify-center py-12">
           <h1 className="text-2xl font-semibold mb-2">Team Member Not Found</h1>
           <p className="text-muted-foreground mb-6">The team member you&apos;re trying to edit doesn&apos;t exist.</p>
-          <Button asChild>
-            <Link href="/admin/team">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Team
-            </Link>
-          </Button>
+          <BackButton href="/admin/team" label="Back to Team" />
         </div>
       </AdminShell>
     );
@@ -202,12 +197,7 @@ export default function EditTeamMemberPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6 max-w-4xl">
         {/* Back Button */}
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/admin/team/${resolvedMemberId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Profile
-          </Link>
-        </Button>
+        <BackButton href={`/admin/team/${resolvedMemberId}`} label="Back to Profile" variant="ghost" size="sm" />
 
         <AdminPageHeader
           title={`Edit ${firstName} ${lastName}`}

@@ -7,10 +7,10 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft } from "lucide-react";
 import { useCreateLead } from "@/hooks/use-leads";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { toast } from "sonner";
@@ -60,12 +60,7 @@ export default function NewLeadPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6 max-w-2xl">
-        <Button variant="ghost" asChild>
-          <Link href="/admin/leads">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Leads
-          </Link>
-        </Button>
+        <BackButton href="/admin/leads" label="Back to Leads" variant="ghost" />
 
         <AdminPageHeader title="New Lead" description="Capture a new inquiry or sales opportunity." />
 

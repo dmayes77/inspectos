@@ -1,23 +1,16 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  ArrowLeft,
   Building2,
   Calendar,
   Check,
@@ -27,7 +20,6 @@ import {
   FileText,
   Mail,
   MapPin,
-  MoreVertical,
   Phone,
   Send,
   Tag,
@@ -37,9 +29,11 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
+import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
+import { PageHeader } from "@/components/layout/page-header";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { cn } from "@/lib/utils";
-import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
+import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@/lib/utils/dates";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {
@@ -91,6 +85,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const { data: order, isLoading, isError } = useOrderById(id);
   const updateOrder = useUpdateOrder();
   const deleteOrder = useDeleteOrder();
+  const [internalNotes, setInternalNotes] = useState("");
+  const { data: orderNotes = [] } = useOrderNotes(id);
+  const createOrderNote = useCreateOrderNote(id);
 
   const handleStatusChange = (newStatus: string) => {
     if (!order) return;
@@ -121,12 +118,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       <AdminShell user={mockAdminUser}>
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <p className="text-muted-foreground">Order not found</p>
-          <Button variant="outline" asChild>
-            <Link href="/admin/orders">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Orders
-            </Link>
-          </Button>
+          <BackButton href="/admin/orders" label="Back to Orders" variant="outline" />
         </div>
       </AdminShell>
     );
@@ -136,80 +128,165 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const client = order.client;
   const agent = order.agent;
   const inspector = order.inspector;
-  const inspection = order.inspection;
+  const inspection = Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
+  const residentialTypes = new Set(["single-family", "condo-townhome", "manufactured"]);
+  const renderPropertyValue = (value?: string | number | boolean | null) => {
+    if (value === null || value === undefined || value === "") return "—";
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    return `${value}`;
+  };
+
+  const handleSaveNotes = async () => {
+    const nextInternal = internalNotes.trim();
+    if (!nextInternal) {
+      toast.error("Add a note before saving.");
+      return;
+    }
+
+    try {
+      await createOrderNote.mutateAsync({
+        orderId: order.id,
+        noteType: "internal",
+        body: nextInternal,
+      });
+      setInternalNotes("");
+      toast.success("Notes saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save notes.");
+    }
+  };
+
+  const internalHistory = orderNotes.filter((note) => note.note_type === "internal");
 
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" asChild>
-                <Link href="/admin/orders">
-                  <ArrowLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <h1 className="text-2xl font-bold">{order.order_number}</h1>
-              <Badge className={cn("ml-2", getStatusBadgeClasses(order.status))}>
+        <PageHeader
+          breadcrumb={
+            <>
+              <Link href="/admin/overview" className="hover:text-foreground">
+                Overview
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <Link href="/admin/orders" className="hover:text-foreground">
+                Orders
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <span>{order.order_number}</span>
+            </>
+          }
+          title={order.order_number}
+          meta={
+            <>
+              <Badge className={cn("text-xs px-2 py-0.5", getStatusBadgeClasses(order.status))}>
                 {formatStatusLabel(order.status)}
               </Badge>
-              <Badge variant="outline" className={cn(getPaymentBadgeClasses(order.payment_status))}>
+              <Badge
+                variant="outline"
+                className={cn("text-xs px-2 py-0.5", getPaymentBadgeClasses(order.payment_status))}
+              >
                 {formatStatusLabel(order.payment_status)}
               </Badge>
-            </div>
-            <p className="text-muted-foreground">
-              Created {new Date(order.created_at).toLocaleDateString()}
-              {order.source && ` • Source: ${order.source}`}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Created {formatTimestamp(order.created_at)}
+                {order.source ? ` • Source: ${order.source}` : ""}
+              </span>
+            </>
+          }
+          backHref="/admin/orders"
+          actions={
             <Button variant="outline" asChild>
               <Link href={`/admin/orders/${order.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Link>
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => handleStatusChange("scheduled")}>
+          }
+        />
+
+        <div className="grid items-start gap-4 lg:grid-cols-4">
+          <div className="order-1 space-y-4 lg:order-2 lg:col-start-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Common updates for this order.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusChange("scheduled")}
+                >
                   <Calendar className="mr-2 h-4 w-4" />
                   Mark Scheduled
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange("in_progress")}>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusChange("in_progress")}
+                >
                   <Clock className="mr-2 h-4 w-4" />
                   Mark In Progress
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleStatusChange("completed")}>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleStatusChange("completed")}
+                >
                   <Check className="mr-2 h-4 w-4" />
                   Mark Completed
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => toast("Client portal link sending is coming soon.")}
+                >
                   <Send className="mr-2 h-4 w-4" />
                   Send Client Portal Link
-                </DropdownMenuItem>
-                <DropdownMenuItem>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => toast("Agent portal link sending is coming soon.")}
+                >
                   <Mail className="mr-2 h-4 w-4" />
                   Send Agent Portal Link
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="w-full justify-start"
+                  onClick={handleDelete}
+                >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Order
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+                </Button>
+              </CardContent>
+            </Card>
 
-        <div className="grid gap-4 lg:grid-cols-4">
-          <div className="space-y-4 lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Snapshot</CardTitle>
+                <CardDescription>Key identifiers.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order</span>
+                  <span className="font-medium">{order.order_number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Created</span>
+                  <span>{formatTimestamp(order.created_at)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Services</span>
+                  <span>{inspection?.services?.length ?? 0}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="order-2 space-y-4 lg:order-1 lg:col-span-3">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -257,12 +334,52 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       {property.city}, {property.state} {property.zip_code}
                     </p>
                     <div className="flex flex-wrap gap-2 mt-3">
-                      <Badge variant="outline">{property.property_type}</Badge>
+                      <Badge variant="outline">{property.property_type.replace("-", " ")}</Badge>
                       {property.year_built && <Badge variant="outline">Built {property.year_built}</Badge>}
                       {property.square_feet && (
-                        <Badge variant="outline">{property.square_feet.toLocaleString()} sqft</Badge>
+                        <Badge variant="outline">{property.square_feet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} sqft</Badge>
                       )}
                     </div>
+                    {(residentialTypes.has(property.property_type) ||
+                      property.property_type === "multi-family") && (
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>Bedrooms: <span className="text-foreground">{renderPropertyValue(property.bedrooms)}</span></div>
+                        <div>Bathrooms: <span className="text-foreground">{renderPropertyValue(property.bathrooms)}</span></div>
+                        <div>Stories: <span className="text-foreground">{renderPropertyValue(property.stories)}</span></div>
+                        <div>Foundation: <span className="text-foreground">{renderPropertyValue(property.foundation)}</span></div>
+                        <div>Garage: <span className="text-foreground">{renderPropertyValue(property.garage)}</span></div>
+                        <div>Pool: <span className="text-foreground">{renderPropertyValue(property.pool)}</span></div>
+                      </div>
+                    )}
+                    {residentialTypes.has(property.property_type) && (
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>Basement: <span className="text-foreground">{renderPropertyValue(property.basement?.replace("-", " "))}</span></div>
+                        <div>Lot Size: <span className="text-foreground">{property.lot_size_acres ? `${property.lot_size_acres} acres` : "—"}</span></div>
+                        <div>Heating: <span className="text-foreground">{renderPropertyValue(property.heating_type)}</span></div>
+                        <div>Cooling: <span className="text-foreground">{renderPropertyValue(property.cooling_type)}</span></div>
+                        <div>Roof: <span className="text-foreground">{renderPropertyValue(property.roof_type)}</span></div>
+                      </div>
+                    )}
+                    {property.property_type === "commercial" && (
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>Class: <span className="text-foreground">{renderPropertyValue(property.building_class)}</span></div>
+                        <div>Occupancy: <span className="text-foreground">{renderPropertyValue(property.occupancy_type)}</span></div>
+                        <div>Zoning: <span className="text-foreground">{renderPropertyValue(property.zoning)}</span></div>
+                        <div>Ceiling: <span className="text-foreground">{property.ceiling_height ? `${property.ceiling_height} ft` : "—"}</span></div>
+                        <div>Loading Docks: <span className="text-foreground">{renderPropertyValue(property.loading_docks)}</span></div>
+                        <div>Parking: <span className="text-foreground">{renderPropertyValue(property.parking_spaces)}</span></div>
+                        <div>Elevator: <span className="text-foreground">{renderPropertyValue(property.elevator)}</span></div>
+                      </div>
+                    )}
+                    {property.property_type === "multi-family" && (
+                      <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-muted-foreground">
+                        <div>Units: <span className="text-foreground">{renderPropertyValue(property.number_of_units)}</span></div>
+                        <div>Unit Mix: <span className="text-foreground">{renderPropertyValue(property.unit_mix)}</span></div>
+                        <div>Laundry: <span className="text-foreground">{renderPropertyValue(property.laundry_type?.replace("-", " "))}</span></div>
+                        <div>Parking: <span className="text-foreground">{renderPropertyValue(property.parking_spaces)}</span></div>
+                        <div>Elevator: <span className="text-foreground">{renderPropertyValue(property.elevator)}</span></div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-muted-foreground">No property assigned</p>
@@ -396,7 +513,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <CardContent>
                 {order.scheduled_date ? (
                   <div className="space-y-2">
-                    <p className="font-medium">{formatDateShort(order.scheduled_date)}</p>
+                    <p className="font-medium">{formatDate(order.scheduled_date, "EEEE, MMM d, yyyy")}</p>
                     {order.scheduled_time && (
                       <p className="text-muted-foreground">
                         at {formatTime12(order.scheduled_time)}
@@ -427,13 +544,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       <div>
                         <p className="text-sm text-muted-foreground">Started</p>
                         <p className="font-medium">
-                          {inspection.started_at ? new Date(inspection.started_at).toLocaleString() : "Not started"}
+                          {inspection.started_at ? formatTimestampFull(inspection.started_at) : "Not started"}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Completed</p>
                         <p className="font-medium">
-                          {inspection.completed_at ? new Date(inspection.completed_at).toLocaleString() : "Not completed"}
+                          {inspection.completed_at ? formatTimestampFull(inspection.completed_at) : "Not completed"}
                         </p>
                       </div>
                     </div>
@@ -511,38 +628,72 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
             <Card>
               <CardHeader>
-                <CardTitle>Communications</CardTitle>
-                <CardDescription>Send portal links and report delivery.</CardDescription>
+                <CardTitle>Report Delivery</CardTitle>
+                <CardDescription>Delivery status from the order record.</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                <Button variant="outline">
-                  <Send className="mr-2 h-4 w-4" />
-                  Client Portal
-                </Button>
-                <Button variant="outline">
-                  <Send className="mr-2 h-4 w-4" />
-                  Agent Portal
-                </Button>
-                <Button variant="outline">
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Report
-                </Button>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Report Delivered</span>
+                  <span className="font-medium">
+                    {order.report_delivered_at
+                      ? formatTimestampFull(order.report_delivered_at)
+                      : "Not delivered"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Payment Status</span>
+                  <Badge
+                    variant="outline"
+                    className={cn("text-xs", getPaymentBadgeClasses(order.payment_status))}
+                  >
+                    {formatStatusLabel(order.payment_status)}
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Notes</CardTitle>
-                <CardDescription>Internal and client notes.</CardDescription>
+                <CardDescription>Internal notes for the team.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Internal</p>
-                  <p className="text-sm">{order.internal_notes || "No internal notes"}</p>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <textarea
+                    id="order-internal-notes"
+                    className="w-full min-h-[120px] rounded-md border bg-background px-3 py-2 text-sm"
+                    value={internalNotes}
+                    onChange={(event) => setInternalNotes(event.target.value)}
+                    placeholder="Add internal notes..."
+                  />
+                  {internalHistory.length ? (
+                    <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">Saved notes</p>
+                      {internalHistory.map((note) => (
+                        <div key={note.id} className="space-y-1">
+                          <p className="text-[11px] uppercase tracking-wide">
+                            {formatTimestampFull(note.created_at)}
+                            {note.created_by?.full_name
+                              ? ` • ${note.created_by.full_name}`
+                              : note.created_by?.email
+                              ? ` • ${note.created_by.email}`
+                              : ""}
+                          </p>
+                          <p className="text-sm text-foreground">{note.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Client</p>
-                  <p className="text-sm">{order.client_notes || "No client notes"}</p>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSaveNotes}
+                    disabled={createOrderNote.isPending}
+                  >
+                    {createOrderNote.isPending ? "Saving..." : "Save Notes"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -558,7 +709,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <div>
                     <p className="font-medium">Order created</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(order.created_at).toLocaleString()}
+                      {formatTimestampFull(order.created_at)}
                     </p>
                   </div>
                 </div>
@@ -568,7 +719,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <div>
                       <p className="font-medium">Scheduled for inspection</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatDateShort(order.scheduled_date)}
+                        {formatDate(order.scheduled_date, "EEEE, MMM d, yyyy")}
                         {order.scheduled_time && ` at ${formatTime12(order.scheduled_time)}`}
                       </p>
                     </div>
@@ -580,7 +731,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <div>
                       <p className="font-medium">Order completed</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(order.completed_at).toLocaleString()}
+                        {formatTimestampFull(order.completed_at)}
                       </p>
                     </div>
                   </div>
@@ -591,52 +742,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <div>
                       <p className="font-medium">Report delivered</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(order.report_delivered_at).toLocaleString()}
+                        {formatTimestampFull(order.report_delivered_at)}
                       </p>
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>Keep momentum on this order.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full">
-                  Schedule Inspection
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Assign Inspector
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Generate Invoice
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Snapshot</CardTitle>
-                <CardDescription>Key identifiers.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Order</span>
-                  <span className="font-medium">{order.order_number}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created</span>
-                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Services</span>
-                  <span>{inspection?.services?.length ?? 0}</span>
-                </div>
               </CardContent>
             </Card>
           </div>

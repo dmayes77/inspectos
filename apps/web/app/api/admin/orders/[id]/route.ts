@@ -15,7 +15,13 @@ export async function GET(
     .from("orders")
     .select(`
       *,
-      property:properties(id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories),
+      property:properties(
+        id, address_line1, address_line2, city, state, zip_code, property_type,
+        year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool,
+        basement, lot_size_acres, heating_type, cooling_type, roof_type,
+        building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+        number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+      ),
       client:clients(id, name, email, phone, company, notes),
       agent:agents(id, name, email, phone, license_number, agency:agencies(id, name, email, phone)),
       inspector:profiles(id, full_name, email, avatar_url),
@@ -96,7 +102,13 @@ export async function PUT(
     .eq("id", id)
     .select(`
       *,
-      property:properties(id, address_line1, address_line2, city, state, zip_code, property_type),
+      property:properties(
+        id, address_line1, address_line2, city, state, zip_code, property_type,
+        year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool,
+        basement, lot_size_acres, heating_type, cooling_type, roof_type,
+        building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+        number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+      ),
       client:clients(id, name, email, phone),
       agent:agents(id, name, email, phone),
       inspector:profiles(id, full_name, email),

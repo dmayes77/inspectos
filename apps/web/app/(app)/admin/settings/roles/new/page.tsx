@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Shield, Lightbulb } from "lucide-react";
+import { Save, Shield, Lightbulb } from "lucide-react";
 import { permissionCategories } from "@/lib/permissions";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
@@ -115,12 +115,7 @@ export default function NewRolePage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6 max-w-4xl">
         {/* Back Button */}
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/settings/roles">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Roles
-          </Link>
-        </Button>
+        <BackButton href="/admin/settings/roles" label="Back to Roles" variant="ghost" size="sm" />
 
         <AdminPageHeader
           title="Create Custom Role"

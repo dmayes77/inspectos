@@ -7,6 +7,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, Edit, Trash2, Mail, Phone, User, DollarSign, ClipboardList, Calendar } from "lucide-react";
+import { Edit, Trash2, Mail, Phone, User, DollarSign, ClipboardList, Calendar } from "lucide-react";
 import { useClientById, useDeleteClient } from "@/hooks/use-clients";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
@@ -56,12 +57,7 @@ export default function ClientDetailPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/clients">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Clients
-            </Link>
-          </Button>
+          <BackButton href="/admin/clients" label="Back to Clients" variant="ghost" />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Client Not Found</h1>
             <p className="text-muted-foreground">The client you are looking for does not exist.</p>
@@ -85,12 +81,7 @@ export default function ClientDetailPage() {
       <div className="space-y-6 max-w-4xl">
         {/* Header with Actions */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/clients">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Clients
-            </Link>
-          </Button>
+          <BackButton href="/admin/clients" label="Back to Clients" variant="ghost" />
           <div className="flex gap-2">
             <Button variant="outline" asChild>
               <Link href={`/admin/clients/${client.clientId}/edit`}>

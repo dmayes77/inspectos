@@ -13,7 +13,13 @@ export async function GET(request: NextRequest) {
     .from("orders")
     .select(`
       *,
-      property:properties(id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet),
+      property:properties(
+        id, address_line1, address_line2, city, state, zip_code, property_type,
+        year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool,
+        basement, lot_size_acres, heating_type, cooling_type, roof_type,
+        building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+        number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+      ),
       client:clients(id, name, email, phone, company),
       agent:agents(id, name, email, phone, agency:agencies(id, name)),
       inspector:profiles(id, full_name, email, avatar_url),
@@ -126,7 +132,7 @@ export async function POST(request: Request) {
       template_id: payload.services[0]?.template_id ?? null,
       template_version: 1,
       inspector_id: payload.inspector_id ?? null,
-      status: "draft",
+      status: "draft" as const,
     })
     .select()
     .single();
@@ -171,7 +177,13 @@ export async function POST(request: Request) {
     .from("orders")
     .select(`
       *,
-      property:properties(id, address_line1, address_line2, city, state, zip_code, property_type),
+      property:properties(
+        id, address_line1, address_line2, city, state, zip_code, property_type,
+        year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool,
+        basement, lot_size_acres, heating_type, cooling_type, roof_type,
+        building_class, loading_docks, zoning, occupancy_type, ceiling_height,
+        number_of_units, unit_mix, laundry_type, parking_spaces, elevator
+      ),
       client:clients(id, name, email, phone),
       agent:agents(id, name, email, phone),
       inspector:profiles(id, full_name, email),

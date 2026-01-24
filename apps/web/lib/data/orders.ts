@@ -85,6 +85,27 @@ export interface Order {
     property_type: string;
     year_built: number | null;
     square_feet: number | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    stories?: string | null;
+    foundation?: string | null;
+    garage?: string | null;
+    pool?: boolean | null;
+    basement?: "none" | "unfinished" | "finished" | "partial" | null;
+    lot_size_acres?: number | null;
+    heating_type?: string | null;
+    cooling_type?: string | null;
+    roof_type?: string | null;
+    building_class?: "A" | "B" | "C" | null;
+    loading_docks?: number | null;
+    zoning?: string | null;
+    occupancy_type?: string | null;
+    ceiling_height?: number | null;
+    number_of_units?: number | null;
+    unit_mix?: string | null;
+    laundry_type?: "in-unit" | "shared" | "none" | null;
+    parking_spaces?: number | null;
+    elevator?: boolean | null;
   };
   client?: {
     id: string;

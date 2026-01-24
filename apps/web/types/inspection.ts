@@ -56,7 +56,7 @@ export interface Property {
   city: string;
   state: string;
   zip_code: string;
-  property_type: 'residential' | 'commercial' | 'multi-family' | 'other';
+  property_type: 'single-family' | 'condo-townhome' | 'multi-family' | 'manufactured' | 'commercial';
   year_built: number | null;
   square_feet: number | null;
 }
@@ -137,7 +137,7 @@ export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspe
         city: '',
         state: '',
         zip_code: '',
-        property_type: (legacy.propertyType as Property['property_type']) || 'residential',
+        property_type: (legacy.propertyType as Property['property_type']) || 'single-family',
         year_built: legacy.yearBuilt || null,
         square_feet: legacy.sqft || null,
       },

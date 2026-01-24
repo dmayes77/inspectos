@@ -12,10 +12,42 @@ export interface Property {
   city: string;
   state: string;
   zip_code: string;
-  property_type: 'residential' | 'commercial' | 'multi-family' | 'other';
+  property_type: 'single-family' | 'condo-townhome' | 'multi-family' | 'manufactured' | 'commercial';
   year_built: number | null;
   square_feet: number | null;
   notes: string | null;
+
+  // Common property details
+  bedrooms: number | null;
+  bathrooms: number | null;
+  stories: string | null;
+  foundation: string | null;
+  garage: string | null;
+  pool: boolean | null;
+
+  // Residential specific
+  basement: 'none' | 'unfinished' | 'finished' | 'partial' | null;
+  lot_size_acres: number | null;
+  heating_type: string | null;
+  cooling_type: string | null;
+  roof_type: string | null;
+
+  // Commercial specific
+  building_class: 'A' | 'B' | 'C' | null;
+  loading_docks: number | null;
+  zoning: string | null;
+  occupancy_type: string | null;
+  ceiling_height: number | null;
+
+  // Multi-family specific
+  number_of_units: number | null;
+  unit_mix: string | null;
+  laundry_type: 'in-unit' | 'shared' | 'none' | null;
+
+  // Shared (commercial/multi-family)
+  parking_spaces: number | null;
+  elevator: boolean | null;
+
   created_at: string;
   updated_at: string;
   client?: {
@@ -38,6 +70,81 @@ export interface CreatePropertyInput {
   year_built?: number | null;
   square_feet?: number | null;
   notes?: string | null;
+
+  // Common property details
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  stories?: string | null;
+  foundation?: string | null;
+  garage?: string | null;
+  pool?: boolean | null;
+
+  // Residential specific
+  basement?: Property['basement'];
+  lot_size_acres?: number | null;
+  heating_type?: string | null;
+  cooling_type?: string | null;
+  roof_type?: string | null;
+
+  // Commercial specific
+  building_class?: Property['building_class'];
+  loading_docks?: number | null;
+  zoning?: string | null;
+  occupancy_type?: string | null;
+  ceiling_height?: number | null;
+
+  // Multi-family specific
+  number_of_units?: number | null;
+  unit_mix?: string | null;
+  laundry_type?: Property['laundry_type'];
+
+  // Shared (commercial/multi-family)
+  parking_spaces?: number | null;
+  elevator?: boolean | null;
+}
+
+export interface UpdatePropertyInput {
+  address_line1: string;
+  address_line2?: string | null;
+  city: string;
+  state: string;
+  zip_code: string;
+  property_type?: Property['property_type'];
+  year_built?: number | null;
+  square_feet?: number | null;
+  notes?: string | null;
+  client_id?: string | null;
+
+  // Common property details
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  stories?: string | null;
+  foundation?: string | null;
+  garage?: string | null;
+  pool?: boolean | null;
+
+  // Residential specific
+  basement?: Property['basement'];
+  lot_size_acres?: number | null;
+  heating_type?: string | null;
+  cooling_type?: string | null;
+  roof_type?: string | null;
+
+  // Commercial specific
+  building_class?: Property['building_class'];
+  loading_docks?: number | null;
+  zoning?: string | null;
+  occupancy_type?: string | null;
+  ceiling_height?: number | null;
+
+  // Multi-family specific
+  number_of_units?: number | null;
+  unit_mix?: string | null;
+  laundry_type?: Property['laundry_type'];
+
+  // Shared (commercial/multi-family)
+  parking_spaces?: number | null;
+  elevator?: boolean | null;
 }
 
 export interface PropertyFilters {
@@ -80,6 +187,54 @@ export async function createProperty(input: CreatePropertyInput): Promise<Proper
 
   const result = await response.json();
   return result.data;
+}
+
+export async function fetchProperty(propertyId: string): Promise<Property> {
+  const response = await fetch(`/api/admin/properties/${propertyId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch property');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function updateProperty(propertyId: string, input: UpdatePropertyInput): Promise<Property> {
+  const response = await fetch(`/api/admin/properties/${propertyId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to update property');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+export async function deleteProperty(propertyId: string): Promise<void> {
+  const response = await fetch(`/api/admin/properties/${propertyId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to delete property');
+  }
 }
 
 /**

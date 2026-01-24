@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, CreditCard, Receipt, Download } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
+import { CreditCard, Receipt, Download } from "lucide-react";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
 const mockInvoices = [
@@ -20,12 +20,7 @@ export default function BillingPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/settings">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Settings
-            </Link>
-          </Button>
+          <BackButton href="/admin/settings" label="Back to Settings" variant="ghost" size="sm" />
         </div>
 
         <AdminPageHeader

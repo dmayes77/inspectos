@@ -6,6 +6,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClientInlineForm } from "@/components/ui/client-inline-form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft } from "lucide-react";
 import { useServices } from "@/hooks/use-services";
 import { useGet } from "@/hooks/crud";
 import { fetchInspectionById } from "@/lib/data/admin-data";
@@ -264,19 +264,11 @@ export default function EditInspectionPage(props: { isNew?: boolean } = {}) {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-4 w-full max-w-4xl">
-        <Button variant="ghost" asChild>
-          {inspection ? (
-            <Link href={`/admin/inspections/${inspection.inspectionId}`}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Inspection
-            </Link>
-          ) : (
-            <Link href="/admin/inspections">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Inspections
-            </Link>
-          )}
-        </Button>
+        <BackButton
+          href={inspection ? `/admin/inspections/${inspection.inspectionId}` : "/admin/inspections"}
+          label={inspection ? "Back to Inspection" : "Back to Inspections"}
+          variant="ghost"
+        />
 
         <AdminPageHeader
           title={inspection ? "Edit Inspection" : "New Inspection"}

@@ -9,6 +9,7 @@ import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -22,7 +23,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  ChevronLeft,
   Edit,
   Archive,
   FileText,
@@ -99,12 +99,7 @@ export default function InspectionDetailPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/inspections">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Inspections
-            </Link>
-          </Button>
+          <BackButton href="/admin/inspections" label="Back to Inspections" variant="ghost" />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Inspection Not Found</h1>
             <p className="text-muted-foreground">The inspection you are looking for does not exist.</p>
@@ -141,12 +136,7 @@ export default function InspectionDetailPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" asChild>
-          <Link href="/admin/inspections">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Inspections
-          </Link>
-        </Button>
+        <BackButton href="/admin/inspections" label="Back to Inspections" variant="ghost" />
 
         <AdminPageHeader
           title={

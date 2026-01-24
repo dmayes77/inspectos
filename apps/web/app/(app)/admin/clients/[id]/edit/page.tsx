@@ -6,10 +6,10 @@ import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft } from "lucide-react";
 import { useClientById, useUpdateClient, type Client } from "@/hooks/use-clients";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
@@ -47,12 +47,7 @@ export default function EditClientPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/clients">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Clients
-            </Link>
-          </Button>
+          <BackButton href="/admin/clients" label="Back to Clients" variant="ghost" />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Client Not Found</h1>
             <p className="text-muted-foreground">The client you are looking for does not exist.</p>
@@ -87,12 +82,7 @@ export default function EditClientPage() {
       <div className="space-y-6 max-w-2xl">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" asChild>
-            <Link href={`/admin/clients/${client.clientId}`}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Client
-            </Link>
-          </Button>
+          <BackButton href={`/admin/clients/${client.clientId}`} label="Back to Client" variant="ghost" />
         </div>
 
         {/* Edit Form */}

@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, Edit, Trash2, Mail, Phone, ClipboardList } from "lucide-react";
+import { Edit, Trash2, Mail, Phone, ClipboardList } from "lucide-react";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import { useDeleteLead, useLeadById, useUpdateLead, type Lead } from "@/hooks/use-leads";
 import { mockAdminUser } from "@/lib/constants/mock-users";
@@ -68,12 +68,7 @@ function LeadDetailPageContent() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href={returnTo}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Leads
-            </Link>
-          </Button>
+          <BackButton href={returnTo} label="Back to Leads" variant="ghost" />
           <div className="text-center py-12">
             <h1 className="text-2xl font-semibold mb-2">Lead Not Found</h1>
             <p className="text-muted-foreground">The lead you are looking for does not exist.</p>
@@ -119,12 +114,7 @@ function LeadDetailPageContent() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6 max-w-4xl">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" asChild>
-            <Link href={returnTo}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Leads
-            </Link>
-          </Button>
+          <BackButton href={returnTo} label="Back to Leads" variant="ghost" />
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setEditing((prev) => !prev)}>
               <Edit className="mr-2 h-4 w-4" />

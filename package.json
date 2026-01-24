@@ -19,15 +19,15 @@
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "bash -c 'cd apps/web && pnpm exec tsc --noEmit'"
+      "pnpm -C apps/web exec eslint --fix",
+      "pnpm -C apps/web exec tsc --noEmit"
     ],
     "apps/api/**/*.{ts,tsx}": [
-      "eslint --fix",
-      "bash -c 'cd apps/api && pnpm exec tsc --noEmit'"
+      "pnpm -C apps/api exec eslint --fix",
+      "pnpm -C apps/api exec tsc --noEmit"
     ],
     "apps/mobile/**/*.{ts,tsx}": [
-      "eslint --fix"
+      "pnpm -C apps/mobile exec eslint --fix"
     ]
   }
 }

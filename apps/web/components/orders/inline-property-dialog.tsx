@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +27,10 @@ export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, cl
     city: "",
     state: "",
     zipCode: "",
-    propertyType: "residential",
+    propertyType: "single-family",
+    yearBuilt: "",
+    squareFeet: "",
+    notes: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,18 +48,23 @@ export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, cl
 
     setLoading(true);
     try {
+      const payload = {
+        address_line1: form.addressLine1.trim(),
+        address_line2: form.addressLine2.trim() || null,
+        city: form.city.trim(),
+        state: form.state.trim(),
+        zip_code: form.zipCode.trim(),
+        property_type: form.propertyType,
+        year_built: form.yearBuilt ? parseInt(form.yearBuilt, 10) : null,
+        square_feet: form.squareFeet ? parseInt(form.squareFeet, 10) : null,
+        notes: form.notes.trim() || null,
+        client_id: clientId || null,
+      };
+
       const response = await fetch("/api/admin/properties", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address_line1: form.addressLine1.trim(),
-          address_line2: form.addressLine2.trim() || null,
-          city: form.city.trim(),
-          state: form.state.trim(),
-          zip_code: form.zipCode.trim(),
-          property_type: form.propertyType,
-          client_id: clientId || null,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -74,7 +83,10 @@ export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, cl
         city: "",
         state: "",
         zipCode: "",
-        propertyType: "residential",
+        propertyType: "single-family",
+        yearBuilt: "",
+        squareFeet: "",
+        notes: "",
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to create property");
@@ -85,7 +97,7 @@ export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, cl
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Property</DialogTitle>
           <DialogDescription>
@@ -160,13 +172,49 @@ export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, cl
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="residential">Residential</SelectItem>
+                  <SelectItem value="single-family">Single-Family</SelectItem>
+                  <SelectItem value="condo-townhome">Condo / Townhome</SelectItem>
                   <SelectItem value="commercial">Commercial</SelectItem>
                   <SelectItem value="multi-family">Multi-Family</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="manufactured">Manufactured</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="property-year-built">Year Built</Label>
+              <Input
+                id="property-year-built"
+                type="number"
+                value={form.yearBuilt}
+                onChange={(e) => setForm((prev) => ({ ...prev, yearBuilt: e.target.value }))}
+                placeholder="2020"
+                min="1800"
+                max={new Date().getFullYear() + 1}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="property-square-feet">Square Feet</Label>
+              <Input
+                id="property-square-feet"
+                type="number"
+                value={form.squareFeet}
+                onChange={(e) => setForm((prev) => ({ ...prev, squareFeet: e.target.value }))}
+                placeholder="2000"
+                min="0"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="property-notes">Notes</Label>
+            <Textarea
+              id="property-notes"
+              value={form.notes}
+              onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="Additional property details..."
+              rows={3}
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

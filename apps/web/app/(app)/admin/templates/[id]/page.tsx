@@ -1,18 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ChevronLeft, Trash2, ArrowUp, ArrowDown, X, Pencil } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, X, Pencil } from "lucide-react";
 import { useTemplate, useUpdateTemplate } from "@/hooks/use-templates";
 import { useServices } from "@/hooks/use-services";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -73,12 +73,7 @@ export default function TemplateEditorPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/templates">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Inspection Templates
-            </Link>
-          </Button>
+          <BackButton href="/admin/templates" label="Back to Inspection Templates" variant="ghost" />
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground">
               Loading template...
@@ -93,12 +88,7 @@ export default function TemplateEditorPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <Button variant="ghost" asChild>
-            <Link href="/admin/templates">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Back to Inspection Templates
-            </Link>
-          </Button>
+          <BackButton href="/admin/templates" label="Back to Inspection Templates" variant="ghost" />
           <Card>
             <CardContent className="py-10 text-center text-muted-foreground">
               Template not found.
@@ -221,12 +211,7 @@ export default function TemplateEditorPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <Button variant="ghost" asChild>
-          <Link href="/admin/templates">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Inspection Templates
-          </Link>
-        </Button>
+          <BackButton href="/admin/templates" label="Back to Inspection Templates" variant="ghost" />
 
         <AdminPageHeader
           title={name}

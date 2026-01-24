@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Save, Shield, Lock, Trash, Users } from "lucide-react";
+import { Save, Shield, Lock, Trash, Users } from "lucide-react";
 import { permissionCategories, rolePermissions } from "@/lib/permissions";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
@@ -78,12 +78,7 @@ export default function RoleDetailPage() {
           <p className="text-muted-foreground mb-6">
             The role you&apos;re looking for doesn&apos;t exist.
           </p>
-          <Button asChild>
-            <Link href="/admin/settings/roles">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Roles
-            </Link>
-          </Button>
+          <BackButton href="/admin/settings/roles" label="Back to Roles" />
         </div>
       </AdminShell>
     );
@@ -120,12 +115,7 @@ export default function RoleDetailPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6 max-w-4xl">
         {/* Back Button */}
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/settings/roles">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Roles
-          </Link>
-        </Button>
+        <BackButton href="/admin/settings/roles" label="Back to Roles" variant="ghost" size="sm" />
 
         <AdminPageHeader
           title={

@@ -29,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,7 +40,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mail, Phone, MapPin, Star, ClipboardList, ChevronLeft, Edit, Trash2 } from "lucide-react";
+import { Mail, Phone, MapPin, Star, ClipboardList, Edit, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTeamMembers, useUpdateTeamMember, useDeleteTeamMember, TeamMember } from "@/hooks/use-team";
 
@@ -104,12 +105,7 @@ export default function TeamMemberDetailPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" asChild>
-          <Link href="/admin/team">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Team
-          </Link>
-        </Button>
+        <BackButton href="/admin/team" label="Back to Team" variant="ghost" />
 
         <AdminPageHeader
           title={

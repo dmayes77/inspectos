@@ -3,8 +3,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 
 interface AuthShellProps {
   children: ReactNode;
@@ -43,12 +42,7 @@ export function AuthShell({
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4">
         {showBackButton ? (
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
+          <BackButton href="/" label="Back to Home" variant="ghost" size="sm" />
         ) : (
           <div aria-hidden="true" />
         )}

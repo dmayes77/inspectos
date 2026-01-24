@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useTeamMembers, type TeamMember } from "@/hooks/use-team";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 
@@ -131,12 +132,7 @@ export default function TeamMemberAvailabilityPage() {
         <div className="flex flex-col items-center justify-center py-12">
           <h1 className="text-2xl font-semibold mb-2">Team Member Not Found</h1>
           <p className="text-muted-foreground mb-6">The team member you&apos;re looking for doesn&apos;t exist.</p>
-          <Button asChild>
-            <Link href="/admin/team">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Team
-            </Link>
-          </Button>
+          <BackButton href="/admin/team" label="Back to Team" />
         </div>
       </AdminShell>
     );
@@ -165,12 +161,7 @@ export default function TeamMemberAvailabilityPage() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         {/* Back Button */}
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/admin/team/${member.teamMemberId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Profile
-          </Link>
-        </Button>
+        <BackButton href={`/admin/team/${member.teamMemberId}`} label="Back to Profile" variant="ghost" size="sm" />
 
         <AdminPageHeader
           title={

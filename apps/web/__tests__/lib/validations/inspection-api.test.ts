@@ -13,7 +13,7 @@ describe("createInspectionSchema", () => {
       date: "2024-03-15",
       time: "09:00",
       types: ["service-1", "service-2"],
-      propertyType: "residential",
+      propertyType: "single-family",
       yearBuilt: 2010,
       sqft: 2500,
       bedrooms: 4,
