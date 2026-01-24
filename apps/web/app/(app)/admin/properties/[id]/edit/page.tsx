@@ -78,14 +78,14 @@ export default function EditPropertyPage() {
     heatingType: string | undefined;
     coolingType: string | undefined;
     roofType: string | undefined;
-    buildingClass: string | undefined;
+    buildingClass: (typeof buildingClassOptions)[number] | undefined;
     loadingDocks: string;
     zoning: string;
     occupancyType: string;
     ceilingHeight: string;
     numberOfUnits: string;
     unitMix: string;
-    laundryType: string | undefined;
+    laundryType: (typeof laundryOptions)[number] | undefined;
     parkingSpaces: string;
     elevator: boolean;
   }>({
