@@ -32,7 +32,7 @@ export default function EditPropertyPage() {
 
   const { data: property, isLoading } = useProperty(propertyId);
   const updateProperty = useUpdateProperty(propertyId);
-  const { data: clientsData } = useClients("demo");
+  const { data: clientsData } = useClients();
   const clients = clientsData ?? [];
   const residentialTypes = new Set(["single-family", "condo-townhome", "manufactured"]);
   const allowedPropertyTypes = new Set([
