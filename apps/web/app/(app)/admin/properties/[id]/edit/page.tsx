@@ -42,11 +42,14 @@ export default function EditPropertyPage() {
     "manufactured",
     "commercial",
   ]);
-  const basementOptions = ["none", "unfinished", "finished", "partial"];
-  const buildingClassOptions = ["A", "B", "C"];
-  const laundryOptions = ["in-unit", "shared", "none"];
+  const basementOptions = ["none", "unfinished", "finished", "partial"] as const;
+  const buildingClassOptions = ["A", "B", "C"] as const;
+  const laundryOptions = ["in-unit", "shared", "none"] as const;
 
-  const normalizeOptionValue = (value: string | null | undefined, options: readonly string[]): string | undefined => {
+  const normalizeOptionValue = <T extends string>(
+    value: string | null | undefined,
+    options: readonly T[]
+  ): T | undefined => {
     if (!value) return undefined;
     const normalized = value.trim().toLowerCase();
     const match = options.find((option) => option.toLowerCase() === normalized);
@@ -70,7 +73,7 @@ export default function EditPropertyPage() {
     foundation: string | undefined;
     garage: string | undefined;
     pool: boolean;
-    basement: string | undefined;
+    basement: (typeof basementOptions)[number] | undefined;
     lotSizeAcres: string;
     heatingType: string | undefined;
     coolingType: string | undefined;
