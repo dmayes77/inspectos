@@ -19,11 +19,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { User, Edit, Trash2, FileText, Loader2, Calendar } from "lucide-react";
+import { Edit, Trash2, FileText, Loader2 } from "lucide-react";
 import { useProperty, useDeleteProperty, formatPropertyAddress } from "@/hooks/use-properties";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
-import { formatTimestamp } from "@/lib/utils/dates";
+import { ClientInfoCard } from "@/components/shared/client-info-card";
+import { RecordInformationCard } from "@/components/shared/record-information-card";
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -366,74 +367,20 @@ export default function PropertyDetailPage() {
 
           {/* Right Column - Owner & Metadata */}
           <div className="space-y-6">
-            {/* Owner/Contact */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Owner/Contact</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {property.client ? (
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-full bg-primary/10 p-2">
-                        <User className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <Link
-                          href={`/admin/clients/${property.client.id}`}
-                          className="font-medium hover:underline block truncate"
-                        >
-                          {property.client.name}
-                        </Link>
-                        {property.client.email && (
-                          <p className="text-sm text-muted-foreground truncate">
-                            {property.client.email}
-                          </p>
-                        )}
-                        {property.client.phone && (
-                          <p className="text-sm text-muted-foreground">
-                            {property.client.phone}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <Button asChild variant="outline" size="sm" className="w-full">
-                      <Link href={`/admin/clients/${property.client.id}`}>
-                        View Client Profile
-                      </Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      No owner/contact assigned
-                    </p>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/admin/properties/${propertyId}/edit`}>
-                        Assign Contact
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ClientInfoCard
+              title="Owner/Contact"
+              client={property.client ?? undefined}
+              actionLabel="View Client Profile"
+              actionHref={property.client ? `/admin/clients/${property.client.id}` : undefined}
+              emptyLabel="No owner/contact assigned"
+              emptyActionLabel="Assign Contact"
+              emptyActionHref={`/admin/properties/${propertyId}/edit`}
+            />
 
-            {/* Metadata */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Record Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Created {formatTimestamp(property.created_at)}</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-4 w-4" />
-                  <span>Updated {formatTimestamp(property.updated_at)}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <RecordInformationCard
+              createdAt={property.created_at}
+              updatedAt={property.updated_at}
+            />
           </div>
         </div>
       </div>

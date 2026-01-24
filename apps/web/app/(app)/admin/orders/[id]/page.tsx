@@ -34,6 +34,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { cn } from "@/lib/utils";
 import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@/lib/utils/dates";
+import { formatInvoiceNumber } from "@/lib/utils/invoices";
 import type { InspectionService } from "@/lib/data/orders";
 
 function getStatusBadgeClasses(status: string) {
@@ -618,7 +619,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     <p className="text-sm font-medium">Invoices</p>
                     {order.invoices.map((invoice) => (
                       <div key={invoice.id} className="flex items-center justify-between text-sm">
-                        <span>Invoice #{invoice.id.slice(0, 8)}</span>
+                        <Link href={`/admin/invoices/${invoice.id}`} className="hover:underline">
+                          {formatInvoiceNumber(invoice.id)}
+                        </Link>
                         <span className="font-medium">${invoice.total.toFixed(2)}</span>
                       </div>
                     ))}

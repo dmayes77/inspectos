@@ -48,7 +48,7 @@ export function AdminHeader({
   const timeLabel = useMemo(() => {
     const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone,
-      weekday: "long",
+      weekday: "short",
       month: "short",
       day: "2-digit",
       year: "numeric",

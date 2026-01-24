@@ -15,6 +15,7 @@ import { usePayments, useRecordPayment } from "@/hooks/use-payments";
 import { useInvoices } from "@/hooks/use-invoices";
 import { useOrders } from "@/hooks/use-orders";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
+import { formatInvoiceNumber } from "@/lib/utils/invoices";
 import { toast } from "sonner";
 
 export default function PaymentsPage() {
@@ -137,7 +138,7 @@ export default function PaymentsPage() {
                     <div>
                       <p className="font-medium">{payment.clientName || "Unknown client"}</p>
                       <p className="text-xs text-muted-foreground">
-                        {payment.paidDate || "—"} • {payment.method} • {payment.invoiceId || "No invoice"}
+                        {payment.paidDate || "—"} • {payment.method} • {payment.invoiceId ? formatInvoiceNumber(payment.invoiceId) : "No invoice"}
                       </p>
                     </div>
                     <TagAssignmentEditor scope="payment" entityId={payment.paymentId} />

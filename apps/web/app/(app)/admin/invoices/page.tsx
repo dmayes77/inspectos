@@ -1,20 +1,90 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { ColumnDef } from "@tanstack/react-table";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FilePlus, ArrowRight } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table";
+import { FilePlus, ArrowRight, Search } from "lucide-react";
+import { mockAdminUser } from "@/lib/constants/mock-users";
 import { useInvoices } from "@/hooks/use-invoices";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import { useOrders } from "@/hooks/use-orders";
-import Link from "next/link";
+import { formatDate } from "@/lib/utils/dates";
+import { formatInvoiceNumber } from "@/lib/utils/invoices";
+import type { InvoiceRecord } from "@/lib/data/invoices";
+
+const invoiceStatusOptions = [
+  { value: "all", label: "All Statuses" },
+  { value: "draft", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "overdue", label: "Overdue" },
+  { value: "paid", label: "Paid" },
+];
+
+const formatStatusLabel = (status: string) =>
+  status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+const columns: ColumnDef<InvoiceRecord>[] = [
+  {
+    accessorKey: "invoiceId",
+    header: "Invoice",
+    cell: ({ row }) => (
+      <Link
+        href={`/admin/invoices/${row.original.invoiceId}`}
+        className="font-medium hover:underline"
+      >
+        {row.original.invoiceNumber || formatInvoiceNumber(row.original.invoiceId)}
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "clientName",
+    header: "Client",
+    cell: ({ row }) => <span>{row.original.clientName || "Unknown client"}</span>,
+  },
+  {
+    accessorKey: "issuedDate",
+    header: "Issued",
+    cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.issuedDate || "—")}</span>,
+  },
+  {
+    accessorKey: "dueDate",
+    header: "Due",
+    cell: ({ row }) => <span className="text-muted-foreground">{formatDate(row.original.dueDate || "—")}</span>,
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => (
+      <Badge variant="outline" className="capitalize">
+        {formatStatusLabel(row.original.status)}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "amount",
+    header: "Amount",
+    cell: ({ row }) => (
+      <span className="font-semibold text-muted-foreground">${row.original.amount.toFixed(2)}</span>
+    ),
+  },
+];
 
 export default function InvoicesPage() {
-  const { data: invoices = [], isLoading } = useInvoices();
+  const { data: invoices = [], isLoading, isError } = useInvoices();
   const { data: orders = [] } = useOrders();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const hasInvoices = invoices.length > 0;
   const totals = invoices.reduce(
     (acc, invoice) => {
@@ -39,6 +109,40 @@ export default function InvoicesPage() {
   const outstandingTotal = hasInvoices ? totals.outstanding : orderTotals.outstanding;
   const paidTotal = hasInvoices ? totals.paid : orderTotals.paid;
   const overdueTotal = hasInvoices ? totals.overdue : 0;
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
+      if (!matchesStatus) return false;
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      const clientName = invoice.clientName?.toLowerCase() ?? "";
+      return (
+        invoice.invoiceId.toLowerCase().includes(query) ||
+        invoice.invoiceNumber?.toLowerCase().includes(query) ||
+        clientName.includes(query)
+      );
+    });
+  }, [invoices, searchQuery, statusFilter]);
+
+  const emptyState = (
+    <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+      No invoices yet. Create an invoice from an order.
+      {orderTotals.unpaidCount > 0 && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {orderTotals.unpaidCount} unpaid orders ready to invoice
+          </span>
+          <Button variant="link" className="h-auto p-0" asChild>
+            <Link href="/admin/orders">
+              Review orders
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
@@ -47,7 +151,7 @@ export default function InvoicesPage() {
           description="Generate invoices, track balances, and send payment reminders"
           actions={
             <Button className="sm:w-auto" asChild>
-              <Link href="/admin/orders?payment_status=unpaid">
+              <Link href="/admin/invoices/new">
                 <FilePlus className="mr-2 h-4 w-4" />
                 New Invoice
               </Link>
@@ -55,72 +159,134 @@ export default function InvoicesPage() {
           }
         />
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-3 gap-3 md:grid-cols-3">
           <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Outstanding</p>
-              <p className="mt-2 text-2xl font-semibold">${outstandingTotal.toFixed(2)}</p>
-            </CardContent>
+            <CardHeader className="pb-2">
+              <CardDescription>Outstanding</CardDescription>
+              <CardTitle className="text-2xl">${outstandingTotal.toFixed(2)}</CardTitle>
+            </CardHeader>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Paid</p>
-              <p className="mt-2 text-2xl font-semibold">${paidTotal.toFixed(2)}</p>
-            </CardContent>
+            <CardHeader className="pb-2">
+              <CardDescription>Paid</CardDescription>
+              <CardTitle className="text-2xl">${paidTotal.toFixed(2)}</CardTitle>
+            </CardHeader>
           </Card>
           <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Overdue</p>
-              <p className="mt-2 text-2xl font-semibold">${overdueTotal.toFixed(2)}</p>
-            </CardContent>
+            <CardHeader className="pb-2">
+              <CardDescription>Overdue</CardDescription>
+              <CardTitle className="text-2xl">${overdueTotal.toFixed(2)}</CardTitle>
+            </CardHeader>
           </Card>
         </div>
 
         <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
+              <div className="relative w-full md:flex-1 md:min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search invoices..."
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full min-w-[160px] md:w-[200px]">
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {invoiceStatusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex w-full justify-end md:ml-auto md:w-auto">
+                <Button
+                  variant="ghost"
+                  className="w-auto"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setSearchQuery("");
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
           <CardHeader>
-            <CardTitle>Invoice Activity</CardTitle>
-            <CardDescription>Send invoices for inspections and add-ons.</CardDescription>
+            <CardTitle>All Invoices</CardTitle>
+            <CardDescription>
+              {isLoading ? "Loading..." : `${filteredInvoices.length} invoices`}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {isLoading ? (
-              <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                Loading invoices...
-              </div>
-            ) : invoices.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                No invoices yet. Create an invoice from an order.
-                {orderTotals.unpaidCount > 0 && (
-                  <div className="mt-4 flex items-center justify-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {orderTotals.unpaidCount} unpaid orders ready to invoice
-                    </span>
-                    <Button variant="link" className="h-auto p-0" asChild>
-                      <Link href="/admin/orders">
-                        Review orders
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </div>
+          <CardContent>
+            {isError ? (
+              <div className="text-red-500">Failed to load invoices.</div>
             ) : (
-              invoices.map((invoice) => (
-                <div key={invoice.invoiceId} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4 text-sm">
-                  <div className="space-y-2">
-                    <div>
-                      <p className="font-medium">{invoice.invoiceId}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {invoice.clientName || "Unknown client"} • Issued {invoice.issuedDate || "—"}
-                      </p>
+              <>
+                <div className="md:hidden space-y-3">
+                  {isLoading ? (
+                    <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+                      Loading invoices...
                     </div>
-                    <TagAssignmentEditor scope="invoice" entityId={invoice.invoiceId} />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{invoice.status}</Badge>
-                    <span className="text-xs font-semibold text-muted-foreground">${invoice.amount}</span>
-                  </div>
+                  ) : filteredInvoices.length === 0 ? (
+                    emptyState
+                  ) : (
+                    filteredInvoices.map((invoice) => (
+                      <div key={invoice.invoiceId} className="rounded-lg border p-4 text-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <Link
+                              href={`/admin/invoices/${invoice.invoiceId}`}
+                              className="font-semibold hover:underline"
+                            >
+                              {invoice.invoiceNumber || formatInvoiceNumber(invoice.invoiceId)}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">
+                              {invoice.clientName || "Unknown client"} • Issued {formatDate(invoice.issuedDate || "—")}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="outline" className="capitalize">
+                              {formatStatusLabel(invoice.status)}
+                            </Badge>
+                            <p className="mt-2 text-xs font-semibold text-muted-foreground">
+                              ${invoice.amount.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-xs text-muted-foreground">
+                          Due {invoice.dueDate ? formatDate(invoice.dueDate) : "—"}
+                        </div>
+                        <div className="mt-3">
+                          <TagAssignmentEditor scope="invoice" entityId={invoice.invoiceId} />
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))
+                <div className="hidden md:block">
+                  {isLoading ? (
+                    <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+                      Loading invoices...
+                    </div>
+                  ) : filteredInvoices.length === 0 ? (
+                    emptyState
+                  ) : (
+                    <DataTable columns={columns} data={filteredInvoices} />
+                  )}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

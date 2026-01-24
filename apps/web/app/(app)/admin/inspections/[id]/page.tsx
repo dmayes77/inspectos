@@ -5,11 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -37,6 +36,8 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { mockAdminUser } from "@/lib/constants/mock-users";
+import { ClientInfoCard } from "@/components/shared/client-info-card";
+import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { formatInspectionDateTime } from "@/lib/utils/formatters";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
@@ -99,11 +100,22 @@ export default function InspectionDetailPage() {
     return (
       <AdminShell user={mockAdminUser}>
         <div className="space-y-6">
-          <BackButton href="/admin/inspections" label="Back to Inspections" variant="ghost" />
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-semibold mb-2">Inspection Not Found</h1>
-            <p className="text-muted-foreground">The inspection you are looking for does not exist.</p>
-          </div>
+          <PageHeader
+            breadcrumb={
+              <>
+                <Link href="/admin/overview" className="hover:text-foreground">
+                  Overview
+                </Link>
+                <span className="text-muted-foreground">/</span>
+                <Link href="/admin/inspections" className="hover:text-foreground">
+                  Inspections
+                </Link>
+              </>
+            }
+            title="Inspection Not Found"
+            description="The inspection you are looking for does not exist."
+            backHref="/admin/inspections"
+          />
         </div>
       </AdminShell>
     );
@@ -135,89 +147,119 @@ export default function InspectionDetailPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        {/* Back Button */}
-        <BackButton href="/admin/inspections" label="Back to Inspections" variant="ghost" />
-
-        <AdminPageHeader
-          title={
-            <div className="flex flex-col gap-3 text-center sm:text-left">
-              <div className="flex flex-wrap items-start justify-center gap-2 text-base sm:justify-start sm:text-lg">
-                <MapPin className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" />
-                <div className="text-center sm:text-left">
-                  <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                    <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{address}</h1>
-                    {inspectionStatusBadge(inspection.status)}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:gap-6">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  {formattedDateTime}
-                </span>
-                {stats && (
-                  <span className="flex items-center gap-1">
-                    <CheckCircle2 className="h-4 w-4" />
-                    {stats.completionPercentage}% Complete
-                  </span>
-                )}
-              </div>
-            </div>
+        <PageHeader
+          breadcrumb={
+            <>
+              <Link href="/admin/overview" className="hover:text-foreground">
+                Overview
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <Link href="/admin/inspections" className="hover:text-foreground">
+                Inspections
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <span>{address}</span>
+            </>
           }
+          title="Inspection Details"
+          description={address}
+          meta={
+            <>
+              {inspectionStatusBadge(inspection.status)}
+              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                {formattedDateTime}
+              </span>
+              {stats && (
+                <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {stats.completionPercentage}% Complete
+                </span>
+              )}
+            </>
+          }
+          backHref="/admin/inspections"
           actions={
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button asChild className="w-full sm:w-auto">
+            <>
+              <Button asChild variant="outline">
                 <Link href={`/admin/inspections/${inspection.id}/edit`}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>
               </Button>
-              <Button variant="outline" className="w-full sm:w-auto" onClick={() => setArchiveDialogOpen(true)}>
+              <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}>
                 <Archive className="mr-2 h-4 w-4" />
                 Archive
               </Button>
-              <Button variant="outline" className="w-full sm:w-auto" onClick={handleGenerateReport} disabled={!isCompleted}>
+              <Button variant="outline" onClick={handleGenerateReport} disabled={!isCompleted}>
                 <FileText className="mr-2 h-4 w-4" />
                 Generate Report
               </Button>
-            </div>
+            </>
           }
         />
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="answers">
-              Answers {stats && `(${stats.answeredItems}/${stats.totalItems})`}
-            </TabsTrigger>
-            <TabsTrigger value="findings">
-              Findings {stats && stats.totalFindings > 0 && `(${stats.totalFindings})`}
-            </TabsTrigger>
-            <TabsTrigger value="signatures">
-              Signatures {stats && stats.totalSignatures > 0 && `(${stats.totalSignatures})`}
-            </TabsTrigger>
-          </TabsList>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Inspection Summary</CardTitle>
+                <CardDescription>Schedule, status, and inspector details.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Scheduled</p>
+                  <p className="font-medium">{formattedDateTime}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Inspector</p>
+                  <p className="font-medium">{inspectorName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Template</p>
+                  <p className="font-medium">{inspection.template?.name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Status</p>
+                  {inspectionStatusBadge(inspection.status)}
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            {/* Stats Cards */}
-            {stats && (
-              <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-muted-foreground">Completion</span>
-                    </div>
-                    <div className="mt-2">
-                      <Progress value={stats.completionPercentage} className="h-2" />
-                      <p className="mt-1 text-sm font-medium">{stats.completionPercentage}%</p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4">
+            {/* Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="answers">
+                  Answers {stats && `(${stats.answeredItems}/${stats.totalItems})`}
+                </TabsTrigger>
+                <TabsTrigger value="findings">
+                  Findings {stats && stats.totalFindings > 0 && `(${stats.totalFindings})`}
+                </TabsTrigger>
+                <TabsTrigger value="signatures">
+                  Signatures {stats && stats.totalSignatures > 0 && `(${stats.totalSignatures})`}
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Overview Tab */}
+              <TabsContent value="overview" className="space-y-6">
+                {/* Stats Cards */}
+                {stats && (
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <span className="text-sm text-muted-foreground">Completion</span>
+                        </div>
+                        <div className="mt-2">
+                          <Progress value={stats.completionPercentage} className="h-2" />
+                          <p className="mt-1 text-sm font-medium">{stats.completionPercentage}%</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4 text-orange-600" />
                       <span className="text-sm text-muted-foreground">Findings</span>
@@ -493,6 +535,22 @@ export default function InspectionDetailPage() {
             )}
           </TabsContent>
         </Tabs>
+          </div>
+
+          <div className="space-y-6">
+            <ClientInfoCard
+              title="Client"
+              client={client ?? undefined}
+              actionLabel={client ? "View Client Profile" : undefined}
+              actionHref={client ? `/admin/clients/${client.id}` : undefined}
+              emptyLabel="No client assigned"
+            />
+            <RecordInformationCard
+              createdAt={inspection.created_at}
+              updatedAt={inspection.updated_at}
+            />
+          </div>
+        </div>
 
         {/* Archive Confirmation Dialog */}
         <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>

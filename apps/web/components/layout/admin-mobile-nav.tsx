@@ -91,8 +91,8 @@ export function AdminMobileNav({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-72 p-0 flex flex-col">
-        <SheetHeader className="border-b">
-          <SheetTitle className="px-4 py-4">
+        <SheetHeader className="border-b px-3 py-3">
+          <SheetTitle className="p-0">
             <div className="flex items-center gap-2">
               <div className="relative flex h-8 w-8 items-center justify-center rounded-lg shrink-0">
                 {businessLogo ? (
@@ -116,23 +116,23 @@ export function AdminMobileNav({
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+        <div className="flex-1 overflow-y-auto px-2 py-0 space-y-3">
           <div>
             {isPlatformAdmin ? (
               <nav className="mt-2 flex flex-col gap-1">
                 {mainNav.map((item) => (
-                  <AdminNavLink key={item.href} {...item} onClick={handleNavClick} />
+                  <AdminNavLink key={item.href} {...item} onClick={handleNavClick} size="sm" />
                 ))}
               </nav>
             ) : (
-              <div className="mt-2 space-y-4">
+              <div className="mt-2 space-y-3">
                 <nav className="flex flex-col gap-1">
                   {pinnedNav.map((item) => (
-                    <AdminNavLink key={item.href} {...item} onClick={handleNavClick} />
+                    <AdminNavLink key={item.href} {...item} onClick={handleNavClick} size="sm" />
                   ))}
                 </nav>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {navSections.map((section) => {
                     const isOpen = openSections[section.label];
                     return (
@@ -140,7 +140,7 @@ export function AdminMobileNav({
                         <button
                           type="button"
                           onClick={() => toggleSection(section.label)}
-                          className="flex w-full items-center justify-between px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                          className="flex w-full items-center justify-between px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                         >
                           <span>{section.label}</span>
                           <ChevronDown
@@ -157,6 +157,7 @@ export function AdminMobileNav({
                                 key={item.href}
                                 {...item}
                                 onClick={handleNavClick}
+                                size="sm"
                               />
                             ))}
                           </nav>
@@ -170,13 +171,13 @@ export function AdminMobileNav({
           </div>
         </div>
 
-        <div className="border-t px-3 py-4">
-          <div className="px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        <div className="border-t px-2 py-3">
+          <div className="px-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             System
           </div>
           <nav className="mt-2 flex flex-col gap-1">
             {systemNav.map((item) => (
-              <AdminNavLink key={item.href} {...item} onClick={handleNavClick} />
+              <AdminNavLink key={item.href} {...item} onClick={handleNavClick} size="sm" />
             ))}
           </nav>
         </div>

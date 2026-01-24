@@ -151,13 +151,14 @@ export default function OverviewPage() {
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {stats.map((stat) => (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                <stat.icon className="h-4 w-4 text-muted-foreground" />
+            <Card key={stat.title} className="h-full">
+              <CardHeader className="min-h-[3.5rem] pb-2">
+                <CardTitle className="text-sm font-medium leading-snug text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-xl font-bold sm:text-2xl">{stat.value}</div>
+              <CardContent className="flex flex-col gap-1">
+                <div className="text-xl font-bold tabular-nums sm:text-2xl">{stat.value}</div>
                 <p className="text-xs text-muted-foreground sm:text-sm">
                   <span className={stat.changeType === "positive" ? "text-green-600" : "text-red-600"}>
                     {stat.change}
@@ -245,8 +246,8 @@ export default function OverviewPage() {
                   <div key={activity.id} className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0">
                     <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-sm text-muted-foreground break-words">{activity.details}</p>
+                      <p className="text-sm font-medium break-words">{activity.action}</p>
+                      <p className="text-sm text-muted-foreground break-all">{activity.details}</p>
                       <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
                     </div>
                   </div>

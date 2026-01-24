@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { BrandingProvider } from "@/components/providers/branding-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReactQueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -51,7 +50,7 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <ReactQueryProvider>
-            <BrandingProvider>{children}</BrandingProvider>
+            {children}
             <Toaster />
           </ReactQueryProvider>
         </ThemeProvider>

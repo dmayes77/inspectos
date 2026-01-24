@@ -28,7 +28,7 @@ export function AdminNavLink({
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 rounded-md font-medium transition-colors focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-1 focus-visible:outline-ring/40 focus-visible:outline-offset-2",
-        size === "sm" ? "px-3 py-1.5 text-[13px]" : "px-3 py-2 text-sm",
+        size === "sm" ? "px-2.5 py-1.5 text-[13px]" : "px-3 py-2 text-sm",
         isActive
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",

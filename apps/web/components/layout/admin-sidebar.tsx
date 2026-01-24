@@ -114,7 +114,7 @@ export function AdminSidebar({
         collapsed ? "w-16" : "w-56"
       )}
     >
-      <div className="flex h-12 items-center border-b px-4">
+      <div className="flex h-12 items-center border-b px-3">
         <Link href={homeHref} className="flex items-center gap-2 min-w-0">
           <div
             className={cn(
@@ -144,7 +144,7 @@ export function AdminSidebar({
         </Link>
       </div>
 
-      <ScrollArea className="flex-1 px-3 py-4">
+      <ScrollArea className="flex-1 px-2 py-3">
         {!collapsed && !isPlatformAdmin && (
           <div className="mb-4">
             <Input
@@ -163,7 +163,7 @@ export function AdminSidebar({
             ))}
           </nav>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <nav className="flex flex-col gap-1">
               {filteredPinnedNav.map((item) => (
                 <AdminNavLink key={item.href} {...item} size="sm" />
@@ -171,10 +171,10 @@ export function AdminSidebar({
             </nav>
 
             {normalizedQuery ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {filteredSections.map((section) => (
                   <div key={section.label}>
-                    <div className="px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    <div className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       {section.label}
                     </div>
                     <nav className="mt-2 flex flex-col gap-1">
@@ -223,7 +223,7 @@ export function AdminSidebar({
         )}
       </ScrollArea>
 
-      <div className="mt-auto border-t px-3 py-4">
+      <div className="mt-auto border-t px-2 py-3">
         <nav className="flex flex-col gap-1">
           {systemNav.map((item) => (
             <AdminNavLink key={item.href} {...item} collapsed={collapsed} size="sm" />
