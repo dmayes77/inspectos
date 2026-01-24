@@ -34,6 +34,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { cn } from "@/lib/utils";
 import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@/lib/utils/dates";
+import type { InspectionService } from "@/lib/data/orders";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {
@@ -469,7 +470,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <CardContent>
                 {inspection?.services && inspection.services.length > 0 ? (
                   <div className="space-y-3">
-                    {inspection.services.map((service) => (
+                    {inspection.services.map((service: InspectionService) => (
                       <div key={service.id} className="flex items-center justify-between border-b pb-2 last:border-0">
                         <div>
                           <p className="font-medium">{service.name}</p>
