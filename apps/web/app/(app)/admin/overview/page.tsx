@@ -191,24 +191,24 @@ export default function OverviewPage() {
                 {todayOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                    className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div className="flex items-start gap-4">
+                    <div className="flex min-w-0 items-start gap-4">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                         <Clock className="h-5 w-5 text-primary" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium">
                             {formatTime12(order.scheduled_time ?? "09:00")}
                           </span>
                           <Badge variant="outline">{formatStatusLabel(order.status)}</Badge>
                         </div>
-                        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground break-words">
                           <MapPin className="h-3 w-3" />
                           {getOrderAddress(order)}
                         </div>
-                        <div className="mt-1 flex items-center gap-2 text-sm">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
                           <span className="text-muted-foreground">
                             {order.inspector?.full_name ?? "Unassigned"}
                           </span>
@@ -246,7 +246,7 @@ export default function OverviewPage() {
                     <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-sm text-muted-foreground truncate">{activity.details}</p>
+                      <p className="text-sm text-muted-foreground break-words">{activity.details}</p>
                       <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
                     </div>
                   </div>
