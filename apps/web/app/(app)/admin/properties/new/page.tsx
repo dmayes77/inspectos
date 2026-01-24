@@ -28,9 +28,12 @@ import { mockAdminUser } from "@/lib/constants/mock-users";
 export default function NewPropertyPage() {
   const router = useRouter();
   const createProperty = useCreateProperty();
-  const { data: clientsData } = useClients("demo");
+  const { data: clientsData } = useClients();
   const clients = clientsData ?? [];
   const residentialTypes = new Set(["single-family", "condo-townhome", "manufactured"]);
+  type BasementOption = "none" | "unfinished" | "finished" | "partial";
+  type BuildingClassOption = "A" | "B" | "C";
+  type LaundryOption = "in-unit" | "shared" | "none";
 
   const [form, setForm] = useState({
     addressLine1: "",
@@ -126,13 +129,13 @@ export default function NewPropertyPage() {
         garage: form.garage || null,
         pool: form.pool || null,
         // Residential specific
-        basement: form.basement || null,
+        basement: form.basement ? (form.basement as BasementOption) : null,
         lot_size_acres: form.lotSizeAcres ? parseFloat(form.lotSizeAcres) : null,
         heating_type: form.heatingType || null,
         cooling_type: form.coolingType || null,
         roof_type: form.roofType || null,
         // Commercial specific
-        building_class: form.buildingClass || null,
+        building_class: form.buildingClass ? (form.buildingClass as BuildingClassOption) : null,
         loading_docks: form.loadingDocks ? parseInt(form.loadingDocks, 10) : null,
         zoning: form.zoning || null,
         occupancy_type: form.occupancyType || null,
@@ -140,7 +143,7 @@ export default function NewPropertyPage() {
         // Multi-family specific
         number_of_units: form.numberOfUnits ? parseInt(form.numberOfUnits, 10) : null,
         unit_mix: form.unitMix || null,
-        laundry_type: form.laundryType || null,
+        laundry_type: form.laundryType ? (form.laundryType as LaundryOption) : null,
         // Shared
         parking_spaces: form.parkingSpaces ? parseInt(form.parkingSpaces, 10) : null,
         elevator: form.elevator || null,

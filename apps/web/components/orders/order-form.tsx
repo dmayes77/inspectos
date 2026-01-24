@@ -24,6 +24,7 @@ import { useServices, type Service } from "@/hooks/use-services";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { InlinePropertyDialog } from "@/components/orders/inline-property-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
+import type { InspectionService } from "@/lib/data/orders";
 
 const orderStatusOptions = [
   "pending",
@@ -117,7 +118,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   useEffect(() => {
     if (mode !== "edit" || selectedServiceIds.length > 0) return;
     const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
-    const existing = inspection?.services ?? [];
+    const existing: InspectionService[] = inspection?.services ?? [];
     if (existing.length === 0) return;
 
     const fromIds = existing

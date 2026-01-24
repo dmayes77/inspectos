@@ -45,6 +45,9 @@ export default function EditPropertyPage() {
   const basementOptions = ["none", "unfinished", "finished", "partial"] as const;
   const buildingClassOptions = ["A", "B", "C"] as const;
   const laundryOptions = ["in-unit", "shared", "none"] as const;
+  type BasementOption = (typeof basementOptions)[number];
+  type BuildingClassOption = (typeof buildingClassOptions)[number];
+  type LaundryOption = (typeof laundryOptions)[number];
 
   const normalizeOptionValue = <T extends string>(
     value: string | null | undefined,
@@ -580,7 +583,9 @@ export default function EditPropertyPage() {
                         <Label htmlFor="basement">Basement</Label>
                         <Select
                           value={form.basement}
-                          onValueChange={(value) => setForm((prev) => ({ ...prev, basement: value }))}
+                          onValueChange={(value) =>
+                            setForm((prev) => ({ ...prev, basement: value as BasementOption }))
+                          }
                         >
                           <SelectTrigger id="basement">
                             <SelectValue placeholder="Select..." />
@@ -680,7 +685,9 @@ export default function EditPropertyPage() {
                         <Label htmlFor="building-class">Building Class</Label>
                         <Select
                           value={form.buildingClass}
-                          onValueChange={(value) => setForm((prev) => ({ ...prev, buildingClass: value }))}
+                          onValueChange={(value) =>
+                            setForm((prev) => ({ ...prev, buildingClass: value as BuildingClassOption }))
+                          }
                         >
                           <SelectTrigger id="building-class">
                             <SelectValue placeholder="Select..." />
@@ -812,7 +819,9 @@ export default function EditPropertyPage() {
                         <Label htmlFor="laundry">Laundry Type</Label>
                         <Select
                           value={form.laundryType}
-                          onValueChange={(value) => setForm((prev) => ({ ...prev, laundryType: value }))}
+                          onValueChange={(value) =>
+                            setForm((prev) => ({ ...prev, laundryType: value as LaundryOption }))
+                          }
                         >
                           <SelectTrigger id="laundry">
                             <SelectValue placeholder="Select..." />
