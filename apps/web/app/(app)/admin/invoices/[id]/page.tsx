@@ -124,9 +124,7 @@ export default function InvoiceDetailPage() {
           description={invoice.orderNumber ? `Order ${invoice.orderNumber}` : "Invoice overview"}
           meta={
             <>
-              <Badge className={getStatusBadgeClasses(invoice.status)}>
-                {invoice.status}
-              </Badge>
+              <Badge className={getStatusBadgeClasses(invoice.status)}>{invoice.status}</Badge>
               <span className="text-xs text-muted-foreground">${invoice.amount.toFixed(2)}</span>
             </>
           }
@@ -152,128 +150,103 @@ export default function InvoiceDetailPage() {
         />
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common invoice updates.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => toast("Send invoice is coming soon.")}
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Send Invoice
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => toast("Invoice status update is coming soon.")}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Mark as Sent
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => toast("Payment update is coming soon.")}
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Mark as Paid
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => toast("Invoice download is coming soon.")}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => toast("Payment link copy is coming soon.")}
-              >
-                <Link2 className="mr-2 h-4 w-4" />
-                Copy Payment Link
-              </Button>
-            </CardContent>
-          </Card>
-
-          <div className="lg:col-span-1">
+          <div className="space-y-6 lg:col-span-2">
             <ClientInfoCard
               title="Client"
               client={invoice.clientId ? { id: invoice.clientId, name: invoice.clientName } : undefined}
               actionLabel="View Client Profile"
-              actionHref={invoice.clientId ? `/admin/clients/${invoice.clientId}` : undefined}
+              actionHref={invoice.clientId ? `/admin/contacts/clients/${invoice.clientId}` : undefined}
               emptyLabel="No client assigned"
               emptyActionLabel="Assign Client"
               emptyActionHref={`/admin/invoices/${invoice.invoiceId}/edit`}
             />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Summary</CardTitle>
+                <CardDescription>Key billing details for this invoice.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Invoice</p>
+                    <p className="font-medium">{invoiceNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Status</p>
+                    <Badge variant="outline" className="capitalize">
+                      {invoice.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Order</p>
+                    {invoice.orderId ? (
+                      <Link href={`/admin/orders/${invoice.orderId}`} className="font-medium hover:underline">
+                        {invoice.orderNumber || "View order"}
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Amount</p>
+                    <p className="font-medium">${invoice.amount.toFixed(2)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Invoice Details</CardTitle>
+                <CardDescription>Services included on this invoice.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {services.length > 0 ? (
+                  services.map((service) => (
+                    <div key={service.id} className="flex items-center justify-between text-sm">
+                      <span className="font-medium">{service.name}</span>
+                      <span className="text-muted-foreground">${service.price.toFixed(2)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground">No services recorded for this order.</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Invoice Summary</CardTitle>
-              <CardDescription>Key billing details for this invoice.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Invoice</p>
-                  <p className="font-medium">{invoiceNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Status</p>
-                  <Badge variant="outline" className="capitalize">
-                    {invoice.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Order</p>
-                  {invoice.orderId ? (
-                    <Link href={`/admin/orders/${invoice.orderId}`} className="font-medium hover:underline">
-                      {invoice.orderNumber || "View order"}
-                    </Link>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Amount</p>
-                  <p className="font-medium">${invoice.amount.toFixed(2)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Common invoice updates.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" onClick={() => toast("Send invoice is coming soon.")}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Invoice
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => toast("Invoice status update is coming soon.")}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Mark as Sent
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => toast("Payment update is coming soon.")}>
+                  <Check className="mr-2 h-4 w-4" />
+                  Mark as Paid
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => toast("Invoice download is coming soon.")}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download PDF
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => toast("Payment link copy is coming soon.")}>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Copy Payment Link
+                </Button>
+              </CardContent>
+            </Card>
 
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Invoice Details</CardTitle>
-              <CardDescription>Services included on this invoice.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {services.length > 0 ? (
-                services.map((service) => (
-                  <div key={service.id} className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{service.name}</span>
-                    <span className="text-muted-foreground">${service.price.toFixed(2)}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  No services recorded for this order.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="lg:col-span-1">
-            <RecordInformationCard
-              createdAt={invoice.createdAt}
-              updatedAt={invoice.updatedAt}
-            />
+            <RecordInformationCard createdAt={invoice.createdAt} updatedAt={invoice.updatedAt} />
           </div>
         </div>
       </div>
@@ -282,17 +255,11 @@ export default function InvoiceDetailPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Invoice</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this invoice? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Are you sure you want to delete this invoice? This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

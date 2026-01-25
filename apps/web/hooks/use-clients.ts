@@ -7,6 +7,16 @@ import {
   fetchClientById,
 } from "@/lib/data/admin-data";
 
+export type ClientProperty = {
+  propertyId: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  zipCode: string;
+  propertyType: string;
+};
+
 export type Client = {
   clientId: string;
   name: string;
@@ -16,6 +26,9 @@ export type Client = {
   inspections: number;
   lastInspection: string;
   totalSpent: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  properties?: ClientProperty[];
   archived?: boolean;
 };
 
@@ -38,10 +51,10 @@ export function useDeleteClient() {
   return useDelete<boolean>("clients", async (clientId: string) => deleteClientById(clientId));
 }
 
-export function useClientById(clientId: string) {
+export function useClientById(clientId?: string) {
   return useGet<Client | null>(
-    `client-${clientId}`,
-    async () => (await fetchClientById(clientId)) ?? null,
-    { initialData: null }
+    clientId ? `client-${clientId}` : "client-undefined",
+    async () => (await fetchClientById(clientId ?? "")) ?? null,
+    { enabled: Boolean(clientId) }
   );
 }

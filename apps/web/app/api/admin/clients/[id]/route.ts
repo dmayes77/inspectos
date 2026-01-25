@@ -13,6 +13,8 @@ const mapClient = (client: {
   inspections_count: number | null;
   last_inspection_date: string | null;
   total_spent: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }) => ({
   clientId: client.id,
   name: client.name,
@@ -22,6 +24,8 @@ const mapClient = (client: {
   inspections: client.inspections_count ?? 0,
   lastInspection: client.last_inspection_date ?? "—",
   totalSpent: Number(client.total_spent ?? 0),
+  createdAt: client.created_at ?? null,
+  updatedAt: client.updated_at ?? null,
 });
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +34,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const { data, error } = await supabaseAdmin
     .from("clients")
-    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent")
+    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent, created_at, updated_at")
     .eq("tenant_id", tenantId)
     .eq("id", id)
     .single();
@@ -39,7 +43,43 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: error?.message ?? "Client not found." }, { status: 404 });
   }
 
-  return NextResponse.json(mapClient(data));
+  const { data: properties, error: propertiesError } = await supabaseAdmin
+    .from("properties")
+    .select(
+      `
+      id,
+      address_line1,
+      address_line2,
+      city,
+      state,
+      zip_code,
+      property_type,
+      owners:property_owners!inner(client_id, end_date)
+    `,
+    )
+    .eq("tenant_id", tenantId)
+    .eq("owners.client_id", id)
+    .is("owners.end_date", null)
+    .order("updated_at", { ascending: false });
+
+  if (propertiesError) {
+    return NextResponse.json({ error: propertiesError.message }, { status: 500 });
+  }
+
+  const mappedProperties = (properties ?? []).map((property) => ({
+    propertyId: property.id,
+    addressLine1: property.address_line1,
+    addressLine2: property.address_line2,
+    city: property.city,
+    state: property.state,
+    zipCode: property.zip_code,
+    propertyType: property.property_type,
+  }));
+
+  return NextResponse.json({
+    ...mapClient(data),
+    properties: mappedProperties,
+  });
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -66,7 +106,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     .update(updateData)
     .eq("tenant_id", tenantId)
     .eq("id", id)
-    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent")
+    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent, created_at, updated_at")
     .single();
 
   if (error || !data) {
@@ -80,11 +120,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const tenantId = getTenantId();
   const { id } = await params;
 
-  const { error } = await supabaseAdmin
-    .from("clients")
-    .delete()
-    .eq("tenant_id", tenantId)
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("clients").delete().eq("tenant_id", tenantId).eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

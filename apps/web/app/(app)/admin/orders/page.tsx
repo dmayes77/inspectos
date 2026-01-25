@@ -11,17 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable } from "@/components/ui/data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import {
-  Plus,
-  MapPin,
-  User,
-  Search,
-  Calendar,
-  DollarSign,
-  Building2,
-  FileText,
-  Clock,
-} from "lucide-react";
+import { Plus, MapPin, User, Search, Calendar, DollarSign, Building2, FileText, Clock } from "lucide-react";
 import { useOrders, type Order } from "@/hooks/use-orders";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
@@ -114,13 +104,7 @@ function formatStatusLabel(status: string) {
 function getOrderAddress(order: Order) {
   const property = order.property;
   if (!property) return "Property unavailable";
-  return [
-    property.address_line1,
-    property.address_line2,
-    `${property.city}, ${property.state} ${property.zip_code}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ");
 }
 
 const columns: ColumnDef<Order>[] = [
@@ -128,10 +112,7 @@ const columns: ColumnDef<Order>[] = [
     accessorKey: "order_number",
     header: "Order",
     cell: ({ row }) => (
-      <Link
-        href={`/admin/orders/${row.original.id}`}
-        className="flex items-center gap-2 font-medium hover:underline"
-      >
+      <Link href={`/admin/orders/${row.original.id}`} className="flex items-center gap-2 font-medium hover:underline">
         <FileText className="h-4 w-4 text-muted-foreground" />
         {row.original.order_number}
       </Link>
@@ -141,10 +122,7 @@ const columns: ColumnDef<Order>[] = [
     id: "property",
     header: "Property",
     cell: ({ row }) => (
-      <Link
-        href={`/admin/orders/${row.original.id}`}
-        className="flex items-start gap-2 max-w-xs hover:text-foreground"
-      >
+      <Link href={`/admin/orders/${row.original.id}`} className="flex items-start gap-2 max-w-xs hover:text-foreground">
         <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
         <span className="text-sm">{getOrderAddress(row.original)}</span>
       </Link>
@@ -197,10 +175,7 @@ const columns: ColumnDef<Order>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge
-        variant={getStatusBadgeVariant(row.original.status)}
-        className={cn("font-medium", getStatusBadgeClasses(row.original.status))}
-      >
+      <Badge variant={getStatusBadgeVariant(row.original.status)} className={cn("font-medium", getStatusBadgeClasses(row.original.status))}>
         {formatStatusLabel(row.original.status)}
       </Badge>
     ),
@@ -209,10 +184,7 @@ const columns: ColumnDef<Order>[] = [
     accessorKey: "payment_status",
     header: "Payment",
     cell: ({ row }) => (
-      <Badge
-        variant="outline"
-        className={cn("font-medium", getPaymentBadgeClasses(row.original.payment_status))}
-      >
+      <Badge variant="outline" className={cn("font-medium", getPaymentBadgeClasses(row.original.payment_status))}>
         {formatStatusLabel(row.original.payment_status)}
       </Badge>
     ),
@@ -259,9 +231,7 @@ export default function OrdersPage() {
     const inProgress = orders.filter((o) => o.status === "in_progress").length;
     const unpaid = orders.filter((o) => o.payment_status === "unpaid").length;
     const completed = orders.filter((o) => o.status === "completed").length;
-    const totalRevenue = orders
-      .filter((o) => o.payment_status === "paid")
-      .reduce((sum, o) => sum + o.total, 0);
+    const totalRevenue = orders.filter((o) => o.payment_status === "paid").reduce((sum, o) => sum + o.total, 0);
     return { pending, scheduled, inProgress, unpaid, completed, totalRevenue };
   }, [orders]);
 
@@ -318,9 +288,7 @@ export default function OrdersPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Total Revenue</CardDescription>
-              <CardTitle className="text-2xl text-green-600">
-                ${stats.totalRevenue.toLocaleString()}
-              </CardTitle>
+              <CardTitle className="text-2xl text-green-600">${stats.totalRevenue.toLocaleString()}</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -329,18 +297,13 @@ export default function OrdersPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-              <div className="relative w-full md:flex-1 md:min-w-[200px]">
+              <div className="relative w-full md:flex-1 md:min-w-50">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search orders..."
-                  className="pl-9"
-                />
+                <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search orders..." className="pl-9" />
               </div>
               <div className="flex items-center gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full min-w-[140px] md:w-[160px]">
+                  <SelectTrigger className="w-full min-w-35 md:w-40">
                     <SelectValue placeholder="All Orders" />
                   </SelectTrigger>
                   <SelectContent>
@@ -352,7 +315,7 @@ export default function OrdersPage() {
                   </SelectContent>
                 </Select>
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger className="w-full min-w-[140px] md:w-[160px]">
+                  <SelectTrigger className="w-full min-w-35 md:w-40">
                     <SelectValue placeholder="All Payments" />
                   </SelectTrigger>
                   <SelectContent>
@@ -385,9 +348,7 @@ export default function OrdersPage() {
         <Card>
           <CardHeader>
             <CardTitle>All Orders</CardTitle>
-            <CardDescription>
-              {isLoading ? "Loading..." : `${filteredOrders.length} orders`}
-            </CardDescription>
+            <CardDescription>{isLoading ? "Loading..." : `${filteredOrders.length} orders`}</CardDescription>
           </CardHeader>
           <CardContent>
             {isError ? (
@@ -397,9 +358,7 @@ export default function OrdersPage() {
                 {/* Mobile View */}
                 <div className="md:hidden space-y-4">
                   {filteredOrders.length === 0 && !isLoading ? (
-                    <div className="py-6 text-center text-sm text-muted-foreground">
-                      No orders found.
-                    </div>
+                    <div className="py-6 text-center text-sm text-muted-foreground">No orders found.</div>
                   ) : (
                     filteredOrders.map((order) => {
                       const inspection = Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
@@ -409,75 +368,54 @@ export default function OrdersPage() {
                           href={`/admin/orders/${order.id}`}
                           className="block rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
                         >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                              Order
-                            </p>
-                            <p className="text-sm font-semibold truncate">{order.order_number}</p>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">Order</p>
+                              <p className="text-sm font-semibold truncate">{order.order_number}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">Total</p>
+                              <p className="text-sm font-semibold text-foreground">${order.total.toFixed(2)}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">
-                              Total
-                            </p>
-                            <p className="text-sm font-semibold text-foreground">
-                              ${order.total.toFixed(2)}
-                            </p>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Badge
+                              variant={getStatusBadgeVariant(order.status)}
+                              className={cn("font-medium text-[0.65rem] px-2 py-0.5", getStatusBadgeClasses(order.status))}
+                            >
+                              {formatStatusLabel(order.status)}
+                            </Badge>
+                            <Badge variant="outline" className={cn("font-medium text-[0.65rem] px-2 py-0.5", getPaymentBadgeClasses(order.payment_status))}>
+                              {formatStatusLabel(order.payment_status)}
+                            </Badge>
                           </div>
-                        </div>
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Badge
-                            variant={getStatusBadgeVariant(order.status)}
-                            className={cn(
-                              "font-medium text-[0.65rem] px-2 py-0.5",
-                              getStatusBadgeClasses(order.status)
-                            )}
-                          >
-                            {formatStatusLabel(order.status)}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "font-medium text-[0.65rem] px-2 py-0.5",
-                              getPaymentBadgeClasses(order.payment_status)
-                            )}
-                          >
-                            {formatStatusLabel(order.payment_status)}
-                          </Badge>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
-                          <span className="rounded-full border px-2 py-0.5">
-                            Agent: {order.agent?.name ?? "Unassigned"}
-                          </span>
-                          <span className="rounded-full border px-2 py-0.5">
-                            Services: {inspection?.services?.length ?? 0}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-                          <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                          <span className="line-clamp-2">{getOrderAddress(order)}</span>
-                        </div>
-
-                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-3.5 w-3.5" />
-                            <span className="truncate">{order.client?.name ?? "No client"}</span>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
+                            <span className="rounded-full border px-2 py-0.5">Agent: {order.agent?.name ?? "Unassigned"}</span>
+                            <span className="rounded-full border px-2 py-0.5">Services: {inspection?.services?.length ?? 0}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>
-                              {order.scheduled_date
-                                ? formatDateShort(order.scheduled_date)
-                                : "Unscheduled"}
-                              {order.scheduled_time ? ` • ${formatTime12(order.scheduled_time)}` : ""}
-                            </span>
+
+                          <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span className="line-clamp-2">{getOrderAddress(order)}</span>
                           </div>
-                        </div>
-                      </Link>
-                    );
+
+                          <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                            <div className="flex items-center gap-2">
+                              <User className="h-3.5 w-3.5" />
+                              <span className="truncate">{order.client?.name ?? "No client"}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>
+                                {order.scheduled_date ? formatDateShort(order.scheduled_date) : "Unscheduled"}
+                                {order.scheduled_time ? ` • ${formatTime12(order.scheduled_time)}` : ""}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      );
                     })
                   )}
                 </div>
@@ -487,9 +425,7 @@ export default function OrdersPage() {
                   {filteredOrders.length === 0 && !isLoading ? (
                     <div className="rounded-lg border border-dashed p-10 text-center">
                       <h3 className="text-lg font-semibold">No orders yet</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        Create your first order to start managing inspections.
-                      </p>
+                      <p className="mt-2 text-sm text-muted-foreground">Create your first order to start managing inspections.</p>
                       {can(userRole, "create_inspections") && (
                         <Button asChild className="mt-4">
                           <Link href="/admin/orders/new">Create Order</Link>
@@ -497,12 +433,7 @@ export default function OrdersPage() {
                       )}
                     </div>
                   ) : (
-                    <DataTable
-                      columns={columns}
-                      data={filteredOrders}
-                      searchKey="order_number"
-                      searchPlaceholder="Search by order number..."
-                    />
+                    <DataTable columns={columns} data={filteredOrders} searchKey="order_number" searchPlaceholder="Search by order number..." />
                   )}
                 </div>
               </>

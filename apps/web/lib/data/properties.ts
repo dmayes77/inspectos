@@ -56,7 +56,24 @@ export interface Property {
     email: string | null;
     phone: string | null;
   } | null;
+  owners?: PropertyOwner[];
 }
+
+export type PropertyOwner = {
+  propertyOwnerId: string;
+  propertyId: string;
+  clientId: string;
+  startDate: string;
+  endDate: string | null;
+  isPrimary: boolean;
+  client?: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    company?: string | null;
+  } | null;
+};
 
 export interface CreatePropertyInput {
   tenant_slug: string;

@@ -2,49 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { normalizeAddressParts } from "@/lib/utils/address";
+import { mapPropertyWithOwners, PROPERTY_OWNER_SELECT, normalizeOwnerRows } from "../helpers";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
   const propertyId = id?.trim?.() ?? "";
+  console.log("Property detail fetch", { tenantId, propertyId });
 
-  const { data: property, error } = await supabaseAdmin
-    .from("properties")
-    .select(`
-      *,
-      client:clients(id, name, email, phone, company)
-    `)
-    .eq("id", propertyId)
-    .eq("tenant_id", tenantId)
-    .single();
+  const { data: property, error } = await supabaseAdmin.from("properties").select("*").eq("id", propertyId).eq("tenant_id", tenantId).single();
 
   if (error || !property) {
-    return NextResponse.json(
-      { error: { message: error?.message || "Property not found" } },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: { message: error?.message || "Property not found" } }, { status: 404 });
   }
 
-  return NextResponse.json({ data: property });
+  const { data: ownerRows, error: ownersError } = await supabaseAdmin
+    .from("property_owners")
+    .select(PROPERTY_OWNER_SELECT)
+    .eq("tenant_id", tenantId)
+    .eq("property_id", propertyId)
+    .order("start_date", { ascending: false });
+
+  if (ownersError) {
+    console.error("Failed to load property owners", {
+      propertyId,
+      error: ownersError,
+    });
+  }
+
+  const normalizedOwnerRows = normalizeOwnerRows(ownerRows ?? []);
+
+  return NextResponse.json({
+    data: mapPropertyWithOwners(property, normalizedOwnerRows),
+  });
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
   const propertyId = id?.trim?.() ?? "";
-  const allowedPropertyTypes = new Set([
-    "single-family",
-    "condo-townhome",
-    "multi-family",
-    "manufactured",
-    "commercial",
-  ]);
+  const allowedPropertyTypes = new Set(["single-family", "condo-townhome", "multi-family", "manufactured", "commercial"]);
 
   try {
     const body = await request.json();
@@ -58,9 +55,7 @@ export async function PATCH(
     });
     const normalizedLine2 = body.address_line2 ? normalizeAddressParts({ street: body.address_line2 }).street : null;
 
-    const normalizedPropertyType = allowedPropertyTypes.has(body.property_type)
-      ? body.property_type
-      : "single-family";
+    const normalizedPropertyType = allowedPropertyTypes.has(body.property_type) ? body.property_type : "single-family";
 
     const { data: property, error } = await supabaseAdmin
       .from("properties")
@@ -74,7 +69,6 @@ export async function PATCH(
         year_built: body.year_built || null,
         square_feet: body.square_feet || null,
         notes: body.notes || null,
-        client_id: body.client_id || null,
         bedrooms: body.bedrooms ?? null,
         bathrooms: body.bathrooms ?? null,
         stories: body.stories ?? null,
@@ -100,10 +94,7 @@ export async function PATCH(
       })
       .eq("id", propertyId)
       .eq("tenant_id", tenantId)
-      .select(`
-        *,
-        client:clients(id, name, email, phone, company)
-      `)
+      .select("*")
       .single();
 
     if (error || !property) {
@@ -112,56 +103,32 @@ export async function PATCH(
         propertyType: normalizedPropertyType,
         error,
       });
-      return NextResponse.json(
-        { error: { message: error?.message || "Failed to update property" } },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: { message: error?.message || "Failed to update property" } }, { status: 500 });
     }
 
     return NextResponse.json({ data: property });
   } catch (error) {
     console.error("Property update request failed", { propertyId, error });
-    return NextResponse.json(
-      { error: { message: "Invalid request body" } },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: { message: "Invalid request body" } }, { status: 400 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
   const propertyId = id?.trim?.() ?? "";
 
   // Check if property has any orders
-  const { data: orders } = await supabaseAdmin
-    .from("orders")
-    .select("id")
-    .eq("property_id", propertyId)
-    .eq("tenant_id", tenantId)
-    .limit(1);
+  const { data: orders } = await supabaseAdmin.from("orders").select("id").eq("property_id", propertyId).eq("tenant_id", tenantId).limit(1);
 
   if (orders && orders.length > 0) {
-    return NextResponse.json(
-      { error: { message: "Cannot delete property with existing orders" } },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: { message: "Cannot delete property with existing orders" } }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("properties")
-    .delete()
-    .eq("id", propertyId)
-    .eq("tenant_id", tenantId);
+  const { error } = await supabaseAdmin.from("properties").delete().eq("id", propertyId).eq("tenant_id", tenantId);
 
   if (error) {
-    return NextResponse.json(
-      { error: { message: error.message } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: error.message } }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
@@ -18,6 +19,7 @@ type ClientInfoCardProps = {
   emptyLabel?: string;
   emptyActionLabel?: string;
   emptyActionHref?: string;
+  typeBadge?: ReactNode;
 };
 
 export function ClientInfoCard({
@@ -28,6 +30,7 @@ export function ClientInfoCard({
   emptyLabel = "No client assigned",
   emptyActionLabel,
   emptyActionHref,
+  typeBadge,
 }: ClientInfoCardProps) {
   return (
     <Card>
@@ -42,18 +45,12 @@ export function ClientInfoCard({
                 <User className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <Link
-                  href={`/admin/clients/${client.id}`}
-                  className="font-medium hover:underline block truncate"
-                >
+                <Link href={`/admin/contacts/clients/${client.id}`} className="font-medium hover:underline block truncate">
                   {client.name}
                 </Link>
-                {client.email && (
-                  <p className="text-sm text-muted-foreground truncate">{client.email}</p>
-                )}
-                {client.phone && (
-                  <p className="text-sm text-muted-foreground">{client.phone}</p>
-                )}
+                {typeBadge ? <div className="mt-1">{typeBadge}</div> : null}
+                {client.email && <p className="text-sm text-muted-foreground truncate">{client.email}</p>}
+                {client.phone && <p className="text-sm text-muted-foreground">{client.phone}</p>}
               </div>
             </div>
             {actionLabel && actionHref ? (

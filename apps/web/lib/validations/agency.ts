@@ -6,6 +6,7 @@ import { z } from "zod";
 
 export const createAgencySchema = z.object({
   name: z.string().min(1, "Name is required").max(255, "Name is too long"),
+  logo_url: z.string().url("Invalid logo URL").optional().nullable().or(z.literal("")),
   license_number: z.string().max(100).optional().nullable(),
   email: z.string().email("Invalid email address").optional().nullable(),
   phone: z

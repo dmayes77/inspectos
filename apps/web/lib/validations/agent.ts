@@ -20,6 +20,7 @@ export const createAgentSchema = z.object({
   notify_on_schedule: z.boolean().optional(),
   notify_on_complete: z.boolean().optional(),
   notify_on_report: z.boolean().optional(),
+  avatar_url: z.string().max(5_000_000, "Avatar data is too large").optional().nullable(),
 });
 
 export const updateAgentSchema = createAgentSchema.partial();

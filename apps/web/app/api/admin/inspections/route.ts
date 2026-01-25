@@ -4,6 +4,73 @@ import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { createInspectionSchema } from "@/lib/validations/inspection-api";
 import { parseAddress } from "@/lib/utils/address";
+import { assignInspectionLead } from "./assignments";
+
+type Relational<T> = T | T[] | null;
+
+type ClientSummary = {
+  id: string;
+  name: string | null;
+};
+
+type PropertySummary = {
+  address_line1?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  property_type?: string | null;
+  year_built?: number | null;
+  square_feet?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  stories?: number | null;
+  foundation?: string | null;
+  garage?: string | null;
+  pool?: string | null;
+  basement?: string | null;
+  lot_size_acres?: number | null;
+  heating_type?: string | null;
+  cooling_type?: string | null;
+  roof_type?: string | null;
+  building_class?: string | null;
+  loading_docks?: string | null;
+  zoning?: string | null;
+  occupancy_type?: string | null;
+  ceiling_height?: string | null;
+  number_of_units?: number | null;
+  unit_mix?: string | null;
+  laundry_type?: string | null;
+  parking_spaces?: number | null;
+  elevator?: string | null;
+};
+
+type InspectorSummary = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+};
+
+type JobRelation = {
+  id: string;
+  status: string | null;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
+  duration_minutes: number | null;
+  template_id?: string | null;
+  selected_service_ids?: string[] | null;
+  client?: Relational<ClientSummary>;
+  property?: Relational<PropertySummary>;
+  inspector?: Relational<InspectorSummary>;
+};
+
+type InspectionRow = {
+  id: string;
+  status: string;
+  notes: string | null;
+  job: Relational<JobRelation>;
+  order: Relational<JobRelation>;
+};
 
 const normalizeTime = (time?: string | null) => {
   if (!time) return "";
@@ -51,7 +118,6 @@ export async function GET(request: Request) {
           id,
           status,
           notes,
-          inspector:profiles(id, full_name, email, avatar_url),
           job:jobs(
             id,
             status,
@@ -70,7 +136,7 @@ export async function GET(request: Request) {
             ),
             inspector:profiles(id, full_name, email, avatar_url)
           )
-        `
+        `,
       )
       .eq("tenant_id", tenantId)
       .limit(3);
@@ -84,7 +150,6 @@ export async function GET(request: Request) {
         id,
         status,
         notes,
-        inspector:profiles(id, full_name, email, avatar_url),
         job:jobs(
           id,
           status,
@@ -117,9 +182,8 @@ export async function GET(request: Request) {
             building_class, loading_docks, zoning, occupancy_type, ceiling_height,
             number_of_units, unit_mix, laundry_type, parking_spaces, elevator
           ),
-          inspector:profiles(id, full_name, email, avatar_url)
         )
-      `
+      `,
     )
     .eq("tenant_id", tenantId);
 
@@ -127,7 +191,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const mapped = (inspections ?? []).map((row) => {
+  const rows = Array.isArray(inspections) ? (inspections as unknown as InspectionRow[]) : [];
+  const mapped = rows.map((row) => {
     const rawJob = unwrap(row.job) ?? unwrap(row.order);
     const job = rawJob
       ? {
@@ -137,22 +202,17 @@ export async function GET(request: Request) {
           inspector: unwrap(rawJob.inspector),
         }
       : null;
-    const status =
-      row.status === "submitted"
-        ? "pending_report"
-        : row.status === "draft"
-        ? "scheduled"
-        : row.status;
+    const status = row.status === "submitted" ? "pending_report" : row.status === "draft" ? "scheduled" : row.status;
 
     return {
       id: row.id,
       status,
       notes: row.notes,
-      inspector: unwrap(row.inspector),
+      inspector: job?.inspector ?? null,
       job: job
         ? {
-          ...job,
-          scheduled_time: normalizeTime(job.scheduled_time ?? null),
+            ...job,
+            scheduled_time: normalizeTime(job.scheduled_time ?? null),
           }
         : null,
     };
@@ -169,6 +229,38 @@ export async function POST(request: Request) {
     return validation.error;
   }
   const payload = validation.data;
+  const orderId = payload.orderId?.trim();
+  let linkedOrder:
+    | (Pick<
+        {
+          property_id: string | null;
+          client_id: string | null;
+          inspector_id: string | null;
+          scheduled_date: string | null;
+          scheduled_time: string | null;
+          duration_minutes: number | null;
+        },
+        "property_id" | "client_id" | "inspector_id" | "scheduled_date" | "scheduled_time" | "duration_minutes"
+      > & { id: string })
+    | null = null;
+
+  if (orderId) {
+    const { data: orderRow, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("id, property_id, client_id, inspector_id, scheduled_date, scheduled_time, duration_minutes")
+      .eq("id", orderId)
+      .maybeSingle();
+
+    if (orderError) {
+      return NextResponse.json({ error: orderError.message }, { status: 500 });
+    }
+
+    if (!orderRow) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    linkedOrder = orderRow;
+  }
 
   const { data: serviceRows } = await supabaseAdmin
     .from("services")
@@ -186,17 +278,10 @@ export async function POST(request: Request) {
   if (!templateId) {
     const packageIds = (packageRows ?? []).map((pkg) => pkg.id);
     if (packageIds.length > 0) {
-      const { data: packageItems } = await supabaseAdmin
-        .from("package_items")
-        .select("service_id")
-        .in("package_id", packageIds);
+      const { data: packageItems } = await supabaseAdmin.from("package_items").select("service_id").in("package_id", packageIds);
       const serviceIds = (packageItems ?? []).map((item) => item.service_id);
       if (serviceIds.length > 0) {
-        const { data: packageServices } = await supabaseAdmin
-          .from("services")
-          .select("template_id")
-          .eq("tenant_id", tenantId)
-          .in("id", serviceIds);
+        const { data: packageServices } = await supabaseAdmin.from("services").select("template_id").eq("tenant_id", tenantId).in("id", serviceIds);
         templateId = packageServices?.[0]?.template_id ?? null;
       }
     }
@@ -209,7 +294,7 @@ export async function POST(request: Request) {
   const { street, city, state, zip } = parseAddress(payload.address ?? "");
   const { data: existingProperty } = await supabaseAdmin
     .from("properties")
-    .select("id, client_id")
+    .select("id")
     .eq("tenant_id", tenantId)
     .eq("address_line1", street)
     .eq("city", city)
@@ -217,13 +302,12 @@ export async function POST(request: Request) {
     .eq("zip_code", zip || "00000")
     .maybeSingle();
 
-  let propertyId = existingProperty?.id ?? null;
+  let propertyId = linkedOrder?.property_id ?? existingProperty?.id ?? null;
   if (!propertyId) {
     const { data: property, error: propertyError } = await supabaseAdmin
       .from("properties")
       .insert({
         tenant_id: tenantId,
-        client_id: payload.clientId ?? null,
         address_line1: street,
         city,
         state,
@@ -247,18 +331,24 @@ export async function POST(request: Request) {
     propertyId = property.id;
   }
 
+  const effectiveClientId = payload.clientId ?? linkedOrder?.client_id ?? null;
+  const effectiveInspectorId = payload.inspectorId ?? linkedOrder?.inspector_id ?? null;
+  const scheduledDate = payload.date ?? linkedOrder?.scheduled_date ?? null;
+  const scheduledTime = payload.time ?? linkedOrder?.scheduled_time ?? null;
+  const jobDuration = durationMinutes || linkedOrder?.duration_minutes || 120;
+
   const { data: job, error: jobError } = await supabaseAdmin
     .from("jobs")
     .insert({
       tenant_id: tenantId,
       property_id: propertyId,
-      client_id: payload.clientId ?? null,
+      client_id: effectiveClientId,
       template_id: templateId,
-      inspector_id: payload.inspectorId ?? null,
+      inspector_id: effectiveInspectorId,
       status: "scheduled",
-      scheduled_date: payload.date,
-      scheduled_time: payload.time ?? null,
-      duration_minutes: durationMinutes || 120,
+      scheduled_date: scheduledDate,
+      scheduled_time: scheduledTime ?? null,
+      duration_minutes: jobDuration,
       notes: payload.notes ?? null,
       selected_service_ids: Array.isArray(payload.types) ? payload.types : [],
     })
@@ -276,9 +366,9 @@ export async function POST(request: Request) {
       job_id: job.id,
       template_id: templateId,
       template_version: 1,
-      inspector_id: payload.inspectorId ?? null,
       status: "draft",
       notes: payload.notes ?? null,
+      order_id: orderId ?? null,
     })
     .select("id")
     .single();
@@ -287,13 +377,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: inspectionError?.message ?? "Failed to create inspection." }, { status: 500 });
   }
 
-  if (payload.inspectorId && payload.date) {
-    const startTime = payload.time ? payload.time : "09:00";
-    const startsAt = new Date(`${payload.date}T${startTime}:00`);
-    const endsAt = new Date(startsAt.getTime() + (durationMinutes || 120) * 60_000);
+  if (effectiveInspectorId) {
+    await assignInspectionLead(tenantId, inspection.id, effectiveInspectorId);
+  }
+
+  if (effectiveInspectorId && scheduledDate) {
+    const startTime = scheduledTime ? scheduledTime : "09:00";
+    const startsAt = new Date(`${scheduledDate}T${startTime}:00`);
+    const endsAt = new Date(startsAt.getTime() + jobDuration * 60_000);
     await supabaseAdmin.from("schedule_blocks").insert({
       tenant_id: tenantId,
-      inspector_id: payload.inspectorId,
+      inspector_id: effectiveInspectorId,
       inspection_id: inspection.id,
       starts_at: startsAt.toISOString(),
       ends_at: endsAt.toISOString(),

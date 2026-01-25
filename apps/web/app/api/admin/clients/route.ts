@@ -13,6 +13,8 @@ const mapClient = (client: {
   inspections_count: number | null;
   last_inspection_date: string | null;
   total_spent: number | null;
+  created_at: string | null;
+  updated_at: string | null;
 }) => ({
   clientId: client.id,
   name: client.name,
@@ -22,13 +24,15 @@ const mapClient = (client: {
   inspections: client.inspections_count ?? 0,
   lastInspection: client.last_inspection_date ?? "—",
   totalSpent: Number(client.total_spent ?? 0),
+  createdAt: client.created_at ?? null,
+  updatedAt: client.updated_at ?? null,
 });
 
 export async function GET() {
   const tenantId = getTenantId();
   const { data, error } = await supabaseAdmin
     .from("clients")
-    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent")
+    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent, created_at, updated_at")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
@@ -59,7 +63,7 @@ export async function POST(request: Request) {
       company: payload.company ?? null,
       notes: payload.notes ?? null,
     })
-    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent")
+    .select("id, name, email, phone, type, inspections_count, last_inspection_date, total_spent, created_at, updated_at")
     .single();
 
   if (error || !data) {

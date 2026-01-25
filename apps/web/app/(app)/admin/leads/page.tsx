@@ -1,5 +1,7 @@
+"use client";
+
 import { redirect } from "next/navigation";
 
-export default function LeadsPage() {
-  redirect("/admin/clients?tab=leads");
+export default function LeadsRootRedirect() {
+  redirect("/admin/contacts?tab=leads");
 }

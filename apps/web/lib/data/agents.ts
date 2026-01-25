@@ -3,8 +3,8 @@
  * Handles real estate agent CRUD operations
  */
 
-export type AgentStatus = 'active' | 'inactive';
-export type ReportFormat = 'pdf' | 'html' | 'both';
+export type AgentStatus = "active" | "inactive";
+export type ReportFormat = "pdf" | "html" | "both";
 
 export interface Agent {
   id: string;
@@ -34,6 +34,7 @@ export interface Agent {
     email: string | null;
     phone: string | null;
   } | null;
+  avatar_url?: string | null;
   orders?: Array<{
     id: string;
     order_number: string;
@@ -64,6 +65,7 @@ export interface CreateAgentInput {
   notify_on_schedule?: boolean;
   notify_on_complete?: boolean;
   notify_on_report?: boolean;
+  avatar_url?: string | null;
 }
 
 export interface UpdateAgentInput {
@@ -79,6 +81,7 @@ export interface UpdateAgentInput {
   notify_on_schedule?: boolean;
   notify_on_complete?: boolean;
   notify_on_report?: boolean;
+  avatar_url?: string | null;
 }
 
 export interface AgentFilters {
@@ -87,25 +90,22 @@ export interface AgentFilters {
   search?: string;
 }
 
-export async function fetchAgents(
-  tenantSlug: string,
-  filters?: AgentFilters
-): Promise<Agent[]> {
+export async function fetchAgents(tenantSlug: string, filters?: AgentFilters): Promise<Agent[]> {
   const params = new URLSearchParams({ tenant: tenantSlug });
 
-  if (filters?.status) params.append('status', filters.status);
-  if (filters?.agency_id) params.append('agency_id', filters.agency_id);
-  if (filters?.search) params.append('search', filters.search);
+  if (filters?.status) params.append("status", filters.status);
+  if (filters?.agency_id) params.append("agency_id", filters.agency_id);
+  if (filters?.search) params.append("search", filters.search);
 
   const response = await fetch(`/api/admin/agents?${params}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch agents');
+    throw new Error(error.error?.message || "Failed to fetch agents");
   }
 
   const result = await response.json();
@@ -115,13 +115,13 @@ export async function fetchAgents(
 export async function fetchAgentById(id: string): Promise<Agent> {
   const response = await fetch(`/api/admin/agents/${id}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch agent');
+    throw new Error(error.error?.message || "Failed to fetch agent");
   }
 
   const result = await response.json();
@@ -130,16 +130,16 @@ export async function fetchAgentById(id: string): Promise<Agent> {
 
 export async function createAgent(input: CreateAgentInput): Promise<Agent> {
   const response = await fetch(`/api/admin/agents`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to create agent');
+    throw new Error(error.error?.message || "Failed to create agent");
   }
 
   const result = await response.json();
@@ -149,16 +149,16 @@ export async function createAgent(input: CreateAgentInput): Promise<Agent> {
 export async function updateAgent(input: UpdateAgentInput): Promise<Agent> {
   const { id, ...data } = input;
   const response = await fetch(`/api/admin/agents/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to update agent');
+    throw new Error(error.error?.message || "Failed to update agent");
   }
 
   const result = await response.json();
@@ -167,15 +167,15 @@ export async function updateAgent(input: UpdateAgentInput): Promise<Agent> {
 
 export async function deleteAgent(id: string): Promise<boolean> {
   const response = await fetch(`/api/admin/agents/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to delete agent');
+    throw new Error(error.error?.message || "Failed to delete agent");
   }
 
   return true;
@@ -183,15 +183,15 @@ export async function deleteAgent(id: string): Promise<boolean> {
 
 export async function sendPortalLink(agentId: string): Promise<{ success: boolean; expires_at: string }> {
   const response = await fetch(`/api/admin/agents/${agentId}/send-portal-link`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to send portal link');
+    throw new Error(error.error?.message || "Failed to send portal link");
   }
 
   return response.json();
@@ -199,15 +199,15 @@ export async function sendPortalLink(agentId: string): Promise<{ success: boolea
 
 export async function revokePortalAccess(agentId: string): Promise<{ success: boolean }> {
   const response = await fetch(`/api/admin/agents/${agentId}/revoke-portal-access`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to revoke portal access');
+    throw new Error(error.error?.message || "Failed to revoke portal access");
   }
 
   return response.json();

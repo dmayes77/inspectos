@@ -40,6 +40,25 @@ export const ROOF_OPTIONS = [
   "Other",
 ] as const;
 
+export const PROPERTY_TYPE_OPTIONS = [
+  { value: "single-family", label: "Single-Family" },
+  { value: "condo-townhome", label: "Condo / Townhome" },
+  { value: "commercial", label: "Commercial" },
+  { value: "multi-family", label: "Multi-Family" },
+  { value: "manufactured", label: "Manufactured" },
+] as const;
+
+export const PROPERTY_TYPE_FILTER_OPTIONS = [
+  { value: "all", label: "All Types" },
+  ...PROPERTY_TYPE_OPTIONS,
+] as const;
+
+export const RESIDENTIAL_PROPERTY_TYPES = [
+  "single-family",
+  "condo-townhome",
+  "manufactured",
+] as const;
+
 export type GarageOption = typeof GARAGE_OPTIONS[number];
 export type FoundationOption = typeof FOUNDATION_OPTIONS[number];
 export type StoryOption = typeof STORY_OPTIONS[number];

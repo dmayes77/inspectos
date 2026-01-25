@@ -466,9 +466,9 @@ export function OrderForm({ mode, order }: OrderFormProps) {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                Services
+                Inspection
               </CardTitle>
-              <CardDescription>Select the services and packages to include.</CardDescription>
+              <CardDescription>Select services that will be scheduled under the inspection container.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
@@ -480,6 +480,9 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                   className="pl-9"
                 />
               </div>
+              <p className="text-sm text-muted-foreground">
+                These selections will determine which services appear under the inspection container.
+              </p>
 
               <div className="space-y-4">
                 <div className="space-y-2">

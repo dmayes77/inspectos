@@ -7,6 +7,7 @@ import { z } from "zod";
 export const createInspectionSchema = z.object({
   address: z.string().min(1, "Address is required"),
   clientId: z.string().min(1, "Client is required"),
+  orderId: z.string().uuid().optional(),
   inspectorId: z.string().optional().nullable(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   time: z

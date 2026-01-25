@@ -12,19 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
-import {
-  Building2,
-  DollarSign,
-  Mail,
-  Phone,
-  Plus,
-  Search,
-  UserCheck,
-  Users,
-} from "lucide-react";
+import { Building2, DollarSign, Mail, Phone, Plus, Search, Users } from "lucide-react";
 import { useAgencies, type Agency } from "@/hooks/use-agencies";
 import { useAgents, type Agent } from "@/hooks/use-agents";
 import { mockAdminUser } from "@/lib/constants/mock-users";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CompanyLogo } from "@/components/shared/company-logo";
 
 const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID ?? "demo";
 
@@ -40,12 +33,12 @@ const agencyColumns: ColumnDef<Agency>[] = [
     accessorKey: "name",
     header: "Agency",
     cell: ({ row }: { row: AgencyRow }) => (
-      <Link
-        href={`/admin/agencies/${row.original.id}`}
-        className="flex items-center gap-2 font-medium hover:underline"
-      >
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-        {row.original.name}
+      <Link href={`/admin/partners/agencies/${row.original.id}`} className="flex items-center gap-3 hover:underline">
+        <CompanyLogo name={row.original.name} logoUrl={row.original.logo_url} website={row.original.website ?? undefined} size={40} className="h-10 w-10" />
+        <div className="text-sm">
+          <p className="font-medium leading-tight">{row.original.name}</p>
+          {row.original.website && <p className="text-xs text-muted-foreground">{row.original.website.replace(/^https?:\/\//, "")}</p>}
+        </div>
       </Link>
     ),
   },
@@ -72,11 +65,7 @@ const agencyColumns: ColumnDef<Agency>[] = [
   {
     id: "location",
     header: "Location",
-    cell: ({ row }: { row: AgencyRow }) => (
-      <span className="text-sm text-muted-foreground">
-        {getAgencyLocation(row.original) || "—"}
-      </span>
-    ),
+    cell: ({ row }: { row: AgencyRow }) => <span className="text-sm text-muted-foreground">{getAgencyLocation(row.original) || "—"}</span>,
   },
   {
     id: "agents",
@@ -106,11 +95,7 @@ const agencyColumns: ColumnDef<Agency>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }: { row: AgencyRow }) => (
-      <Badge variant={row.original.status === "active" ? "default" : "secondary"}>
-        {row.original.status}
-      </Badge>
-    ),
+    cell: ({ row }: { row: AgencyRow }) => <Badge variant={row.original.status === "active" ? "default" : "secondary"}>{row.original.status}</Badge>,
   },
 ];
 
@@ -119,13 +104,18 @@ const agentColumns: ColumnDef<Agent>[] = [
     accessorKey: "name",
     header: "Agent",
     cell: ({ row }: { row: AgentRow }) => (
-      <Link
-        href={`/admin/agents/${row.original.id}`}
-        className="flex items-center gap-2 font-medium hover:underline"
-      >
-        <UserCheck className="h-4 w-4 text-muted-foreground" />
-        {row.original.name}
-      </Link>
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8">
+          {row.original.avatar_url ? (
+            <AvatarImage src={row.original.avatar_url} alt={row.original.name} />
+          ) : (
+            <AvatarFallback>{row.original.name.charAt(0)}</AvatarFallback>
+          )}
+        </Avatar>
+        <Link href={`/admin/partners/agents/${row.original.id}`} className="font-medium hover:underline">
+          {row.original.name}
+        </Link>
+      </div>
     ),
   },
   {
@@ -133,10 +123,7 @@ const agentColumns: ColumnDef<Agent>[] = [
     header: "Agency",
     cell: ({ row }: { row: AgentRow }) =>
       row.original.agency ? (
-        <Link
-          href={`/admin/agencies/${row.original.agency.id}`}
-          className="flex items-center gap-2 text-sm hover:underline"
-        >
+        <Link href={`/admin/partners/agencies/${row.original.agency.id}`} className="flex items-center gap-2 text-sm hover:underline">
           <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
           {row.original.agency.name}
         </Link>
@@ -182,11 +169,7 @@ const agentColumns: ColumnDef<Agent>[] = [
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }: { row: AgentRow }) => (
-      <Badge variant={row.original.status === "active" ? "default" : "secondary"}>
-        {row.original.status}
-      </Badge>
-    ),
+    cell: ({ row }: { row: AgentRow }) => <Badge variant={row.original.status === "active" ? "default" : "secondary"}>{row.original.status}</Badge>,
   },
 ];
 
@@ -195,6 +178,8 @@ function PartnersPageContent() {
   const { data: agents = [] } = useAgents(tenantSlug);
   const [agencyQuery, setAgencyQuery] = useState("");
   const [agentQuery, setAgentQuery] = useState("");
+  const [agentStatusFilter, setAgentStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [agencyStatusFilter, setAgencyStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -204,40 +189,40 @@ function PartnersPageContent() {
   }, [searchParams]);
 
   const filteredAgencies = useMemo(() => {
-    if (!agencyQuery.trim()) return agencies;
     const query = agencyQuery.toLowerCase();
-    return agencies.filter(
-      (agency) =>
-        agency.name.toLowerCase().includes(query) ||
-        agency.email?.toLowerCase().includes(query) ||
-        agency.city?.toLowerCase().includes(query)
-    );
-  }, [agencies, agencyQuery]);
+    return agencies.filter((agency) => {
+      const matchesStatus = agencyStatusFilter === "all" || agency.status === agencyStatusFilter;
+      if (!matchesStatus) return false;
+      if (!agencyQuery.trim()) return true;
+      return agency.name.toLowerCase().includes(query) || agency.email?.toLowerCase().includes(query) || agency.city?.toLowerCase().includes(query);
+    });
+  }, [agencies, agencyQuery, agencyStatusFilter]);
 
   const filteredAgents = useMemo(() => {
-    if (!agentQuery.trim()) return agents;
     const query = agentQuery.toLowerCase();
-    return agents.filter(
-      (agent) =>
-        agent.name.toLowerCase().includes(query) ||
-        agent.email?.toLowerCase().includes(query) ||
-        agent.phone?.includes(query)
-    );
-  }, [agents, agentQuery]);
+    return agents.filter((agent) => {
+      const matchesStatus = agentStatusFilter === "all" || agent.status === agentStatusFilter;
+      if (!matchesStatus) return false;
+      if (!agentQuery.trim()) return true;
+      return agent.name.toLowerCase().includes(query) || agent.email?.toLowerCase().includes(query) || agent.phone?.includes(query);
+    });
+  }, [agents, agentQuery, agentStatusFilter]);
 
   const agencyStats = useMemo(() => {
     const active = agencies.filter((agency) => agency.status === "active").length;
+    const inactive = agencies.filter((agency) => agency.status === "inactive").length;
     const totalAgents = agencies.reduce((sum, agency) => sum + (agency.agents?.length ?? 0), 0);
     const totalReferrals = agencies.reduce((sum, agency) => sum + agency.total_referrals, 0);
     const totalRevenue = agencies.reduce((sum, agency) => sum + agency.total_revenue, 0);
-    return { active, totalAgents, totalReferrals, totalRevenue };
+    return { active, inactive, totalAgents, totalReferrals, totalRevenue };
   }, [agencies]);
 
   const agentStats = useMemo(() => {
     const active = agents.filter((agent) => agent.status === "active").length;
+    const inactive = agents.filter((agent) => agent.status === "inactive").length;
     const totalReferrals = agents.reduce((sum, agent) => sum + agent.total_referrals, 0);
     const totalRevenue = agents.reduce((sum, agent) => sum + agent.total_revenue, 0);
-    return { active, totalReferrals, totalRevenue };
+    return { active, inactive, totalReferrals, totalRevenue };
   }, [agents]);
 
   return (
@@ -250,14 +235,14 @@ function PartnersPageContent() {
             <div className="flex flex-wrap items-center gap-2">
               {activeTab === "agencies" ? (
                 <Button asChild>
-                  <Link href="/admin/agencies/new">
+                  <Link href="/admin/partners/agencies/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Agency
                   </Link>
                 </Button>
               ) : (
                 <Button asChild>
-                  <Link href="/admin/agents/new">
+                  <Link href="/admin/partners/agents/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Agent
                   </Link>
@@ -265,22 +250,18 @@ function PartnersPageContent() {
               )}
               {activeTab === "agencies" ? (
                 <Button variant="outline" asChild>
-                  <Link href="/admin/agents/new">Add Agent</Link>
+                  <Link href="/admin/partners/agents/new">Add Agent</Link>
                 </Button>
               ) : (
                 <Button variant="outline" asChild>
-                  <Link href="/admin/agencies/new">Add Agency</Link>
+                  <Link href="/admin/partners/agencies/new">Add Agency</Link>
                 </Button>
               )}
             </div>
           }
         />
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(value: string) => router.replace(`/admin/partners?tab=${value}`)}
-          className="space-y-4"
-        >
+        <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/partners?tab=${value}`)} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 md:w-70">
             <TabsTrigger value="agents">Agents</TabsTrigger>
             <TabsTrigger value="agencies">Agencies</TabsTrigger>
@@ -302,15 +283,19 @@ function PartnersPageContent() {
               </Card>
               <Card>
                 <CardContent className="pt-4">
+                  <div className="text-xl font-bold sm:text-2xl">{agentStats.inactive}</div>
+                  <p className="text-xs text-muted-foreground sm:text-sm">Inactive Agents</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
                   <div className="text-xl font-bold sm:text-2xl">{agentStats.totalReferrals}</div>
                   <p className="text-xs text-muted-foreground sm:text-sm">Total Referrals</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">
-                    ${agentStats.totalRevenue.toLocaleString()}
-                  </div>
+                  <div className="text-xl font-bold sm:text-2xl">${agentStats.totalRevenue.toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground sm:text-sm">Total Revenue</p>
                 </CardContent>
               </Card>
@@ -322,21 +307,63 @@ function PartnersPageContent() {
                 <CardDescription>{filteredAgents.length} total agents</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-wrap items-center gap-2 pb-4">
+                  {["all", "active", "inactive"].map((status) => (
+                    <Button
+                      key={status}
+                      variant={agentStatusFilter === status ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAgentStatusFilter(status as typeof agentStatusFilter)}
+                    >
+                      {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+                    </Button>
+                  ))}
+                </div>
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={agentQuery}
-                    onChange={(event) => setAgentQuery(event.target.value)}
-                    placeholder="Search agents..."
-                    className="pl-9"
-                  />
+                  <Input value={agentQuery} onChange={(event) => setAgentQuery(event.target.value)} placeholder="Search agents..." className="pl-9" />
                 </div>
-                <DataTable
-                  columns={agentColumns}
-                  data={filteredAgents}
-                  searchKey="name"
-                  searchPlaceholder="Search agents..."
-                />
+                <div className="space-y-4 md:hidden">
+                  {filteredAgents.map((agent) => (
+                    <div key={agent.id} className="rounded-lg border p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            {agent.avatar_url ? (
+                              <AvatarImage src={agent.avatar_url} alt={agent.name} />
+                            ) : (
+                              <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+                            )}
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{agent.name}</p>
+                            <p className="text-xs text-muted-foreground">{agent.email ?? "—"}</p>
+                          </div>
+                        </div>
+                        <Badge variant={agent.status === "active" ? "default" : "secondary"}>{agent.status}</Badge>
+                      </div>
+                      <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                        {agent.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5" />
+                            <span>{agent.phone}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{agent.total_revenue.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{agent.total_referrals} referrals</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden md:block">
+                  <DataTable columns={agentColumns} data={filteredAgents} searchKey="name" searchPlaceholder="Search agents..." />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -357,15 +384,19 @@ function PartnersPageContent() {
               </Card>
               <Card>
                 <CardContent className="pt-4">
+                  <div className="text-xl font-bold sm:text-2xl">{agencyStats.inactive}</div>
+                  <p className="text-xs text-muted-foreground sm:text-sm">Inactive Agencies</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
                   <div className="text-xl font-bold sm:text-2xl">{agencyStats.totalAgents}</div>
                   <p className="text-xs text-muted-foreground sm:text-sm">Total Agents</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">
-                    ${agencyStats.totalRevenue.toLocaleString()}
-                  </div>
+                  <div className="text-xl font-bold sm:text-2xl">${agencyStats.totalRevenue.toLocaleString()}</div>
                   <p className="text-xs text-muted-foreground sm:text-sm">Total Revenue</p>
                 </CardContent>
               </Card>
@@ -377,21 +408,63 @@ function PartnersPageContent() {
                 <CardDescription>{filteredAgencies.length} total agencies</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-wrap items-center gap-2 pb-4">
+                  {["all", "active", "inactive"].map((status) => (
+                    <Button
+                      key={status}
+                      variant={agencyStatusFilter === status ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAgencyStatusFilter(status as typeof agencyStatusFilter)}
+                    >
+                      {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+                    </Button>
+                  ))}
+                </div>
                 <div className="relative mb-4">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={agencyQuery}
-                    onChange={(event) => setAgencyQuery(event.target.value)}
-                    placeholder="Search agencies..."
-                    className="pl-9"
-                  />
+                  <Input value={agencyQuery} onChange={(event) => setAgencyQuery(event.target.value)} placeholder="Search agencies..." className="pl-9" />
                 </div>
-                <DataTable
-                  columns={agencyColumns}
-                  data={filteredAgencies}
-                  searchKey="name"
-                  searchPlaceholder="Search agencies..."
-                />
+                <div className="space-y-4 md:hidden">
+                  {filteredAgencies.map((agency) => (
+                    <div key={agency.id} className="rounded-lg border p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <CompanyLogo name={agency.name} logoUrl={agency.logo_url} website={agency.website ?? undefined} size={44} className="h-11 w-11" />
+                          <div>
+                            <p className="font-medium leading-tight">{agency.name}</p>
+                            <p className="text-xs text-muted-foreground">{agency.city ?? agency.website?.replace(/^https?:\/\//, "") ?? "—"}</p>
+                          </div>
+                        </div>
+                        <Badge variant={agency.status === "active" ? "default" : "secondary"}>{agency.status}</Badge>
+                      </div>
+                      <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
+                        {agency.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span>{agency.email}</span>
+                          </div>
+                        )}
+                        {agency.phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5" />
+                            <span>{agency.phone}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>{agency.agents?.length ?? 0} agents</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>${agency.total_revenue.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden md:block">
+                  <DataTable columns={agencyColumns} data={filteredAgencies} searchKey="name" searchPlaceholder="Search agencies..." />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

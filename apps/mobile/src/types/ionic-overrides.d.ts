@@ -5,7 +5,7 @@
  * in the monorepo, causing conflicts with Ionic React which expects React 18 types.
  */
 
-import type { JSX as IonicJSX } from '@ionic/react';
+import type { JSX as IonicJSX } from "@ionic/react";
 
 declare global {
   namespace JSX {
@@ -13,12 +13,12 @@ declare global {
   }
 }
 
-declare module '@ionic/react' {
+declare module "@ionic/react" {
   export const IonApp: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonPage: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonHeader: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonToolbar: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
-  export const IonTitle: React.FC<React.PropsWithChildren<{ children?: React.ReactNode; size?: 'large' | 'small' }>>;
+  export const IonTitle: React.FC<React.PropsWithChildren<{ children?: React.ReactNode; size?: "large" | "small" }>>;
   export const IonContent: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonButton: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonInput: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
@@ -31,7 +31,14 @@ declare module '@ionic/react' {
   export const IonCardTitle: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonSpinner: React.FC<{ name?: string; style?: React.CSSProperties }>;
   export const IonChip: React.FC<React.PropsWithChildren<{ color?: string; onClick?: () => void; style?: React.CSSProperties }>>;
-  export const IonIcon: React.FC<{ icon: string; style?: React.CSSProperties }>;
+  export const IonIcon: React.FC<
+    React.PropsWithChildren<{
+      icon: string;
+      slot?: string;
+      color?: string;
+      style?: React.CSSProperties;
+    }>
+  >;
   export const IonRouterOutlet: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonTabs: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
   export const IonTabBar: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
@@ -94,8 +101,8 @@ declare module '@ionic/react' {
   export function setupIonicReact(config?: Record<string, unknown>): void;
 }
 
-declare module '@ionic/react-router' {
-  import { RouteProps, RouterProps } from 'react-router';
+declare module "@ionic/react-router" {
+  import { RouteProps, RouterProps } from "react-router";
 
   export const IonReactRouter: React.FC<React.PropsWithChildren<RouterProps>>;
   export const IonRouterOutlet: React.FC<React.PropsWithChildren<Record<string, unknown>>>;

@@ -1,17 +1,17 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient';
-import { database } from '../db';
-import { syncService } from '../sync';
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabaseClient";
+import { database } from "../db";
+import { syncService } from "../sync";
 
 // SECURITY: Auth bypass is ONLY allowed in development mode
 // Both DEV mode AND explicit env var must be true
-const BYPASS_AUTH = import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === 'true';
-const DEV_TENANT_ID = '11111111-1111-1111-1111-111111111111';
-const DEV_USER_ID = '00000000-0000-0000-0000-000000000000';
+const BYPASS_AUTH = import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === "true";
+const DEV_TENANT_ID = "11111111-1111-1111-1111-111111111111";
+const DEV_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 if (BYPASS_AUTH) {
-  console.warn('[Auth] ⚠️ Auth bypass is enabled - DO NOT use in production');
+  console.warn("[Auth] ⚠️ Auth bypass is enabled - DO NOT use in production");
 }
 
 interface TenantInfo {
@@ -50,15 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!BYPASS_AUTH) return;
-    const devUser = { id: DEV_USER_ID, email: 'dev@inspectos.local' } as User;
+    const devUser = { id: DEV_USER_ID, email: "dev@inspectos.local" } as User;
     const devTenant: TenantInfo = {
       id: DEV_TENANT_ID,
-      name: 'InspectOS Dev',
-      slug: 'dev',
-      role: 'owner',
+      name: "InspectOS Dev",
+      slug: "dev",
+      role: "owner",
     };
 
-    setState(s => ({
+    setState((s) => ({
       ...s,
       user: devUser,
       session: null,
@@ -74,10 +74,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initDatabase = async () => {
       try {
         await database.initialize();
-        console.log('[Auth] Database initialized');
+        console.log("[Auth] Database initialized");
       } catch (error) {
-        console.error('[Auth] Database init failed:', error);
-        setState(s => ({ ...s, error: 'Failed to initialize database' }));
+        console.error("[Auth] Database init failed:", error);
+        setState((s) => ({ ...s, error: "Failed to initialize database" }));
       }
     };
 
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setState(s => ({
+      setState((s) => ({
         ...s,
         session,
         user: session?.user ?? null,
@@ -100,24 +100,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[Auth] Auth state changed:', event);
-        setState(s => ({
-          ...s,
-          session,
-          user: session?.user ?? null,
-          isLoading: false,
-        }));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[Auth] Auth state changed:", event);
+      setState((s) => ({
+        ...s,
+        session,
+        user: session?.user ?? null,
+        isLoading: false,
+      }));
 
-        // Clear tenant on sign out
-        if (event === 'SIGNED_OUT') {
-          setState(s => ({ ...s, tenant: null }));
-          syncService.stopAutoSync();
-          syncService.clearCredentials();
-        }
+      // Clear tenant on sign out
+      if (event === "SIGNED_OUT") {
+        setState((s) => ({ ...s, tenant: null }));
+        syncService.stopAutoSync();
+        syncService.clearCredentials();
       }
-    );
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -133,88 +133,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await syncService.initialize(state.session.access_token, state.tenant.slug);
       } catch (error) {
-        console.error('[Auth] Sync credential refresh failed:', error);
+        console.error("[Auth] Sync credential refresh failed:", error);
       }
     };
 
     refreshSyncCredentials();
   }, [state.session?.access_token, state.tenant?.slug]);
 
-  const selectTenant = useCallback(async (tenantSlug: string) => {
-    if (BYPASS_AUTH) {
-      setState(s => ({
-        ...s,
-        tenant: {
-          id: DEV_TENANT_ID,
-          name: 'InspectOS Dev',
-          slug: tenantSlug,
-          role: 'owner',
-        },
-        isLoading: false,
-        error: null,
-      }));
-      return;
-    }
-
-    if (!state.session?.access_token) {
-      throw new Error('Not authenticated');
-    }
-
-    setState(s => ({ ...s, isLoading: true, error: null }));
-
-    try {
-      // Verify membership
-      const { data: tenant, error: tenantError } = await supabase
-        .from('tenants')
-        .select('id, name, slug')
-        .eq('slug', tenantSlug)
-        .single();
-
-      if (tenantError || !tenant) {
-        throw new Error('Tenant not found');
+  const selectTenant = useCallback(
+    async (tenantSlug: string) => {
+      if (BYPASS_AUTH) {
+        setState((s) => ({
+          ...s,
+          tenant: {
+            id: DEV_TENANT_ID,
+            name: "InspectOS Dev",
+            slug: tenantSlug,
+            role: "owner",
+          },
+          isLoading: false,
+          error: null,
+        }));
+        return;
       }
 
-      const { data: membership, error: membershipError } = await supabase
-        .from('tenant_members')
-        .select('role')
-        .eq('tenant_id', tenant.id)
-        .eq('user_id', state.user!.id)
-        .single();
-
-      if (membershipError || !membership) {
-        throw new Error('Not a member of this tenant');
+      if (!state.session?.access_token) {
+        throw new Error("Not authenticated");
       }
 
-      const tenantInfo: TenantInfo = {
-        id: tenant.id,
-        name: tenant.name,
-        slug: tenant.slug,
-        role: membership.role,
-      };
+      setState((s) => ({ ...s, isLoading: true, error: null }));
 
-      // Save last tenant
-      await database.run(
-        `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`,
-        ['last_tenant_slug', tenantSlug, new Date().toISOString()]
-      );
+      try {
+        // Verify membership
+        const { data: tenant, error: tenantError } = await supabase.from("tenants").select("id, name, slug").eq("slug", tenantSlug).single();
 
-      // Initialize sync service
-      await syncService.initialize(state.session.access_token, tenantSlug);
-      syncService.setTenantId(tenant.id);
+        if (tenantError || !tenant) {
+          throw new Error("Tenant not found");
+        }
 
-      // Bootstrap sync (download data for offline)
-      await syncService.bootstrap();
+        const { data: membership, error: membershipError } = await supabase
+          .from("tenant_members")
+          .select("role")
+          .eq("tenant_id", tenant.id)
+          .eq("user_id", state.user!.id)
+          .single();
 
-      // Start auto-sync
-      syncService.startAutoSync(30000);
+        if (membershipError || !membership) {
+          throw new Error("Not a member of this tenant");
+        }
 
-      setState(s => ({ ...s, tenant: tenantInfo, isLoading: false }));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to select tenant';
-      setState(s => ({ ...s, error: message, isLoading: false }));
-      throw error;
-    }
-  }, [state.session, state.user]);
+        const tenantInfo: TenantInfo = {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          role: membership.role,
+        };
+
+        // Save last tenant
+        await database.run(`INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, ?)`, [
+          "last_tenant_slug",
+          tenantSlug,
+          new Date().toISOString(),
+        ]);
+
+        // Initialize sync service
+        await syncService.initialize(state.session.access_token, tenantSlug);
+        syncService.setTenantId(tenant.id);
+
+        // Bootstrap sync (download data for offline)
+        await syncService.bootstrap();
+
+        // Start auto-sync
+        syncService.startAutoSync(30000);
+
+        setState((s) => ({ ...s, tenant: tenantInfo, isLoading: false }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to select tenant";
+        setState((s) => ({ ...s, error: message, isLoading: false }));
+        throw error;
+      }
+    },
+    [state.session, state.user],
+  );
 
   // Auto-select last tenant on login
   useEffect(() => {
@@ -225,16 +225,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         // Check for last tenant in local storage
-        const { data: settings } = await database.query<{ value: string }>(
-          `SELECT value FROM app_settings WHERE key = 'last_tenant_slug'`
-        );
+        const settings = await database.query<{ value: string }>(`SELECT value FROM app_settings WHERE key = 'last_tenant_slug'`);
         const lastTenantSlug = settings[0]?.value;
 
         if (lastTenantSlug) {
           await selectTenant(lastTenantSlug);
         }
       } catch (error) {
-        console.error('[Auth] Auto-select tenant failed:', error);
+        console.error("[Auth] Auto-select tenant failed:", error);
       }
     };
 
@@ -246,29 +244,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return [
         {
           id: DEV_TENANT_ID,
-          name: 'InspectOS Dev',
-          slug: 'dev',
-          role: 'owner',
+          name: "InspectOS Dev",
+          slug: "dev",
+          role: "owner",
         },
       ];
     }
 
     if (!state.user) return [];
 
+    type MembershipWithTenant = {
+      role: string;
+      tenant: { id: string; name: string; slug: string } | null;
+    };
+
+    type RawMembership = {
+      role: string;
+      tenant: { id: string; name: string; slug: string } | { id: string; name: string; slug: string }[] | null;
+    };
+
     const { data: memberships } = await supabase
-      .from('tenant_members')
-      .select(`
+      .from("tenant_members")
+      .select(
+        `
         role,
         tenant:tenants (id, name, slug)
-      `)
-      .eq('user_id', state.user.id);
+      `,
+      )
+      .eq("user_id", state.user.id);
 
-    return (memberships || []).map(m => ({
-      id: (m.tenant as { id: string }).id,
-      name: (m.tenant as { name: string }).name,
-      slug: (m.tenant as { slug: string }).slug,
+    const normalizedMemberships: MembershipWithTenant[] = ((memberships ?? []) as RawMembership[]).map((m) => ({
       role: m.role,
+      tenant: Array.isArray(m.tenant) ? (m.tenant[0] ?? null) : m.tenant,
     }));
+
+    return normalizedMemberships
+      .filter((m): m is MembershipWithTenant & { tenant: { id: string; name: string; slug: string } } => Boolean(m.tenant))
+      .map((m) => ({
+        id: m.tenant.id,
+        name: m.tenant.name,
+        slug: m.tenant.slug,
+        role: m.role,
+      }));
   }, [state.user]);
 
   const signOut = useCallback(async () => {
@@ -277,7 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!BYPASS_AUTH) {
       await supabase.auth.signOut();
     }
-    setState(s => ({ ...s, user: null, session: null, tenant: null }));
+    setState((s) => ({ ...s, user: null, session: null, tenant: null }));
   }, []);
 
   return (
@@ -297,7 +314,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

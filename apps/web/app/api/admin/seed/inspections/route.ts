@@ -6,6 +6,7 @@ import { clients as mockClients } from "@/lib/mock/clients";
 import { services as mockServices } from "@/lib/mock/services";
 import { teamMembers } from "@/lib/mock/team";
 import { parseAddress } from "@/lib/utils/address";
+import { assignInspectionLead } from "@/app/api/admin/inspections/assignments";
 
 const mapJobStatus = (status: string) => {
   if (status === "in_progress") return "in_progress";
@@ -27,16 +28,8 @@ const parseDate = (value?: string | null) => {
   return parsed.toISOString().slice(0, 10);
 };
 
-const ensureInspectorProfile = async (
-  tenantId: string,
-  name: string,
-  email: string
-) => {
-  const { data: existingProfile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("id, email")
-    .eq("email", email)
-    .maybeSingle();
+const ensureInspectorProfile = async (tenantId: string, name: string, email: string) => {
+  const { data: existingProfile, error: profileError } = await supabaseAdmin.from("profiles").select("id, email").eq("email", email).maybeSingle();
 
   if (profileError) {
     throw new Error(profileError.message);
@@ -49,28 +42,19 @@ const ensureInspectorProfile = async (
         user_id: existingProfile.id,
         role: "inspector",
       },
-      { onConflict: "tenant_id,user_id" }
+      { onConflict: "tenant_id,user_id" },
     );
     return existingProfile.id;
   }
 
   const getFallbackInspector = async () => {
-    const { data: member } = await supabaseAdmin
-      .from("tenant_members")
-      .select("user_id")
-      .eq("tenant_id", tenantId)
-      .limit(1)
-      .maybeSingle();
+    const { data: member } = await supabaseAdmin.from("tenant_members").select("user_id").eq("tenant_id", tenantId).limit(1).maybeSingle();
 
     if (member?.user_id) {
       return member.user_id as string;
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .limit(1)
-      .maybeSingle();
+    const { data: profile } = await supabaseAdmin.from("profiles").select("id").limit(1).maybeSingle();
     return profile?.id ?? null;
   };
 
@@ -138,7 +122,7 @@ const ensureInspectorProfile = async (
       user_id: authUser.id,
       role: "inspector",
     },
-    { onConflict: "tenant_id,user_id" }
+    { onConflict: "tenant_id,user_id" },
   );
 
   return authUser.id;
@@ -147,9 +131,7 @@ const ensureInspectorProfile = async (
 export async function POST() {
   const tenantId = getTenantId();
 
-  const inspectorNames = Array.from(
-    new Set(mockInspections.map((inspection) => inspection.inspector).filter(Boolean))
-  );
+  const inspectorNames = Array.from(new Set(mockInspections.map((inspection) => inspection.inspector).filter(Boolean)));
 
   const inspectorMap = new Map<string, string>();
   for (const name of inspectorNames) {
@@ -159,10 +141,7 @@ export async function POST() {
     inspectorMap.set(name, profileId);
   }
 
-  const { data: existingClients } = await supabaseAdmin
-    .from("clients")
-    .select("id, email, name")
-    .eq("tenant_id", tenantId);
+  const { data: existingClients } = await supabaseAdmin.from("clients").select("id, email, name").eq("tenant_id", tenantId);
 
   const clientMap = new Map<string, string>();
   (existingClients ?? []).forEach((client) => {
@@ -197,10 +176,7 @@ export async function POST() {
     clientMap.set(key, createdClient.id);
   }
 
-  const { data: existingProperties } = await supabaseAdmin
-    .from("properties")
-    .select("id, address_line1, city, state, zip_code")
-    .eq("tenant_id", tenantId);
+  const { data: existingProperties } = await supabaseAdmin.from("properties").select("id, address_line1, city, state, zip_code").eq("tenant_id", tenantId);
 
   const propertyMap = new Map<string, string>();
   (existingProperties ?? []).forEach((property) => {
@@ -214,28 +190,17 @@ export async function POST() {
     .eq("tenant_id", tenantId)
     .eq("is_active", true);
 
-  const serviceByName = new Map(
-    (dbServices ?? []).map((service) => [service.name.toLowerCase(), service])
-  );
+  const serviceByName = new Map((dbServices ?? []).map((service) => [service.name.toLowerCase(), service]));
 
   const mockServiceById = new Map(mockServices.map((service) => [service.serviceId, service.name]));
 
-  const { data: templates } = await supabaseAdmin
-    .from("templates")
-    .select("id, name")
-    .eq("tenant_id", tenantId)
-    .eq("is_active", true);
+  const { data: templates } = await supabaseAdmin.from("templates").select("id, name").eq("tenant_id", tenantId).eq("is_active", true);
 
   const fallbackTemplateId = templates?.[0]?.id ?? null;
 
-  const { data: existingJobs } = await supabaseAdmin
-    .from("jobs")
-    .select("id, property_id, scheduled_date, scheduled_time")
-    .eq("tenant_id", tenantId);
+  const { data: existingJobs } = await supabaseAdmin.from("jobs").select("id, property_id, scheduled_date, scheduled_time").eq("tenant_id", tenantId);
 
-  const jobKeys = new Set(
-    (existingJobs ?? []).map((job) => `${job.property_id}|${job.scheduled_date}|${job.scheduled_time ?? ""}`)
-  );
+  const jobKeys = new Set((existingJobs ?? []).map((job) => `${job.property_id}|${job.scheduled_date}|${job.scheduled_time ?? ""}`));
 
   let createdJobs = 0;
   let createdInspections = 0;
@@ -273,8 +238,7 @@ export async function POST() {
       propertyMap.set(propertyKey, propertyId!);
     }
 
-    const serviceNames =
-      inspection.types?.map((type) => mockServiceById.get(type) ?? type) ?? [];
+    const serviceNames = inspection.types?.map((type) => mockServiceById.get(type) ?? type) ?? [];
     const primaryServiceName = serviceNames[0]?.toLowerCase() ?? "";
     const primaryService = primaryServiceName ? serviceByName.get(primaryServiceName) : null;
     const templateId = primaryService?.template_id ?? fallbackTemplateId;
@@ -310,20 +274,25 @@ export async function POST() {
     createdJobs += 1;
     jobKeys.add(jobKey);
 
-    const { error: inspectionError } = await supabaseAdmin.from("inspections").insert({
-      tenant_id: tenantId,
-      job_id: createdJob.id,
-      template_id: templateId,
-      template_version: 1,
-      inspector_id: inspectorId,
-      status: mapInspectionStatus(inspection.status),
-      notes: inspection.notes ?? null,
-    });
+    const { data: createdInspection, error: inspectionError } = await supabaseAdmin
+      .from("inspections")
+      .insert({
+        tenant_id: tenantId,
+        job_id: createdJob.id,
+        template_id: templateId,
+        template_version: 1,
+        status: mapInspectionStatus(inspection.status),
+        notes: inspection.notes ?? null,
+      })
+      .select("id")
+      .single();
 
-    if (inspectionError) {
-      return NextResponse.json({ error: inspectionError.message }, { status: 500 });
+    if (inspectionError || !createdInspection) {
+      return NextResponse.json({ error: inspectionError?.message ?? "Failed to seed jobs." }, { status: 500 });
     }
     createdInspections += 1;
+
+    await assignInspectionLead(tenantId, createdInspection.id, inspectorId);
   }
 
   return NextResponse.json({

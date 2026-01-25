@@ -1,14 +1,14 @@
-import { Network } from '@capacitor/network';
-import { database } from '../db/database';
-import { readBase64File, Directory } from '../services/storage';
-import { outboxRepository, OutboxItem } from '../db/repositories/outbox';
-import { jobsRepository } from '../db/repositories/jobs';
-import { templatesRepository } from '../db/repositories/templates';
-import { mediaRepository } from '../db/repositories/media';
+import { Network } from "@capacitor/network";
+import { database } from "../db/database";
+import { readBase64File, Directory } from "../services/storage";
+import { outboxRepository, OutboxItem } from "../db/repositories/outbox";
+import { jobsRepository } from "../db/repositories/jobs";
+import { templatesRepository } from "../db/repositories/templates";
+import { mediaRepository } from "../db/repositories/media";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-export type SyncStatus = 'idle' | 'syncing' | 'error' | 'offline';
+export type SyncStatus = "idle" | "syncing" | "error" | "offline";
 
 interface SyncState {
   status: SyncStatus;
@@ -30,11 +30,11 @@ class SyncService {
   private syncInterval: ReturnType<typeof setInterval> | null = null;
 
   private state: SyncState = {
-    status: 'idle',
+    status: "idle",
     lastSyncedAt: null,
     pendingChanges: 0,
     pendingUploads: 0,
-    error: null
+    error: null,
   };
 
   constructor() {
@@ -64,7 +64,7 @@ class SyncService {
     this.accessToken = null;
     this.tenantSlug = null;
     this.tenantId = null;
-    this.setState({ status: 'idle', error: null, lastSyncedAt: null });
+    this.setState({ status: "idle", error: null, lastSyncedAt: null });
   }
 
   /**
@@ -103,21 +103,18 @@ class SyncService {
    */
   async bootstrap(): Promise<void> {
     if (!this.accessToken || !this.tenantSlug) {
-      throw new Error('Sync service not initialized');
+      throw new Error("Sync service not initialized");
     }
 
-    this.setState({ status: 'syncing', error: null });
+    this.setState({ status: "syncing", error: null });
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/sync/bootstrap?tenant=${this.tenantSlug}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/sync/bootstrap?tenant=${this.tenantSlug}`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       if (!response.ok) {
         throw new Error(`Bootstrap failed: ${response.status}`);
@@ -126,7 +123,7 @@ class SyncService {
       const result = await response.json();
 
       if (!result.success) {
-        throw new Error(result.error || 'Bootstrap failed');
+        throw new Error(result.error || "Bootstrap failed");
       }
 
       // Store tenant ID
@@ -136,13 +133,13 @@ class SyncService {
       await this.processBootstrapData(result.data);
 
       // Save sync timestamp
-      await this.saveSyncState('bootstrap', result.synced_at);
+      await this.saveSyncState("bootstrap", result.synced_at);
 
       await this.updateState();
-      this.setState({ status: 'idle', lastSyncedAt: result.synced_at });
+      this.setState({ status: "idle", lastSyncedAt: result.synced_at });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Bootstrap failed';
-      this.setState({ status: 'error', error: message });
+      const message = error instanceof Error ? error.message : "Bootstrap failed";
+      this.setState({ status: "error", error: message });
       throw error;
     }
   }
@@ -152,22 +149,22 @@ class SyncService {
    */
   async sync(): Promise<void> {
     if (!this.accessToken || !this.tenantSlug || !this.tenantId) {
-      console.warn('[Sync] Not initialized, skipping');
+      console.warn("[Sync] Not initialized, skipping");
       return;
     }
 
     if (this.isSyncing) {
-      console.log('[Sync] Already syncing, skipping');
+      console.log("[Sync] Already syncing, skipping");
       return;
     }
 
     if (!this.isOnline) {
-      console.log('[Sync] Offline, skipping');
+      console.log("[Sync] Offline, skipping");
       return;
     }
 
     this.isSyncing = true;
-    this.setState({ status: 'syncing', error: null });
+    this.setState({ status: "syncing", error: null });
 
     try {
       // Push local changes first
@@ -180,11 +177,11 @@ class SyncService {
       await this.uploadPendingMedia();
 
       await this.updateState();
-      this.setState({ status: 'idle', lastSyncedAt: new Date().toISOString() });
+      this.setState({ status: "idle", lastSyncedAt: new Date().toISOString() });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sync failed';
-      this.setState({ status: 'error', error: message });
-      console.error('[Sync] Error:', error);
+      const message = error instanceof Error ? error.message : "Sync failed";
+      this.setState({ status: "error", error: message });
+      console.error("[Sync] Error:", error);
     } finally {
       this.isSyncing = false;
     }
@@ -203,22 +200,22 @@ class SyncService {
     console.log(`[Sync] Pushing ${pending.length} changes`);
 
     const response = await fetch(`${API_BASE_URL}/api/sync/push`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         tenant_id: this.tenantId,
-        items: pending.map(item => ({
+        items: pending.map((item) => ({
           id: item.id,
           entity_type: item.entity_type,
           entity_id: item.entity_id,
           operation: item.operation,
           payload: JSON.parse(item.payload),
-          created_at: item.created_at
-        }))
-      })
+          created_at: item.created_at,
+        })),
+      }),
     });
 
     if (!response.ok) {
@@ -232,7 +229,7 @@ class SyncService {
       if (r.success) {
         await outboxRepository.markSynced(r.id);
       } else {
-        await outboxRepository.markFailed(r.id, r.error || 'Unknown error');
+        await outboxRepository.markFailed(r.id, r.error || "Unknown error");
       }
     }
 
@@ -244,22 +241,20 @@ class SyncService {
    */
   private async pullChanges(): Promise<void> {
     // Get last sync time
-    const syncState = await database.query<{ cursor: string }>(
-      `SELECT cursor FROM sync_state WHERE entity_type = 'pull'`
-    );
+    const syncState = await database.query<{ cursor: string }>(`SELECT cursor FROM sync_state WHERE entity_type = 'pull'`);
     const since = syncState[0]?.cursor;
 
     const url = new URL(`${API_BASE_URL}/api/sync/pull`);
-    url.searchParams.set('tenant', this.tenantSlug!);
+    url.searchParams.set("tenant", this.tenantSlug!);
     if (since) {
-      url.searchParams.set('since', since);
+      url.searchParams.set("since", since);
     }
 
     const response = await fetch(url.toString(), {
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
+      },
     });
 
     if (!response.ok) {
@@ -272,7 +267,7 @@ class SyncService {
     await this.processPullData(result.changes);
 
     // Save sync cursor
-    await this.saveSyncState('pull', result.synced_at);
+    await this.saveSyncState("pull", result.synced_at);
   }
 
   /**
@@ -291,25 +286,25 @@ class SyncService {
 
     // Get signed URLs
     const signResponse = await fetch(`${API_BASE_URL}/api/uploads/sign`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         tenant_id: this.tenantId,
-        files: toUpload.map(m => ({
+        files: toUpload.map((m) => ({
           id: m.id,
           file_name: m.file_name,
           mime_type: m.mime_type,
           file_size: m.file_size,
-          inspection_id: m.inspection_id
-        }))
-      })
+          inspection_id: m.inspection_id,
+        })),
+      }),
     });
 
     if (!signResponse.ok) {
-      console.error('[Sync] Failed to get signed URLs');
+      console.error("[Sync] Failed to get signed URLs");
       return;
     }
 
@@ -317,7 +312,7 @@ class SyncService {
 
     // Upload each file
     for (const signedUrl of signed_urls) {
-      const media = toUpload.find(m => m.id === signedUrl.id);
+      const media = toUpload.find((m) => m.id === signedUrl.id);
       if (!media) continue;
 
       try {
@@ -327,11 +322,11 @@ class SyncService {
         const fileData = await this.readLocalFile(media.local_path);
 
         const uploadResponse = await fetch(signedUrl.upload_url, {
-          method: 'PUT',
+          method: "PUT",
           headers: {
-            'Content-Type': media.mime_type
+            "Content-Type": media.mime_type,
           },
-          body: fileData
+          body: fileData,
         });
 
         if (uploadResponse.ok) {
@@ -341,7 +336,7 @@ class SyncService {
           await mediaRepository.markFailed(media.id, `Upload failed: ${uploadResponse.status}`);
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Upload failed';
+        const message = error instanceof Error ? error.message : "Upload failed";
         await mediaRepository.markFailed(media.id, message);
       }
     }
@@ -358,7 +353,7 @@ class SyncService {
         await database.run(
           `INSERT OR REPLACE INTO user_profile (id, tenant_id, email, full_name, role, avatar_url, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [user.id, (data.tenant as { id: string }).id, user.email, user.full_name, user.role, user.avatar_url, new Date().toISOString()]
+          [user.id, (data.tenant as { id: string }).id, user.email, user.full_name, user.role, user.avatar_url, new Date().toISOString()],
         );
       }
 
@@ -404,7 +399,7 @@ class SyncService {
           version: template.version,
           is_active: template.is_active ? 1 : 0,
           created_at: template.created_at,
-          updated_at: template.updated_at
+          updated_at: template.updated_at,
         });
 
         for (const section of template.template_sections || []) {
@@ -415,7 +410,7 @@ class SyncService {
             description: section.description,
             sort_order: section.sort_order,
             created_at: section.created_at,
-            updated_at: section.updated_at
+            updated_at: section.updated_at,
           });
 
           for (const item of section.template_items || []) {
@@ -424,12 +419,12 @@ class SyncService {
               section_id: item.section_id,
               name: item.name,
               description: item.description,
-              item_type: item.item_type as 'checkbox' | 'rating' | 'text' | 'number' | 'select' | 'photo',
+              item_type: item.item_type as "checkbox" | "rating" | "text" | "number" | "select" | "photo",
               options: item.options,
               is_required: item.is_required ? 1 : 0,
               sort_order: item.sort_order,
               created_at: item.created_at,
-              updated_at: item.updated_at
+              updated_at: item.updated_at,
             });
           }
         }
@@ -441,7 +436,18 @@ class SyncService {
         await database.run(
           `INSERT OR REPLACE INTO clients (id, tenant_id, name, email, phone, company, notes, created_at, updated_at, synced_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [client.id, client.tenant_id, client.name, client.email, client.phone, client.company, client.notes, client.created_at, client.updated_at, new Date().toISOString()]
+          [
+            client.id,
+            client.tenant_id,
+            client.name,
+            client.email,
+            client.phone,
+            client.company,
+            client.notes,
+            client.created_at,
+            client.updated_at,
+            new Date().toISOString(),
+          ],
         );
       }
 
@@ -451,7 +457,23 @@ class SyncService {
         await database.run(
           `INSERT OR REPLACE INTO properties (id, tenant_id, client_id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet, notes, created_at, updated_at, synced_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [prop.id, prop.tenant_id, prop.client_id, prop.address_line1, prop.address_line2, prop.city, prop.state, prop.zip_code, prop.property_type, prop.year_built, prop.square_feet, prop.notes, prop.created_at, prop.updated_at, new Date().toISOString()]
+          [
+            prop.id,
+            prop.tenant_id,
+            prop.client_id,
+            prop.address_line1,
+            prop.address_line2,
+            prop.city,
+            prop.state,
+            prop.zip_code,
+            prop.property_type,
+            prop.year_built,
+            prop.square_feet,
+            prop.notes,
+            prop.created_at,
+            prop.updated_at,
+            new Date().toISOString(),
+          ],
         );
       }
 
@@ -467,7 +489,18 @@ class SyncService {
         await database.run(
           `INSERT OR REPLACE INTO defect_library (id, tenant_id, category, name, description, severity, recommendation, created_at, updated_at, synced_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [defect.id, defect.tenant_id, defect.category, defect.name, defect.description, defect.severity, defect.recommendation, defect.created_at, defect.updated_at, new Date().toISOString()]
+          [
+            defect.id,
+            defect.tenant_id,
+            defect.category,
+            defect.name,
+            defect.description,
+            defect.severity,
+            defect.recommendation,
+            defect.created_at,
+            defect.updated_at,
+            new Date().toISOString(),
+          ],
         );
       }
 
@@ -489,13 +522,13 @@ class SyncService {
             service.is_active ? 1 : 0,
             service.created_at,
             service.updated_at,
-            new Date().toISOString()
-          ]
+            new Date().toISOString(),
+          ],
         );
       }
     });
 
-    console.log('[Sync] Bootstrap data processed');
+    console.log("[Sync] Bootstrap data processed");
   }
 
   /**
@@ -519,9 +552,9 @@ class SyncService {
     return this.base64ToBlob(data);
   }
 
-  private base64ToBlob(base64: string, mimeType = 'application/octet-stream'): Blob {
+  private base64ToBlob(base64: string, mimeType = "application/octet-stream"): Blob {
     const byteCharacters = atob(base64);
-    const byteArrays: Uint8Array[] = [];
+    const byteArrays: BlobPart[] = [];
     const sliceSize = 1024;
 
     for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
@@ -530,7 +563,7 @@ class SyncService {
       for (let i = 0; i < slice.length; i++) {
         byteNumbers[i] = slice.charCodeAt(i);
       }
-      byteArrays.push(new Uint8Array(byteNumbers));
+      byteArrays.push(new Uint8Array(byteNumbers).buffer);
     }
 
     return new Blob(byteArrays, { type: mimeType });
@@ -543,7 +576,7 @@ class SyncService {
     await database.run(
       `INSERT OR REPLACE INTO sync_state (entity_type, cursor, last_synced_at, updated_at)
        VALUES (?, ?, ?, ?)`,
-      [entityType, cursor, cursor, new Date().toISOString()]
+      [entityType, cursor, cursor, new Date().toISOString()],
     );
   }
 
@@ -558,7 +591,7 @@ class SyncService {
     this.state = {
       ...this.state,
       pendingChanges,
-      pendingUploads
+      pendingUploads,
     };
     this.notifyListeners();
   }
@@ -584,14 +617,14 @@ class SyncService {
    * Setup network status listener
    */
   private setupNetworkListener(): void {
-    Network.addListener('networkStatusChange', (status) => {
+    Network.addListener("networkStatusChange", (status) => {
       this.isOnline = status.connected;
       if (status.connected) {
-        this.setState({ status: 'idle' });
+        this.setState({ status: "idle" });
         // Trigger sync when coming online
         this.sync().catch(console.error);
       } else {
-        this.setState({ status: 'offline' });
+        this.setState({ status: "offline" });
       }
     });
 
@@ -599,7 +632,7 @@ class SyncService {
     Network.getStatus().then((status) => {
       this.isOnline = status.connected;
       if (!status.connected) {
-        this.setState({ status: 'offline' });
+        this.setState({ status: "offline" });
       }
     });
   }

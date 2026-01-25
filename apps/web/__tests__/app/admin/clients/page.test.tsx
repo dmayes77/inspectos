@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ClientsPage from "@/app/(app)/admin/clients/page";
+import ClientsPage from "@/app/(app)/admin/contacts/page";
 import type { Client } from "@/hooks/use-clients";
 
 // Mock the hooks
@@ -27,6 +27,8 @@ const mockClients: Client[] = [
     inspections: 3,
     lastInspection: "2024-01-15",
     totalSpent: 1500,
+    createdAt: "2024-01-01T00:00:00.000Z",
+    updatedAt: "2024-01-10T00:00:00.000Z",
   },
   {
     clientId: "2",
@@ -37,6 +39,8 @@ const mockClients: Client[] = [
     inspections: 10,
     lastInspection: "2024-01-20",
     totalSpent: 5000,
+    createdAt: "2024-01-05T00:00:00.000Z",
+    updatedAt: "2024-01-18T00:00:00.000Z",
   },
   {
     clientId: "3",
@@ -47,6 +51,8 @@ const mockClients: Client[] = [
     inspections: 1,
     lastInspection: "2024-01-10",
     totalSpent: 500,
+    createdAt: "2023-12-15T00:00:00.000Z",
+    updatedAt: "2024-01-08T00:00:00.000Z",
   },
 ];
 
@@ -70,11 +76,7 @@ function renderWithQueryClient(component: React.ReactElement) {
     },
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 }
 
 describe("ClientsPage", () => {
@@ -175,7 +177,7 @@ describe("ClientsPage", () => {
     renderWithQueryClient(<ClientsPage />);
 
     const addClientLink = screen.getByRole("link", { name: /add client/i });
-    expect(addClientLink).toHaveAttribute("href", "/admin/clients/new");
+    expect(addClientLink).toHaveAttribute("href", "/admin/contacts/new");
   });
 
   it("links Add Lead button to correct path", () => {
@@ -210,9 +212,7 @@ describe("ClientsPage mobile view", () => {
 
     // The mobile view has filter buttons
     const allButtons = screen.getAllByRole("button");
-    const filterButtons = allButtons.filter(btn =>
-      ["All", "Homebuyer", "Agent", "Seller"].includes(btn.textContent || "")
-    );
+    const filterButtons = allButtons.filter((btn) => ["All", "Homebuyer", "Agent", "Seller"].includes(btn.textContent || ""));
 
     expect(filterButtons.length).toBeGreaterThan(0);
   });

@@ -33,7 +33,8 @@ export const companyPinnedNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Overview" },
   { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/admin/clients", icon: Users, label: "Contacts" },
+  { href: "/admin/contacts", icon: Users, label: "Contacts" },
+  { href: "/admin/partners", icon: Building2, label: "Partners" },
 ];
 
 export const companyNavSections: NavSection[] = [
@@ -53,7 +54,6 @@ export const companyNavSections: NavSection[] = [
     label: "People",
     items: [
       { href: "/admin/team", icon: HardHat, label: "Team" },
-      { href: "/admin/partners", icon: Building2, label: "Partners" },
       { href: "/admin/vendors", icon: Building2, label: "Vendors" },
     ],
   },
@@ -114,7 +114,7 @@ export const companyMobileNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Home" },
   { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/admin/clients", icon: Users, label: "Contacts" },
+  { href: "/admin/contacts", icon: Users, label: "Contacts" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
   { href: "/admin/reports", icon: BarChart3, label: "Reports" },
   { href: "/admin/settings", icon: Settings, label: "Settings" },

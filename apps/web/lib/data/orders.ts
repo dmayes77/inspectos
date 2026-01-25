@@ -48,6 +48,24 @@ export interface OrderInspection {
   created_at: string;
   updated_at: string;
   services?: InspectionService[];
+  assignments?: InspectionAssignment[];
+}
+
+export interface InspectionAssignment {
+  id: string;
+  inspection_id: string;
+  inspector_id: string;
+  role: 'lead' | 'assistant' | 'tech';
+  assigned_at: string;
+  unassigned_at: string | null;
+  created_at: string;
+  updated_at: string;
+  inspector?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  } | null;
 }
 
 export interface Order {

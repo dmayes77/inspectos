@@ -4,18 +4,16 @@ import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { updateInspectionSchema } from "@/lib/validations/inspection-api";
 import { parseAddress } from "@/lib/utils/address";
+import { format } from "date-fns";
+import { assignInspectionLead, unassignInspectionRanks } from "../assignments";
 
 const normalizeTime = (time?: string | null) => {
   if (!time) return "";
   return time.slice(0, 5);
 };
 
-const buildAddress = (property: {
-  address_line1: string;
-  city: string;
-  state: string;
-  zip_code: string;
-}) => `${property.address_line1}, ${property.city}, ${property.state} ${property.zip_code}`;
+const buildAddress = (property: { address_line1: string; city: string; state: string; zip_code: string }) =>
+  `${property.address_line1}, ${property.city}, ${property.state} ${property.zip_code}`;
 
 const mapStatusToDb = (status: string) => {
   if (status === "pending_report") return "submitted";
@@ -58,7 +56,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           ),
           inspector:profiles(id, full_name)
         )
-      `
+      `,
     )
     .eq("tenant_id", tenantId)
     .eq("id", id)
@@ -149,12 +147,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const price = activeList.reduce((sum, svc) => sum + svc.price, 0);
   const duration = activeList.reduce((sum, svc) => sum + svc.duration, 0) || job?.duration_minutes || 0;
 
-  const status =
-    row.status === "submitted"
-      ? "pending_report"
-      : row.status === "draft"
-      ? "scheduled"
-      : row.status;
+  const status = row.status === "submitted" ? "pending_report" : row.status === "draft" ? "scheduled" : row.status;
 
   return NextResponse.json({
     inspectionId: row.id,
@@ -192,23 +185,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
   const payload = validation.data;
 
-  const { data: inspection } = await supabaseAdmin
-    .from("inspections")
-    .select("id, job_id")
-    .eq("tenant_id", tenantId)
-    .eq("id", id)
-    .maybeSingle();
+  const { data: inspection } = await supabaseAdmin.from("inspections").select("id, job_id").eq("tenant_id", tenantId).eq("id", id).maybeSingle();
 
   if (!inspection) {
     return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
   }
 
-  const { data: job } = await supabaseAdmin
-    .from("jobs")
-    .select("id, property_id")
-    .eq("tenant_id", tenantId)
-    .eq("id", inspection.job_id)
-    .maybeSingle();
+  const { data: job } = await supabaseAdmin.from("jobs").select("id, property_id").eq("tenant_id", tenantId).eq("id", inspection.job_id).maybeSingle();
 
   if (!job) {
     return NextResponse.json({ error: "Job not found for inspection." }, { status: 404 });
@@ -223,27 +206,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       .eq("tenant_id", tenantId)
       .in("id", payload.types);
 
-    const { data: packageRows } = await supabaseAdmin
-      .from("packages")
-      .select("id, duration_minutes")
-      .eq("tenant_id", tenantId)
-      .in("id", payload.types);
+    const { data: packageRows } = await supabaseAdmin.from("packages").select("id, duration_minutes").eq("tenant_id", tenantId).in("id", payload.types);
 
     templateId = serviceRows?.[0]?.template_id ?? null;
     if (!templateId) {
       const packageIds = (packageRows ?? []).map((pkg) => pkg.id);
       if (packageIds.length > 0) {
-        const { data: packageItems } = await supabaseAdmin
-          .from("package_items")
-          .select("service_id")
-          .in("package_id", packageIds);
+        const { data: packageItems } = await supabaseAdmin.from("package_items").select("service_id").in("package_id", packageIds);
         const serviceIds = (packageItems ?? []).map((item) => item.service_id);
         if (serviceIds.length > 0) {
-          const { data: packageServices } = await supabaseAdmin
-            .from("services")
-            .select("template_id")
-            .eq("tenant_id", tenantId)
-            .in("id", serviceIds);
+          const { data: packageServices } = await supabaseAdmin.from("services").select("template_id").eq("tenant_id", tenantId).in("id", serviceIds);
           templateId = packageServices?.[0]?.template_id ?? null;
         }
       }
@@ -268,7 +240,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     foundation?: string | null;
     garage?: string | null;
     pool?: boolean | null;
-    client_id?: string | null;
   } = {};
 
   if (payload.address !== undefined) {
@@ -316,15 +287,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   if (payload.clientId !== undefined) {
-    propertyUpdate.client_id = payload.clientId ?? null;
+    // property owners will be synced after update below
   }
 
   if (job.property_id && Object.keys(propertyUpdate).length > 0) {
-    await supabaseAdmin
-      .from("properties")
-      .update(propertyUpdate)
-      .eq("tenant_id", tenantId)
-      .eq("id", job.property_id);
+    await supabaseAdmin.from("properties").update(propertyUpdate).eq("tenant_id", tenantId).eq("id", job.property_id);
+    if (payload.clientId !== undefined) {
+      await syncPropertyOwner(tenantId, job.property_id, payload.clientId ?? null);
+    }
   }
 
   const jobUpdate: {
@@ -382,7 +352,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       .from("properties")
       .insert({
         tenant_id: tenantId,
-        client_id: payload.clientId ?? null,
         address_line1: addressParts.street || payload.address,
         city: addressParts.city || "Unknown",
         state: addressParts.state || "",
@@ -405,6 +374,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
     if (property) {
       jobUpdate.property_id = property.id;
+      if (payload.clientId !== undefined) {
+        await syncPropertyOwner(tenantId, property.id, payload.clientId ?? null);
+      }
     }
   }
 
@@ -415,7 +387,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const inspectionUpdate: {
     status?: string;
     notes?: string | null;
-    inspector_id?: string | null;
     template_id?: string | null;
   } = {};
 
@@ -427,20 +398,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     inspectionUpdate.notes = payload.notes ?? null;
   }
 
-  if (payload.inspectorId !== undefined) {
-    inspectionUpdate.inspector_id = payload.inspectorId ?? null;
-  }
-
   if (templateId !== undefined) {
     inspectionUpdate.template_id = templateId;
   }
 
   if (Object.keys(inspectionUpdate).length > 0) {
-    await supabaseAdmin
-      .from("inspections")
-      .update(inspectionUpdate)
-      .eq("tenant_id", tenantId)
-      .eq("id", id);
+    await supabaseAdmin.from("inspections").update(inspectionUpdate).eq("tenant_id", tenantId).eq("id", id);
+  }
+
+  if (payload.inspectorId !== undefined) {
+    await unassignInspectionRanks(tenantId, id);
+    if (payload.inspectorId) {
+      await assignInspectionLead(tenantId, id, payload.inspectorId);
+    }
   }
 
   return NextResponse.json({ success: true });
@@ -450,12 +420,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const tenantId = getTenantId();
   const { id } = await params;
 
-  const { data: inspection } = await supabaseAdmin
-    .from("inspections")
-    .select("id, job_id")
-    .eq("tenant_id", tenantId)
-    .eq("id", id)
-    .maybeSingle();
+  const { data: inspection } = await supabaseAdmin.from("inspections").select("id, job_id").eq("tenant_id", tenantId).eq("id", id).maybeSingle();
 
   if (!inspection) {
     return NextResponse.json({ error: "Inspection not found." }, { status: 404 });
@@ -465,4 +430,24 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   await supabaseAdmin.from("jobs").delete().eq("tenant_id", tenantId).eq("id", inspection.job_id);
 
   return NextResponse.json({ success: true });
+}
+
+async function syncPropertyOwner(tenantId: string, propertyId: string, clientId: string | null) {
+  const ownerDate = format(new Date(), "yyyy-MM-dd");
+  await supabaseAdmin
+    .from("property_owners")
+    .update({ end_date: ownerDate, is_primary: false })
+    .eq("tenant_id", tenantId)
+    .eq("property_id", propertyId)
+    .is("end_date", null);
+
+  if (clientId) {
+    await supabaseAdmin.from("property_owners").insert({
+      tenant_id: tenantId,
+      property_id: propertyId,
+      client_id: clientId,
+      start_date: ownerDate,
+      is_primary: true,
+    });
+  }
 }

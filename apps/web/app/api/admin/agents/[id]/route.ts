@@ -4,38 +4,31 @@ import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { updateAgentSchema } from "@/lib/validations/agent";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
 
   const { data, error } = await supabaseAdmin
     .from("agents")
-    .select(`
+    .select(
+      `
       *,
       agency:agencies(id, name, email, phone),
       orders(id, order_number, status, scheduled_date, total, property:properties(address_line1, city, state))
-    `)
+    `,
+    )
     .eq("tenant_id", tenantId)
     .eq("id", id)
     .single();
 
   if (error || !data) {
-    return NextResponse.json(
-      { error: { message: error?.message ?? "Agent not found." } },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: { message: error?.message ?? "Agent not found." } }, { status: 404 });
   }
 
   return NextResponse.json({ data });
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
 
@@ -57,32 +50,29 @@ export async function PUT(
   if (payload.notify_on_schedule !== undefined) updateData.notify_on_schedule = payload.notify_on_schedule;
   if (payload.notify_on_complete !== undefined) updateData.notify_on_complete = payload.notify_on_complete;
   if (payload.notify_on_report !== undefined) updateData.notify_on_report = payload.notify_on_report;
+  if (payload.avatar_url !== undefined) updateData.avatar_url = payload.avatar_url;
 
   const { data, error } = await supabaseAdmin
     .from("agents")
     .update(updateData)
     .eq("tenant_id", tenantId)
     .eq("id", id)
-    .select(`
+    .select(
+      `
       *,
       agency:agencies(id, name)
-    `)
+    `,
+    )
     .single();
 
   if (error || !data) {
-    return NextResponse.json(
-      { error: { message: error?.message ?? "Failed to update agent." } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: error?.message ?? "Failed to update agent." } }, { status: 500 });
   }
 
   return NextResponse.json({ data });
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
 
@@ -94,23 +84,13 @@ export async function DELETE(
     .in("status", ["pending", "scheduled", "in_progress"]);
 
   if (count && count > 0) {
-    return NextResponse.json(
-      { error: { message: "Cannot delete agent with active orders. Complete or reassign orders first." } },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: { message: "Cannot delete agent with active orders. Complete or reassign orders first." } }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("agents")
-    .delete()
-    .eq("tenant_id", tenantId)
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("agents").delete().eq("tenant_id", tenantId).eq("id", id);
 
   if (error) {
-    return NextResponse.json(
-      { error: { message: error.message } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: error.message } }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

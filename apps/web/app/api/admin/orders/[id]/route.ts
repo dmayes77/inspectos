@@ -3,17 +3,16 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { updateOrderSchema } from "@/lib/validations/order";
+import { format } from "date-fns";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
 
   const { data, error } = await supabaseAdmin
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       property:properties(
         id, address_line1, address_line2, city, state, zip_code, property_type,
@@ -27,28 +26,27 @@ export async function GET(
       inspector:profiles(id, full_name, email, avatar_url),
       inspection:inspections(
         id, order_id, status, started_at, completed_at, weather_conditions, temperature, notes,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id, notes, sort_order)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id, notes, sort_order),
+        assignments:inspection_assignments(
+          id, role, assigned_at, unassigned_at,
+          inspector:profiles(id, full_name, email, avatar_url)
+        )
       ),
       invoices(id, status, total, issued_at, due_at)
-    `)
+    `,
+    )
     .eq("tenant_id", tenantId)
     .eq("id", id)
     .single();
 
   if (error || !data) {
-    return NextResponse.json(
-      { error: { message: error?.message ?? "Order not found." } },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: { message: error?.message ?? "Order not found." } }, { status: 404 });
   }
 
   return NextResponse.json({ data });
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
 
@@ -70,10 +68,7 @@ export async function PUT(
   if (payload.duration_minutes !== undefined) updateData.duration_minutes = payload.duration_minutes;
   if (payload.services) {
     const subtotal = payload.services.reduce((sum, service) => sum + service.price, 0);
-    const duration = payload.services.reduce(
-      (sum, service) => sum + (service.duration_minutes ?? 0),
-      0
-    );
+    const duration = payload.services.reduce((sum, service) => sum + (service.duration_minutes ?? 0), 0);
     if (payload.subtotal === undefined) updateData.subtotal = subtotal;
     if (payload.total === undefined) updateData.total = subtotal;
     if (payload.duration_minutes === undefined && duration > 0) {
@@ -100,7 +95,8 @@ export async function PUT(
     .update(updateData)
     .eq("tenant_id", tenantId)
     .eq("id", id)
-    .select(`
+    .select(
+      `
       *,
       property:properties(
         id, address_line1, address_line2, city, state, zip_code, property_type,
@@ -114,16 +110,38 @@ export async function PUT(
       inspector:profiles(id, full_name, email),
       inspection:inspections(
         id, order_id, status,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id),
+        assignments:inspection_assignments(
+          id, role, assigned_at, unassigned_at,
+          inspector:profiles(id, full_name, email, avatar_url)
+        )
       )
-    `)
+    `,
+    )
     .single();
 
   if (error || !data) {
-    return NextResponse.json(
-      { error: { message: error?.message ?? "Failed to update order." } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: error?.message ?? "Failed to update order." } }, { status: 500 });
+  }
+
+  const propertyId = data.property_id;
+  const assignedClientId = data.client?.id ?? data.client_id ?? null;
+  if (propertyId && assignedClientId) {
+    const ownerDate = format(new Date(), "yyyy-MM-dd");
+    await supabaseAdmin
+      .from("property_owners")
+      .update({ end_date: ownerDate, is_primary: false })
+      .eq("tenant_id", tenantId)
+      .eq("property_id", propertyId)
+      .is("end_date", null);
+
+    await supabaseAdmin.from("property_owners").insert({
+      tenant_id: tenantId,
+      property_id: propertyId,
+      client_id: assignedClientId,
+      start_date: ownerDate,
+      is_primary: true,
+    });
   }
 
   if (payload.services) {
@@ -136,17 +154,13 @@ export async function PUT(
           order_id: data.id,
           template_id: payload.services[0]?.template_id ?? null,
           template_version: 1,
-          inspector_id: data.inspector_id ?? null,
           status: "draft",
         })
         .select("id")
         .single();
 
       if (inspectionError || !createdInspection) {
-        return NextResponse.json(
-          { error: { message: inspectionError?.message ?? "Failed to create inspection." } },
-          { status: 500 }
-        );
+        return NextResponse.json({ error: { message: inspectionError?.message ?? "Failed to create inspection." } }, { status: 500 });
       }
       inspectionId = createdInspection.id;
     }
@@ -164,54 +178,31 @@ export async function PUT(
       sort_order: index,
     }));
 
-    const { error: servicesError } = await supabaseAdmin
-      .from("inspection_services")
-      .insert(inspectionServices);
+    const { error: servicesError } = await supabaseAdmin.from("inspection_services").insert(inspectionServices);
 
     if (servicesError) {
-      return NextResponse.json(
-        { error: { message: servicesError.message } },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: { message: servicesError.message } }, { status: 500 });
     }
   }
 
   return NextResponse.json({ data });
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
 
   // Check if order can be deleted (not completed or in_progress)
-  const { data: order } = await supabaseAdmin
-    .from("orders")
-    .select("status")
-    .eq("tenant_id", tenantId)
-    .eq("id", id)
-    .single();
+  const { data: order } = await supabaseAdmin.from("orders").select("status").eq("tenant_id", tenantId).eq("id", id).single();
 
   if (order && ["completed", "in_progress"].includes(order.status)) {
-    return NextResponse.json(
-      { error: { message: "Cannot delete an order that is in progress or completed." } },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: { message: "Cannot delete an order that is in progress or completed." } }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
-    .from("orders")
-    .delete()
-    .eq("tenant_id", tenantId)
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("orders").delete().eq("tenant_id", tenantId).eq("id", id);
 
   if (error) {
-    return NextResponse.json(
-      { error: { message: error.message } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: error.message } }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -37,19 +37,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
               sort_order
             )
           )
-        ),
-        inspector:profiles(id, full_name, email, avatar_url)
-      `
+        )
+      `,
     )
     .eq("tenant_id", tenantId)
     .eq("id", id)
     .maybeSingle();
 
   if (inspectionError || !inspection) {
-    return NextResponse.json(
-      { error: { message: inspectionError?.message ?? "Inspection not found." } },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: { message: inspectionError?.message ?? "Inspection not found." } }, { status: 404 });
   }
 
   const { data: answers, error: answersError } = await supabaseAdmin
@@ -63,7 +59,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         notes,
         created_at,
         updated_at
-      `
+      `,
     )
     .eq("inspection_id", id);
 
@@ -89,7 +85,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         created_at,
         updated_at,
         media:media_assets(id, storage_path, file_name, mime_type, caption)
-      `
+      `,
     )
     .eq("inspection_id", id)
     .order("severity", { ascending: false });
@@ -107,7 +103,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         signer_type,
         signature_data,
         signed_at
-      `
+      `,
     )
     .eq("inspection_id", id)
     .order("signed_at", { ascending: true });
@@ -129,7 +125,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         file_size,
         caption,
         created_at
-      `
+      `,
     )
     .eq("inspection_id", id)
     .order("created_at", { ascending: true });

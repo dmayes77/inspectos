@@ -8,16 +8,11 @@ import { Property } from "@/hooks/use-properties";
 
 function PropertyAddressCell({ property }: { property: Property }) {
   return (
-    <Link
-      href={`/admin/properties/${property.id}`}
-      className="flex items-start gap-2 font-medium hover:underline"
-    >
+    <Link href={`/admin/properties/${property.id}`} className="flex items-start gap-2 font-medium hover:underline">
       <PropertyTypeIcon type={property.property_type} />
       <div>
         <p>{property.address_line1}</p>
-        {property.address_line2 && (
-          <p className="text-sm text-muted-foreground">{property.address_line2}</p>
-        )}
+        {property.address_line2 && <p className="text-sm text-muted-foreground">{property.address_line2}</p>}
         <p className="text-sm text-muted-foreground">
           {property.city}, {property.state} {property.zip_code}
         </p>
@@ -40,10 +35,7 @@ function PropertyOwnerCell({ property }: { property: Property }) {
   }
 
   return (
-    <Link
-      href={`/admin/clients/${property.client.id}`}
-      className="flex items-center gap-2 text-sm hover:underline"
-    >
+    <Link href={`/admin/contacts/clients/${property.client.id}`} className="flex items-center gap-2 text-sm hover:underline">
       <User className="h-3.5 w-3.5 text-muted-foreground" />
       {property.client.name}
     </Link>
@@ -51,21 +43,13 @@ function PropertyOwnerCell({ property }: { property: Property }) {
 }
 
 function PropertyYearCell({ year }: { year: number | null }) {
-  return (
-    <span className="text-sm">
-      {year ?? <span className="text-muted-foreground">—</span>}
-    </span>
-  );
+  return <span className="text-sm">{year ?? <span className="text-muted-foreground">—</span>}</span>;
 }
 
 function PropertySizeCell({ squareFeet }: { squareFeet: number | null }) {
   return (
     <span className="text-sm">
-      {squareFeet ? (
-        `${squareFeet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} sqft`
-      ) : (
-        <span className="text-muted-foreground">—</span>
-      )}
+      {squareFeet ? `${squareFeet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} sqft` : <span className="text-muted-foreground">—</span>}
     </span>
   );
 }

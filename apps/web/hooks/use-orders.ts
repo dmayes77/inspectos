@@ -1,4 +1,5 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   fetchOrders,
   fetchOrderById,
@@ -14,10 +15,8 @@ import {
 export type { Order, CreateOrderInput, UpdateOrderInput, OrderFilters };
 
 export function useOrders(tenantSlug: string = "demo", filters?: OrderFilters) {
-  return useGet<Order[]>(
-    `orders-${tenantSlug}-${JSON.stringify(filters ?? {})}`,
-    async () => fetchOrders(tenantSlug, filters)
-  );
+  const queryKey = ["orders", tenantSlug, filters ?? null] as const;
+  return useGet<Order[]>(queryKey, async () => fetchOrders(tenantSlug, filters));
 }
 
 export function useOrderById(orderId: string) {
@@ -30,7 +29,7 @@ export function useOrderById(orderId: string) {
         return null;
       }
     },
-    { enabled: !!orderId }
+    { enabled: !!orderId },
   );
 }
 
@@ -39,7 +38,14 @@ export function useCreateOrder() {
 }
 
 export function useUpdateOrder() {
-  return usePut<Order, UpdateOrderInput>("orders", async (data) => updateOrder(data));
+  const queryClient = useQueryClient();
+  return usePut<Order, UpdateOrderInput>("orders", async (data) => updateOrder(data), {
+    onSuccess: (updatedOrder) => {
+      if (updatedOrder?.id) {
+        queryClient.invalidateQueries({ queryKey: [`order-${updatedOrder.id}`] });
+      }
+    },
+  });
 }
 
 export function useDeleteOrder() {

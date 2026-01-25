@@ -10,10 +10,12 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from("agents")
-    .select(`
+    .select(
+      `
       *,
       agency:agencies(id, name, email, phone)
-    `)
+    `,
+    )
     .eq("tenant_id", tenantId)
     .order("name", { ascending: true });
 
@@ -65,18 +67,18 @@ export async function POST(request: Request) {
       notify_on_schedule: payload.notify_on_schedule ?? true,
       notify_on_complete: payload.notify_on_complete ?? true,
       notify_on_report: payload.notify_on_report ?? true,
+      avatar_url: payload.avatar_url ?? null,
     })
-    .select(`
+    .select(
+      `
       *,
       agency:agencies(id, name)
-    `)
+    `,
+    )
     .single();
 
   if (error || !data) {
-    return NextResponse.json(
-      { error: { message: error?.message ?? "Failed to create agent." } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: error?.message ?? "Failed to create agent." } }, { status: 500 });
   }
 
   return NextResponse.json({ data });

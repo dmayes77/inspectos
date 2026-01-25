@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { createOrderSchema } from "@/lib/validations/order";
+import { format } from "date-fns";
 
 export async function GET(request: NextRequest) {
   const tenantId = getTenantId();
@@ -11,7 +12,8 @@ export async function GET(request: NextRequest) {
   // Build query
   let query = supabaseAdmin
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       property:properties(
         id, address_line1, address_line2, city, state, zip_code, property_type,
@@ -25,9 +27,14 @@ export async function GET(request: NextRequest) {
       inspector:profiles(id, full_name, email, avatar_url),
       inspection:inspections(
         id, order_id, status, started_at, completed_at,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
+        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id),
+        assignments:inspection_assignments(
+          id, role, assigned_at, unassigned_at,
+          inspector:profiles(id, full_name, email, avatar_url)
+        )
       )
-    `)
+    `,
+    )
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
@@ -117,10 +124,30 @@ export async function POST(request: Request) {
     .single();
 
   if (orderError || !order) {
-    return NextResponse.json(
-      { error: { message: orderError?.message ?? "Failed to create order." } },
-      { status: 500 }
-    );
+    console.error("Order creation failed", {
+      tenantId,
+      payload,
+      orderError,
+    });
+    return NextResponse.json({ error: { message: orderError?.message ?? "Failed to create order." } }, { status: 500 });
+  }
+
+  if (payload.client_id) {
+    const ownerDate = format(new Date(), "yyyy-MM-dd");
+    await supabaseAdmin
+      .from("property_owners")
+      .update({ end_date: ownerDate, is_primary: false })
+      .eq("tenant_id", tenantId)
+      .eq("property_id", payload.property_id)
+      .is("end_date", null);
+
+    await supabaseAdmin.from("property_owners").insert({
+      tenant_id: tenantId,
+      property_id: payload.property_id,
+      client_id: payload.client_id,
+      start_date: ownerDate,
+      is_primary: true,
+    });
   }
 
   // Create inspection for this order
@@ -131,7 +158,6 @@ export async function POST(request: Request) {
       order_id: order.id,
       template_id: payload.services[0]?.template_id ?? null,
       template_version: 1,
-      inspector_id: payload.inspector_id ?? null,
       status: "draft" as const,
     })
     .select()
@@ -140,10 +166,7 @@ export async function POST(request: Request) {
   if (inspectionError) {
     // Rollback order creation
     await supabaseAdmin.from("orders").delete().eq("id", order.id);
-    return NextResponse.json(
-      { error: { message: inspectionError.message } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: inspectionError.message } }, { status: 500 });
   }
 
   // Create inspection services
@@ -158,24 +181,20 @@ export async function POST(request: Request) {
     sort_order: index,
   }));
 
-  const { error: servicesError } = await supabaseAdmin
-    .from("inspection_services")
-    .insert(inspectionServices);
+  const { error: servicesError } = await supabaseAdmin.from("inspection_services").insert(inspectionServices);
 
   if (servicesError) {
     // Rollback
     await supabaseAdmin.from("inspections").delete().eq("id", inspection.id);
     await supabaseAdmin.from("orders").delete().eq("id", order.id);
-    return NextResponse.json(
-      { error: { message: servicesError.message } },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: { message: servicesError.message } }, { status: 500 });
   }
 
   // Fetch the complete order with relations
   const { data: completeOrder, error: fetchError } = await supabaseAdmin
     .from("orders")
-    .select(`
+    .select(
+      `
       *,
       property:properties(
         id, address_line1, address_line2, city, state, zip_code, property_type,
@@ -191,15 +210,17 @@ export async function POST(request: Request) {
         id, order_id, status,
         services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
       )
-    `)
+    `,
+    )
     .eq("id", order.id)
     .single();
 
   if (fetchError) {
-    return NextResponse.json(
-      { error: { message: fetchError.message } },
-      { status: 500 }
-    );
+    console.error("Failed to fetch complete order", {
+      orderId: order.id,
+      fetchError,
+    });
+    return NextResponse.json({ error: { message: fetchError.message } }, { status: 500 });
   }
 
   return NextResponse.json({ data: completeOrder });

@@ -3,12 +3,13 @@
  * Handles real estate agency CRUD operations
  */
 
-export type AgencyStatus = 'active' | 'inactive';
+export type AgencyStatus = "active" | "inactive";
 
 export interface Agency {
   id: string;
   tenant_id: string;
   name: string;
+  logo_url: string | null;
   license_number: string | null;
   email: string | null;
   phone: string | null;
@@ -42,6 +43,7 @@ export interface Agency {
 export interface CreateAgencyInput {
   tenant_slug: string;
   name: string;
+  logo_url?: string | null;
   license_number?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -58,6 +60,7 @@ export interface CreateAgencyInput {
 export interface UpdateAgencyInput {
   id: string;
   name?: string;
+  logo_url?: string | null;
   license_number?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -76,24 +79,21 @@ export interface AgencyFilters {
   search?: string;
 }
 
-export async function fetchAgencies(
-  tenantSlug: string,
-  filters?: AgencyFilters
-): Promise<Agency[]> {
+export async function fetchAgencies(tenantSlug: string, filters?: AgencyFilters): Promise<Agency[]> {
   const params = new URLSearchParams({ tenant: tenantSlug });
 
-  if (filters?.status) params.append('status', filters.status);
-  if (filters?.search) params.append('search', filters.search);
+  if (filters?.status) params.append("status", filters.status);
+  if (filters?.search) params.append("search", filters.search);
 
   const response = await fetch(`/api/admin/agencies?${params}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch agencies');
+    throw new Error(error.error?.message || "Failed to fetch agencies");
   }
 
   const result = await response.json();
@@ -103,13 +103,13 @@ export async function fetchAgencies(
 export async function fetchAgencyById(id: string): Promise<Agency> {
   const response = await fetch(`/api/admin/agencies/${id}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch agency');
+    throw new Error(error.error?.message || "Failed to fetch agency");
   }
 
   const result = await response.json();
@@ -118,16 +118,16 @@ export async function fetchAgencyById(id: string): Promise<Agency> {
 
 export async function createAgency(input: CreateAgencyInput): Promise<Agency> {
   const response = await fetch(`/api/admin/agencies`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to create agency');
+    throw new Error(error.error?.message || "Failed to create agency");
   }
 
   const result = await response.json();
@@ -137,16 +137,16 @@ export async function createAgency(input: CreateAgencyInput): Promise<Agency> {
 export async function updateAgency(input: UpdateAgencyInput): Promise<Agency> {
   const { id, ...data } = input;
   const response = await fetch(`/api/admin/agencies/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to update agency');
+    throw new Error(error.error?.message || "Failed to update agency");
   }
 
   const result = await response.json();
@@ -155,15 +155,15 @@ export async function updateAgency(input: UpdateAgencyInput): Promise<Agency> {
 
 export async function deleteAgency(id: string): Promise<boolean> {
   const response = await fetch(`/api/admin/agencies/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to delete agency');
+    throw new Error(error.error?.message || "Failed to delete agency");
   }
 
   return true;
