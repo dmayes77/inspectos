@@ -13,6 +13,7 @@ export interface Agent {
   name: string;
   email: string | null;
   phone: string | null;
+  role: string | null;
   license_number: string | null;
   magic_link_token: string | null;
   magic_link_expires_at: string | null;
@@ -33,8 +34,12 @@ export interface Agent {
     name: string;
     email: string | null;
     phone: string | null;
+    address_line1: string | null;
+    address_line2: string | null;
+    city: string | null;
+    state: string | null;
+    zip_code: string | null;
   } | null;
-  avatar_url?: string | null;
   orders?: Array<{
     id: string;
     order_number: string;
@@ -50,15 +55,20 @@ export interface Agent {
   _count?: {
     orders: number;
   };
+  avatar_url?: string | null;
+  brand_logo_url?: string | null;
+  agency_address?: string | null;
 }
 
 export interface CreateAgentInput {
   tenant_slug: string;
   agency_id?: string | null;
+  agency_name?: string | null;
   name: string;
   email?: string | null;
   phone?: string | null;
   license_number?: string | null;
+  role?: string | null;
   status?: AgentStatus;
   notes?: string | null;
   preferred_report_format?: ReportFormat;
@@ -66,15 +76,19 @@ export interface CreateAgentInput {
   notify_on_complete?: boolean;
   notify_on_report?: boolean;
   avatar_url?: string | null;
+  brand_logo_url?: string | null;
+  agency_address?: string | null;
 }
 
 export interface UpdateAgentInput {
   id: string;
   agency_id?: string | null;
+  agency_name?: string | null;
   name?: string;
   email?: string | null;
   phone?: string | null;
   license_number?: string | null;
+  role?: string | null;
   status?: AgentStatus;
   notes?: string | null;
   preferred_report_format?: ReportFormat;
@@ -82,6 +96,8 @@ export interface UpdateAgentInput {
   notify_on_complete?: boolean;
   notify_on_report?: boolean;
   avatar_url?: string | null;
+  brand_logo_url?: string | null;
+  agency_address?: string | null;
 }
 
 export interface AgentFilters {

@@ -59,14 +59,14 @@ export default function AgencyDetailPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agencies" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
             </>
           }
           title="Agency Not Found"
           description="The agency you're looking for doesn't exist or you're missing access."
-          backHref="/admin/partners/agencies"
+          backHref="/admin/partners?tab=agencies"
           main={
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">Try selecting another agency from the list.</CardContent>
@@ -97,7 +97,7 @@ export default function AgencyDetailPage() {
         Partners
       </Link>
       <span className="text-muted-foreground">/</span>
-      <Link href="/admin/partners/agencies" className="hover:text-foreground">
+      <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
         Agencies
       </Link>
       <span className="text-muted-foreground">/</span>
@@ -109,7 +109,7 @@ export default function AgencyDetailPage() {
     deleteAgency.mutate(agency.id, {
       onSuccess: () => {
         toast.success("Agency deleted");
-        router.push("/admin/partners/agencies");
+        router.push("/admin/partners?tab=agencies");
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to delete agency";
@@ -133,7 +133,7 @@ export default function AgencyDetailPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <BackButton href="/admin/partners/agencies" label="Back to Agencies" variant="ghost" />
+        <BackButton href="/admin/partners?tab=agencies" label="Back to Agencies" variant="ghost" />
 
         <AdminPageHeader
           title={

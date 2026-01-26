@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { createAgentSchema } from "@/lib/validations/agent";
+import { resolveAgencyAssociation } from "./agency-helpers";
 
 export async function GET(request: NextRequest) {
   const tenantId = getTenantId();
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     .select(
       `
       *,
-      agency:agencies(id, name, email, phone)
+      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code)
     `,
     )
     .eq("tenant_id", tenantId)
@@ -52,14 +53,29 @@ export async function POST(request: Request) {
   }
   const payload = validation.data;
 
+  let agencyId: string | null;
+  try {
+    agencyId = await resolveAgencyAssociation({
+      tenantId,
+      agencyId: payload.agency_id ?? null,
+      agencyName: payload.agency_name ?? null,
+      brandLogoUrl: payload.brand_logo_url ?? null,
+      agencyAddress: payload.agency_address ?? null,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to prepare agency.";
+    return NextResponse.json({ error: { message } }, { status: 500 });
+  }
+
   const { data, error } = await supabaseAdmin
     .from("agents")
     .insert({
       tenant_id: tenantId,
-      agency_id: payload.agency_id ?? null,
+      agency_id: agencyId,
       name: payload.name,
       email: payload.email ?? null,
       phone: payload.phone ?? null,
+      role: payload.role ?? null,
       license_number: payload.license_number ?? null,
       status: payload.status ?? "active",
       notes: payload.notes ?? null,
@@ -68,11 +84,13 @@ export async function POST(request: Request) {
       notify_on_complete: payload.notify_on_complete ?? true,
       notify_on_report: payload.notify_on_report ?? true,
       avatar_url: payload.avatar_url ?? null,
+      brand_logo_url: payload.brand_logo_url ?? null,
+      agency_address: payload.agency_address ?? null,
     })
     .select(
       `
       *,
-      agency:agencies(id, name)
+      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code)
     `,
     )
     .single();

@@ -96,7 +96,7 @@ function NewServicePageContent() {
     const payload: Partial<Service> = {
       ...form,
       isPackage,
-      category: isPackage ? undefined : form.category ?? "core",
+      category: isPackage ? undefined : (form.category ?? "core"),
       status: form.status ?? "active",
       templateId,
       includedServiceIds: isPackage ? selectedServiceIds : undefined,

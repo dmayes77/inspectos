@@ -124,14 +124,14 @@ export default function NewAgencyPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agencies" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
             </>
           }
           title="Add Agency"
           description="Capture brokerages and referral partners"
-          backHref="/admin/partners/agencies"
+          backHref="/admin/partners?tab=agencies"
         />
 
         <div className="space-y-6">
@@ -148,7 +148,7 @@ export default function NewAgencyPage() {
                         {createAgency.isPending ? "Saving..." : "Create Agency"}
                       </Button>
                       <Button type="button" variant="outline" className="w-full" asChild>
-                        <Link href="/admin/partners/agencies">Cancel</Link>
+                        <Link href="/admin/partners?tab=agencies">Cancel</Link>
                       </Button>
                     </>
                   }

@@ -9,14 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { CompanyLogo } from "@/components/shared/company-logo";
 import type { AgentStatus, ReportFormat } from "@/lib/data/agents";
 import type { Agency } from "@/lib/data/agencies";
 import { toast } from "sonner";
 
 export type AgentFormValues = {
   name: string;
+  role: string;
   avatarUrl: string | null;
+  brandLogoUrl: string | null;
   agencyId: string | null;
+  agencyName: string;
+  agencyAddress: string;
   status: AgentStatus;
   email: string;
   phone: string;
@@ -58,6 +63,24 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
       [field]: value,
     }));
   };
+
+  const handleAgencyNameChange = (value: string) => {
+    setForm((prev) => {
+      const normalized = value.trim().toLowerCase();
+      const match = normalized ? agencies.find((agency) => agency.name.toLowerCase() === normalized) : null;
+      return {
+        ...prev,
+        agencyName: value,
+        agencyId: match?.id ?? null,
+      };
+    });
+  };
+
+  const matchedAgency = (() => {
+    const normalized = form.agencyName.trim().toLowerCase();
+    if (!normalized) return null;
+    return agencies.find((agency) => agency.name.toLowerCase() === normalized) ?? null;
+  })();
 
   const initials =
     form.name
@@ -185,20 +208,9 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
             <Input id="agent-name" value={form.name} onChange={(event) => handleChange("name", event.target.value)} placeholder="Emma Carter" required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="agent-agency">Agency</Label>
-            <Select value={form.agencyId ?? "independent"} onValueChange={(value) => handleChange("agencyId", value === "independent" ? null : value)}>
-              <SelectTrigger id="agent-agency">
-                <SelectValue placeholder="Select agency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="independent">Independent</SelectItem>
-                {agencies.map((agency) => (
-                  <SelectItem key={agency.id} value={agency.id}>
-                    {agency.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="agent-role">Role / title</Label>
+            <Input id="agent-role" value={form.role} onChange={(event) => handleChange("role", event.target.value)} placeholder="Senior Broker" />
+            <p className="text-xs text-muted-foreground">Appears on the agent profile so sales knows how to address them.</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="agent-status">Status</Label>
@@ -245,6 +257,46 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
               onChange={(event) => handleChange("licenseNumber", event.target.value)}
               placeholder="LIC-8675309"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Agency Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <CompanyLogo name={form.agencyName || form.name || "Agency"} logoUrl={form.brandLogoUrl} size={64} className="h-16 w-16" />
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="agent-agency">Agency name</Label>
+                <Input
+                  id="agent-agency"
+                  value={form.agencyName}
+                  onChange={(event) => handleAgencyNameChange(event.target.value)}
+                  placeholder="Choice Homes"
+                  className="flex-1"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {matchedAgency
+                    ? `Linked to ${matchedAgency.name} in your directory.`
+                    : "Enter the brokerage name. We'll link it automatically when it matches an existing agency."}
+                </p>
+              </div>
+            </div>
+            {!form.brandLogoUrl && <p className="text-sm text-muted-foreground">We'll fetch the brokerage logo as soon as the profile is scrubbed.</p>}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="agent-agency-address">Agency address</Label>
+            <Textarea
+              id="agent-agency-address"
+              value={form.agencyAddress}
+              onChange={(event) => handleChange("agencyAddress", event.target.value)}
+              placeholder="400 E Main St, Chattanooga, TN 37408"
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">We save whatever was found online so the agency card always shows a mailing address.</p>
           </div>
         </CardContent>
       </Card>

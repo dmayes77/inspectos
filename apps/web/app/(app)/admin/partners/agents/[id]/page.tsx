@@ -27,7 +27,8 @@ import { mockAdminUser } from "@/lib/constants/mock-users";
 import { useAgentById, useDeleteAgent, useSendAgentPortalLink } from "@/hooks/use-agents";
 import { formatTimestamp } from "@/lib/utils/dates";
 import { toast } from "sonner";
-import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, type LucideIcon } from "lucide-react";
+import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, MapPin, type LucideIcon } from "lucide-react";
+import { CompanyLogo } from "@/components/shared/company-logo";
 
 const formatAgentCode = (id?: string | null) => {
   if (!id) return "AG-0000";
@@ -40,6 +41,40 @@ type Params = { id: string };
 type Stat = { label: string; value: string | number; icon: LucideIcon };
 
 type NotificationRow = { label: string; description: string; enabled: boolean };
+
+type AgencyAddressFields = {
+  address_line1?: string | null;
+  address_line2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+};
+
+function formatAgencyAddress(agency: AgencyAddressFields | null | undefined, fallback?: string | null) {
+  if (agency) {
+    const segments: string[] = [];
+    if (agency.address_line1) {
+      segments.push(agency.address_line1.trim());
+    }
+    if (agency.address_line2) {
+      segments.push(agency.address_line2.trim());
+    }
+    const cityState: string[] = [];
+    if (agency.city) cityState.push(agency.city.trim());
+    if (agency.state) cityState.push(agency.state.trim());
+    const cityStateLine = cityState.join(", ");
+    const locality = [cityStateLine, agency.zip_code?.trim()].filter(Boolean).join(" ").trim();
+    if (locality) {
+      segments.push(locality);
+    }
+    const formatted = segments.filter(Boolean).join(", ");
+    if (formatted) {
+      return formatted;
+    }
+  }
+  const cleanedFallback = fallback?.trim();
+  return cleanedFallback && cleanedFallback.length > 0 ? cleanedFallback : null;
+}
 
 export default function AgentDetailPage() {
   const params = useParams();
@@ -72,14 +107,14 @@ export default function AgentDetailPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agents" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
                 Agents
               </Link>
             </>
           }
           title="Agent Not Found"
           description="We couldn't locate that agent record."
-          backHref="/admin/partners/agents"
+          backHref="/admin/partners?tab=agents"
           main={
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">Select another agent from the directory.</CardContent>
@@ -133,7 +168,7 @@ export default function AgentDetailPage() {
         Partners
       </Link>
       <span className="text-muted-foreground">/</span>
-      <Link href="/admin/partners/agents" className="hover:text-foreground">
+      <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
         Agents
       </Link>
       <span className="text-muted-foreground">/</span>
@@ -149,7 +184,7 @@ export default function AgentDetailPage() {
     deleteAgent.mutate(agent.id, {
       onSuccess: () => {
         toast.success("Agent deleted");
-        router.push("/admin/partners/agents");
+        router.push("/admin/partners?tab=agents");
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to delete agent";
@@ -171,19 +206,30 @@ export default function AgentDetailPage() {
   };
 
   const orders = agent.orders ?? [];
+  const displayedAgencyAddress = agent.agency ? formatAgencyAddress(agent.agency, agent.agency_address) : agent.agency_address?.trim() || null;
 
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <BackButton href="/admin/partners/agents" label="Back to Agents" variant="ghost" />
+        <BackButton href="/admin/partners?tab=agents" label="Back to Agents" variant="ghost" />
 
         <AdminPageHeader
           title={
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
-              <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
-                <AvatarImage src={agent.avatar_url ?? undefined} alt={agent.name} />
-                <AvatarFallback>{avatarInitials}</AvatarFallback>
-              </Avatar>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
+                  <AvatarImage src={agent.avatar_url ?? undefined} alt={agent.name} />
+                  <AvatarFallback>{avatarInitials}</AvatarFallback>
+                </Avatar>
+                {agent.brand_logo_url && (
+                  <CompanyLogo
+                    name={agent.agency?.name ?? agent.name}
+                    logoUrl={agent.brand_logo_url}
+                    size={64}
+                    className="hidden rounded-2xl border bg-background p-2 sm:block"
+                  />
+                )}
+              </div>
               <div className="flex-1">
                 <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
                   <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{agent.name}</h1>
@@ -198,6 +244,7 @@ export default function AgentDetailPage() {
                   </div>
                 </div>
                 <div className="mt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{agentCode}</div>
+                {agent.role && <div className="mt-2 text-sm text-muted-foreground">{agent.role}</div>}
                 {partnerSince && (
                   <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
                     <span className="font-medium">Partner since</span>
@@ -239,84 +286,123 @@ export default function AgentDetailPage() {
 
         <div className="space-y-6">
           <div className="flex flex-col gap-6 lg:flex-row">
-            <Card className="flex-1">
-              <CardHeader>
-                <CardTitle className="text-base">Contact information</CardTitle>
-                <CardDescription>How your team reaches this agent.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Email</p>
-                    {agent.email ? (
-                      <a href={`mailto:${agent.email}`} className="text-sm text-primary hover:underline">
-                        {agent.email}
-                      </a>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No email on file</p>
-                    )}
-                  </div>
-                </div>
-                <Separator />
-                <div className="flex items-start gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Phone</p>
-                    {agent.phone ? (
-                      <a href={`tel:${agent.phone}`} className="text-sm text-primary hover:underline">
-                        {agent.phone}
-                      </a>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">No phone on file</p>
-                    )}
-                  </div>
-                </div>
-                <Separator />
-                <div className="flex items-start gap-3">
-                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">License</p>
-                    <p className="text-sm text-muted-foreground">{agent.license_number ?? "Not provided"}</p>
-                  </div>
-                </div>
-                <Separator />
-                <div className="flex items-start gap-3">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Preferred report format</p>
-                    <p className="text-sm font-medium capitalize">{agent.preferred_report_format}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex flex-col gap-6 lg:w-80">
+            <div className="flex-1 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Brokerage</CardTitle>
-                  <CardDescription>The agency linked to this agent.</CardDescription>
+                  <CardTitle className="text-base">Contact information</CardTitle>
+                  <CardDescription>How your team reaches this agent.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                <CardContent className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <UserCheck className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Role</p>
+                      <p className="text-sm text-muted-foreground">{agent.role ?? "Not provided"}</p>
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-start gap-3">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Email</p>
+                      {agent.email ? (
+                        <a href={`mailto:${agent.email}`} className="text-sm text-primary hover:underline">
+                          {agent.email}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No email on file</p>
+                      )}
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-start gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Phone</p>
+                      {agent.phone ? (
+                        <a href={`tel:${agent.phone}`} className="text-sm text-primary hover:underline">
+                          {agent.phone}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No phone on file</p>
+                      )}
+                    </div>
+                  </div>
+                  <Separator />
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">License</p>
+                      <p className="text-sm text-muted-foreground">{agent.license_number ?? "Not provided"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Agency information</CardTitle>
+                  <CardDescription>The brokerage connected to this agent.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
                   {agent.agency ? (
                     <>
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <Link href={`/admin/partners/agencies/${agent.agency.id}`} className="hover:underline">
-                          {agent.agency.name}
-                        </Link>
+                      <div className="flex items-center gap-3">
+                        {agent.brand_logo_url && (
+                          <CompanyLogo name={agent.agency.name} logoUrl={agent.brand_logo_url} size={48} className="rounded-lg border bg-background p-2" />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2 font-medium">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <Link href={`/admin/partners/agencies/${agent.agency.id}`} className="hover:underline">
+                              {agent.agency.name}
+                            </Link>
+                          </div>
+                          {agent.agency.email && <p className="text-muted-foreground">{agent.agency.email}</p>}
+                        </div>
                       </div>
-                      <p className="text-muted-foreground">{agent.agency.email ?? "No shared email"}</p>
+                      {displayedAgencyAddress && (
+                        <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground">
+                          <MapPin className="mt-0.5 h-4 w-4" />
+                          <p className="text-sm leading-snug">{displayedAgencyAddress}</p>
+                        </div>
+                      )}
                       <Button asChild variant="outline" size="sm" className="w-full">
                         <Link href={`/admin/partners/agencies/${agent.agency.id}`}>Open agency</Link>
                       </Button>
                     </>
                   ) : (
-                    <p className="text-muted-foreground">This agent operates independently.</p>
+                    <>
+                      <p className="text-muted-foreground">This agent operates independently.</p>
+                      {displayedAgencyAddress && (
+                        <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground">
+                          <MapPin className="mt-0.5 h-4 w-4" />
+                          <p className="text-sm leading-snug">{displayedAgencyAddress}</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Report delivery</CardTitle>
+                  <CardDescription>How they prefer final files.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-start gap-3">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Preferred format</p>
+                      <p className="text-sm font-medium capitalize">{agent.preferred_report_format}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex flex-col gap-6 lg:w-80">
               <Card>
                 <CardHeader>
                   <CardTitle>Portal Access</CardTitle>

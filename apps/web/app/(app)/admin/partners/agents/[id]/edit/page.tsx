@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { AgentForm, type AgentFormValues } from "@/components/partners/agent-form";
+import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgentById, useUpdateAgent } from "@/hooks/use-agents";
 import { useAgencies } from "@/hooks/use-agencies";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { toast } from "sonner";
 import type { Agent } from "@/lib/data/agents";
+import type { AgentScrubResult } from "@/types/agent-scrub";
 
 type Params = { id: string };
 
@@ -24,8 +26,12 @@ const normalize = (value: string) => {
 
 const toFormValues = (agent?: Agent | null): AgentFormValues => ({
   name: agent?.name ?? "",
+  role: agent?.role ?? "",
   avatarUrl: agent?.avatar_url ?? null,
+  brandLogoUrl: agent?.brand_logo_url ?? null,
   agencyId: agent?.agency_id ?? null,
+  agencyName: agent?.agency?.name ?? "",
+  agencyAddress: agent?.agency_address ?? "",
   status: agent?.status ?? "active",
   email: agent?.email ?? "",
   phone: agent?.phone ?? "",
@@ -51,6 +57,50 @@ export default function EditAgentPage() {
   const { data: agencies = [] } = useAgencies();
   const updateAgent = useUpdateAgent();
   const [form, setForm] = useState<AgentFormValues>(toFormValues());
+
+  const splitNameAndAgency = (value?: string | null) => {
+    if (!value) return { agent: null, agency: null };
+    const cleaned = value.replace(/\s+/g, " ").trim();
+    if (!cleaned) return { agent: null, agency: null };
+    const parts = cleaned.split(/\s*(?:—|–|-|\||•)\s*/).filter(Boolean);
+    if (parts.length >= 2) {
+      return { agent: parts[0], agency: parts.slice(1).join(" ") };
+    }
+    return { agent: cleaned, agency: null };
+  };
+
+  const findAgencyId = (name: string) => {
+    const normalized = name.trim().toLowerCase();
+    if (!normalized) return null;
+    const match = agencies.find((agency) => agency.name.toLowerCase() === normalized);
+    return match?.id ?? null;
+  };
+
+  const applyScrubResult = (result: AgentScrubResult) => {
+    const licenseText = result.licenseNumbers.join(", ");
+    const split = splitNameAndAgency(result.name);
+    const agencyNameCandidate = (result.agencyName ?? split.agency ?? "").trim();
+    const matchedAgencyId = agencyNameCandidate ? findAgencyId(agencyNameCandidate) : null;
+    const sanitizedAgencyName = agencyNameCandidate || "";
+    const sanitizedAgentName = (split.agent ?? result.name ?? "").trim();
+    setForm((prev) => ({
+      ...prev,
+      name: sanitizedAgentName,
+      email: result.email?.trim() ?? "",
+      phone: result.phone?.trim() ?? "",
+      licenseNumber: licenseText,
+      role: result.role?.trim() ?? "",
+      avatarUrl: result.photoUrl ?? null,
+      brandLogoUrl: result.logoUrl ?? null,
+      agencyName: sanitizedAgencyName,
+      agencyId: sanitizedAgencyName ? matchedAgencyId : null,
+      agencyAddress: result.agencyAddress?.trim() ?? "",
+    }));
+
+    toast.success("Agent details applied", {
+      description: "Scrubbed profile data copied into this form.",
+    });
+  };
 
   useEffect(() => {
     if (agent) {
@@ -80,53 +130,56 @@ export default function EditAgentPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agents" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
                 Agents
               </Link>
             </>
           }
           title="Agent Not Found"
           description="We couldn't locate that agent record."
-          backHref="/admin/partners/agents"
+          backHref="/admin/partners?tab=agents"
         />
       </AdminShell>
     );
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.name.trim()) {
       toast.error("Agent name is required");
       return;
     }
 
-    updateAgent.mutate(
-      {
-        id: agent.id,
-        agency_id: form.agencyId,
-        name: form.name.trim(),
-        status: form.status,
-        email: normalize(form.email),
-        phone: normalize(form.phone),
-        license_number: normalize(form.licenseNumber),
-        preferred_report_format: form.preferredReportFormat,
-        notify_on_schedule: form.notifyOnSchedule,
-        notify_on_complete: form.notifyOnComplete,
-        notify_on_report: form.notifyOnReport,
-        notes: normalize(form.notes),
-        avatar_url: form.avatarUrl ?? null,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Agent updated");
-          router.push(`/admin/partners/agents/${agent.id}`);
-        },
-        onError: (error) => {
-          const message = error instanceof Error ? error.message : "Failed to update agent";
-          toast.error(message);
-        },
-      },
-    );
+    const payload = {
+      id: agent.id,
+      agency_id: form.agencyId,
+      agency_name: normalize(form.agencyName ?? "") ?? null,
+      name: form.name.trim(),
+      status: form.status,
+      email: normalize(form.email),
+      phone: normalize(form.phone),
+      license_number: normalize(form.licenseNumber),
+      role: normalize(form.role),
+      preferred_report_format: form.preferredReportFormat,
+      notify_on_schedule: form.notifyOnSchedule,
+      notify_on_complete: form.notifyOnComplete,
+      notify_on_report: form.notifyOnReport,
+      notes: normalize(form.notes),
+      avatar_url: form.avatarUrl ?? null,
+      brand_logo_url: normalize(form.brandLogoUrl ?? ""),
+      agency_address: normalize(form.agencyAddress),
+    };
+
+    console.log("Updating agent", payload);
+
+    try {
+      await updateAgent.mutateAsync(payload);
+      toast.success("Agent updated");
+      router.push(`/admin/partners/agents/${agent.id}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update agent";
+      toast.error(message);
+    }
   };
 
   return (
@@ -143,7 +196,7 @@ export default function EditAgentPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agents" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
                 Agents
               </Link>
               <span className="text-muted-foreground">/</span>
@@ -159,7 +212,12 @@ export default function EditAgentPage() {
 
         <form onSubmit={handleSubmit}>
           <ResourceFormLayout
-            left={<AgentForm form={form} setForm={setForm} agencies={agencies} agentId={agent.id} />}
+            left={
+              <div className="space-y-6">
+                <AgentInternetScrub onApply={applyScrubResult} />
+                <AgentForm form={form} setForm={setForm} agencies={agencies} agentId={agent.id} />
+              </div>
+            }
             right={
               <ResourceFormSidebar
                 actions={

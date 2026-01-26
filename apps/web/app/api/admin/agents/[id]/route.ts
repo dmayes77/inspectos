@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
 import { validateRequestBody } from "@/lib/api/validate";
 import { updateAgentSchema } from "@/lib/validations/agent";
+import { resolveAgencyAssociation } from "../agency-helpers";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
@@ -13,7 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     .select(
       `
       *,
-      agency:agencies(id, name, email, phone),
+      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code),
       orders(id, order_number, status, scheduled_date, total, property:properties(address_line1, city, state))
     `,
     )
@@ -38,11 +39,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
   const payload = validation.data;
 
+  let resolvedAgencyId: string | null | undefined;
+  if (payload.agency_id !== undefined || (payload.agency_name && payload.agency_name.trim().length > 0)) {
+    try {
+      resolvedAgencyId = await resolveAgencyAssociation({
+        tenantId,
+        agencyId: payload.agency_id ?? null,
+        agencyName: payload.agency_name ?? null,
+        brandLogoUrl: payload.brand_logo_url ?? null,
+        agencyAddress: payload.agency_address ?? null,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to prepare agency.";
+      return NextResponse.json({ error: { message } }, { status: 500 });
+    }
+  }
+
   const updateData: Record<string, unknown> = {};
-  if (payload.agency_id !== undefined) updateData.agency_id = payload.agency_id;
+  if (resolvedAgencyId !== undefined) updateData.agency_id = resolvedAgencyId;
   if (payload.name !== undefined) updateData.name = payload.name;
   if (payload.email !== undefined) updateData.email = payload.email;
   if (payload.phone !== undefined) updateData.phone = payload.phone;
+  if (payload.role !== undefined) updateData.role = payload.role;
   if (payload.license_number !== undefined) updateData.license_number = payload.license_number;
   if (payload.status !== undefined) updateData.status = payload.status;
   if (payload.notes !== undefined) updateData.notes = payload.notes;
@@ -51,6 +69,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (payload.notify_on_complete !== undefined) updateData.notify_on_complete = payload.notify_on_complete;
   if (payload.notify_on_report !== undefined) updateData.notify_on_report = payload.notify_on_report;
   if (payload.avatar_url !== undefined) updateData.avatar_url = payload.avatar_url;
+  if (payload.brand_logo_url !== undefined) updateData.brand_logo_url = payload.brand_logo_url;
+  if (payload.agency_address !== undefined) updateData.agency_address = payload.agency_address;
 
   const { data, error } = await supabaseAdmin
     .from("agents")
@@ -60,7 +80,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     .select(
       `
       *,
-      agency:agencies(id, name)
+      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code)
     `,
     )
     .single();

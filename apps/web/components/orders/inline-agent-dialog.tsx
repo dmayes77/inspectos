@@ -28,6 +28,7 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
   const [loadingAgencies, setLoadingAgencies] = useState(false);
   const [form, setForm] = useState({
     name: "",
+    role: "",
     email: "",
     phone: "",
     licenseNumber: "",
@@ -70,6 +71,7 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(),
+          role: form.role.trim() || null,
           email: form.email.trim() || null,
           phone: form.phone.trim() || null,
           license_number: form.licenseNumber.trim() || null,
@@ -86,12 +88,12 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
       toast.success("Agent created");
       onAgentCreated(result.data.id);
       queryClient.invalidateQueries({
-        predicate: (query) =>
-          typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("agents-"),
+        predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("agents-"),
       });
       onOpenChange(false);
       setForm({
         name: "",
+        role: "",
         email: "",
         phone: "",
         licenseNumber: "",
@@ -109,9 +111,7 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create New Agent</DialogTitle>
-          <DialogDescription>
-            Add a new real estate agent to your database and link to this order.
-          </DialogDescription>
+          <DialogDescription>Add a new real estate agent to your database and link to this order.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -125,6 +125,10 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
               placeholder="Jane Smith"
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="agent-role">Role / Title</Label>
+            <Input id="agent-role" value={form.role} onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))} placeholder="Buyer’s Agent" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="agent-email">Email</Label>

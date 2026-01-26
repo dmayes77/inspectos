@@ -125,14 +125,14 @@ export default function EditAgencyPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agencies" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
             </>
           }
           title="Agency Not Found"
           description="We couldn't find that agency."
-          backHref="/admin/partners/agencies"
+          backHref="/admin/partners?tab=agencies"
         />
       </AdminShell>
     );
@@ -189,7 +189,7 @@ export default function EditAgencyPage() {
                 Partners
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners/agencies" className="hover:text-foreground">
+              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
               <span className="text-muted-foreground">/</span>
