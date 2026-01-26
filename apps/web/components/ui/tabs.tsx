@@ -46,12 +46,12 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
     <TabsPrimitive.List
       data-slot="tabs-list"
       ref={listRef}
-      className={cn("bg-muted text-muted-foreground relative inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]", className)}
+      className={cn("bg-muted text-muted-foreground relative inline-flex h-9 w-fit items-center justify-center rounded-lg p-0.75", className)}
       {...props}
     >
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-y-[3px] left-0 rounded-md bg-background shadow-sm transition-transform duration-500 ease-out"
+        className="pointer-events-none absolute inset-y-0.75 left-0 rounded-md bg-background shadow-sm transition-transform duration-500 ease-out"
         style={{ width: indicator.width, transform: `translateX(${indicator.x}px)` }}
       />
       {props.children}

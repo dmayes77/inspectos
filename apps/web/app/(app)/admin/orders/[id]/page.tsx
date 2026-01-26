@@ -651,7 +651,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </label>
             <textarea
               id="order-internal-notes"
-              className="w-full min-h-[120px] rounded-md border bg-background px-3 py-2 text-sm"
+              className="w-full min-h-30 rounded-md border bg-background px-3 py-2 text-sm"
               value={internalNotes}
               onChange={(event) => setInternalNotes(event.target.value)}
               placeholder="Add internal notes..."
