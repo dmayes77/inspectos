@@ -140,7 +140,7 @@ export function AdminShell({ children, title, showBackButton = false, onBack, he
             onOpenNotifications={() => setNotificationsOpen(true)}
           />
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none bg-[#f4f5f6] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="admin-content mx-auto w-full max-w-none px-4 py-4 md:px-6 overflow-x-hidden">{children}</div>
           </main>
         </div>

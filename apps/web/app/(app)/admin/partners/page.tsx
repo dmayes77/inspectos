@@ -268,13 +268,13 @@ function PartnersPageContent() {
         />
 
         <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/partners?tab=${value}`)} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:w-70">
+          <TabsList className="grid w-full grid-cols-2 bg-accent md:w-70">
             <TabsTrigger value="agents">Agents</TabsTrigger>
             <TabsTrigger value="agencies">Agencies</TabsTrigger>
           </TabsList>
 
           <TabsContent value="agents" className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               <Card>
                 <CardContent className="pt-4">
                   <div className="text-xl font-bold sm:text-2xl">{agents.length}</div>
@@ -380,7 +380,7 @@ function PartnersPageContent() {
           </TabsContent>
 
           <TabsContent value="agencies" className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               <Card>
                 <CardContent className="pt-4">
                   <div className="text-xl font-bold sm:text-2xl">{agencies.length}</div>

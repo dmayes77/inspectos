@@ -33,10 +33,7 @@ function ClientsPageContent() {
   }, [searchParams]);
   const formatStage = (stage: string) => stage.replace(/_/g, " ").replace(/\b\w/g, (match) => match.toUpperCase());
 
-  const contactClients = useMemo(
-    () => clientList.filter((client: Client) => client.type !== "Real Estate Agent"),
-    [clientList]
-  );
+  const contactClients = useMemo(() => clientList.filter((client: Client) => client.type !== "Real Estate Agent"), [clientList]);
 
   const filteredMobile = contactClients.filter((client: Client) => {
     const matchesType = typeFilter === "all" || client.type === typeFilter;
@@ -75,7 +72,7 @@ function ClientsPageContent() {
         />
 
         <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/contacts?tab=${value}`)} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 md:w-70">
+          <TabsList className="grid w-full grid-cols-2 bg-accent md:w-70">
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
           </TabsList>
@@ -97,7 +94,9 @@ function ClientsPageContent() {
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">${contactClients.reduce((acc: number, c: Client) => acc + c.totalSpent, 0).toLocaleString()}</div>
+                  <div className="text-xl font-bold sm:text-2xl">
+                    ${contactClients.reduce((acc: number, c: Client) => acc + c.totalSpent, 0).toLocaleString()}
+                  </div>
                   <p className="text-xs text-muted-foreground sm:text-sm">Total Revenue</p>
                 </CardContent>
               </Card>
@@ -106,8 +105,8 @@ function ClientsPageContent() {
             {/* Clients Table */}
             <Card>
               <CardHeader>
-                  <CardTitle>All Clients</CardTitle>
-                  <CardDescription>{isLoading ? "Loading..." : `${contactClients.length} residential contacts`}</CardDescription>
+                <CardTitle>All Clients</CardTitle>
+                <CardDescription>{isLoading ? "Loading..." : `${contactClients.length} residential contacts`}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -178,11 +177,11 @@ function ClientsPageContent() {
                         <div className="rounded-lg border border-dashed p-10 text-center">
                           <h3 className="text-lg font-semibold">No clients yet</h3>
                           <p className="mt-2 text-sm text-muted-foreground">Add your first client to start scheduling inspections.</p>
-                              {can(userRole, "create_clients") && (
-                                <Button asChild className="mt-4">
-                                  <Link href="/admin/contacts/clients/new">Add client</Link>
-                                </Button>
-                              )}
+                          {can(userRole, "create_clients") && (
+                            <Button asChild className="mt-4">
+                              <Link href="/admin/contacts/clients/new">Add client</Link>
+                            </Button>
+                          )}
                         </div>
                       ) : (
                         <DataTable columns={contactsTableColumns} data={contactClients} searchKey="name" searchPlaceholder="Search by client name..." />
