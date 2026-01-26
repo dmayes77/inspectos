@@ -11,7 +11,7 @@ import { useAgentScrub } from "@/hooks/use-agent-scrub";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 import { Mail, Phone, ShieldCheck, Link2, MapPin } from "lucide-react";
 
-const PLACEHOLDER_URL = "https://www.choicehomes.co/team/tia-griffin";
+const PLACEHOLDER_URL = "https://agents.example.test/profiles/jane-smith";
 
 type AgentInternetScrubProps = {
   onApply: (result: AgentScrubResult) => void;
