@@ -25,6 +25,7 @@ export const createAgentSchema = z.object({
   avatar_url: z.string().max(5_000_000, "Avatar data is too large").optional().nullable(),
   brand_logo_url: z.string().max(5000).optional().nullable(),
   agency_address: z.string().max(1000).optional().nullable(),
+  agency_website: z.string().max(500).url("Invalid website").optional().nullable(),
 });
 
 export const updateAgentSchema = createAgentSchema.partial();

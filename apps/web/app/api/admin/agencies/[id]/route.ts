@@ -65,13 +65,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const tenantId = getTenantId();
   const { id } = await params;
 
-  // Check if agency has active agents
-  const { count } = await supabaseAdmin.from("agents").select("*", { count: "exact", head: true }).eq("agency_id", id).eq("status", "active");
-
-  if (count && count > 0) {
-    return NextResponse.json({ error: { message: "Cannot delete agency with active agents. Deactivate or reassign agents first." } }, { status: 400 });
-  }
-
   const { error } = await supabaseAdmin.from("agencies").delete().eq("tenant_id", tenantId).eq("id", id);
 
   if (error) {

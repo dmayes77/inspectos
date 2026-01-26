@@ -7,6 +7,7 @@ export type AgentScrubResult = {
   phone: string | null;
   licenseNumbers: string[];
   photoUrl: string | null;
+  photoCandidates: string[];
   logoUrl: string | null;
   agencyName: string | null;
   agencyAddress: string | null;

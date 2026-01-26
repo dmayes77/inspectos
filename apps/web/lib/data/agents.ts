@@ -34,6 +34,7 @@ export interface Agent {
     name: string;
     email: string | null;
     phone: string | null;
+    website: string | null;
     address_line1: string | null;
     address_line2: string | null;
     city: string | null;
@@ -58,6 +59,7 @@ export interface Agent {
   avatar_url?: string | null;
   brand_logo_url?: string | null;
   agency_address?: string | null;
+  agency_website?: string | null;
 }
 
 export interface CreateAgentInput {
@@ -78,6 +80,7 @@ export interface CreateAgentInput {
   avatar_url?: string | null;
   brand_logo_url?: string | null;
   agency_address?: string | null;
+  agency_website?: string | null;
 }
 
 export interface UpdateAgentInput {

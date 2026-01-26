@@ -1,10 +1,14 @@
 import type { AgentScrubResponse } from "@/types/agent-scrub";
 
-export async function requestAgentScrub(url: string, signal?: AbortSignal): Promise<AgentScrubResponse> {
+type AgentScrubOptions = {
+  excludePhotos?: string[];
+};
+
+export async function requestAgentScrub(url: string, signal?: AbortSignal, options?: AgentScrubOptions): Promise<AgentScrubResponse> {
   const response = await fetch("/api/admin/agents/scrub", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, excludePhotos: options?.excludePhotos ?? [] }),
     signal,
   });
 
@@ -16,3 +20,5 @@ export async function requestAgentScrub(url: string, signal?: AbortSignal): Prom
 
   return (await response.json()) as AgentScrubResponse;
 }
+
+export type { AgentScrubOptions };

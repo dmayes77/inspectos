@@ -24,24 +24,186 @@ const normalize = (value: string) => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
-const toFormValues = (agent?: Agent | null): AgentFormValues => ({
-  name: agent?.name ?? "",
-  role: agent?.role ?? "",
-  avatarUrl: agent?.avatar_url ?? null,
-  brandLogoUrl: agent?.brand_logo_url ?? null,
-  agencyId: agent?.agency_id ?? null,
-  agencyName: agent?.agency?.name ?? "",
-  agencyAddress: agent?.agency_address ?? "",
-  status: agent?.status ?? "active",
-  email: agent?.email ?? "",
-  phone: agent?.phone ?? "",
-  licenseNumber: agent?.license_number ?? "",
-  preferredReportFormat: agent?.preferred_report_format ?? "pdf",
-  notifyOnSchedule: agent?.notify_on_schedule ?? true,
-  notifyOnComplete: agent?.notify_on_complete ?? true,
-  notifyOnReport: agent?.notify_on_report ?? true,
-  notes: agent?.notes ?? "",
-});
+const normalizeWebsite = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const sanitized = trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  if (!sanitized) return null;
+  return `https://${sanitized}`;
+};
+
+const websiteFromDomain = (domain?: string | null) => normalizeWebsite(domain) ?? "";
+
+type ParsedAddress = {
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+};
+
+const parseScrubbedAddress = (value?: string | null): ParsedAddress | null => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  const tokens = trimmed
+    .split(/\r?\n+/)
+    .flatMap((line) => line.split(","))
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  if (tokens.length === 0) {
+    return null;
+  }
+
+  const remaining = [...tokens];
+  let addressLine1 = remaining.shift() ?? "";
+  let zipCode: string | undefined;
+  let state: string | undefined;
+  let city: string | undefined;
+
+  const isCountryToken = (token: string) => {
+    const cleaned = token.replace(/\.+/g, "").trim();
+    if (!cleaned) return false;
+    const normalized = cleaned.replace(/[^a-z]/gi, "").toLowerCase();
+    const countries = new Set(["us", "usa", "unitedstates", "unitedstatesofamerica"]);
+    if (countries.has(normalized)) return true;
+    if (/\d/.test(cleaned)) return false;
+    if (/^[A-Za-z]{2}$/.test(cleaned)) return true;
+    return false;
+  };
+
+  const extractCityStateZip = (source: string) => {
+    const match = source.match(/^(.*?)(?:,\s*)?([A-Za-z .'-]+)\s*,?\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+    if (!match) return null;
+    const [, street, cityPart, statePart, zipPart] = match;
+    return {
+      street: street.trim(),
+      city: cityPart.trim(),
+      state: statePart.toUpperCase(),
+      zip: zipPart,
+    };
+  };
+
+  while (remaining.length > 0 && isCountryToken(remaining[remaining.length - 1])) {
+    remaining.pop();
+  }
+
+  if (remaining.length > 0) {
+    const last = remaining[remaining.length - 1];
+    let working = last;
+    const zipMatch = working.match(/\b\d{5}(?:-\d{4})?\b/);
+    if (zipMatch) {
+      zipCode = zipMatch[0];
+      working = working.replace(zipMatch[0], "").trim();
+    }
+    const stateMatch = working.match(/\b[A-Za-z]{2}\b/);
+    if (stateMatch) {
+      state = stateMatch[0].toUpperCase();
+      working = working.replace(stateMatch[0], "").replace(/,\s*$/, "").trim();
+    }
+    if (working) {
+      remaining[remaining.length - 1] = working;
+    } else {
+      remaining.pop();
+    }
+  }
+
+  if (!state && remaining.length > 0) {
+    const last = remaining[remaining.length - 1];
+    if (/^[A-Za-z]{2}$/.test(last)) {
+      state = last.toUpperCase();
+      remaining.pop();
+    }
+  }
+
+  if (!zipCode && remaining.length > 0) {
+    const last = remaining[remaining.length - 1];
+    if (/^\d{5}(?:-\d{4})?$/.test(last)) {
+      zipCode = last;
+      remaining.pop();
+    }
+  }
+
+  if (remaining.length > 0) {
+    city = remaining.pop() ?? undefined;
+  }
+
+  const addressLine2 = remaining.length > 0 ? remaining.join(", ") : undefined;
+
+  const applyFallback = () => {
+    if (!addressLine1) return;
+    const fallback = extractCityStateZip(addressLine1) ?? extractCityStateZip(trimmed);
+    if (!fallback) return;
+    if (fallback.street) {
+      addressLine1 = fallback.street;
+    }
+    if (!city && fallback.city) {
+      city = fallback.city;
+    }
+    if (!state && fallback.state) {
+      state = fallback.state;
+    }
+    if (!zipCode && fallback.zip) {
+      zipCode = fallback.zip;
+    }
+  };
+
+  if (!city || !state || !zipCode) {
+    applyFallback();
+  }
+
+  return {
+    addressLine1,
+    addressLine2,
+    city,
+    state,
+    zipCode,
+  };
+};
+
+const buildAgencyAddress = (values: Pick<AgentFormValues, "agencyAddressLine1" | "agencyAddressLine2" | "agencyCity" | "agencyState" | "agencyZipCode">) => {
+  const segments: string[] = [];
+  if (values.agencyAddressLine1?.trim()) {
+    segments.push(values.agencyAddressLine1.trim());
+  }
+  if (values.agencyAddressLine2?.trim()) {
+    segments.push(values.agencyAddressLine2.trim());
+  }
+  const cityState = [values.agencyCity?.trim(), values.agencyState?.trim()].filter(Boolean).join(", ");
+  const locality = [cityState, values.agencyZipCode?.trim()].filter(Boolean).join(" ").trim();
+  if (locality) {
+    segments.push(locality);
+  }
+  return segments.length > 0 ? segments.join(", ") : null;
+};
+
+const toFormValues = (agent?: Agent | null): AgentFormValues => {
+  const parsedAddress = parseScrubbedAddress(agent?.agency_address ?? null);
+  return {
+    name: agent?.name ?? "",
+    role: agent?.role ?? "",
+    avatarUrl: agent?.avatar_url ?? null,
+    brandLogoUrl: agent?.brand_logo_url ?? null,
+    agencyId: agent?.agency_id ?? null,
+    agencyName: agent?.agency?.name ?? "",
+    agencyWebsite: agent?.agency?.website ?? "",
+    agencyAddressLine1: parsedAddress?.addressLine1 ?? "",
+    agencyAddressLine2: parsedAddress?.addressLine2 ?? "",
+    agencyCity: parsedAddress?.city ?? "",
+    agencyState: parsedAddress?.state ?? "",
+    agencyZipCode: parsedAddress?.zipCode ?? "",
+    status: agent?.status ?? "active",
+    email: agent?.email ?? "",
+    phone: agent?.phone ?? "",
+    licenseNumber: agent?.license_number ?? "",
+    preferredReportFormat: agent?.preferred_report_format ?? "pdf",
+    notifyOnSchedule: agent?.notify_on_schedule ?? true,
+    notifyOnComplete: agent?.notify_on_complete ?? true,
+    notifyOnReport: agent?.notify_on_report ?? true,
+    notes: agent?.notes ?? "",
+  };
+};
 
 const AGENT_TIPS = [
   "Keep portal notifications on so agents never miss a milestone.",
@@ -83,6 +245,8 @@ export default function EditAgentPage() {
     const matchedAgencyId = agencyNameCandidate ? findAgencyId(agencyNameCandidate) : null;
     const sanitizedAgencyName = agencyNameCandidate || "";
     const sanitizedAgentName = (split.agent ?? result.name ?? "").trim();
+    const website = websiteFromDomain(result.domain);
+    const parsedAddress = parseScrubbedAddress(result.agencyAddress);
     setForm((prev) => ({
       ...prev,
       name: sanitizedAgentName,
@@ -94,7 +258,12 @@ export default function EditAgentPage() {
       brandLogoUrl: result.logoUrl ?? null,
       agencyName: sanitizedAgencyName,
       agencyId: sanitizedAgencyName ? matchedAgencyId : null,
-      agencyAddress: result.agencyAddress?.trim() ?? "",
+      agencyAddressLine1: parsedAddress?.addressLine1 ?? "",
+      agencyAddressLine2: parsedAddress?.addressLine2 ?? "",
+      agencyCity: parsedAddress?.city ?? "",
+      agencyState: parsedAddress?.state ?? "",
+      agencyZipCode: parsedAddress?.zipCode ?? "",
+      agencyWebsite: website,
     }));
 
     toast.success("Agent details applied", {
@@ -167,7 +336,8 @@ export default function EditAgentPage() {
       notes: normalize(form.notes),
       avatar_url: form.avatarUrl ?? null,
       brand_logo_url: normalize(form.brandLogoUrl ?? ""),
-      agency_address: normalize(form.agencyAddress),
+      agency_address: normalize(buildAgencyAddress(form) ?? ""),
+      agency_website: normalizeWebsite(form.agencyWebsite),
     };
 
     console.log("Updating agent", payload);
@@ -214,7 +384,7 @@ export default function EditAgentPage() {
           <ResourceFormLayout
             left={
               <div className="space-y-6">
-                <AgentInternetScrub onApply={applyScrubResult} />
+                <AgentInternetScrub onApply={applyScrubResult} urlRequired={false} />
                 <AgentForm form={form} setForm={setForm} agencies={agencies} agentId={agent.id} />
               </div>
             }

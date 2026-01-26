@@ -21,9 +21,15 @@ const AGENCY_DOMAIN_LABELS: Array<{ pattern: RegExp; label: string }> = [
 
 export async function POST(request: Request) {
   let targetUrl: string | null = null;
+  let excludePhotos: string[] = [];
   try {
     const payload = await request.json();
     targetUrl = typeof payload?.url === "string" ? payload.url.trim() : null;
+    if (Array.isArray(payload?.excludePhotos)) {
+      excludePhotos = payload.excludePhotos
+        .map((value: unknown) => (typeof value === "string" ? value.trim() : ""))
+        .filter((value: string): value is string => value.length > 0);
+    }
   } catch (error) {
     return NextResponse.json({ error: { message: "Invalid request body" } }, { status: 400 });
   }
@@ -71,6 +77,10 @@ export async function POST(request: Request) {
       extractMetaContent(html, ["profile:first_name", "og:title", "twitter:title"]),
       extractTitle(html),
     ]);
+    const photoCandidates = extractProfileImages(bodyHtml, parsedUrl);
+    const candidateSet = new Set(photoCandidates);
+    const excludedSet = new Set(excludePhotos);
+
     const result: AgentScrubResult = {
       url: parsedUrl.toString(),
       domain: parsedUrl.hostname,
@@ -79,10 +89,22 @@ export async function POST(request: Request) {
       email: extractEmail(bodyHtml) ?? extractEmail(textContent),
       phone: extractPhone(textContent),
       licenseNumbers: extractLicenses(textContent),
-      photoUrl: extractProfileImage(bodyHtml, parsedUrl),
+      photoUrl: null,
+      photoCandidates,
       logoUrl: logoDevUrl(parsedUrl.hostname, { size: 96 }),
       agencyName,
       agencyAddress: null,
+    };
+
+    const addPhotoCandidate = (candidate: string | null | undefined) => {
+      if (!candidate) return;
+      if (!isAllowedImageUrl(candidate)) return;
+      if (candidateSet.has(candidate)) return;
+      candidateSet.add(candidate);
+      photoCandidates.push(candidate);
+      if (!result.photoUrl) {
+        result.photoUrl = candidate;
+      }
     };
 
     if (!result.name) {
@@ -103,11 +125,9 @@ export async function POST(request: Request) {
       if (!result.email && structuredData.email) {
         result.email = structuredData.email;
       }
-      if (!result.photoUrl && structuredData.photoUrl) {
+      if (structuredData.photoUrl) {
         const resolvedPhoto = resolveUrl(structuredData.photoUrl, parsedUrl) ?? structuredData.photoUrl;
-        if (isAllowedImageUrl(resolvedPhoto)) {
-          result.photoUrl = resolvedPhoto;
-        }
+        addPhotoCandidate(resolvedPhoto);
       }
     }
 
@@ -142,8 +162,8 @@ export async function POST(request: Request) {
         if (coldwell.phone) {
           result.phone = coldwell.phone;
         }
-        if (coldwell.photoUrl && isAllowedImageUrl(coldwell.photoUrl)) {
-          result.photoUrl = coldwell.photoUrl;
+        if (coldwell.photoUrl) {
+          addPhotoCandidate(coldwell.photoUrl);
         }
         if (coldwell.licenseNumbers?.length) {
           const merged = new Set([...result.licenseNumbers, ...coldwell.licenseNumbers]);
@@ -162,6 +182,17 @@ export async function POST(request: Request) {
     if ((!result.agencyName || isSameLabel(result.agencyName, result.name)) && domainAgencyName) {
       result.agencyName = domainAgencyName;
     }
+
+    const pickPhoto = () => {
+      for (const candidate of photoCandidates) {
+        if (!excludedSet.has(candidate)) {
+          return candidate;
+        }
+      }
+      return photoCandidates[0] ?? null;
+    };
+
+    result.photoUrl = pickPhoto();
 
     return NextResponse.json({ data: result });
   } catch (error) {
@@ -281,15 +312,32 @@ function extractLicenses(source: string | null) {
   return Array.from(values);
 }
 
-function extractProfileImage(html: string, baseUrl: URL) {
+function extractProfileImages(html: string, baseUrl: URL) {
   const keywordPattern = "(?:headshot|profile|avatar|agent|photo|portrait|team|broker|realtor|img-overlay|hero|author|staff)";
-  const targeted = new RegExp(`<img[^>]+(?:class|alt)=["'][^"']*${keywordPattern}[^"']*["'][^>]*>`, "gi");
-  let match;
-  while ((match = targeted.exec(html))) {
-    const resolved = extractImageFromTag(match[0], baseUrl);
-    if (resolved) {
-      return resolved;
+  const results: string[] = [];
+  const seen = new Set<string>();
+  const fallback: string[] = [];
+
+  const pushCandidate = (candidate: string | null, options?: { strict?: boolean }) => {
+    if (!candidate) return;
+    const shouldFilter = options?.strict ?? true;
+    if (shouldFilter && !isAllowedImageUrl(candidate)) {
+      return;
     }
+    if (seen.has(candidate)) return;
+    seen.add(candidate);
+    results.push(candidate);
+  };
+
+  const collectFromMatch = (match: RegExpExecArray | null) => {
+    if (!match) return;
+    pushCandidate(extractImageFromTag(match[0], baseUrl));
+  };
+
+  const targeted = new RegExp(`<img[^>]+(?:class|alt)=["'][^"']*${keywordPattern}[^"']*["'][^>]*>`, "gi");
+  let match: RegExpExecArray | null;
+  while ((match = targeted.exec(html))) {
+    collectFromMatch(match);
   }
 
   const backgroundTargeted = new RegExp(
@@ -297,40 +345,42 @@ function extractProfileImage(html: string, baseUrl: URL) {
     "gi",
   );
   while ((match = backgroundTargeted.exec(html))) {
-    const resolved = extractImageFromTag(match[0], baseUrl);
-    if (resolved) {
-      return resolved;
-    }
+    collectFromMatch(match);
   }
 
   const metaImage = extractMetaContent(html, ["og:image", "twitter:image", "image"]);
   if (metaImage) {
     const resolved = resolveUrl(metaImage, baseUrl) ?? metaImage;
-    if (isAllowedImageUrl(resolved)) {
-      return resolved;
-    }
+    pushCandidate(resolved);
   }
 
   const generic = html.match(/<img[^>]*>/gi);
   if (generic) {
     for (const tag of generic) {
-      const resolved = extractImageFromTag(tag, baseUrl);
-      if (resolved) {
-        return resolved;
+      const candidate = extractImageFromTag(tag, baseUrl);
+      if (!candidate) continue;
+      if (!isAllowedImageUrl(candidate)) {
+        fallback.push(candidate);
+        continue;
       }
+      pushCandidate(candidate);
     }
   }
 
   const backgroundGeneric = html.match(/<(?:div|figure|section|span)[^>]+style=["'][^"']*url\([^)]+\)[^"']*["'][^>]*>/gi);
   if (backgroundGeneric) {
     for (const tag of backgroundGeneric) {
-      const resolved = extractImageFromTag(tag, baseUrl);
-      if (resolved) {
-        return resolved;
-      }
+      pushCandidate(extractImageFromTag(tag, baseUrl));
     }
   }
-  return null;
+
+  if (fallback.length) {
+    for (const candidate of fallback) {
+      pushCandidate(candidate, { strict: false });
+    }
+  }
+
+  return results;
 }
 
 function extractImageFromTag(tag: string, baseUrl: URL) {
@@ -352,7 +402,7 @@ function extractImageFromTag(tag: string, baseUrl: URL) {
   for (const candidate of attributes) {
     if (!candidate) continue;
     const resolved = resolveUrl(candidate, baseUrl);
-    if (isAllowedImageUrl(resolved)) {
+    if (resolved) {
       return resolved;
     }
   }
@@ -658,6 +708,25 @@ function isSameLabel(a: string | null | undefined, b: string | null | undefined)
 }
 
 const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".jepg", ".png", ".webp"];
+const DISQUALIFIED_IMAGE_KEYWORDS = [
+  "logo",
+  "favicon",
+  "apple-touch-icon",
+  "badge",
+  "crest",
+  "seal",
+  "watermark",
+  "signature",
+  "icon",
+  "calendar",
+  "placeholder",
+  "default",
+  "spacer",
+  "pixel",
+  "tracker",
+  "loading",
+  "spinner",
+];
 
 const AGENT_LABELS = ["agent name", "agent", "realtor", "broker", "team lead", "lead agent", "contact name"];
 
@@ -665,6 +734,10 @@ function isAllowedImageUrl(value: string | null | undefined) {
   if (!value) return false;
   const withoutQuery = value.split(/[?#]/)[0]?.toLowerCase();
   if (!withoutQuery) return false;
+  const lastSegment = withoutQuery.split("/").pop() ?? withoutQuery;
+  if (DISQUALIFIED_IMAGE_KEYWORDS.some((keyword) => lastSegment.includes(keyword))) {
+    return false;
+  }
   return ALLOWED_IMAGE_EXTENSIONS.some((ext) => withoutQuery.endsWith(ext));
 }
 

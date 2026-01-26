@@ -23,9 +23,12 @@ import {
 import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { useAgencyById, useDeleteAgency } from "@/hooks/use-agencies";
-import { Building2, Users, Mail, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyLogo } from "@/components/shared/company-logo";
+
+const MAPS_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
 
 type Params = { id: string };
 
@@ -35,6 +38,7 @@ export default function AgencyDetailPage() {
   const router = useRouter();
   const { data: agency, isLoading } = useAgencyById(agencyId);
   const deleteAgency = useDeleteAgency();
+  const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) {
@@ -108,6 +112,12 @@ export default function AgencyDetailPage() {
   const handleDelete = () => {
     deleteAgency.mutate(agency.id, {
       onSuccess: () => {
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === "string" && (key.startsWith("agencies-") || key.startsWith("agency-"));
+          },
+        });
         toast.success("Agency deleted");
         router.push("/admin/partners?tab=agencies");
       },
@@ -118,15 +128,15 @@ export default function AgencyDetailPage() {
     });
   };
 
-  const contactItems: Array<{ label: string; value: string | null; icon: LucideIcon }> = [
-    { label: "Email", value: agency.email, icon: Mail },
+  const contactItems: Array<{ label: string; value: string | null; icon: LucideIcon; href?: string | null }> = [
     { label: "Phone", value: agency.phone, icon: Phone },
-    { label: "Website", value: agency.website, icon: Globe },
+    { label: "Website", value: agency.website, icon: Globe, href: agency.website },
   ];
 
   const address = [agency.address_line1, agency.address_line2, [agency.city, agency.state].filter(Boolean).join(", "), agency.zip_code]
     .filter((line) => line && line.trim().length > 0)
     .join("\n");
+  const officeMapHref = address ? `${MAPS_BASE_URL}${encodeURIComponent(address.replace(/\s+/g, " "))}` : null;
 
   const agentList = agency.agents ?? [];
 
@@ -232,7 +242,21 @@ export default function AgencyDetailPage() {
                 {contactItems.map((item) => (
                   <div key={item.label} className="flex items-center gap-3 text-sm">
                     <item.icon className="h-4 w-4 text-muted-foreground" />
-                    {item.value ? <span>{item.value}</span> : <span className="text-muted-foreground">—</span>}
+                    {item.value ? (
+                      item.href ? (
+                        <Link
+                          href={item.href}
+                          target="_blank"
+                          className="text-sm font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                        >
+                          {item.value}
+                        </Link>
+                      ) : (
+                        <span>{item.value}</span>
+                      )
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </div>
                 ))}
               </CardContent>
@@ -243,10 +267,20 @@ export default function AgencyDetailPage() {
                 <CardTitle>Office Address</CardTitle>
               </CardHeader>
               <CardContent>
-                {address ? (
-                  <div className="flex items-start gap-3 text-sm">
-                    <MapPin className="mt-1 h-4 w-4 text-muted-foreground" />
-                    <pre className="whitespace-pre-wrap font-sans">{address}</pre>
+                {address && officeMapHref ? (
+                  <a
+                    href={officeMapHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                  >
+                    <MapPin className="h-4 w-4 text-sky-600" />
+                    <span className="whitespace-pre-line leading-snug">{address}</span>
+                  </a>
+                ) : address ? (
+                  <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <MapPin className="h-4 w-4 text-sky-600" />
+                    <span className="whitespace-pre-line leading-snug">{address}</span>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No address on file.</p>

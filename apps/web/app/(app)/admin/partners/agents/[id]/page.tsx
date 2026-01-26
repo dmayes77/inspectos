@@ -25,10 +25,13 @@ import { RecordInformationCard } from "@/components/shared/record-information-ca
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { useAgentById, useDeleteAgent, useSendAgentPortalLink } from "@/hooks/use-agents";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatTimestamp } from "@/lib/utils/dates";
 import { toast } from "sonner";
 import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, MapPin, type LucideIcon } from "lucide-react";
 import { CompanyLogo } from "@/components/shared/company-logo";
+
+const MAPS_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
 
 const formatAgentCode = (id?: string | null) => {
   if (!id) return "AG-0000";
@@ -83,6 +86,7 @@ export default function AgentDetailPage() {
   const { data: agent, isLoading } = useAgentById(agentId);
   const deleteAgent = useDeleteAgent();
   const sendPortalLink = useSendAgentPortalLink();
+  const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (isLoading) {
@@ -183,6 +187,12 @@ export default function AgentDetailPage() {
   const handleDelete = () => {
     deleteAgent.mutate(agent.id, {
       onSuccess: () => {
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey[0];
+            return typeof key === "string" && (key.startsWith("agents-") || key.startsWith("agent-"));
+          },
+        });
         toast.success("Agent deleted");
         router.push("/admin/partners?tab=agents");
       },
@@ -207,6 +217,7 @@ export default function AgentDetailPage() {
 
   const orders = agent.orders ?? [];
   const displayedAgencyAddress = agent.agency ? formatAgencyAddress(agent.agency, agent.agency_address) : agent.agency_address?.trim() || null;
+  const agencyMapHref = displayedAgencyAddress ? `${MAPS_BASE_URL}${encodeURIComponent(displayedAgencyAddress.replace(/\s+/g, " "))}` : null;
 
   return (
     <AdminShell user={mockAdminUser}>
@@ -225,6 +236,7 @@ export default function AgentDetailPage() {
                   <CompanyLogo
                     name={agent.agency?.name ?? agent.name}
                     logoUrl={agent.brand_logo_url}
+                    website={agent.agency?.website ?? undefined}
                     size={64}
                     className="hidden rounded-2xl border bg-background p-2 sm:block"
                   />
@@ -349,7 +361,13 @@ export default function AgentDetailPage() {
                     <>
                       <div className="flex items-center gap-3">
                         {agent.brand_logo_url && (
-                          <CompanyLogo name={agent.agency.name} logoUrl={agent.brand_logo_url} size={48} className="rounded-lg border bg-background p-2" />
+                          <CompanyLogo
+                            name={agent.agency.name}
+                            logoUrl={agent.brand_logo_url}
+                            website={agent.agency.website ?? undefined}
+                            size={48}
+                            className="rounded-lg border bg-background p-2"
+                          />
                         )}
                         <div>
                           <div className="flex items-center gap-2 font-medium">
@@ -361,12 +379,23 @@ export default function AgentDetailPage() {
                           {agent.agency.email && <p className="text-muted-foreground">{agent.agency.email}</p>}
                         </div>
                       </div>
-                      {displayedAgencyAddress && (
-                        <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground">
-                          <MapPin className="mt-0.5 h-4 w-4" />
-                          <p className="text-sm leading-snug">{displayedAgencyAddress}</p>
-                        </div>
-                      )}
+                      {displayedAgencyAddress &&
+                        (agencyMapHref ? (
+                          <a
+                            href={agencyMapHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                          >
+                            <MapPin className="h-4 w-4 text-sky-600" />
+                            <span className="leading-snug whitespace-pre-line">{displayedAgencyAddress}</span>
+                          </a>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <MapPin className="h-4 w-4 text-sky-600" />
+                            <span className="leading-snug whitespace-pre-line">{displayedAgencyAddress}</span>
+                          </div>
+                        ))}
                       <Button asChild variant="outline" size="sm" className="w-full">
                         <Link href={`/admin/partners/agencies/${agent.agency.id}`}>Open agency</Link>
                       </Button>
@@ -374,12 +403,23 @@ export default function AgentDetailPage() {
                   ) : (
                     <>
                       <p className="text-muted-foreground">This agent operates independently.</p>
-                      {displayedAgencyAddress && (
-                        <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-muted-foreground">
-                          <MapPin className="mt-0.5 h-4 w-4" />
-                          <p className="text-sm leading-snug">{displayedAgencyAddress}</p>
-                        </div>
-                      )}
+                      {displayedAgencyAddress &&
+                        (agencyMapHref ? (
+                          <a
+                            href={agencyMapHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 text-sm font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                          >
+                            <MapPin className="h-4 w-4 text-sky-600" />
+                            <span className="leading-snug whitespace-pre-line">{displayedAgencyAddress}</span>
+                          </a>
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                            <MapPin className="h-4 w-4 text-sky-600" />
+                            <span className="leading-snug whitespace-pre-line">{displayedAgencyAddress}</span>
+                          </div>
+                        ))}
                     </>
                   )}
                 </CardContent>

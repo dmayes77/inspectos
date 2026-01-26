@@ -14,7 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     .select(
       `
       *,
-      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code),
+      agency:agencies(id, name, email, phone, website, address_line1, address_line2, city, state, zip_code),
       orders(id, order_number, status, scheduled_date, total, property:properties(address_line1, city, state))
     `,
     )
@@ -48,6 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         agencyName: payload.agency_name ?? null,
         brandLogoUrl: payload.brand_logo_url ?? null,
         agencyAddress: payload.agency_address ?? null,
+        agencyWebsite: payload.agency_website ?? null,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to prepare agency.";
@@ -80,7 +81,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     .select(
       `
       *,
-      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code)
+      agency:agencies(id, name, email, phone, website, address_line1, address_line2, city, state, zip_code)
     `,
     )
     .single();

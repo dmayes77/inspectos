@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     .select(
       `
       *,
-      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code)
+      agency:agencies(id, name, email, phone, website, address_line1, address_line2, city, state, zip_code)
     `,
     )
     .eq("tenant_id", tenantId)
@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       agencyName: payload.agency_name ?? null,
       brandLogoUrl: payload.brand_logo_url ?? null,
       agencyAddress: payload.agency_address ?? null,
+      agencyWebsite: payload.agency_website ?? null,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to prepare agency.";
@@ -90,7 +91,7 @@ export async function POST(request: Request) {
     .select(
       `
       *,
-      agency:agencies(id, name, email, phone, address_line1, address_line2, city, state, zip_code)
+      agency:agencies(id, name, email, phone, website, address_line1, address_line2, city, state, zip_code)
     `,
     )
     .single();

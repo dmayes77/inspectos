@@ -28,6 +28,12 @@ function getAgencyLocation(agency: Agency) {
   return [agency.city, agency.state].filter(Boolean).join(", ");
 }
 
+function getAgencyDomain(agency: Agency) {
+  const raw = agency.website?.trim();
+  if (!raw) return null;
+  return raw.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+}
+
 const agencyColumns: ColumnDef<Agency>[] = [
   {
     accessorKey: "name",
@@ -37,7 +43,7 @@ const agencyColumns: ColumnDef<Agency>[] = [
         <CompanyLogo name={row.original.name} logoUrl={row.original.logo_url} website={row.original.website ?? undefined} size={40} className="h-10 w-10" />
         <div className="text-sm">
           <p className="font-medium leading-tight">{row.original.name}</p>
-          {row.original.website && <p className="text-xs text-muted-foreground">{row.original.website.replace(/^https?:\/\//, "")}</p>}
+          {getAgencyDomain(row.original) && <p className="text-xs text-muted-foreground">{getAgencyDomain(row.original)}</p>}
         </div>
       </Link>
     ),
@@ -325,7 +331,12 @@ function PartnersPageContent() {
                 </div>
                 <div className="space-y-4 md:hidden">
                   {filteredAgents.map((agent) => (
-                    <div key={agent.id} className="rounded-lg border p-4">
+                    <Link
+                      key={agent.id}
+                      href={`/admin/partners/agents/${agent.id}`}
+                      className="block rounded-lg border p-4 transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                      aria-label={`View ${agent.name}`}
+                    >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -358,7 +369,7 @@ function PartnersPageContent() {
                           <span>{agent.total_referrals} referrals</span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
                 <div className="hidden md:block">
@@ -432,7 +443,9 @@ function PartnersPageContent() {
                           <CompanyLogo name={agency.name} logoUrl={agency.logo_url} website={agency.website ?? undefined} size={44} className="h-11 w-11" />
                           <div>
                             <p className="font-medium leading-tight">{agency.name}</p>
-                            <p className="text-xs text-muted-foreground">{agency.city ?? agency.website?.replace(/^https?:\/\//, "") ?? "—"}</p>
+                            {getAgencyDomain(agency) && <p className="text-xs text-muted-foreground">{getAgencyDomain(agency)}</p>}
+                            {getAgencyLocation(agency) && <p className="text-xs text-muted-foreground">{getAgencyLocation(agency)}</p>}
+                            {!getAgencyDomain(agency) && !getAgencyLocation(agency) && <p className="text-xs text-muted-foreground">—</p>}
                           </div>
                         </div>
                         <Badge variant={agency.status === "active" ? "default" : "secondary"}>{agency.status}</Badge>

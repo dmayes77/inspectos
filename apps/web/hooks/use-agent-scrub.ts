@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { requestAgentScrub } from "@/lib/api/agent-scrub";
+import { requestAgentScrub, type AgentScrubOptions } from "@/lib/api/agent-scrub";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 
 export function useAgentScrub() {
@@ -10,7 +10,7 @@ export function useAgentScrub() {
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const scrub = async (url: string) => {
+  const scrub = async (url: string, options?: AgentScrubOptions) => {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -19,7 +19,7 @@ export function useAgentScrub() {
     setError(null);
 
     try {
-      const payload = await requestAgentScrub(url, controller.signal);
+      const payload = await requestAgentScrub(url, controller.signal, options);
       console.log("Agent scrub result", payload.data);
       setResult(payload.data);
       return payload.data;

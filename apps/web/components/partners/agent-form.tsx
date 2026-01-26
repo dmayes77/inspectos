@@ -21,7 +21,12 @@ export type AgentFormValues = {
   brandLogoUrl: string | null;
   agencyId: string | null;
   agencyName: string;
-  agencyAddress: string;
+  agencyWebsite: string;
+  agencyAddressLine1: string;
+  agencyAddressLine2: string;
+  agencyCity: string;
+  agencyState: string;
+  agencyZipCode: string;
   status: AgentStatus;
   email: string;
   phone: string;
@@ -288,15 +293,59 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
             {!form.brandLogoUrl && <p className="text-sm text-muted-foreground">We'll fetch the brokerage logo as soon as the profile is scrubbed.</p>}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="agent-agency-address">Agency address</Label>
-            <Textarea
-              id="agent-agency-address"
-              value={form.agencyAddress}
-              onChange={(event) => handleChange("agencyAddress", event.target.value)}
-              placeholder="400 E Main St, Chattanooga, TN 37408"
-              rows={3}
+            <Label htmlFor="agent-agency-address-line1">Agency address line 1</Label>
+            <Input
+              id="agent-agency-address-line1"
+              value={form.agencyAddressLine1}
+              onChange={(event) => handleChange("agencyAddressLine1", event.target.value)}
+              placeholder="400 E Main St"
             />
-            <p className="text-xs text-muted-foreground">We save whatever was found online so the agency card always shows a mailing address.</p>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="agent-agency-address-line2">Agency address line 2</Label>
+            <Input
+              id="agent-agency-address-line2"
+              value={form.agencyAddressLine2}
+              onChange={(event) => handleChange("agencyAddressLine2", event.target.value)}
+              placeholder="Suite 200"
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-2">
+              <Label htmlFor="agent-agency-city">City</Label>
+              <Input
+                id="agent-agency-city"
+                value={form.agencyCity}
+                onChange={(event) => handleChange("agencyCity", event.target.value)}
+                placeholder="Chattanooga"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="agent-agency-state">State</Label>
+              <Input id="agent-agency-state" value={form.agencyState} onChange={(event) => handleChange("agencyState", event.target.value)} placeholder="TN" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="agent-agency-zip">ZIP</Label>
+              <Input
+                id="agent-agency-zip"
+                value={form.agencyZipCode}
+                onChange={(event) => handleChange("agencyZipCode", event.target.value)}
+                placeholder="37408"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">We save whatever was found online so the agency card always shows a mailing address.</p>
+          <div className="grid gap-2">
+            <Label htmlFor="agent-agency-website">Agency website</Label>
+            <Input
+              id="agent-agency-website"
+              type="url"
+              inputMode="url"
+              value={form.agencyWebsite}
+              onChange={(event) => handleChange("agencyWebsite", event.target.value)}
+              placeholder="https://chattanoogapropertyshop.com"
+            />
+            <p className="text-xs text-muted-foreground">Used to hydrate brokerage cards when we auto-create an agency.</p>
           </div>
         </CardContent>
       </Card>
