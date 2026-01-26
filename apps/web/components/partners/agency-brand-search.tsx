@@ -30,7 +30,7 @@ export function AgencyBrandSearch({ onApply }: AgencyBrandSearchProps) {
   const helperText = useMemo(() => {
     if (!query.trim()) return "Search by brokerage name or domain.";
     if (query.trim().length < MIN_QUERY_LENGTH) return "Enter at least 2 characters to search.";
-    if (isSearching) return "Scrubbing the internet...";
+    if (isSearching) return "Searching for matching brokerages...";
     if (error) return error;
     if (results.length === 0) return "No matches yet. Try another spelling or full domain.";
     return brandSearchEnabled ? "Select a result to prefill the form below." : "Add LOGO_DEV_SECRET_KEY to enable Logo.dev Brand Search.";
@@ -44,8 +44,8 @@ export function AgencyBrandSearch({ onApply }: AgencyBrandSearchProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Internet Scrub</CardTitle>
-        <CardDescription>Find a brokerage profile and copy the basics into this form.</CardDescription>
+        <CardTitle>Profile URL Importer</CardTitle>
+        <CardDescription>Find a brokerage profile and import the basics into this form.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Start typing a company or domain..." />

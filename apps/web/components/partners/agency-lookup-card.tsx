@@ -50,7 +50,7 @@ export function AgencyLookupCard({ tenantSlug = DEFAULT_TENANT_SLUG }: { tenantS
         city: result.city,
         state: result.state,
         zip_code: result.postalCode,
-        notes: `Imported via internet scrub (${result.source})`,
+        notes: `Imported via profile URL importer (${result.source})`,
       },
       {
         onSuccess: (agency) => {
@@ -74,7 +74,7 @@ export function AgencyLookupCard({ tenantSlug = DEFAULT_TENANT_SLUG }: { tenantS
 
   const helperText = useMemo(() => {
     if (!canSearch) return "Enter at least 2 characters to search the web.";
-    if (isSearching) return "Scrubbing the internet...";
+    if (isSearching) return "Searching for matching brokerages...";
     if (error) return error;
     if (canSearch && results.length === 0) return "No matches yet. Try a domain or brokerage name.";
     return brandSearchEnabled ? "Powered by Logo.dev Brand Search." : "Add LOGO_DEV_SECRET_KEY to enable Logo.dev Brand Search results.";
@@ -83,8 +83,8 @@ export function AgencyLookupCard({ tenantSlug = DEFAULT_TENANT_SLUG }: { tenantS
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Internet Scrub</CardTitle>
-        <CardDescription>Search for a brokerage and one-click save their contact info.</CardDescription>
+        <CardTitle>Profile URL Importer</CardTitle>
+        <CardDescription>Search for a brokerage and one-click import their contact info.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="relative max-w-xl">

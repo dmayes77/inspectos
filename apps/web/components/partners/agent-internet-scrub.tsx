@@ -57,7 +57,7 @@ export function AgentInternetScrub({ onApply }: AgentInternetScrubProps) {
 
   const helperText = (() => {
     if (error) return error;
-    if (isScrubbing) return "Scrubbing the profile for contact info...";
+    if (isScrubbing) return "Importing the profile details...";
     if (result) return "Review the extracted info and apply it to the form.";
     return "Paste a public agent profile URL to pull their details automatically.";
   })();
@@ -65,8 +65,8 @@ export function AgentInternetScrub({ onApply }: AgentInternetScrubProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Internet Scrub</CardTitle>
-        <CardDescription>Drop in an agent profile URL and we'll grab their details plus the brokerage logo.</CardDescription>
+        <CardTitle>Agent Profile URL Importer</CardTitle>
+        <CardDescription>Drop in an agent profile URL and we'll import their details and the brokerage details.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -81,7 +81,7 @@ export function AgentInternetScrub({ onApply }: AgentInternetScrubProps) {
             className="flex-1"
           />
           <Button type="button" disabled={isScrubbing} onClick={handleScrub} className="whitespace-nowrap">
-            {isScrubbing ? "Scrubbing..." : "Scrub profile"}
+            {isScrubbing ? "Importing..." : "Import profile"}
           </Button>
         </div>
         <p className="text-sm text-muted-foreground">{helperText}</p>

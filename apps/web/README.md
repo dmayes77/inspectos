@@ -32,6 +32,6 @@ LOGO_DEV_SECRET_KEY=sk_...
 ```
 
 - `NEXT_PUBLIC_LOGO_DEV_PUBLISHABLE_KEY` is appended to `https://img.logo.dev` requests on the client for optimized, lazy‑loaded images in multiple formats.
-- `LOGO_DEV_SECRET_KEY` authenticates the Brand Search API (`https://api.logo.dev/search`) used by the “Internet Scrub” agency lookup card.
+- `LOGO_DEV_SECRET_KEY` authenticates the Brand Search API (`https://api.logo.dev/search`) used by the “Profile URL Importer” agency lookup card.
 
 After updating the environment, restart `pnpm dev` so Next.js can pick up the new values.
