@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -30,6 +30,14 @@ const PACKAGE_TIPS = [
 type ServiceMode = "service" | "package";
 
 export default function NewServicePage() {
+  return (
+    <Suspense fallback={<div className="py-12 text-center text-muted-foreground">Loading service builder...</div>}>
+      <NewServicePageContent />
+    </Suspense>
+  );
+}
+
+function NewServicePageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const modeParam = params.get("mode");
