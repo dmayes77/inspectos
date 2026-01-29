@@ -300,18 +300,18 @@ export default function EditAgencyPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
             </>
           }
           title="Agency Not Found"
           description="We couldn't find that agency."
-          backHref="/admin/partners?tab=agencies"
+          backHref="/admin/agents?tab=agencies"
         />
       </AdminShell>
     );
@@ -361,7 +361,7 @@ export default function EditAgencyPage() {
       });
 
       toast.success("Agency updated");
-      router.push(`/admin/partners/agencies/${agency.id}`);
+      router.push(`/admin/agents/agencies/${agency.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update agency";
       toast.error(message);
@@ -378,22 +378,22 @@ export default function EditAgencyPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/partners/agencies/${agency.id}`} className="hover:text-foreground">
+              <Link href={`/admin/agents/agencies/${agency.id}`} className="hover:text-foreground">
                 {agency.name}
               </Link>
             </>
           }
           title="Edit Agency"
           description="Update contact, address, or notes"
-          backHref={`/admin/partners/agencies/${agency.id}`}
+          backHref={`/admin/agents/agencies/${agency.id}`}
         />
 
         <form onSubmit={handleSubmit}>
@@ -440,7 +440,7 @@ export default function EditAgencyPage() {
                       {isSaving ? "Saving..." : "Save Changes"}
                     </Button>
                     <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href={`/admin/partners/agencies/${agency.id}`}>Cancel</Link>
+                      <Link href={`/admin/agents/agencies/${agency.id}`}>Cancel</Link>
                     </Button>
                   </>
                 }

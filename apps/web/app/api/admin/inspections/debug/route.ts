@@ -7,9 +7,9 @@ export async function GET(request: Request) {
   const tenantParam = url.searchParams.get("tenant");
   const tenantId = tenantParam || getTenantId();
 
-  const [{ count: inspections }, { count: jobs }, { count: clients }] = await Promise.all([
+  const [{ count: inspections }, { count: orders }, { count: clients }] = await Promise.all([
     supabaseAdmin.from("inspections").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
-    supabaseAdmin.from("jobs").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
+    supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
     supabaseAdmin.from("clients").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
   ]);
 
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     tenant_id: tenantId,
     counts: {
       inspections: inspections ?? 0,
-      jobs: jobs ?? 0,
+      orders: orders ?? 0,
       clients: clients ?? 0,
     },
   });

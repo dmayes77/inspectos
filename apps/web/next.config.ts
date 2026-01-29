@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/admin/contacts/clients",
+        destination: "/admin/contacts",
+        permanent: true,
+      },
+      {
+        source: "/admin/contacts/clients/:path*",
+        destination: "/admin/contacts/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

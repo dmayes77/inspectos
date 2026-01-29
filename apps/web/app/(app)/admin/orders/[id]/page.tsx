@@ -400,9 +400,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <User className="h-4 w-4 text-muted-foreground" />
             People
           </CardTitle>
-          <CardDescription>Client, agent, and inspector contacts.</CardDescription>
+          <CardDescription>Client and agent contacts.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <p className="text-xs uppercase text-muted-foreground">Client</p>
             {client ? (
@@ -446,20 +446,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">No agent assigned</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <p className="text-xs uppercase text-muted-foreground">Inspector</p>
-            {inspector ? (
-              <div className="space-y-2">
-                <p className="font-medium">{inspector.full_name ?? inspector.email}</p>
-                <a className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" href={`mailto:${inspector.email}`}>
-                  <Mail className="h-4 w-4" />
-                  {inspector.email}
-                </a>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Unassigned</p>
             )}
           </div>
         </CardContent>
@@ -509,6 +495,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <p className="font-medium">{inspection.completed_at ? formatTimestampFull(inspection.completed_at) : "Not completed"}</p>
                 </div>
               </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Inspector</p>
+                {inspector ? (
+                  <div className="mt-1 space-y-1 text-sm">
+                    <p className="font-medium text-foreground">{inspector.full_name ?? inspector.email}</p>
+                    {inspector.email ? (
+                      <a className="flex items-center gap-2 text-muted-foreground hover:text-foreground" href={`mailto:${inspector.email}`}>
+                        <Mail className="h-4 w-4" />
+                        {inspector.email}
+                      </a>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">Unassigned</p>
+                )}
+              </div>
               {inspection.notes && (
                 <div>
                   <p className="text-sm text-muted-foreground">Notes</p>
@@ -552,6 +554,23 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           ) : (
             <div className="space-y-3 text-sm text-muted-foreground">
               <p>Inspection has not been started yet.</p>
+              <div className="rounded-md border border-dashed p-3 text-foreground">
+                <p className="text-xs uppercase text-muted-foreground">Inspector</p>
+                {inspector ? (
+                  <div className="mt-1 space-y-1">
+                    <p className="font-medium">{inspector.full_name ?? inspector.email}</p>
+                    {inspector.email ? (
+                      <a className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" href={`mailto:${inspector.email}`}>
+                        <Mail className="h-4 w-4" />
+                        {inspector.email}
+                      </a>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">This inspector will be attached when you create the inspection.</p>
+                  </div>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">Assign an inspector during inspection creation.</p>
+                )}
+              </div>
               <Button asChild>
                 <Link href={`/admin/inspections/new?orderId=${order.id}`}>Add Inspection</Link>
               </Button>

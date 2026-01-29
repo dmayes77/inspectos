@@ -35,7 +35,7 @@ function PropertyOwnerCell({ property }: { property: Property }) {
   }
 
   return (
-    <Link href={`/admin/contacts/clients/${property.client.id}`} className="flex items-center gap-2 text-sm hover:underline">
+    <Link href={`/admin/contacts/${property.client.id}`} className="flex items-center gap-2 text-sm hover:underline">
       <User className="h-3.5 w-3.5 text-muted-foreground" />
       {property.client.name}
     </Link>

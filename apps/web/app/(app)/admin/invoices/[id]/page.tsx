@@ -155,7 +155,7 @@ export default function InvoiceDetailPage() {
               title="Client"
               client={invoice.clientId ? { id: invoice.clientId, name: invoice.clientName } : undefined}
               actionLabel="View Client Profile"
-              actionHref={invoice.clientId ? `/admin/contacts/clients/${invoice.clientId}` : undefined}
+              actionHref={invoice.clientId ? `/admin/contacts/${invoice.clientId}` : undefined}
               emptyLabel="No client assigned"
               emptyActionLabel="Assign Client"
               emptyActionHref={`/admin/invoices/${invoice.invoiceId}/edit`}

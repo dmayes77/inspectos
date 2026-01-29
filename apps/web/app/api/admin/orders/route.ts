@@ -5,6 +5,23 @@ import { validateRequestBody } from "@/lib/api/validate";
 import { createOrderSchema } from "@/lib/validations/order";
 import { format } from "date-fns";
 
+const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: string | null) => {
+  switch (status) {
+    case "scheduled":
+      return "scheduled";
+    case "in_progress":
+      return "in_progress";
+    case "pending_report":
+    case "delivered":
+    case "completed":
+      return "completed";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return scheduledDate ? "scheduled" : "pending";
+  }
+};
+
 export async function GET(request: NextRequest) {
   const tenantId = getTenantId();
   const searchParams = request.nextUrl.searchParams;
@@ -25,8 +42,12 @@ export async function GET(request: NextRequest) {
       client:clients(id, name, email, phone, company),
       agent:agents(id, name, email, phone, agency:agencies(id, name)),
       inspector:profiles(id, full_name, email, avatar_url),
+      schedules:order_schedules(
+        id, tenant_id, order_id, schedule_type, label, service_id, package_id,
+        inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes
+      ),
       inspection:inspections(
-        id, order_id, status, started_at, completed_at,
+        id, order_id, order_schedule_id, status, started_at, completed_at,
         services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id),
         assignments:inspection_assignments(
           id, role, assigned_at, unassigned_at,
@@ -132,6 +153,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: { message: orderError?.message ?? "Failed to create order." } }, { status: 500 });
   }
 
+  const scheduleDuration = payload.duration_minutes ?? totalDuration ?? 120;
+  const scheduleStatus = mapOrderStatusToScheduleStatus(order.status, payload.scheduled_date ?? null);
+  const scheduleLabel = payload.services[0]?.name ?? "Primary Inspection";
+
+  const { data: primarySchedule, error: scheduleError } = await supabaseAdmin
+    .from("order_schedules")
+    .insert({
+      tenant_id: tenantId,
+      order_id: order.id,
+      schedule_type: "primary",
+      label: scheduleLabel,
+      service_id: payload.services[0]?.service_id ?? null,
+      inspector_id: payload.inspector_id ?? null,
+      slot_date: payload.scheduled_date ?? null,
+      slot_start: payload.scheduled_time ?? null,
+      duration_minutes: scheduleDuration,
+      status: scheduleStatus,
+      notes: payload.internal_notes ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (scheduleError || !primarySchedule) {
+    await supabaseAdmin.from("orders").delete().eq("id", order.id);
+    return NextResponse.json({ error: { message: scheduleError?.message ?? "Failed to create schedule." } }, { status: 500 });
+  }
+
   if (payload.client_id) {
     const ownerDate = format(new Date(), "yyyy-MM-dd");
     await supabaseAdmin
@@ -156,6 +204,7 @@ export async function POST(request: Request) {
     .insert({
       tenant_id: tenantId,
       order_id: order.id,
+      order_schedule_id: primarySchedule.id,
       template_id: payload.services[0]?.template_id ?? null,
       template_version: 1,
       status: "draft" as const,
@@ -206,8 +255,12 @@ export async function POST(request: Request) {
       client:clients(id, name, email, phone),
       agent:agents(id, name, email, phone),
       inspector:profiles(id, full_name, email),
+      schedules:order_schedules(
+        id, tenant_id, order_id, schedule_type, label, service_id, package_id,
+        inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes
+      ),
       inspection:inspections(
-        id, order_id, status,
+        id, order_id, order_schedule_id, status,
         services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
       )
     `,

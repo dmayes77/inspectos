@@ -11,10 +11,15 @@ type Relational<T> = T | T[] | null;
 type ClientSummary = {
   id: string;
   name: string | null;
+  email?: string | null;
+  phone?: string | null;
+  company?: string | null;
 };
 
 type PropertySummary = {
+  id?: string | null;
   address_line1?: string | null;
+  address_line2?: string | null;
   city?: string | null;
   state?: string | null;
   zip_code?: string | null;
@@ -31,9 +36,9 @@ type PropertySummary = {
   lot_size_acres?: number | null;
   heating_type?: string | null;
   cooling_type?: string | null;
-  roof_type?: string | null;
   building_class?: string | null;
   loading_docks?: string | null;
+  roof_type?: string | null;
   zoning?: string | null;
   occupancy_type?: string | null;
   ceiling_height?: string | null;
@@ -51,8 +56,19 @@ type InspectorSummary = {
   avatar_url: string | null;
 };
 
-type JobRelation = {
+type InspectionRow = {
   id: string;
+  created_at: string | null;
+  status: string;
+  notes: string | null;
+  selected_type_ids?: string[] | null;
+  order: Relational<OrderRelation>;
+  order_schedule: Relational<OrderScheduleRelation>;
+};
+
+type OrderRelation = {
+  id: string;
+  order_number?: string | null;
   status: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
@@ -62,14 +78,32 @@ type JobRelation = {
   client?: Relational<ClientSummary>;
   property?: Relational<PropertySummary>;
   inspector?: Relational<InspectorSummary>;
+  total?: number | null;
+  payment_status?: string | null;
 };
 
-type InspectionRow = {
+type OrderScheduleRelation = {
   id: string;
+  tenant_id: string;
+  order_id: string;
+  schedule_type: string;
+  label: string | null;
+  service_id: string | null;
+  package_id: string | null;
+  inspector_id: string | null;
+  slot_date: string | null;
+  slot_start: string | null;
+  slot_end: string | null;
+  duration_minutes: number | null;
   status: string;
   notes: string | null;
-  job: Relational<JobRelation>;
-  order: Relational<JobRelation>;
+};
+
+const ALLOWED_PROPERTY_TYPES = new Set(["single-family", "condo-townhome", "multi-family", "manufactured", "commercial"]);
+
+const normalizePropertyType = (value?: string | null) => {
+  if (!value) return "single-family";
+  return ALLOWED_PROPERTY_TYPES.has(value) ? value : "single-family";
 };
 
 const normalizeTime = (time?: string | null) => {
@@ -82,6 +116,23 @@ const unwrap = <T>(value: T | T[] | null | undefined): T | null => {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 };
 
+const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: string | null) => {
+  switch (status) {
+    case "scheduled":
+      return "scheduled";
+    case "in_progress":
+      return "in_progress";
+    case "pending_report":
+    case "delivered":
+    case "completed":
+      return "completed";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return scheduledDate ? "scheduled" : "pending";
+  }
+};
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const tenantParam = url.searchParams.get("tenant");
@@ -89,9 +140,8 @@ export async function GET(request: Request) {
   const debug = url.searchParams.get("debug") === "1";
 
   if (debug) {
-    const [inspectionsCount, jobsCount, ordersCount] = await Promise.all([
+    const [inspectionsCount, ordersCount] = await Promise.all([
       supabaseAdmin.from("inspections").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
-      supabaseAdmin.from("jobs").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
       supabaseAdmin.from("orders").select("id", { count: "exact", head: true }).eq("tenant_id", tenantId),
     ]);
 
@@ -99,12 +149,10 @@ export async function GET(request: Request) {
       tenantId,
       counts: {
         inspections: inspectionsCount.count ?? 0,
-        jobs: jobsCount.count ?? 0,
         orders: ordersCount.count ?? 0,
       },
       errors: {
         inspections: inspectionsCount.error?.message ?? null,
-        jobs: jobsCount.error?.message ?? null,
         orders: ordersCount.error?.message ?? null,
       },
     });
@@ -118,15 +166,14 @@ export async function GET(request: Request) {
           id,
           status,
           notes,
-          job:jobs(
+          selected_type_ids,
+          order:orders!inspections_order_id_fkey(
             id,
             status,
             scheduled_date,
             scheduled_time,
             duration_minutes,
-            template_id,
-            selected_service_ids,
-            client:clients(id, name),
+            client:clients(id, name, email, phone, company),
             property:properties(
               address_line1, city, state, zip_code, property_type, year_built, square_feet,
               bedrooms, bathrooms, stories, foundation, garage, pool,
@@ -141,6 +188,7 @@ export async function GET(request: Request) {
       .eq("tenant_id", tenantId)
       .limit(3);
 
+    console.log("[Inspections API] debug sample", { tenantId, error: rawError?.message ?? null, count: raw?.length ?? 0 });
     return NextResponse.json({ tenantId, error: rawError?.message ?? null, sample: raw ?? [] });
   }
   const { data: inspections, error } = await supabaseAdmin
@@ -148,44 +196,54 @@ export async function GET(request: Request) {
     .select(
       `
         id,
+        created_at,
         status,
         notes,
-        job:jobs(
+        selected_type_ids,
+        order:orders!inspections_order_id_fkey(
           id,
+          order_number,
+          total,
+          payment_status,
           status,
           scheduled_date,
           scheduled_time,
           duration_minutes,
-          template_id,
-          selected_service_ids,
-          client:clients(id, name),
+          client:clients(id, name, email, phone, company),
           property:properties(
             address_line1, city, state, zip_code, property_type, year_built, square_feet,
             bedrooms, bathrooms, stories, foundation, garage, pool,
             basement, lot_size_acres, heating_type, cooling_type, roof_type,
             building_class, loading_docks, zoning, occupancy_type, ceiling_height,
             number_of_units, unit_mix, laundry_type, parking_spaces, elevator
-          ),
-          inspector:profiles(id, full_name, email, avatar_url)
+          )
         ),
-        order:orders(
+        order_schedule:order_schedules!inspections_order_schedule_id_fkey(
           id,
-          status,
-          scheduled_date,
-          scheduled_time,
+          tenant_id,
+          order_id,
+          schedule_type,
+          label,
+          service_id,
+          package_id,
+          inspector_id,
+          slot_date,
+          slot_start,
+          slot_end,
           duration_minutes,
-          client:clients(id, name),
-          property:properties(
-            address_line1, city, state, zip_code, property_type, year_built, square_feet,
-            bedrooms, bathrooms, stories, foundation, garage, pool,
-            basement, lot_size_acres, heating_type, cooling_type, roof_type,
-            building_class, loading_docks, zoning, occupancy_type, ceiling_height,
-            number_of_units, unit_mix, laundry_type, parking_spaces, elevator
-          ),
+          status,
+          notes
         )
       `,
     )
     .eq("tenant_id", tenantId);
+
+  console.log("[Inspections API] fetch", {
+    tenantId,
+    url: request.url,
+    resultCount: Array.isArray(inspections) ? inspections.length : 0,
+    error: error?.message ?? null,
+  });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -193,32 +251,66 @@ export async function GET(request: Request) {
 
   const rows = Array.isArray(inspections) ? (inspections as unknown as InspectionRow[]) : [];
   const mapped = rows.map((row) => {
-    const rawJob = unwrap(row.job) ?? unwrap(row.order);
-    const job = rawJob
+    const orderRelation = unwrap(row.order);
+    const scheduleRelation = unwrap(row.order_schedule);
+
+    const orderClient = unwrap(orderRelation?.client);
+    const orderProperty = unwrap(orderRelation?.property);
+    const orderInspector = unwrap(orderRelation?.inspector);
+
+    const property = orderProperty ?? null;
+    const client = orderClient ?? null;
+    const inspector = orderInspector ?? null;
+    const selectedServiceIds = scheduleRelation?.service_id
+      ? [scheduleRelation.service_id]
+      : Array.isArray((orderRelation as { selected_service_ids?: string[] | null } | null)?.selected_service_ids)
+        ? ((orderRelation as { selected_service_ids?: string[] | null })?.selected_service_ids ?? [])
+        : Array.isArray(row.selected_type_ids)
+          ? row.selected_type_ids
+          : [];
+
+    const scheduledDate = orderRelation?.scheduled_date ?? scheduleRelation?.slot_date ?? null;
+    const scheduledTime = orderRelation?.scheduled_time ?? scheduleRelation?.slot_start ?? null;
+    const durationMinutes = orderRelation?.duration_minutes ?? scheduleRelation?.duration_minutes ?? null;
+
+    const normalizedJob = orderRelation
       ? {
-          ...rawJob,
-          client: unwrap(rawJob.client),
-          property: unwrap(rawJob.property),
-          inspector: unwrap(rawJob.inspector),
+          ...orderRelation,
+          client: orderClient,
+          property: orderProperty,
+          inspector: orderInspector,
+          scheduled_date: scheduledDate,
+          scheduled_time: scheduledTime ? normalizeTime(scheduledTime) : null,
+          duration_minutes: durationMinutes,
+          selected_service_ids: selectedServiceIds,
         }
       : null;
+
     const status = row.status === "submitted" ? "pending_report" : row.status === "draft" ? "scheduled" : row.status;
 
     return {
       id: row.id,
+      created_at: row.created_at ?? null,
       status,
       notes: row.notes,
-      inspector: job?.inspector ?? null,
-      job: job
-        ? {
-            ...job,
-            scheduled_time: normalizeTime(job.scheduled_time ?? null),
-          }
-        : null,
+      inspector: inspector ?? null,
+      job: normalizedJob,
+      schedule: scheduleRelation ?? null,
+      summary: {
+        property,
+        client,
+        scheduled_date: scheduledDate,
+        scheduled_time: scheduledTime ? normalizeTime(scheduledTime) : null,
+        duration_minutes: durationMinutes,
+        service_ids: selectedServiceIds,
+        order_number: orderRelation?.order_number ?? null,
+        total: orderRelation?.total ?? null,
+        payment_status: orderRelation?.payment_status ?? null,
+      },
     };
   });
 
-  return NextResponse.json(mapped);
+  return NextResponse.json({ tenantId, data: mapped });
 }
 
 export async function POST(request: Request) {
@@ -239,15 +331,16 @@ export async function POST(request: Request) {
           scheduled_date: string | null;
           scheduled_time: string | null;
           duration_minutes: number | null;
+          status: string | null;
         },
-        "property_id" | "client_id" | "inspector_id" | "scheduled_date" | "scheduled_time" | "duration_minutes"
+        "property_id" | "client_id" | "inspector_id" | "scheduled_date" | "scheduled_time" | "duration_minutes" | "status"
       > & { id: string })
     | null = null;
 
   if (orderId) {
     const { data: orderRow, error: orderError } = await supabaseAdmin
       .from("orders")
-      .select("id, property_id, client_id, inspector_id, scheduled_date, scheduled_time, duration_minutes")
+      .select("id, property_id, client_id, inspector_id, scheduled_date, scheduled_time, duration_minutes, status")
       .eq("id", orderId)
       .maybeSingle();
 
@@ -262,17 +355,27 @@ export async function POST(request: Request) {
     linkedOrder = orderRow;
   }
 
-  const { data: serviceRows } = await supabaseAdmin
-    .from("services")
-    .select("id, template_id, duration_minutes, price")
-    .eq("tenant_id", tenantId)
-    .in("id", Array.isArray(payload.types) ? payload.types : []);
+  const selectedTypeIds = Array.isArray(payload.types) ? payload.types : [];
 
-  const { data: packageRows } = await supabaseAdmin
-    .from("packages")
-    .select("id, duration_minutes, price")
-    .eq("tenant_id", tenantId)
-    .in("id", Array.isArray(payload.types) ? payload.types : []);
+  let serviceRows: { id: string; template_id: string | null; duration_minutes: number | null; price: number | null; name: string | null }[] | null = [];
+  let packageRows: { id: string; duration_minutes: number | null; price: number | null; name: string | null }[] | null = [];
+
+  if (selectedTypeIds.length > 0) {
+    const [{ data: servicesData, error: servicesError }, { data: packagesData, error: packagesError }] = await Promise.all([
+      supabaseAdmin.from("services").select("id, template_id, duration_minutes, price, name").eq("tenant_id", tenantId).in("id", selectedTypeIds),
+      supabaseAdmin.from("packages").select("id, duration_minutes, price, name").eq("tenant_id", tenantId).in("id", selectedTypeIds),
+    ]);
+
+    if (servicesError) {
+      return NextResponse.json({ error: servicesError.message }, { status: 500 });
+    }
+    if (packagesError) {
+      return NextResponse.json({ error: packagesError.message }, { status: 500 });
+    }
+
+    serviceRows = servicesData ?? [];
+    packageRows = packagesData ?? [];
+  }
 
   let templateId = serviceRows?.[0]?.template_id ?? null;
   if (!templateId) {
@@ -290,6 +393,8 @@ export async function POST(request: Request) {
   const durationMinutes =
     (serviceRows?.reduce((sum, svc) => sum + (svc.duration_minutes ?? 0), 0) ?? 0) +
     (packageRows?.reduce((sum, pkg) => sum + (pkg.duration_minutes ?? 0), 0) ?? 0);
+  const subtotal =
+    (serviceRows?.reduce((sum, svc) => sum + Number(svc.price ?? 0), 0) ?? 0) + (packageRows?.reduce((sum, pkg) => sum + Number(pkg.price ?? 0), 0) ?? 0);
 
   const { street, city, state, zip } = parseAddress(payload.address ?? "");
   const { data: existingProperty } = await supabaseAdmin
@@ -304,6 +409,7 @@ export async function POST(request: Request) {
 
   let propertyId = linkedOrder?.property_id ?? existingProperty?.id ?? null;
   if (!propertyId) {
+    const propertyType = normalizePropertyType(payload.propertyType);
     const { data: property, error: propertyError } = await supabaseAdmin
       .from("properties")
       .insert({
@@ -312,7 +418,7 @@ export async function POST(request: Request) {
         city,
         state,
         zip_code: zip || "00000",
-        property_type: payload.propertyType ?? "single-family",
+        property_type: propertyType,
         year_built: payload.yearBuilt ?? null,
         square_feet: payload.sqft ?? null,
         bedrooms: payload.bedrooms ?? null,
@@ -335,40 +441,116 @@ export async function POST(request: Request) {
   const effectiveInspectorId = payload.inspectorId ?? linkedOrder?.inspector_id ?? null;
   const scheduledDate = payload.date ?? linkedOrder?.scheduled_date ?? null;
   const scheduledTime = payload.time ?? linkedOrder?.scheduled_time ?? null;
-  const jobDuration = durationMinutes || linkedOrder?.duration_minutes || 120;
+  const appointmentDuration = durationMinutes || linkedOrder?.duration_minutes || 120;
 
-  const { data: job, error: jobError } = await supabaseAdmin
-    .from("jobs")
-    .insert({
-      tenant_id: tenantId,
-      property_id: propertyId,
-      client_id: effectiveClientId,
-      template_id: templateId,
-      inspector_id: effectiveInspectorId,
-      status: "scheduled",
-      scheduled_date: scheduledDate,
-      scheduled_time: scheduledTime ?? null,
-      duration_minutes: jobDuration,
-      notes: payload.notes ?? null,
-      selected_service_ids: Array.isArray(payload.types) ? payload.types : [],
-    })
-    .select("id")
-    .single();
+  if (!propertyId) {
+    return NextResponse.json({ error: "Property could not be resolved for this inspection." }, { status: 400 });
+  }
 
-  if (jobError || !job) {
-    return NextResponse.json({ error: jobError?.message ?? "Failed to create job." }, { status: 500 });
+  if (!linkedOrder) {
+    const orderStatus = scheduledDate && effectiveInspectorId ? "scheduled" : "pending";
+    const { data: createdOrder, error: orderInsertError } = await supabaseAdmin
+      .from("orders")
+      .insert({
+        tenant_id: tenantId,
+        client_id: effectiveClientId,
+        inspector_id: effectiveInspectorId,
+        property_id: propertyId,
+        status: orderStatus,
+        scheduled_date: scheduledDate,
+        scheduled_time: scheduledTime ?? null,
+        duration_minutes: appointmentDuration,
+        subtotal,
+        total: subtotal,
+        source: "admin_inspections_api",
+        internal_notes: payload.notes ?? null,
+      })
+      .select("id, property_id, client_id, inspector_id, scheduled_date, scheduled_time, duration_minutes, status")
+      .single();
+
+    if (orderInsertError || !createdOrder) {
+      return NextResponse.json({ error: orderInsertError?.message ?? "Failed to create order." }, { status: 500 });
+    }
+    linkedOrder = createdOrder;
+  }
+
+  const orderStatusForSchedule = linkedOrder.status ?? null;
+
+  const getPrimarySchedule = () =>
+    supabaseAdmin
+      .from("order_schedules")
+      .select(
+        "id, tenant_id, order_id, schedule_type, label, service_id, package_id, inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes",
+      )
+      .eq("order_id", linkedOrder!.id)
+      .eq("schedule_type", "primary")
+      .maybeSingle();
+
+  let { data: existingSchedule, error: scheduleLookupError } = orderId ? await getPrimarySchedule() : { data: null, error: null };
+  if (scheduleLookupError) {
+    return NextResponse.json({ error: scheduleLookupError.message }, { status: 500 });
+  }
+
+  const primaryServiceId = serviceRows?.[0]?.id ?? null;
+  const primaryPackageId = primaryServiceId ? null : (packageRows?.[0]?.id ?? null);
+  const schedulePayload = {
+    slot_date: scheduledDate ?? linkedOrder.scheduled_date ?? null,
+    slot_start: scheduledTime ?? linkedOrder.scheduled_time ?? null,
+    duration_minutes: appointmentDuration,
+    inspector_id: effectiveInspectorId ?? linkedOrder.inspector_id ?? null,
+    status: mapOrderStatusToScheduleStatus(orderStatusForSchedule, scheduledDate ?? linkedOrder.scheduled_date ?? null),
+    service_id: primaryServiceId,
+    package_id: primaryPackageId,
+  };
+
+  const scheduleSelectColumns =
+    "id, tenant_id, order_id, schedule_type, label, service_id, package_id, inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes";
+
+  let primarySchedule = existingSchedule;
+  if (existingSchedule) {
+    const { data: updatedSchedule, error: scheduleUpdateError } = await supabaseAdmin
+      .from("order_schedules")
+      .update({ ...schedulePayload, label: existingSchedule.label ?? "Primary Inspection" })
+      .eq("id", existingSchedule.id)
+      .select(scheduleSelectColumns)
+      .single();
+
+    if (scheduleUpdateError) {
+      return NextResponse.json({ error: scheduleUpdateError.message }, { status: 500 });
+    }
+    primarySchedule = updatedSchedule ?? existingSchedule;
+  } else {
+    const { data: createdSchedule, error: scheduleInsertError } = await supabaseAdmin
+      .from("order_schedules")
+      .insert({
+        tenant_id: tenantId,
+        order_id: linkedOrder.id,
+        schedule_type: "primary",
+        label: "Primary Inspection",
+        notes: payload.notes ?? null,
+        slot_end: null,
+        ...schedulePayload,
+      })
+      .select(scheduleSelectColumns)
+      .single();
+
+    if (scheduleInsertError || !createdSchedule) {
+      return NextResponse.json({ error: scheduleInsertError?.message ?? "Failed to create schedule." }, { status: 500 });
+    }
+    primarySchedule = createdSchedule;
   }
 
   const { data: inspection, error: inspectionError } = await supabaseAdmin
     .from("inspections")
     .insert({
       tenant_id: tenantId,
-      job_id: job.id,
+      order_id: linkedOrder.id,
+      order_schedule_id: primarySchedule?.id ?? null,
       template_id: templateId,
       template_version: 1,
       status: "draft",
       notes: payload.notes ?? null,
-      order_id: orderId ?? null,
+      selected_type_ids: selectedTypeIds,
     })
     .select("id")
     .single();
@@ -377,14 +559,61 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: inspectionError?.message ?? "Failed to create inspection." }, { status: 500 });
   }
 
+  if (selectedTypeIds.length > 0) {
+    const serviceMap = new Map((serviceRows ?? []).map((svc) => [svc.id, svc]));
+    const packageMap = new Map((packageRows ?? []).map((pkg) => [pkg.id, pkg]));
+    const inspectionServicesPayload = selectedTypeIds
+      .map((typeId, index) => {
+        const svc = serviceMap.get(typeId);
+        if (svc) {
+          return {
+            inspection_id: inspection.id,
+            service_id: svc.id,
+            template_id: svc.template_id ?? templateId,
+            name: svc.name ?? "Service",
+            price: Number(svc.price ?? 0),
+            duration_minutes: svc.duration_minutes ?? null,
+            status: "pending" as const,
+            sort_order: index,
+          };
+        }
+        const pkg = packageMap.get(typeId);
+        if (pkg) {
+          return {
+            inspection_id: inspection.id,
+            service_id: null,
+            template_id: templateId,
+            name: pkg.name ?? "Package",
+            price: Number(pkg.price ?? 0),
+            duration_minutes: pkg.duration_minutes ?? null,
+            status: "pending" as const,
+            sort_order: index,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (inspectionServicesPayload.length > 0) {
+      const { error: servicesError } = await supabaseAdmin.from("inspection_services").insert(inspectionServicesPayload as Record<string, unknown>[]);
+      if (servicesError) {
+        return NextResponse.json({ error: servicesError.message }, { status: 500 });
+      }
+    }
+  }
+
   if (effectiveInspectorId) {
     await assignInspectionLead(tenantId, inspection.id, effectiveInspectorId);
   }
 
-  if (effectiveInspectorId && scheduledDate) {
-    const startTime = scheduledTime ? scheduledTime : "09:00";
-    const startsAt = new Date(`${scheduledDate}T${startTime}:00`);
-    const endsAt = new Date(startsAt.getTime() + jobDuration * 60_000);
+  const scheduleDate = primarySchedule?.slot_date ?? scheduledDate;
+  const scheduleTime = primarySchedule?.slot_start ?? scheduledTime;
+  const scheduleDuration = primarySchedule?.duration_minutes ?? appointmentDuration;
+
+  if (effectiveInspectorId && scheduleDate) {
+    const startTime = scheduleTime ? scheduleTime : "09:00";
+    const startsAt = new Date(`${scheduleDate}T${startTime}:00`);
+    const endsAt = new Date(startsAt.getTime() + (scheduleDuration ?? 120) * 60_000);
     await supabaseAdmin.from("schedule_blocks").insert({
       tenant_id: tenantId,
       inspector_id: effectiveInspectorId,

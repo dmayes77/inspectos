@@ -20,6 +20,7 @@ import { can } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils";
 import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
 import { createServiceMap, getServiceNameById } from "@/lib/utils/services";
+import { PageHeader } from "@/components/layout/page-header";
 
 // Data is loaded from `useInspections` hook so the UI can be built while the API/auth are implemented.
 // Keep mock data in the hook as a fallback when the API is not available.
@@ -56,17 +57,15 @@ function getStatusTriggerClasses(status: string) {
 }
 
 const getInspectionAddress = (inspection: Inspection) => {
-  const property = inspection.job?.property;
+  const property = inspection.summary?.property ?? inspection.job?.property;
   if (property) {
-    return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
-      .filter(Boolean)
-      .join(", ");
+    return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ");
   }
   return "Property unavailable";
 };
 
 const getInspectionClientName = (inspection: Inspection) => {
-  return inspection.job?.client?.name ?? "Unknown client";
+  return inspection.summary?.client?.name ?? inspection.job?.client?.name ?? "Unknown client";
 };
 
 const getInspectionInspectorName = (inspection: Inspection) => {
@@ -74,8 +73,8 @@ const getInspectionInspectorName = (inspection: Inspection) => {
 };
 
 const getInspectionDateTime = (inspection: Inspection) => {
-  const scheduledDate = inspection.job?.scheduled_date ?? "";
-  const scheduledTime = inspection.job?.scheduled_time ?? "";
+  const scheduledDate = inspection.summary?.scheduled_date ?? inspection.schedule?.slot_date ?? inspection.job?.scheduled_date ?? "";
+  const scheduledTime = inspection.summary?.scheduled_time ?? inspection.schedule?.slot_start ?? inspection.job?.scheduled_time ?? "";
   return {
     dateLabel: scheduledDate ? formatDateShort(scheduledDate) : "Unscheduled",
     timeLabel: scheduledTime ? `at ${formatTime12(scheduledTime)}` : "",
@@ -83,15 +82,15 @@ const getInspectionDateTime = (inspection: Inspection) => {
 };
 
 const getInspectionServiceIds = (inspection: Inspection) => {
+  const summaryServices = inspection.summary?.service_ids;
+  if (Array.isArray(summaryServices) && summaryServices.length > 0) return summaryServices;
   const jobServiceIds = inspection.job?.selected_service_ids;
   if (Array.isArray(jobServiceIds) && jobServiceIds.length > 0) return jobServiceIds;
+  if (inspection.schedule?.service_id) return [inspection.schedule.service_id];
   return [];
 };
 
-const getInspectionPrice = (
-  inspection: Inspection,
-  serviceMap: Map<string, { serviceId: string; name: string }>
-) => {
+const getInspectionPrice = (inspection: Inspection, serviceMap: Map<string, { serviceId: string; name: string }>) => {
   const serviceIds = getInspectionServiceIds(inspection);
   if (!serviceIds.length) return 0;
   return serviceIds.reduce((sum, id) => {
@@ -104,16 +103,14 @@ const getInspectionPrice = (
 const columns = (
   onStatusChange: (inspectionId: string, status: string) => void,
   getStatus: (inspectionId: string, currentStatus: string) => string,
-  serviceMap: Map<string, { serviceId: string; name: string; price: number }>
+  serviceMap: Map<string, { serviceId: string; name: string; price: number }>,
 ): ColumnDef<Inspection>[] => [
   {
     id: "address",
     accessorFn: (row) => {
-      const property = row.job?.property;
+      const property = row.summary?.property ?? row.job?.property;
       return property
-        ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
-            .filter(Boolean)
-            .join(", ")
+        ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
         : "";
     },
     header: "Property",
@@ -121,10 +118,7 @@ const columns = (
     cell: ({ row }) => {
       const address = getInspectionAddress(row.original);
       return (
-        <Link
-          href={`/admin/inspections/${row.original.id}`}
-          className="flex items-start gap-2 max-w-xs hover:text-foreground"
-        >
+        <Link href={`/admin/inspections/${row.original.id}`} className="flex items-start gap-2 max-w-xs hover:text-foreground">
           <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
           <div className="text-sm">
             <div className="font-medium">{address}</div>
@@ -148,11 +142,7 @@ const columns = (
     accessorKey: "inspector",
     header: "Inspector",
     enableSorting: true,
-    cell: ({ row }) => (
-      <div className="text-sm max-w-xs">
-        {getInspectionInspectorName(row.original)}
-      </div>
-    ),
+    cell: ({ row }) => <div className="text-sm max-w-xs">{getInspectionInspectorName(row.original)}</div>,
   },
   {
     accessorKey: "date",
@@ -190,16 +180,8 @@ const columns = (
       const inspectionId = row.original.id;
       const currentStatus = getStatus(inspectionId, row.original.status);
       return (
-        <Select
-          value={currentStatus}
-          onValueChange={(value) => onStatusChange(inspectionId, value)}
-        >
-          <SelectTrigger
-            className={cn(
-              "h-8 w-[160px] font-medium shadow-none",
-              getStatusTriggerClasses(currentStatus)
-            )}
-          >
+        <Select value={currentStatus} onValueChange={(value) => onStatusChange(inspectionId, value)}>
+          <SelectTrigger className={cn("h-8 w-[160px] font-medium shadow-none", getStatusTriggerClasses(currentStatus))}>
             <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -229,12 +211,16 @@ const columns = (
 export default function InspectionsPage() {
   const { data, isLoading, isError, error } = useInspections();
   const { data: services = [] } = useServices();
-  const serviceMap = useMemo(() => createServiceMap(services), [services]) as Map<
-    string,
-    { serviceId: string; name: string; price: number }
-  >;
+  const serviceMap = useMemo(() => createServiceMap(services), [services]) as Map<string, { serviceId: string; name: string; price: number }>;
   const updateInspection = useUpdateInspection();
-  const inspections = data ?? [];
+  const inspections = useMemo(() => {
+    if (!data) return [] as Inspection[];
+    return [...data].sort((a, b) => {
+      const aTime = a.created_at ? Date.parse(a.created_at) : 0;
+      const bTime = b.created_at ? Date.parse(b.created_at) : 0;
+      return bTime - aTime;
+    });
+  }, [data]);
   const [mobileQuery, setMobileQuery] = useState(() => {
     if (typeof window === "undefined") return "";
     const storedState = window.localStorage.getItem(stateStorageKey);
@@ -271,10 +257,16 @@ export default function InspectionsPage() {
   const userRole = mockAdminUser.role;
 
   useEffect(() => {
-    window.localStorage.setItem(
-      stateStorageKey,
-      JSON.stringify({ statusFilter, query: mobileQuery })
-    );
+    if (isLoading) return;
+    console.log("[InspectionsPage] inspections fetch", {
+      count: inspections.length,
+      isError,
+      error: error instanceof Error ? error.message : (error ?? null),
+    });
+  }, [inspections.length, isLoading, isError, error]);
+
+  useEffect(() => {
+    window.localStorage.setItem(stateStorageKey, JSON.stringify({ statusFilter, query: mobileQuery }));
   }, [statusFilter, mobileQuery]);
 
   const filteredMobile = inspections.filter((inspection) => {
@@ -282,19 +274,24 @@ export default function InspectionsPage() {
     if (!matchesStatus) return false;
     if (!mobileQuery.trim()) return true;
     const query = mobileQuery.toLowerCase();
-    const property = inspection.job?.property;
+    const property = inspection.summary?.property ?? inspection.job?.property;
     const address = property
-      ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`]
-          .filter(Boolean)
-          .join(", ")
+      ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
       : "";
-    return (
-      address.toLowerCase().includes(query) ||
-      (inspection.job?.client?.name || "").toLowerCase().includes(query)
-    );
+    const clientName = inspection.summary?.client?.name ?? inspection.job?.client?.name ?? "";
+    return address.toLowerCase().includes(query) || clientName.toLowerCase().includes(query);
   });
 
   const statusOptions = inspectionStatusOptions;
+
+  useEffect(() => {
+    if (isLoading) return;
+    console.log("[InspectionsPage] render data", {
+      count: inspections.length,
+      first: inspections[0]?.id ?? null,
+      tenantId: (data as unknown as { tenantId?: string })?.tenantId ?? null,
+    });
+  }, [isLoading, inspections, data]);
 
   const handleSaveView = () => {
     const name = window.prompt("Save view as:");
@@ -322,8 +319,7 @@ export default function InspectionsPage() {
     setMobileQuery(view.query);
   };
 
-  const getStatusValue = (inspectionId: string, currentStatus: string) =>
-    statusOverrides[inspectionId] ?? currentStatus ?? "scheduled";
+  const getStatusValue = (inspectionId: string, currentStatus: string) => statusOverrides[inspectionId] ?? currentStatus ?? "scheduled";
 
   const handleStatusChange = (inspectionId: string, status: string) => {
     const current = inspections.find((i) => i.id === inspectionId);
@@ -344,24 +340,24 @@ export default function InspectionsPage() {
         onError: () => {
           setStatusOverrides((prev) => ({ ...prev, [inspectionId]: previousStatus }));
         },
-      }
+      },
     );
   };
 
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <AdminPageHeader
+        <PageHeader
           title="Inspections"
           description="Manage and track all inspections"
           actions={
             can(userRole, "create_inspections") ? (
-            <Button asChild className="sm:w-auto">
-              <Link href="/admin/inspections/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Inspection
-              </Link>
-            </Button>
+              <Button asChild className="sm:w-auto">
+                <Link href="/admin/inspections/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Inspection
+                </Link>
+              </Button>
             ) : null
           }
         />
@@ -396,19 +392,13 @@ export default function InspectionsPage() {
         <Card>
           <CardHeader>
             <CardTitle>All Inspections</CardTitle>
-            <CardDescription>
-              {isLoading ? "Loading..." : `${inspections.length} total inspections`}
-            </CardDescription>
+            <CardDescription>{isLoading ? "Loading..." : `${inspections.length} total inspections`}</CardDescription>
           </CardHeader>
           <CardContent>
             {isError ? (
               <div className="text-red-500">
                 Failed to load inspections.
-                {error instanceof Error && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {error.message}
-                  </span>
-                )}
+                {error instanceof Error && <span className="ml-2 text-xs text-muted-foreground">{error.message}</span>}
               </div>
             ) : (
               <>
@@ -438,9 +428,7 @@ export default function InspectionsPage() {
                     </div>
                   </div>
                   {filteredMobile.length === 0 && !isLoading ? (
-                    <div className="py-6 text-center text-sm text-muted-foreground">
-                      No inspections yet.
-                    </div>
+                    <div className="py-6 text-center text-sm text-muted-foreground">No inspections yet.</div>
                   ) : (
                     filteredMobile.map((inspection, index) => {
                       const address = getInspectionAddress(inspection);
@@ -448,63 +436,58 @@ export default function InspectionsPage() {
                       const serviceLabel = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
                       const inspectionPrice = getInspectionPrice(inspection, serviceMap);
                       return (
-                      <Link
-                        key={inspection.id || `inspection-${index}`}
-                        href={`/admin/inspections/${inspection.id}`}
-                        className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            {(() => {
-                              return (
-                                <>
-                                  <p className="text-sm font-semibold">{address}</p>
-                                </>
-                              );
-                            })()}
+                        <Link
+                          key={inspection.id || `inspection-${index}`}
+                          href={`/admin/inspections/${inspection.id}`}
+                          className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              {(() => {
+                                return (
+                                  <>
+                                    <p className="text-sm font-semibold">{address}</p>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                            <div className="shrink-0">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                                  getStatusTriggerClasses(getStatusValue(inspection.id, inspection.status)),
+                                )}
+                              >
+                                {getStatusLabel(getStatusValue(inspection.id, inspection.status))}
+                              </span>
+                            </div>
                           </div>
-                          <div className="shrink-0">
-                            <span
-                              className={cn(
-                                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                                getStatusTriggerClasses(getStatusValue(inspection.id, inspection.status))
-                              )}
-                            >
-                              {getStatusLabel(getStatusValue(inspection.id, inspection.status))}
-                            </span>
+                          <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <User className="h-3.5 w-3.5" />
+                              <span>{getInspectionClientName(inspection)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>
+                                {getInspectionDateTime(inspection).dateLabel} {getInspectionDateTime(inspection).timeLabel}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">{serviceLabel || "—"}</Badge>
+                              <span className="font-semibold text-foreground">${inspectionPrice.toFixed(2)}</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <User className="h-3.5 w-3.5" />
-                            <span>{getInspectionClientName(inspection)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>
-                              {getInspectionDateTime(inspection).dateLabel} {getInspectionDateTime(inspection).timeLabel}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {serviceLabel || "—"}
-                            </Badge>
-                            <span className="font-semibold text-foreground">
-                              ${inspectionPrice.toFixed(2)}
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-                    )})
+                        </Link>
+                      );
+                    })
                   )}
                 </div>
                 <div className="hidden md:block">
                   {inspections.length === 0 && !isLoading ? (
                     <div className="rounded-lg border border-dashed p-10 text-center">
                       <h3 className="text-lg font-semibold">No inspections yet</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        Create your first inspection to start tracking jobs.
-                      </p>
+                      <p className="mt-2 text-sm text-muted-foreground">Create your first inspection to start tracking jobs.</p>
                       {can(userRole, "create_inspections") && (
                         <Button asChild className="mt-4">
                           <Link href="/admin/inspections/new">Create inspection</Link>
@@ -512,12 +495,12 @@ export default function InspectionsPage() {
                       )}
                     </div>
                   ) : (
-                  <DataTable
+                    <DataTable
                       columns={columns(handleStatusChange, getStatusValue, serviceMap)}
-                    data={inspections}
-                    searchKey="address"
-                    searchPlaceholder="Search by property address..."
-                  />
+                      data={inspections}
+                      searchKey="address"
+                      searchPlaceholder="Search by property address..."
+                    />
                   )}
                 </div>
               </>

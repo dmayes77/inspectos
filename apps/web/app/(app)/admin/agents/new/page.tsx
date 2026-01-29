@@ -296,7 +296,7 @@ export default function NewAgentPage() {
     try {
       const agent = await createAgent.mutateAsync(payload);
       toast.success("Agent created");
-      router.push(`/admin/partners/agents/${agent.id}`);
+      router.push(`/admin/agents/${agent.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create agent";
       toast.error(message);
@@ -313,18 +313,18 @@ export default function NewAgentPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
                 Agents
               </Link>
             </>
           }
           title="Add Agent"
           description="Invite referring agents and control portal access"
-          backHref="/admin/partners?tab=agents"
+          backHref="/admin/agents?tab=agents"
         />
 
         <form onSubmit={handleSubmit}>
@@ -343,7 +343,7 @@ export default function NewAgentPage() {
                       {createAgent.isPending ? "Saving..." : "Create Agent"}
                     </Button>
                     <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href="/admin/partners?tab=agents">Cancel</Link>
+                      <Link href="/admin/agents?tab=agents">Cancel</Link>
                     </Button>
                   </>
                 }

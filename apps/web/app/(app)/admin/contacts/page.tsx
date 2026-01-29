@@ -61,7 +61,7 @@ function ClientsPageContent() {
               </Button>
               {can(userRole, "create_clients") ? (
                 <Button asChild className="sm:w-auto">
-                  <Link href="/admin/contacts/clients/new">
+                  <Link href="/admin/contacts/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Client
                   </Link>
@@ -144,7 +144,7 @@ function ClientsPageContent() {
                         filteredMobile.map((client: Client) => (
                           <Link
                             key={client.clientId}
-                            href={`/admin/contacts/clients/${client.clientId}`}
+                            href={`/admin/contacts/${client.clientId}`}
                             className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -179,7 +179,7 @@ function ClientsPageContent() {
                           <p className="mt-2 text-sm text-muted-foreground">Add your first client to start scheduling inspections.</p>
                           {can(userRole, "create_clients") && (
                             <Button asChild className="mt-4">
-                              <Link href="/admin/contacts/clients/new">Add client</Link>
+                              <Link href="/admin/contacts/new">Add client</Link>
                             </Button>
                           )}
                         </div>

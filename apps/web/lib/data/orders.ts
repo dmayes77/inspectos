@@ -1,19 +1,35 @@
+import type { InspectionSchedule, InspectionScheduleStatus, InspectionScheduleType } from "@/types/inspection";
+
 /**
  * Orders data layer
  * Handles order CRUD operations
  * Orders are the central business unit replacing jobs
  */
 
-export type OrderStatus =
-  | 'pending'
-  | 'scheduled'
-  | 'in_progress'
-  | 'pending_report'
-  | 'delivered'
-  | 'completed'
-  | 'cancelled';
+export type OrderStatus = "pending" | "scheduled" | "in_progress" | "pending_report" | "delivered" | "completed" | "cancelled";
 
-export type PaymentStatus = 'unpaid' | 'partial' | 'paid' | 'refunded';
+export type PaymentStatus = "unpaid" | "partial" | "paid" | "refunded";
+
+export type OrderScheduleType = InspectionScheduleType;
+export type OrderScheduleStatus = InspectionScheduleStatus;
+export type OrderSchedule = InspectionSchedule;
+
+export interface InspectionAssignment {
+  id: string;
+  inspection_id: string;
+  inspector_id: string;
+  role: "lead" | "assistant" | "tech";
+  assigned_at: string;
+  unassigned_at: string | null;
+  created_at: string;
+  updated_at: string;
+  inspector?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  } | null;
+}
 
 export interface InspectionService {
   id: string;
@@ -23,7 +39,7 @@ export interface InspectionService {
   name: string;
   price: number;
   duration_minutes: number | null;
-  status: 'pending' | 'in_progress' | 'completed' | 'skipped';
+  status: "pending" | "in_progress" | "completed" | "skipped";
   sort_order: number;
   notes: string | null;
   created_at: string;
@@ -39,7 +55,7 @@ export interface OrderInspection {
   order_id: string;
   template_id: string;
   inspector_id: string;
-  status: 'draft' | 'in_progress' | 'completed' | 'submitted';
+  status: "draft" | "in_progress" | "completed" | "submitted";
   started_at: string | null;
   completed_at: string | null;
   weather_conditions: string | null;
@@ -47,25 +63,10 @@ export interface OrderInspection {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  order_schedule_id?: string | null;
+  order_schedule?: OrderSchedule | null;
   services?: InspectionService[];
   assignments?: InspectionAssignment[];
-}
-
-export interface InspectionAssignment {
-  id: string;
-  inspection_id: string;
-  inspector_id: string;
-  role: 'lead' | 'assistant' | 'tech';
-  assigned_at: string;
-  unassigned_at: string | null;
-  created_at: string;
-  updated_at: string;
-  inspector?: {
-    id: string;
-    full_name: string | null;
-    email: string;
-    avatar_url: string | null;
-  } | null;
 }
 
 export interface Order {
@@ -149,6 +150,7 @@ export interface Order {
     avatar_url: string | null;
   } | null;
   inspection?: OrderInspection | null;
+  schedules?: OrderSchedule[];
   invoices?: Array<{
     id: string;
     status: string;
@@ -171,6 +173,7 @@ export interface CreateOrderInput {
   client_id?: string | null;
   agent_id?: string | null;
   inspector_id?: string | null;
+  inspection_id?: string;
   property_id: string;
   scheduled_date?: string | null;
   scheduled_time?: string | null;
@@ -186,6 +189,7 @@ export interface UpdateOrderInput {
   client_id?: string | null;
   agent_id?: string | null;
   inspector_id?: string | null;
+  inspection_id?: string | null;
   property_id?: string;
   status?: OrderStatus;
   scheduled_date?: string | null;
@@ -214,30 +218,27 @@ export interface OrderFilters {
   search?: string;
 }
 
-export async function fetchOrders(
-  tenantSlug: string,
-  filters?: OrderFilters
-): Promise<Order[]> {
+export async function fetchOrders(tenantSlug: string, filters?: OrderFilters): Promise<Order[]> {
   const params = new URLSearchParams({ tenant: tenantSlug });
 
-  if (filters?.status) params.append('status', filters.status);
-  if (filters?.payment_status) params.append('payment_status', filters.payment_status);
-  if (filters?.inspector_id) params.append('inspector_id', filters.inspector_id);
-  if (filters?.client_id) params.append('client_id', filters.client_id);
-  if (filters?.agent_id) params.append('agent_id', filters.agent_id);
-  if (filters?.from) params.append('from', filters.from);
-  if (filters?.to) params.append('to', filters.to);
-  if (filters?.search) params.append('search', filters.search);
+  if (filters?.status) params.append("status", filters.status);
+  if (filters?.payment_status) params.append("payment_status", filters.payment_status);
+  if (filters?.inspector_id) params.append("inspector_id", filters.inspector_id);
+  if (filters?.client_id) params.append("client_id", filters.client_id);
+  if (filters?.agent_id) params.append("agent_id", filters.agent_id);
+  if (filters?.from) params.append("from", filters.from);
+  if (filters?.to) params.append("to", filters.to);
+  if (filters?.search) params.append("search", filters.search);
 
   const response = await fetch(`/api/admin/orders?${params}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch orders');
+    throw new Error(error.error?.message || "Failed to fetch orders");
   }
 
   const result = await response.json();
@@ -247,13 +248,13 @@ export async function fetchOrders(
 export async function fetchOrderById(id: string): Promise<Order> {
   const response = await fetch(`/api/admin/orders/${id}`, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch order');
+    throw new Error(error.error?.message || "Failed to fetch order");
   }
 
   const result = await response.json();
@@ -262,16 +263,16 @@ export async function fetchOrderById(id: string): Promise<Order> {
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
   const response = await fetch(`/api/admin/orders`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to create order');
+    throw new Error(error.error?.message || "Failed to create order");
   }
 
   const result = await response.json();
@@ -281,16 +282,16 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
 export async function updateOrder(input: UpdateOrderInput): Promise<Order> {
   const { id, ...data } = input;
   const response = await fetch(`/api/admin/orders/${id}`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to update order');
+    throw new Error(error.error?.message || "Failed to update order");
   }
 
   const result = await response.json();
@@ -299,15 +300,15 @@ export async function updateOrder(input: UpdateOrderInput): Promise<Order> {
 
 export async function deleteOrder(id: string): Promise<boolean> {
   const response = await fetch(`/api/admin/orders/${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to delete order');
+    throw new Error(error.error?.message || "Failed to delete order");
   }
 
   return true;
@@ -320,19 +321,19 @@ export async function scheduleOrder(
     scheduled_time?: string;
     inspector_id: string;
     duration_minutes?: number;
-  }
+  },
 ): Promise<Order> {
   const response = await fetch(`/api/admin/orders/${id}/schedule`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to schedule order');
+    throw new Error(error.error?.message || "Failed to schedule order");
   }
 
   const result = await response.json();
@@ -341,16 +342,16 @@ export async function scheduleOrder(
 
 export async function cancelOrder(id: string, reason?: string): Promise<Order> {
   const response = await fetch(`/api/admin/orders/${id}/cancel`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ reason }),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to cancel order');
+    throw new Error(error.error?.message || "Failed to cancel order");
   }
 
   const result = await response.json();
@@ -359,15 +360,15 @@ export async function cancelOrder(id: string, reason?: string): Promise<Order> {
 
 export async function sendClientPortalLink(orderId: string): Promise<{ success: boolean }> {
   const response = await fetch(`/api/admin/orders/${orderId}/send-client-link`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to send client portal link');
+    throw new Error(error.error?.message || "Failed to send client portal link");
   }
 
   return response.json();
@@ -375,15 +376,15 @@ export async function sendClientPortalLink(orderId: string): Promise<{ success: 
 
 export async function sendAgentPortalLink(orderId: string): Promise<{ success: boolean }> {
   const response = await fetch(`/api/admin/orders/${orderId}/send-agent-link`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to send agent portal link');
+    throw new Error(error.error?.message || "Failed to send agent portal link");
   }
 
   return response.json();

@@ -18,9 +18,9 @@
      - No 'sm' breakpoint - minimum is iPad portrait (810px)
      - Phones will see DeviceGate component instead
      ========================================================================== */
-  --breakpoint-md: 810px;   /* iPad 10.2" portrait (minimum supported) */
-  --breakpoint-lg: 1024px;  /* iPad landscape / Small laptop */
-  --breakpoint-xl: 1280px;  /* Desktop (admin UI optimal) */
+  --breakpoint-md: 810px; /* iPad 10.2" portrait (minimum supported) */
+  --breakpoint-lg: 1024px; /* iPad landscape / Small laptop */
+  --breakpoint-xl: 1280px; /* Desktop (admin UI optimal) */
   --breakpoint-2xl: 1536px; /* Large desktop */
 
   /* Base colors */
@@ -310,7 +310,6 @@
 .admin-content > * {
   grid-column: 1 / -1;
 }
-
 
 /* -----------------------------------------------------------------------------
    Dark Mode (preserved for future, not active in MVP)

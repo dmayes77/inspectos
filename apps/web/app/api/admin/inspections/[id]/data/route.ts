@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     .select(
       `
         *,
-        job:jobs(
+        order:orders!inspections_order_id_fkey(
           id,
           scheduled_date,
           scheduled_time,
@@ -134,9 +134,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: { message: mediaError.message } }, { status: 500 });
   }
 
+  const { order, ...rest } = inspection as typeof inspection & { order?: typeof inspection.job };
+  const normalizedInspection = {
+    ...rest,
+    job: order ?? null,
+  };
+
   return NextResponse.json({
     data: {
-      inspection,
+      inspection: normalizedInspection,
       answers: answers ?? [],
       findings: findings ?? [],
       signatures: signatures ?? [],

@@ -16,6 +16,8 @@ import {
   Tag,
   ShoppingCart,
   MapPin,
+  IdCard,
+  Wrench,
 } from "lucide-react";
 
 export type NavItem = {
@@ -34,7 +36,7 @@ export const companyPinnedNav: NavItem[] = [
   { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
   { href: "/admin/contacts", icon: Users, label: "Contacts" },
-  { href: "/admin/partners", icon: Building2, label: "Partners" },
+  { href: "/admin/agents", icon: IdCard, label: "Agents" },
 ];
 
 export const companyNavSections: NavSection[] = [
@@ -43,7 +45,7 @@ export const companyNavSections: NavSection[] = [
     items: [
       { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
       { href: "/admin/properties", icon: MapPin, label: "Properties" },
-      { href: "/admin/services", icon: ClipboardList, label: "Services" },
+      { href: "/admin/services", icon: Wrench, label: "Services" },
       { href: "/admin/templates", icon: FileText, label: "Inspection Templates" },
       { href: "/admin/tags", icon: Tag, label: "Tags" },
       { href: "/admin/workflows", icon: Workflow, label: "Workflows" },

@@ -242,7 +242,7 @@ export default function NewAgencyPage() {
       {
         onSuccess: (agency) => {
           toast.success("Agency created");
-          router.push(`/admin/partners/agencies/${agency.id}`);
+          router.push(`/admin/agents/agencies/${agency.id}`);
         },
         onError: (error) => {
           const message = error instanceof Error ? error.message : "Failed to create agency";
@@ -262,18 +262,18 @@ export default function NewAgencyPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
             </>
           }
           title="Add Agency"
           description="Capture brokerages and referral partners"
-          backHref="/admin/partners?tab=agencies"
+          backHref="/admin/agents?tab=agencies"
         />
 
         <form onSubmit={handleSubmit}>
@@ -292,7 +292,7 @@ export default function NewAgencyPage() {
                       {createAgency.isPending ? "Saving..." : "Create Agency"}
                     </Button>
                     <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href="/admin/partners?tab=agencies">Cancel</Link>
+                      <Link href="/admin/agents?tab=agencies">Cancel</Link>
                     </Button>
                   </>
                 }

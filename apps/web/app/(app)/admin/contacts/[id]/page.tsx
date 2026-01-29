@@ -40,7 +40,7 @@ const formatPropertyType = (propertyType: string) => {
   return propertyType.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export default function ClientDetailPage() {
+export default function ContactDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -215,7 +215,7 @@ export default function ClientDetailPage() {
         <CardContent className="space-y-2">
           <div className="space-y-2">
             <Button variant="outline" asChild className="w-full justify-start">
-              <Link href={`/admin/contacts/clients/${client.clientId}/edit`}>
+              <Link href={`/admin/contacts/${client.clientId}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </Link>

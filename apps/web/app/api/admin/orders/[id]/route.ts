@@ -5,6 +5,23 @@ import { validateRequestBody } from "@/lib/api/validate";
 import { updateOrderSchema } from "@/lib/validations/order";
 import { format } from "date-fns";
 
+const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: string | null) => {
+  switch (status) {
+    case "scheduled":
+      return "scheduled";
+    case "in_progress":
+      return "in_progress";
+    case "pending_report":
+    case "delivered":
+    case "completed":
+      return "completed";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return scheduledDate ? "scheduled" : "pending";
+  }
+};
+
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const tenantId = getTenantId();
   const { id } = await params;
@@ -24,8 +41,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       client:clients(id, name, email, phone, company, notes),
       agent:agents(id, name, email, phone, license_number, agency:agencies(id, name, email, phone)),
       inspector:profiles(id, full_name, email, avatar_url),
+      schedules:order_schedules(
+        id, tenant_id, order_id, schedule_type, label, service_id, package_id,
+        inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes
+      ),
       inspection:inspections(
-        id, order_id, status, started_at, completed_at, weather_conditions, temperature, notes,
+        id, order_id, order_schedule_id, status, started_at, completed_at, weather_conditions, temperature, notes,
         services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id, notes, sort_order),
         assignments:inspection_assignments(
           id, role, assigned_at, unassigned_at,
@@ -108,8 +129,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       client:clients(id, name, email, phone),
       agent:agents(id, name, email, phone),
       inspector:profiles(id, full_name, email),
+      schedules:order_schedules(
+        id, tenant_id, order_id, schedule_type, label, service_id, package_id,
+        inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes
+      ),
       inspection:inspections(
-        id, order_id, status,
+        id, order_id, order_schedule_id, status,
         services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id),
         assignments:inspection_assignments(
           id, role, assigned_at, unassigned_at,
@@ -144,6 +169,70 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     });
   }
 
+  let primarySchedule = Array.isArray(data.schedules) && data.schedules.length > 0 ? data.schedules[0] : null;
+  let scheduleChanged = false;
+  const shouldSyncSchedule =
+    payload.scheduled_date !== undefined ||
+    payload.scheduled_time !== undefined ||
+    payload.duration_minutes !== undefined ||
+    payload.inspector_id !== undefined ||
+    payload.status !== undefined;
+
+  if (shouldSyncSchedule) {
+    const scheduleUpdate: Record<string, unknown> = {};
+    if (payload.scheduled_date !== undefined) scheduleUpdate.slot_date = payload.scheduled_date;
+    if (payload.scheduled_time !== undefined) scheduleUpdate.slot_start = payload.scheduled_time;
+    if (payload.duration_minutes !== undefined) scheduleUpdate.duration_minutes = payload.duration_minutes;
+    if (payload.inspector_id !== undefined) scheduleUpdate.inspector_id = payload.inspector_id;
+    scheduleUpdate.status = mapOrderStatusToScheduleStatus(payload.status ?? data.status, payload.scheduled_date ?? data.scheduled_date ?? null);
+
+    if (primarySchedule) {
+      const { data: refreshedSchedule, error: scheduleUpdateError } = await supabaseAdmin
+        .from("order_schedules")
+        .update(scheduleUpdate)
+        .eq("id", primarySchedule.id)
+        .select(
+          "id, tenant_id, order_id, schedule_type, label, service_id, package_id, inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes",
+        )
+        .single();
+      if (scheduleUpdateError) {
+        return NextResponse.json({ error: { message: scheduleUpdateError.message } }, { status: 500 });
+      }
+      primarySchedule = refreshedSchedule ?? { ...primarySchedule, ...scheduleUpdate };
+    } else {
+      const { data: insertedSchedule, error: scheduleInsertError } = await supabaseAdmin
+        .from("order_schedules")
+        .insert({
+          tenant_id: tenantId,
+          order_id: data.id,
+          schedule_type: "primary",
+          label: payload.services?.[0]?.name ?? data.inspection?.services?.[0]?.name ?? "Primary Inspection",
+          service_id: payload.services?.[0]?.service_id ?? data.inspection?.services?.[0]?.service_id ?? null,
+          ...scheduleUpdate,
+        })
+        .select(
+          "id, tenant_id, order_id, schedule_type, label, service_id, package_id, inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes",
+        )
+        .single();
+      if (scheduleInsertError) {
+        return NextResponse.json({ error: { message: scheduleInsertError.message } }, { status: 500 });
+      }
+      primarySchedule = insertedSchedule ?? null;
+    }
+
+    if (primarySchedule && data.inspection?.id && !data.inspection.order_schedule_id) {
+      await supabaseAdmin.from("inspections").update({ order_schedule_id: primarySchedule.id }).eq("id", data.inspection.id);
+      data.inspection.order_schedule_id = primarySchedule.id;
+    }
+
+    scheduleChanged = true;
+  }
+
+  if (scheduleChanged && primarySchedule) {
+    const others = Array.isArray(data.schedules) ? data.schedules.filter((schedule: { id: string | null }) => schedule?.id !== primarySchedule.id) : [];
+    data.schedules = [...others, primarySchedule];
+  }
+
   if (payload.services) {
     let inspectionId = data.inspection?.id ?? null;
     if (!inspectionId) {
@@ -152,17 +241,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         .insert({
           tenant_id: tenantId,
           order_id: data.id,
+          order_schedule_id: primarySchedule?.id ?? null,
           template_id: payload.services[0]?.template_id ?? null,
           template_version: 1,
           status: "draft",
         })
-        .select("id")
+        .select("id, order_schedule_id")
         .single();
 
       if (inspectionError || !createdInspection) {
         return NextResponse.json({ error: { message: inspectionError?.message ?? "Failed to create inspection." } }, { status: 500 });
       }
       inspectionId = createdInspection.id;
+      data.inspection = {
+        ...(data.inspection ?? {}),
+        id: inspectionId,
+        order_schedule_id: createdInspection.order_schedule_id ?? primarySchedule?.id ?? null,
+      } as typeof data.inspection;
     }
 
     await supabaseAdmin.from("inspection_services").delete().eq("inspection_id", inspectionId);

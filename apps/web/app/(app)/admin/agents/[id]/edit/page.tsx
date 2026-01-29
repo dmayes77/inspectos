@@ -295,18 +295,18 @@ export default function EditAgentPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
                 Agents
               </Link>
             </>
           }
           title="Agent Not Found"
           description="We couldn't locate that agent record."
-          backHref="/admin/partners?tab=agents"
+          backHref="/admin/agents?tab=agents"
         />
       </AdminShell>
     );
@@ -345,7 +345,7 @@ export default function EditAgentPage() {
     try {
       await updateAgent.mutateAsync(payload);
       toast.success("Agent updated");
-      router.push(`/admin/partners/agents/${agent.id}`);
+      router.push(`/admin/agents/${agent.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update agent";
       toast.error(message);
@@ -362,22 +362,22 @@ export default function EditAgentPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
+              <Link href="/admin/agents" className="hover:text-foreground">
                 Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/partners/agents/${agent.id}`} className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
+                Agents
+              </Link>
+              <span className="text-muted-foreground">/</span>
+              <Link href={`/admin/agents/${agent.id}`} className="hover:text-foreground">
                 {agent.name}
               </Link>
             </>
           }
           title="Edit Agent"
           description="Adjust relationship details and portal settings"
-          backHref={`/admin/partners/agents/${agent.id}`}
+          backHref={`/admin/agents/${agent.id}`}
         />
 
         <form onSubmit={handleSubmit}>
@@ -396,7 +396,7 @@ export default function EditAgentPage() {
                       {updateAgent.isPending ? "Saving..." : "Save Changes"}
                     </Button>
                     <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href={`/admin/partners/agents/${agent.id}`}>Cancel</Link>
+                      <Link href={`/admin/agents/${agent.id}`}>Cancel</Link>
                     </Button>
                   </>
                 }

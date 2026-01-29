@@ -39,7 +39,7 @@ const agencyColumns: ColumnDef<Agency>[] = [
     accessorKey: "name",
     header: "Agency",
     cell: ({ row }: { row: AgencyRow }) => (
-      <Link href={`/admin/partners/agencies/${row.original.id}`} className="flex items-center gap-3 hover:underline">
+      <Link href={`/admin/agents/agencies/${row.original.id}`} className="flex items-center gap-3 hover:underline">
         <CompanyLogo name={row.original.name} logoUrl={row.original.logo_url} website={row.original.website ?? undefined} size={40} className="h-10 w-10" />
         <div className="text-sm">
           <p className="font-medium leading-tight">{row.original.name}</p>
@@ -118,7 +118,7 @@ const agentColumns: ColumnDef<Agent>[] = [
             <AvatarFallback>{row.original.name.charAt(0)}</AvatarFallback>
           )}
         </Avatar>
-        <Link href={`/admin/partners/agents/${row.original.id}`} className="font-medium hover:underline">
+        <Link href={`/admin/agents/${row.original.id}`} className="font-medium hover:underline">
           {row.original.name}
         </Link>
       </div>
@@ -129,7 +129,7 @@ const agentColumns: ColumnDef<Agent>[] = [
     header: "Agency",
     cell: ({ row }: { row: AgentRow }) =>
       row.original.agency ? (
-        <Link href={`/admin/partners/agencies/${row.original.agency.id}`} className="flex items-center gap-2 text-sm hover:underline">
+        <Link href={`/admin/agents/agencies/${row.original.agency.id}`} className="flex items-center gap-2 text-sm hover:underline">
           <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
           {row.original.agency.name}
         </Link>
@@ -179,7 +179,7 @@ const agentColumns: ColumnDef<Agent>[] = [
   },
 ];
 
-function PartnersPageContent() {
+function AgentsPageContent() {
   const { data: agencies = [] } = useAgencies(tenantSlug);
   const { data: agents = [] } = useAgents(tenantSlug);
   const [agencyQuery, setAgencyQuery] = useState("");
@@ -235,20 +235,20 @@ function PartnersPageContent() {
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
         <AdminPageHeader
-          title="Partners"
+          title="Agents"
           description="Track agencies and agents alongside their referral performance"
           actions={
             <div className="flex flex-wrap items-center gap-2">
               {activeTab === "agencies" ? (
                 <Button asChild>
-                  <Link href="/admin/partners/agencies/new">
+                  <Link href="/admin/agents/agencies/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Agency
                   </Link>
                 </Button>
               ) : (
                 <Button asChild>
-                  <Link href="/admin/partners/agents/new">
+                  <Link href="/admin/agents/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Agent
                   </Link>
@@ -256,18 +256,18 @@ function PartnersPageContent() {
               )}
               {activeTab === "agencies" ? (
                 <Button variant="outline" asChild>
-                  <Link href="/admin/partners/agents/new">Add Agent</Link>
+                  <Link href="/admin/agents/new">Add Agent</Link>
                 </Button>
               ) : (
                 <Button variant="outline" asChild>
-                  <Link href="/admin/partners/agencies/new">Add Agency</Link>
+                  <Link href="/admin/agents/agencies/new">Add Agency</Link>
                 </Button>
               )}
             </div>
           }
         />
 
-        <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/partners?tab=${value}`)} className="space-y-4">
+        <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/agents?tab=${value}`)} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 bg-accent md:w-70">
             <TabsTrigger value="agents">Agents</TabsTrigger>
             <TabsTrigger value="agencies">Agencies</TabsTrigger>
@@ -333,7 +333,7 @@ function PartnersPageContent() {
                   {filteredAgents.map((agent) => (
                     <Link
                       key={agent.id}
-                      href={`/admin/partners/agents/${agent.id}`}
+                      href={`/admin/agents/${agent.id}`}
                       className="block rounded-lg border p-4 transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                       aria-label={`View ${agent.name}`}
                     >
@@ -487,10 +487,10 @@ function PartnersPageContent() {
   );
 }
 
-export default function PartnersPage() {
+export default function AgentsPage() {
   return (
     <Suspense fallback={null}>
-      <PartnersPageContent />
+      <AgentsPageContent />
     </Suspense>
   );
 }

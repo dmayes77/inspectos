@@ -120,7 +120,7 @@ export default function PropertyDetailPage() {
 
   const isAgentContact = ownerDetails?.type === "Real Estate Agent";
   const contactActionLabel = isAgentContact ? "View Agent Profile" : "View Client Profile";
-  const contactActionHref = ownerClient ? `/admin/contacts/clients/${ownerClient.id}` : undefined;
+  const contactActionHref = ownerClient ? `/admin/contacts/${ownerClient.id}` : undefined;
   const typeBadge = ownerDetails?.type ? getContactTypeBadge(ownerDetails.type) : undefined;
 
   const breadcrumb = (
@@ -204,7 +204,7 @@ export default function PropertyDetailPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     {owner.client ? (
-                      <Link href={`/admin/contacts/clients/${owner.client.id}`} className="font-medium hover:underline">
+                      <Link href={`/admin/contacts/${owner.client.id}`} className="font-medium hover:underline">
                         {owner.client.name}
                       </Link>
                     ) : (

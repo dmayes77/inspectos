@@ -34,13 +34,19 @@ export function useOrderById(orderId: string) {
 }
 
 export function useCreateOrder() {
-  return usePost<Order, CreateOrderInput>("orders", async (data) => createOrder(data));
+  const queryClient = useQueryClient();
+  return usePost<Order, CreateOrderInput>("orders", async (data) => createOrder(data), {
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inspections"] });
+    },
+  });
 }
 
 export function useUpdateOrder() {
   const queryClient = useQueryClient();
   return usePut<Order, UpdateOrderInput>("orders", async (data) => updateOrder(data), {
     onSuccess: (updatedOrder) => {
+      queryClient.invalidateQueries({ queryKey: ["inspections"] });
       if (updatedOrder?.id) {
         queryClient.invalidateQueries({ queryKey: [`order-${updatedOrder.id}`] });
       }

@@ -107,18 +107,18 @@ export default function AgentDetailPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
                 Agents
               </Link>
             </>
           }
           title="Agent Not Found"
           description="We couldn't locate that agent record."
-          backHref="/admin/partners?tab=agents"
+          backHref="/admin/agents?tab=agents"
           main={
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">Select another agent from the directory.</CardContent>
@@ -168,11 +168,11 @@ export default function AgentDetailPage() {
         Overview
       </Link>
       <span className="text-muted-foreground">/</span>
-      <Link href="/admin/partners" className="hover:text-foreground">
-        Partners
+      <Link href="/admin/agents" className="hover:text-foreground">
+        Agents
       </Link>
       <span className="text-muted-foreground">/</span>
-      <Link href="/admin/partners?tab=agents" className="hover:text-foreground">
+      <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
         Agents
       </Link>
       <span className="text-muted-foreground">/</span>
@@ -194,7 +194,7 @@ export default function AgentDetailPage() {
           },
         });
         toast.success("Agent deleted");
-        router.push("/admin/partners?tab=agents");
+        router.push("/admin/agents?tab=agents");
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to delete agent";
@@ -222,7 +222,7 @@ export default function AgentDetailPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <BackButton href="/admin/partners?tab=agents" label="Back to Agents" variant="ghost" />
+        <BackButton href="/admin/agents?tab=agents" label="Back to Agents" variant="ghost" />
 
         <AdminPageHeader
           title={
@@ -275,13 +275,13 @@ export default function AgentDetailPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               {agent.agency ? (
                 <Button variant="outline" className="w-full sm:w-auto" asChild>
-                  <Link href={`/admin/partners/agencies/${agent.agency.id}`}>
+                  <Link href={`/admin/agents/agencies/${agent.agency.id}`}>
                     <Building2 className="mr-2 h-4 w-4" /> View agency
                   </Link>
                 </Button>
               ) : null}
               <Button className="w-full sm:w-auto" asChild>
-                <Link href={`/admin/partners/agents/${agent.id}/edit`}>
+                <Link href={`/admin/agents/agents/${agent.id}/edit`}>
                   <Edit className="mr-2 h-4 w-4" /> Edit
                 </Link>
               </Button>
@@ -372,7 +372,7 @@ export default function AgentDetailPage() {
                         <div>
                           <div className="flex items-center gap-2 font-medium">
                             <Building2 className="h-4 w-4 text-muted-foreground" />
-                            <Link href={`/admin/partners/agencies/${agent.agency.id}`} className="hover:underline">
+                            <Link href={`/admin/agents/agencies/${agent.agency.id}`} className="hover:underline">
                               {agent.agency.name}
                             </Link>
                           </div>
@@ -397,7 +397,7 @@ export default function AgentDetailPage() {
                           </div>
                         ))}
                       <Button asChild variant="outline" size="sm" className="w-full">
-                        <Link href={`/admin/partners/agencies/${agent.agency.id}`}>Open agency</Link>
+                        <Link href={`/admin/agents/agencies/${agent.agency.id}`}>Open agency</Link>
                       </Button>
                     </>
                   ) : (

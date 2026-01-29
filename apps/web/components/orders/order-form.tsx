@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
@@ -10,33 +10,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle2, Clock, DollarSign, FileText, MapPin, Plus, Search, User, UserCheck } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, DollarSign, FileText, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateOrder, useUpdateOrder, type Order } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { useAgents } from "@/hooks/use-agents";
 import { useInspectors } from "@/hooks/use-team";
-import { useProperties, type Property } from "@/hooks/use-properties";
+import { useInspections } from "@/hooks/use-inspections";
+import { useProperties, useCreateProperty, type Property } from "@/hooks/use-properties";
 import { useServices, type Service } from "@/hooks/use-services";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
-import { InlinePropertyDialog } from "@/components/orders/inline-property-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
+import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
+import { InspectionDetailsSection } from "@/components/inspections/inspection-details-section";
 import type { InspectionService } from "@/lib/data/orders";
+import type { Inspection } from "@/hooks/use-inspections";
+import { cn } from "@/lib/utils";
+import { tryFormatDate } from "@/lib/utils/tryFormatDate";
 
-const orderStatusOptions = [
-  "pending",
-  "scheduled",
-  "in_progress",
-  "pending_report",
-  "delivered",
-  "completed",
-  "cancelled",
-] as const;
+const orderStatusOptions = ["pending", "scheduled", "in_progress", "pending_report", "delivered", "completed", "cancelled"] as const;
 
 const paymentStatusOptions = ["unpaid", "partial", "paid", "refunded"] as const;
+
+const basementOptions = ["none", "unfinished", "finished", "partial"] as const;
+const buildingClassOptions = ["A", "B", "C"] as const;
+const laundryOptions = ["in-unit", "shared", "none"] as const;
+
+const normalizeOptionValue = <T extends string>(value: string | null | undefined, options: readonly T[]) => {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  return options.find((option) => option.toLowerCase() === normalized) ?? null;
+};
 
 type OrderFormState = {
   client_id: string | null;
@@ -58,14 +64,16 @@ type OrderFormProps = {
   order?: Order;
 };
 
+type LinkedInspectionDetails = {
+  inspectorId: string | null;
+  inspectorName: string | null;
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  services: Service[];
+};
+
 function getPropertyLabel(property: Property) {
-  return [
-    property.address_line1,
-    property.address_line2,
-    `${property.city}, ${property.state} ${property.zip_code}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
+  return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ");
 }
 
 function formatStatusLabel(status: string) {
@@ -75,8 +83,49 @@ function formatStatusLabel(status: string) {
     .join(" ");
 }
 
+function getInspectionPropertyAddress(inspection: Inspection) {
+  const property = inspection.summary?.property ?? inspection.job?.property ?? null;
+  if (!property) return null;
+  const cityState = [property.city, property.state].filter(Boolean).join(", ");
+  const postal = property.zip_code ? `${property.zip_code}` : "";
+  const location = [cityState, postal].filter(Boolean).join(" ").trim();
+  return [property.address_line1, property.address_line2, location].filter((value) => Boolean(value && value.trim())).join(", ");
+}
+
+function getInspectionMetaLabel(inspection: Inspection) {
+  const scheduleDate = inspection.summary?.scheduled_date ?? inspection.schedule?.slot_date ?? null;
+  const scheduleTime = inspection.summary?.scheduled_time ?? inspection.schedule?.slot_start ?? null;
+  const inspectorName = inspection.inspector?.full_name ?? null;
+  const parts = [] as string[];
+  const formattedDate = tryFormatDate(scheduleDate);
+  if (formattedDate || scheduleTime) {
+    const scheduleLabel = formattedDate && scheduleTime ? `${formattedDate} at ${scheduleTime}` : (formattedDate ?? scheduleTime);
+    if (scheduleLabel) parts.push(scheduleLabel);
+  }
+  if (inspectorName) parts.push(inspectorName);
+  parts.push(`ID ${inspection.id.slice(0, 8)}`);
+  return parts.filter(Boolean).join(" • ");
+}
+
+function formatScheduleLabel(date?: string | null, time?: string | null) {
+  const formattedDate = tryFormatDate(date);
+  if (formattedDate && time) return `${formattedDate} at ${time}`;
+  return formattedDate ?? time ?? null;
+}
+
+function mapInspectionServiceToService(service: InspectionService): Service {
+  return {
+    serviceId: service.service_id ?? service.id,
+    name: service.name,
+    price: service.price,
+    durationMinutes: service.duration_minutes ?? undefined,
+    templateId: service.template_id ?? undefined,
+  };
+}
+
 function getServicePrice(service: Service) {
-  return Number(service.price ?? 0);
+  const price = typeof service.price === "number" ? service.price : Number(service.price ?? 0);
+  return Number.isFinite(price) ? price : 0;
 }
 
 export function OrderForm({ mode, order }: OrderFormProps) {
@@ -87,14 +136,24 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   const { data: clients = [] } = useClients();
   const { data: agents = [] } = useAgents(tenantSlug);
   const { data: inspectors = [] } = useInspectors();
+  const { data: inspections = [] } = useInspections();
   const { data: properties = [] } = useProperties(tenantSlug);
   const { data: services = [] } = useServices();
+  const createProperty = useCreateProperty();
+  const orderInspection = useMemo(() => {
+    if (!order?.inspection) return null;
+    return Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
+  }, [order?.inspection]);
 
   const [serviceSearch, setServiceSearch] = useState("");
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
-  const [propertyDialogOpen, setPropertyDialogOpen] = useState(false);
   const [agentDialogOpen, setAgentDialogOpen] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [showInlinePropertyForm, setShowInlinePropertyForm] = useState(false);
+  const [selectedInspectionId, setSelectedInspectionId] = useState(() => orderInspection?.id ?? "");
+  const [showInlineInspectionForm, setShowInlineInspectionForm] = useState(false);
+  const [propertyForm, setPropertyForm] = useState(() => createEmptyPropertyFormState());
+  const [propertyFormErrors, setPropertyFormErrors] = useState<PropertyFormErrors>({});
 
   const [form, setForm] = useState<OrderFormState>(() => ({
     client_id: order?.client_id ?? null,
@@ -116,14 +175,29 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   }, [services]);
 
   useEffect(() => {
+    if (!showInlinePropertyForm) return;
+    const nextClientId = form.client_id ?? "";
+    setPropertyForm((prev) => {
+      if (prev.clientId === nextClientId) {
+        return prev;
+      }
+      return { ...prev, clientId: nextClientId };
+    });
+  }, [form.client_id, showInlinePropertyForm]);
+
+  useEffect(() => {
+    if (!orderInspection?.id) return;
+    setSelectedInspectionId(orderInspection.id);
+    setShowInlineInspectionForm(false);
+  }, [orderInspection?.id]);
+
+  useEffect(() => {
     if (mode !== "edit" || selectedServiceIds.length > 0) return;
     const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
     const existing: InspectionService[] = inspection?.services ?? [];
     if (existing.length === 0) return;
 
-    const fromIds = existing
-      .map((service) => service.service_id)
-      .filter((value): value is string => Boolean(value));
+    const fromIds = existing.map((service) => service.service_id).filter((value): value is string => Boolean(value));
 
     if (fromIds.length > 0) {
       setSelectedServiceIds(fromIds);
@@ -141,35 +215,102 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     }
   }, [mode, order?.inspection, selectedServiceIds.length, serviceNameMap]);
 
-  const selectedServices = useMemo(() => {
-    return services.filter((service) => selectedServiceIds.includes(service.serviceId));
-  }, [services, selectedServiceIds]);
+  const selectedInspection = useMemo(() => {
+    if (!selectedInspectionId) return null;
+    return inspections.find((inspection) => inspection.id === selectedInspectionId) ?? null;
+  }, [inspections, selectedInspectionId]);
 
-  const { coreServices, addonServices, packageServices } = useMemo(() => {
-    const filtered = serviceSearch.trim().toLowerCase();
-    const visible = filtered
-      ? services.filter((service) => service.name.toLowerCase().includes(filtered))
-      : services;
-    return {
-      coreServices: visible.filter((service) => service.category === "core" && !service.isPackage),
-      addonServices: visible.filter((service) => service.category === "addon" && !service.isPackage),
-      packageServices: visible.filter((service) => service.isPackage),
-    };
-  }, [services, serviceSearch]);
+  const linkedInspectionDetails = useMemo<LinkedInspectionDetails | null>(() => {
+    if (!selectedInspectionId || showInlineInspectionForm) return null;
+
+    if (selectedInspection) {
+      const serviceIds = selectedInspection.summary?.service_ids ?? selectedInspection.selected_type_ids ?? [];
+      const derivedServices = serviceIds
+        .map((serviceId) => services.find((service) => service.serviceId === serviceId))
+        .filter((service): service is Service => Boolean(service));
+      return {
+        inspectorId: selectedInspection.inspector_id ?? null,
+        inspectorName: selectedInspection.inspector?.full_name ?? null,
+        scheduledDate: selectedInspection.summary?.scheduled_date ?? selectedInspection.schedule?.slot_date ?? null,
+        scheduledTime: selectedInspection.summary?.scheduled_time ?? selectedInspection.schedule?.slot_start ?? null,
+        services: derivedServices,
+      };
+    }
+
+    if (orderInspection && orderInspection.id === selectedInspectionId) {
+      const derivedServices = orderInspection.services?.map((service: InspectionService) => mapInspectionServiceToService(service)) ?? [];
+      return {
+        inspectorId: orderInspection.inspector_id ?? null,
+        inspectorName: order?.inspector?.full_name ?? null,
+        scheduledDate: order?.scheduled_date ?? orderInspection.order_schedule?.slot_date ?? null,
+        scheduledTime: order?.scheduled_time ?? orderInspection.order_schedule?.slot_start ?? null,
+        services: derivedServices,
+      };
+    }
+
+    return null;
+  }, [
+    selectedInspectionId,
+    showInlineInspectionForm,
+    selectedInspection,
+    services,
+    orderInspection,
+    order?.inspector?.full_name,
+    order?.scheduled_date,
+    order?.scheduled_time,
+  ]);
+
+  const selectedServices = useMemo(() => {
+    if (!showInlineInspectionForm && linkedInspectionDetails) {
+      return linkedInspectionDetails.services;
+    }
+    return services.filter((service) => selectedServiceIds.includes(service.serviceId));
+  }, [showInlineInspectionForm, linkedInspectionDetails, services, selectedServiceIds]);
+
+  const isLinkingExistingInspection = !showInlineInspectionForm && Boolean(selectedInspectionId);
+
+  const linkedInspectionSchedule = useMemo(() => {
+    if (!linkedInspectionDetails) return null;
+    return formatScheduleLabel(linkedInspectionDetails.scheduledDate, linkedInspectionDetails.scheduledTime);
+  }, [linkedInspectionDetails]);
+
+  const inlineInspectorName = useMemo(() => {
+    if (!form.inspector_id) return null;
+    const inspector = inspectors.find((item) => item.teamMemberId === form.inspector_id);
+    return inspector?.name ?? null;
+  }, [form.inspector_id, inspectors]);
+
+  const inspectorSummaryLabel = isLinkingExistingInspection
+    ? (linkedInspectionDetails?.inspectorName ?? (linkedInspectionDetails?.inspectorId ? "Inspector assigned" : null))
+    : inlineInspectorName;
+
+  useEffect(() => {
+    if (!isLinkingExistingInspection) return;
+    const inspectorId = linkedInspectionDetails?.inspectorId ?? null;
+    setForm((prev) => {
+      if (prev.inspector_id === inspectorId) {
+        return prev;
+      }
+      return { ...prev, inspector_id: inspectorId };
+    });
+  }, [isLinkingExistingInspection, linkedInspectionDetails?.inspectorId]);
 
   const totals = useMemo(() => {
     const subtotal = selectedServices.reduce((sum, service) => sum + getServicePrice(service), 0);
-    const duration = selectedServices.reduce(
-      (sum, service) => sum + Number(service.durationMinutes ?? 0),
-      0
-    );
+    const duration = selectedServices.reduce((sum, service) => sum + Number(service.durationMinutes ?? 0), 0);
     return { subtotal, duration, count: selectedServices.length };
   }, [selectedServices]);
 
-  const handleToggleService = (serviceId: string) => {
-    setSelectedServiceIds((prev) =>
-      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId]
-    );
+  const servicesSatisfied = isLinkingExistingInspection ? Boolean(selectedInspectionId) : totals.count > 0;
+
+  const handleServiceToggle = (serviceId: string, checked: boolean) => {
+    setSelectedServiceIds((prev) => {
+      const isChecked = prev.includes(serviceId);
+      if (checked) {
+        return isChecked ? prev : [...prev, serviceId];
+      }
+      return prev.filter((id) => id !== serviceId);
+    });
   };
 
   const handleSubmit = () => {
@@ -177,7 +318,11 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       toast.error("Select a property to continue.");
       return;
     }
-    if (selectedServices.length === 0) {
+    if (!showInlineInspectionForm && !selectedInspectionId) {
+      toast.error("Link an inspection or create one inline.");
+      return;
+    }
+    if (showInlineInspectionForm && selectedServices.length === 0) {
       toast.error("Select at least one service.");
       return;
     }
@@ -193,6 +338,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       source: form.source || undefined,
       internal_notes: form.internal_notes || null,
       client_notes: form.client_notes || null,
+      inspection_id: isLinkingExistingInspection ? selectedInspectionId : undefined,
       services: selectedServices.map((service) => ({
         service_id: service.serviceId,
         template_id: service.templateId ?? undefined,
@@ -219,7 +365,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
             const message = error instanceof Error ? error.message : "Failed to update order.";
             toast.error(message);
           },
-        }
+        },
       );
       return;
     }
@@ -240,19 +386,21 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     setForm((prev) => ({ ...prev, client_id: clientId }));
   };
 
-  const handlePropertyCreated = (propertyId: string) => {
-    setForm((prev) => ({ ...prev, property_id: propertyId }));
-  };
-
   const handleAgentCreated = (agentId: string) => {
     setForm((prev) => ({ ...prev, agent_id: agentId }));
   };
 
   const handlePropertySelect = (value: string) => {
     if (value === "__add_new_property__") {
-      setPropertyDialogOpen(true);
+      const initial = createEmptyPropertyFormState();
+      setPropertyForm(form.client_id ? { ...initial, clientId: form.client_id } : initial);
+      setPropertyFormErrors({});
+      setShowInlinePropertyForm(true);
+      setForm((prev) => ({ ...prev, property_id: "" }));
       return;
     }
+    setShowInlinePropertyForm(false);
+    setPropertyFormErrors({});
     setForm((prev) => ({ ...prev, property_id: value }));
   };
 
@@ -276,6 +424,81 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       ...prev,
       agent_id: value === "__none__" ? null : value,
     }));
+  };
+
+  const handleInspectionSelect = (value: string) => {
+    if (value === "__add_new_inspection__") {
+      setSelectedInspectionId("");
+      setShowInlineInspectionForm(true);
+      return;
+    }
+    if (value === "__no_inspections__") {
+      return;
+    }
+    setSelectedInspectionId(value);
+    setShowInlineInspectionForm(false);
+  };
+
+  const handleInlinePropertyCancel = () => {
+    setShowInlinePropertyForm(false);
+    setPropertyForm(createEmptyPropertyFormState());
+    setPropertyFormErrors({});
+  };
+
+  const handleInlinePropertySubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const validationErrors = validatePropertyForm(propertyForm);
+    setPropertyFormErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+
+    const basementValue = normalizeOptionValue(propertyForm.basement, basementOptions);
+    const buildingClassValue = normalizeOptionValue(propertyForm.buildingClass, buildingClassOptions);
+    const laundryValue = normalizeOptionValue(propertyForm.laundryType, laundryOptions);
+
+    try {
+      const created = await createProperty.mutateAsync({
+        tenant_slug: tenantSlug,
+        address_line1: propertyForm.addressLine1.trim(),
+        address_line2: propertyForm.addressLine2.trim() || null,
+        city: propertyForm.city.trim(),
+        state: propertyForm.state.trim(),
+        zip_code: propertyForm.zipCode.trim(),
+        property_type: propertyForm.propertyType as any,
+        year_built: propertyForm.yearBuilt ? parseInt(propertyForm.yearBuilt, 10) : null,
+        square_feet: propertyForm.squareFeet ? parseInt(propertyForm.squareFeet, 10) : null,
+        notes: propertyForm.notes.trim() || null,
+        client_id: form.client_id || propertyForm.clientId || null,
+        bedrooms: propertyForm.bedrooms ? parseInt(propertyForm.bedrooms, 10) : null,
+        bathrooms: propertyForm.bathrooms ? parseFloat(propertyForm.bathrooms) : null,
+        stories: propertyForm.stories || null,
+        foundation: propertyForm.foundation || null,
+        garage: propertyForm.garage || null,
+        pool: propertyForm.pool,
+        basement: basementValue,
+        lot_size_acres: propertyForm.lotSizeAcres ? parseFloat(propertyForm.lotSizeAcres) : null,
+        heating_type: propertyForm.heatingType || null,
+        cooling_type: propertyForm.coolingType || null,
+        roof_type: propertyForm.roofType || null,
+        building_class: buildingClassValue,
+        loading_docks: propertyForm.loadingDocks ? parseInt(propertyForm.loadingDocks, 10) : null,
+        zoning: propertyForm.zoning || null,
+        occupancy_type: propertyForm.occupancyType || null,
+        ceiling_height: propertyForm.ceilingHeight ? parseFloat(propertyForm.ceilingHeight) : null,
+        number_of_units: propertyForm.numberOfUnits ? parseInt(propertyForm.numberOfUnits, 10) : null,
+        unit_mix: propertyForm.unitMix || null,
+        laundry_type: laundryValue,
+        parking_spaces: propertyForm.parkingSpaces ? parseInt(propertyForm.parkingSpaces, 10) : null,
+        elevator: propertyForm.elevator,
+      });
+
+      setForm((prev) => ({ ...prev, property_id: created.id }));
+      handleInlinePropertyCancel();
+    } catch (error) {
+      // handled by mutation toast
+    }
   };
 
   const isSubmitting = createOrder.isPending || updateOrder.isPending;
@@ -305,7 +528,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
             <Badge variant="outline" className="text-xs px-2 py-0.5">
               {formatStatusLabel(form.payment_status)}
             </Badge>
-            {(order?.created_at || order?.source) ? (
+            {order?.created_at || order?.source ? (
               <span className="text-xs text-muted-foreground">
                 {order?.created_at ? `Created ${new Date(order.created_at).toLocaleDateString()}` : ""}
                 {order?.created_at && order?.source ? " • " : ""}
@@ -338,38 +561,78 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               </CardTitle>
               <CardDescription>Select the property and source.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="property_id">Property</Label>
-                <Select value={form.property_id} onValueChange={handlePropertySelect}>
-                  <SelectTrigger id="property_id">
-                    <SelectValue placeholder="Select property" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__add_new_property__" className="text-blue-600 font-semibold">
-                      <span className="inline-flex items-center gap-2">
-                        <Plus className="h-3 w-3" />
-                        Add new property
-                      </span>
-                    </SelectItem>
-                    {properties.map((property) => (
-                      <SelectItem key={property.id} value={property.id}>
-                        {getPropertyLabel(property)}
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="property_id">Property</Label>
+                  <Select value={form.property_id} onValueChange={handlePropertySelect}>
+                    <SelectTrigger id="property_id">
+                      <SelectValue placeholder="Select property" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__add_new_property__" className="text-blue-600 font-semibold">
+                        <span className="inline-flex items-center gap-2">
+                          <Plus className="h-3 w-3" />
+                          Add new property
+                        </span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {properties.map((property) => (
+                        <SelectItem key={property.id} value={property.id}>
+                          {getPropertyLabel(property)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="source">Source</Label>
+                  <Input
+                    id="source"
+                    value={form.source}
+                    onChange={(event) => setForm((prev) => ({ ...prev, source: event.target.value }))}
+                    placeholder="Referral, website, partner..."
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="source">Source</Label>
-                <Input
-                  id="source"
-                  value={form.source}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, source: event.target.value }))
-                  }
-                  placeholder="Referral, website, partner..."
-                />
+
+              <div
+                className={cn(
+                  "overflow-hidden rounded-lg border bg-muted/20 transition-all duration-300 ease-in-out",
+                  showInlinePropertyForm ? "max-h-[5000px] opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
+                )}
+                aria-hidden={!showInlinePropertyForm}
+              >
+                <form onSubmit={handleInlinePropertySubmit} className="space-y-4 p-4">
+                  <div>
+                    <p className="font-semibold">Create new property</p>
+                    <p className="text-sm text-muted-foreground">The order stays in context while you capture the address.</p>
+                  </div>
+                  <PropertyFormSections
+                    form={propertyForm}
+                    setForm={setPropertyForm}
+                    errors={propertyFormErrors}
+                    setErrors={setPropertyFormErrors}
+                    showOwnerSection={false}
+                  />
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
+                    <Button type="button" variant="ghost" onClick={handleInlinePropertyCancel} disabled={createProperty.isPending}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={createProperty.isPending}>
+                      {createProperty.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Save property
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
               </div>
             </CardContent>
           </Card>
@@ -380,15 +643,12 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 <User className="h-4 w-4 text-muted-foreground" />
                 People
               </CardTitle>
-              <CardDescription>Link the client, agent, and inspector.</CardDescription>
+              <CardDescription>Link the client and referring agent.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="client_id">Client</Label>
-                <Select
-                  value={form.client_id ?? "__none__"}
-                  onValueChange={handleClientSelect}
-                >
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="client_id">Client</Label>
+                <Select value={form.client_id ?? "__none__"} onValueChange={handleClientSelect}>
                   <SelectTrigger id="client_id">
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
@@ -407,53 +667,25 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
-                </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="agent_id">Referring Agent</Label>
-                  <Select
-                    value={form.agent_id ?? "__none__"}
-                    onValueChange={handleAgentSelect}
-                  >
+              <div className="space-y-2">
+                <Label htmlFor="agent_id">Referring Agent</Label>
+                <Select value={form.agent_id ?? "__none__"} onValueChange={handleAgentSelect}>
                   <SelectTrigger id="agent_id">
                     <SelectValue placeholder="Select agent" />
                   </SelectTrigger>
                   <SelectContent>
-                      <SelectItem value="__add_new_agent__" className="text-blue-600 font-semibold">
-                        <span className="inline-flex items-center gap-2">
-                          <Plus className="h-3 w-3" />
-                          Add new agent
-                        </span>
-                      </SelectItem>
-                      <SelectItem value="__none__">No agent</SelectItem>
-                      {agents.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                  </Select>
-                </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="inspector_id">Inspector</Label>
-                <Select
-                  value={form.inspector_id ?? "__none__"}
-                  onValueChange={(value) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      inspector_id: value === "__none__" ? null : value,
-                    }))
-                  }
-                >
-                  <SelectTrigger id="inspector_id">
-                    <SelectValue placeholder="Assign inspector" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Unassigned</SelectItem>
-                    {inspectors.map((inspector) => (
-                      <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
-                        {inspector.name}
+                    <SelectItem value="__add_new_agent__" className="text-blue-600 font-semibold">
+                      <span className="inline-flex items-center gap-2">
+                        <Plus className="h-3 w-3" />
+                        Add new agent
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="__none__">No agent</SelectItem>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -468,150 +700,98 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 Inspection
               </CardTitle>
-              <CardDescription>Select services that will be scheduled under the inspection container.</CardDescription>
+              <CardDescription>Select the inspector and services for this inspection.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={serviceSearch}
-                  onChange={(event) => setServiceSearch(event.target.value)}
-                  placeholder="Search services..."
-                  className="pl-9"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="inspection_id">Inspection</Label>
+                <Select value={selectedInspectionId || ""} onValueChange={handleInspectionSelect}>
+                  <SelectTrigger id="inspection_id">
+                    <SelectValue placeholder="Link existing inspection" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__add_new_inspection__" className="text-blue-600 font-semibold">
+                      <span className="inline-flex items-center gap-2">
+                        <Plus className="h-3 w-3" />
+                        Add new inspection
+                      </span>
+                    </SelectItem>
+                    {inspections.length === 0 ? (
+                      <SelectItem value="__no_inspections__" disabled>
+                        No inspections available
+                      </SelectItem>
+                    ) : (
+                      inspections.map((inspection) => (
+                        <SelectItem key={inspection.id} value={inspection.id}>
+                          <div className="flex flex-col gap-0.5 text-left">
+                            <span className="font-medium leading-tight">
+                              {getInspectionPropertyAddress(inspection) ?? `Inspection ${inspection.id.slice(0, 8)}`}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{getInspectionMetaLabel(inspection)}</span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">Link an existing record or add a new inspection inline without leaving the order.</p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                These selections will determine which services appear under the inspection container.
-              </p>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Core Services</Label>
-                    <Badge variant="outline">{coreServices.length}</Badge>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {coreServices.map((service) => {
-                      const checked = selectedServiceIds.includes(service.serviceId);
-                      return (
-                        <label
-                          key={service.serviceId}
-                          className="flex items-start gap-3 rounded-md border px-3 py-2 hover:bg-muted/50"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => handleToggleService(service.serviceId)}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="font-medium">{service.name}</p>
-                              <span className="text-sm font-semibold">
-                                ${getServicePrice(service).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                              {service.durationMinutes && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {service.durationMinutes} min
-                                </span>
-                              )}
-                              {service.templateId && <span>Template linked</span>}
-                            </div>
+              {!showInlineInspectionForm && (
+                <div className="space-y-3 rounded-lg border bg-muted/30 p-4 text-sm">
+                  {selectedInspectionId ? (
+                    <>
+                      <div>
+                        <p className="font-medium">{linkedInspectionDetails?.inspectorName ?? "No inspector assigned"}</p>
+                        <p className="text-muted-foreground">{linkedInspectionSchedule ?? "No schedule information"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Services</p>
+                        {linkedInspectionDetails?.services.length ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {linkedInspectionDetails.services.map((service) => (
+                              <Badge key={`linked-service-${service.serviceId}`} variant="secondary">
+                                {service.name}
+                              </Badge>
+                            ))}
                           </div>
-                        </label>
-                      );
-                    })}
-                    {coreServices.length === 0 && (
-                      <div className="text-sm text-muted-foreground">No core services found.</div>
-                    )}
-                  </div>
+                        ) : (
+                          <p className="text-muted-foreground">Service selections unavailable for this inspection.</p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">Select an inspection to view its details.</p>
+                  )}
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Add-ons</Label>
-                    <Badge variant="outline">{addonServices.length}</Badge>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {addonServices.map((service) => {
-                      const checked = selectedServiceIds.includes(service.serviceId);
-                      return (
-                        <label
-                          key={service.serviceId}
-                          className="flex items-start gap-3 rounded-md border px-3 py-2 hover:bg-muted/50"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => handleToggleService(service.serviceId)}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="font-medium">{service.name}</p>
-                              <span className="text-sm font-semibold">
-                                ${getServicePrice(service).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                              {service.durationMinutes && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {service.durationMinutes} min
-                                </span>
-                              )}
-                              {service.templateId && <span>Template linked</span>}
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                    {addonServices.length === 0 && (
-                      <div className="text-sm text-muted-foreground">No add-ons found.</div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Packages</Label>
-                    <Badge variant="outline">{packageServices.length}</Badge>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {packageServices.map((service) => {
-                      const checked = selectedServiceIds.includes(service.serviceId);
-                      return (
-                        <label
-                          key={service.serviceId}
-                          className="flex items-start gap-3 rounded-md border px-3 py-2 hover:bg-muted/50"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => handleToggleService(service.serviceId)}
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="font-medium">{service.name}</p>
-                              <span className="text-sm font-semibold">
-                                ${getServicePrice(service).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                              {service.durationMinutes && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {service.durationMinutes} min
-                                </span>
-                              )}
-                              {service.templateId && <span>Template linked</span>}
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                    {packageServices.length === 0 && (
-                      <div className="text-sm text-muted-foreground">No packages found.</div>
-                    )}
-                  </div>
+              <div
+                className={cn(
+                  "overflow-hidden rounded-lg border bg-muted/20 transition-all duration-300 ease-in-out",
+                  showInlineInspectionForm ? "max-h-[5000px] opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
+                )}
+                aria-hidden={!showInlineInspectionForm}
+              >
+                <div className="space-y-4 p-4">
+                  <InspectionDetailsSection
+                    inspectors={inspectors}
+                    selectedInspectorId={form.inspector_id}
+                    onInspectorChange={(value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        inspector_id: value,
+                      }))
+                    }
+                    services={services}
+                    selectedServiceIds={selectedServiceIds}
+                    onServiceToggle={handleServiceToggle}
+                    searchValue={serviceSearch}
+                    onSearchChange={setServiceSearch}
+                    helperText="These selections will determine which services appear under the inspection container."
+                    allowUnassigned
+                    unassignedLabel="Unassigned"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -632,9 +812,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                   id="scheduled_date"
                   type="date"
                   value={form.scheduled_date}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, scheduled_date: event.target.value }))
-                  }
+                  onChange={(event) => setForm((prev) => ({ ...prev, scheduled_date: event.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -643,9 +821,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                   id="scheduled_time"
                   type="time"
                   value={form.scheduled_time}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, scheduled_time: event.target.value }))
-                  }
+                  onChange={(event) => setForm((prev) => ({ ...prev, scheduled_time: event.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -656,20 +832,13 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                   min={0}
                   value={form.duration_minutes}
                   placeholder={totals.duration ? `${totals.duration}` : "120"}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, duration_minutes: event.target.value }))
-                  }
+                  onChange={(event) => setForm((prev) => ({ ...prev, duration_minutes: event.target.value }))}
                 />
               </div>
               {mode === "edit" && (
                 <div className="space-y-2">
                   <Label htmlFor="status">Order Status</Label>
-                  <Select
-                    value={form.status}
-                    onValueChange={(value) =>
-                      setForm((prev) => ({ ...prev, status: value as Order["status"] }))
-                    }
-                  >
+                  <Select value={form.status} onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as Order["status"] }))}>
                     <SelectTrigger id="status">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
@@ -722,9 +891,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 <div className="rounded-md border p-3 text-sm">
                   <p className="text-muted-foreground">Current total</p>
                   <p className="text-lg font-semibold">${totals.subtotal.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Taxes and discounts applied after creation.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Taxes and discounts applied after creation.</p>
                 </div>
               </CardContent>
             </Card>
@@ -741,9 +908,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 <Textarea
                   id="internal_notes"
                   value={form.internal_notes}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, internal_notes: event.target.value }))
-                  }
+                  onChange={(event) => setForm((prev) => ({ ...prev, internal_notes: event.target.value }))}
                   placeholder="Team-only notes..."
                   rows={4}
                 />
@@ -753,9 +918,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 <Textarea
                   id="client_notes"
                   value={form.client_notes}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, client_notes: event.target.value }))
-                  }
+                  onChange={(event) => setForm((prev) => ({ ...prev, client_notes: event.target.value }))}
                   placeholder="Visible to client..."
                   rows={4}
                 />
@@ -808,7 +971,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 Property selected
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className={totals.count > 0 ? "h-4 w-4 text-emerald-500" : "h-4 w-4"} />
+                <CheckCircle2 className={servicesSatisfied ? "h-4 w-4 text-emerald-500" : "h-4 w-4"} />
                 Services selected
               </div>
               <div className="flex items-center gap-2">
@@ -841,29 +1004,15 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               </div>
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
-                {form.inspector_id ? "Inspector assigned" : "No inspector yet"}
+                {inspectorSummaryLabel ?? (form.inspector_id ? "Inspector assigned" : "No inspector yet")}
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <InlineClientDialog
-        open={clientDialogOpen}
-        onOpenChange={setClientDialogOpen}
-        onClientCreated={handleClientCreated}
-      />
-      <InlinePropertyDialog
-        open={propertyDialogOpen}
-        onOpenChange={setPropertyDialogOpen}
-        onPropertyCreated={handlePropertyCreated}
-        clientId={form.client_id ?? undefined}
-      />
-      <InlineAgentDialog
-        open={agentDialogOpen}
-        onOpenChange={setAgentDialogOpen}
-        onAgentCreated={handleAgentCreated}
-      />
+      <InlineClientDialog open={clientDialogOpen} onOpenChange={setClientDialogOpen} onClientCreated={handleClientCreated} />
+      <InlineAgentDialog open={agentDialogOpen} onOpenChange={setAgentDialogOpen} onAgentCreated={handleAgentCreated} />
     </div>
   );
 }

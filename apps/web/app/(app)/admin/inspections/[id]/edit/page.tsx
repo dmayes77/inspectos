@@ -103,10 +103,8 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
   }, [inspection, orderProperty]);
 
   const { street, city, state, zip } = addressParts;
-  const resolvedClientId =
-    selectedClientId || inspection?.clientId || linkedOrder?.client?.id || "";
-  const resolvedInspectorId =
-    selectedInspectorId || inspection?.inspectorId || linkedOrder?.inspector?.id || "";
+  const resolvedClientId = selectedClientId || inspection?.clientId || linkedOrder?.client?.id || "";
+  const resolvedInspectorId = selectedInspectorId || inspection?.inspectorId || linkedOrder?.inspector?.id || "";
   const resolvedTypeIds = useMemo(() => {
     if (selectedTypeIds.length) return selectedTypeIds;
     if (Array.isArray(inspection?.types)) return inspection.types;
@@ -213,7 +211,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
               const errorMessage = error instanceof Error ? error.message : "Failed to update inspection";
               toast.error(errorMessage);
             },
-          }
+          },
         );
       } else {
         createMutation.mutate(payload, {
@@ -228,7 +226,19 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         });
       }
     },
-    [resolvedTypeIds, resolvedClientId, resolvedInspectorId, clientObj, inspectorObj, calculatedPrice, inspection, updateMutation, createMutation, router, orderId]
+    [
+      resolvedTypeIds,
+      resolvedClientId,
+      resolvedInspectorId,
+      clientObj,
+      inspectorObj,
+      calculatedPrice,
+      inspection,
+      updateMutation,
+      createMutation,
+      router,
+      orderId,
+    ],
   );
 
   // Format default values using formatters
@@ -253,7 +263,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
       setShowClientForm(false);
       toast.success("Client created. Please refresh to see in list.");
     },
-    [setSelectedClientId, setShowClientForm]
+    [setSelectedClientId, setShowClientForm],
   );
   const handleClientCancel = useCallback(() => setShowClientForm(false), [setShowClientForm]);
   const handleClientSelect = useCallback(
@@ -264,12 +274,9 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         setSelectedClientId(value);
       }
     },
-    [setSelectedClientId, setShowClientForm]
+    [setSelectedClientId, setShowClientForm],
   );
-  const handleInspectorSelect = useCallback(
-    (value: string) => setSelectedInspectorId(value),
-    [setSelectedInspectorId]
-  );
+  const handleInspectorSelect = useCallback((value: string) => setSelectedInspectorId(value), [setSelectedInspectorId]);
   const handleServiceToggle = useCallback(
     (serviceId: string, isChecked: boolean) => {
       setSelectedTypeIds((ids) => {
@@ -280,7 +287,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         return base.filter((id) => id !== serviceId);
       });
     },
-    [resolvedTypeIds]
+    [resolvedTypeIds],
   );
 
   return (
@@ -456,8 +463,8 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Client & Inspector</CardTitle>
-                    <CardDescription>Assign the client and inspector</CardDescription>
+                    <CardTitle>Client</CardTitle>
+                    <CardDescription>Choose who ordered this inspection</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
@@ -465,12 +472,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                       {showClientForm ? (
                         <ClientInlineForm onCreate={handleClientCreate} onCancel={handleClientCancel} />
                       ) : (
-                        <Select
-                          name="client"
-                          value={resolvedClientId}
-                          required
-                          onValueChange={handleClientSelect}
-                        >
+                        <Select name="client" value={resolvedClientId} required onValueChange={handleClientSelect}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select a client" />
                           </SelectTrigger>
@@ -487,14 +489,18 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                         </Select>
                       )}
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Inspection Details</CardTitle>
+                    <div className="text-muted-foreground text-sm mb-2">Assign the inspector, services, date, and time</div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="inspector">Inspector</Label>
-                      <Select
-                        name="inspector"
-                        value={resolvedInspectorId}
-                        required
-                        onValueChange={handleInspectorSelect}
-                      >
+                      <Select name="inspector" value={resolvedInspectorId} required onValueChange={handleInspectorSelect}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select an inspector" />
                         </SelectTrigger>
@@ -507,29 +513,13 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                         </SelectContent>
                       </Select>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Inspection Details</CardTitle>
-                    <div className="text-muted-foreground text-sm mb-2">Set the inspection type, date, and time</div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label>Core Services</Label>
                         <div className="grid grid-cols-2 gap-2">
                           {coreServices.map((service) => {
                             const checked = resolvedTypeIds.includes(service.serviceId);
-                            return (
-                              <ServiceCheckbox
-                                key={service.serviceId}
-                                service={service}
-                                checked={checked}
-                                onToggle={handleServiceToggle}
-                              />
-                            );
+                            return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
                           })}
                         </div>
                       </div>
@@ -538,14 +528,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                         <div className="grid grid-cols-2 gap-2">
                           {addonServices.map((service) => {
                             const checked = resolvedTypeIds.includes(service.serviceId);
-                            return (
-                              <ServiceCheckbox
-                                key={service.serviceId}
-                                service={service}
-                                checked={checked}
-                                onToggle={handleServiceToggle}
-                              />
-                            );
+                            return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
                           })}
                         </div>
                       </div>
@@ -554,14 +537,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                         <div className="grid grid-cols-2 gap-2">
                           {packageServices.map((service) => {
                             const checked = resolvedTypeIds.includes(service.serviceId);
-                            return (
-                              <ServiceCheckbox
-                                key={service.serviceId}
-                                service={service}
-                                checked={checked}
-                                onToggle={handleServiceToggle}
-                              />
-                            );
+                            return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
                           })}
                         </div>
                       </div>
@@ -626,9 +602,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                       )}
                     </Button>
                     <Button type="button" variant="outline" asChild>
-                      <Link href={inspection ? `/admin/inspections/${inspection.inspectionId}` : "/admin/inspections"}>
-                        Cancel
-                      </Link>
+                      <Link href={inspection ? `/admin/inspections/${inspection.inspectionId}` : "/admin/inspections"}>Cancel</Link>
                     </Button>
                   </>
                 }

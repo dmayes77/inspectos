@@ -120,11 +120,20 @@ type PropertyFormSectionsProps = {
   setForm: Dispatch<SetStateAction<PropertyFormState>>;
   errors: PropertyFormErrors;
   setErrors?: Dispatch<SetStateAction<PropertyFormErrors>>;
-  clients: ClientOption[];
-  onOpenClientDialog: () => void;
+  clients?: ClientOption[];
+  onOpenClientDialog?: () => void;
+  showOwnerSection?: boolean;
 };
 
-export function PropertyFormSections({ form, setForm, errors, setErrors, clients, onOpenClientDialog }: PropertyFormSectionsProps) {
+export function PropertyFormSections({
+  form,
+  setForm,
+  errors,
+  setErrors,
+  clients = [],
+  onOpenClientDialog,
+  showOwnerSection = true,
+}: PropertyFormSectionsProps) {
   const residentialTypes = new Set<string>(RESIDENTIAL_PROPERTY_TYPES);
 
   return (
@@ -605,42 +614,46 @@ export function PropertyFormSections({ form, setForm, errors, setErrors, clients
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Owner/Contact</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="client">Client (Optional)</Label>
-            <div className="flex items-center gap-2">
-              <Select value={form.clientId || undefined} onValueChange={(value) => setForm((prev) => ({ ...prev, clientId: value }))}>
-                <SelectTrigger id="client" className="flex-1">
-                  <SelectValue placeholder="Select a client..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map((client) => (
-                    <SelectItem key={client.clientId} value={client.clientId}>
-                      <div className="flex items-center gap-2">
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                        {client.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {form.clientId ? (
-                <Button type="button" variant="ghost" size="icon" onClick={() => setForm((prev) => ({ ...prev, clientId: "" }))} className="shrink-0">
-                  <span className="sr-only">Clear client</span>×
-                </Button>
-              ) : null}
+      {showOwnerSection && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Owner/Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="client">Client (Optional)</Label>
+              <div className="flex items-center gap-2">
+                <Select value={form.clientId || undefined} onValueChange={(value) => setForm((prev) => ({ ...prev, clientId: value }))}>
+                  <SelectTrigger id="client" className="flex-1">
+                    <SelectValue placeholder="Select a client..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.clientId} value={client.clientId}>
+                        <div className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                          {client.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.clientId ? (
+                  <Button type="button" variant="ghost" size="icon" onClick={() => setForm((prev) => ({ ...prev, clientId: "" }))} className="shrink-0">
+                    <span className="sr-only">Clear client</span>×
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          </div>
-          <Button type="button" variant="outline" size="sm" className="w-full" onClick={onOpenClientDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create New Client
-          </Button>
-        </CardContent>
-      </Card>
+            {onOpenClientDialog ? (
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={onOpenClientDialog}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Client
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }

@@ -59,18 +59,18 @@ export default function AgencyDetailPage() {
                 Overview
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners" className="hover:text-foreground">
-                Partners
+              <Link href="/admin/agents" className="hover:text-foreground">
+                Agents
               </Link>
               <span className="text-muted-foreground">/</span>
-              <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
+              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
                 Agencies
               </Link>
             </>
           }
           title="Agency Not Found"
           description="The agency you're looking for doesn't exist or you're missing access."
-          backHref="/admin/partners?tab=agencies"
+          backHref="/admin/agents?tab=agencies"
           main={
             <Card>
               <CardContent className="py-12 text-center text-muted-foreground">Try selecting another agency from the list.</CardContent>
@@ -97,11 +97,11 @@ export default function AgencyDetailPage() {
         Overview
       </Link>
       <span className="text-muted-foreground">/</span>
-      <Link href="/admin/partners" className="hover:text-foreground">
-        Partners
+      <Link href="/admin/agents" className="hover:text-foreground">
+        Agents
       </Link>
       <span className="text-muted-foreground">/</span>
-      <Link href="/admin/partners?tab=agencies" className="hover:text-foreground">
+      <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
         Agencies
       </Link>
       <span className="text-muted-foreground">/</span>
@@ -119,7 +119,7 @@ export default function AgencyDetailPage() {
           },
         });
         toast.success("Agency deleted");
-        router.push("/admin/partners?tab=agencies");
+        router.push("/admin/agents?tab=agencies");
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to delete agency";
@@ -143,7 +143,7 @@ export default function AgencyDetailPage() {
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-6">
-        <BackButton href="/admin/partners?tab=agencies" label="Back to Agencies" variant="ghost" />
+        <BackButton href="/admin/agents?tab=agencies" label="Back to Agencies" variant="ghost" />
 
         <AdminPageHeader
           title={
@@ -197,7 +197,7 @@ export default function AgencyDetailPage() {
                 </Button>
               )}
               <Button className="w-full sm:w-auto" asChild>
-                <Link href={`/admin/partners/agencies/${agency.id}/edit`}>
+                <Link href={`/admin/agents/agencies/${agency.id}/edit`}>
                   <Edit className="mr-2 h-4 w-4" /> Edit
                 </Link>
               </Button>
@@ -310,7 +310,7 @@ export default function AgencyDetailPage() {
                     {agentList.map((agent) => (
                       <div key={agent.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm">
                         <div>
-                          <Link href={`/admin/partners/agents/${agent.id}`} className="font-medium hover:underline">
+                          <Link href={`/admin/agents/${agent.id}`} className="font-medium hover:underline">
                             {agent.name}
                           </Link>
                           <p className="text-muted-foreground">{agent.email ?? "No email"}</p>

@@ -8,11 +8,12 @@
  */
 export interface Inspection {
   id: string;
-  job_id: string;
+  job_id: string | null;
   tenant_id: string;
-  template_id: string;
+  order_id?: string | null;
+  template_id: string | null;
   template_version: number;
-  inspector_id: string;
+  inspector_id: string | null;
   status: InspectionStatusValue;
   started_at: string | null;
   completed_at: string | null;
@@ -20,8 +21,12 @@ export interface Inspection {
   temperature: string | null;
   present_parties: string[] | null;
   notes: string | null;
+  selected_type_ids?: string[] | null;
   created_at: string;
   updated_at: string;
+  order_schedule_id?: string | null;
+  schedule?: InspectionSchedule | null;
+  summary?: InspectionSummary | null;
   // Joined relations
   job?: {
     id: string;
@@ -46,6 +51,35 @@ export interface Inspection {
   };
 }
 
+export type InspectionScheduleType = "primary" | "addon" | "package" | "follow_up" | "reinspection" | "other";
+export type InspectionScheduleStatus = "pending" | "scheduled" | "in_progress" | "completed" | "cancelled";
+
+export interface InspectionSchedule {
+  id: string;
+  tenant_id: string;
+  order_id: string;
+  schedule_type: InspectionScheduleType;
+  label: string | null;
+  service_id: string | null;
+  package_id: string | null;
+  inspector_id: string | null;
+  slot_date: string | null;
+  slot_start: string | null;
+  slot_end: string | null;
+  duration_minutes: number | null;
+  status: InspectionScheduleStatus;
+  notes: string | null;
+}
+
+export interface InspectionSummary {
+  property?: Property | null;
+  client?: Client | null;
+  scheduled_date?: string | null;
+  scheduled_time?: string | null;
+  duration_minutes?: number | null;
+  service_ids?: string[];
+}
+
 /**
  * Property type from database
  */
@@ -56,7 +90,7 @@ export interface Property {
   city: string;
   state: string;
   zip_code: string;
-  property_type: 'single-family' | 'condo-townhome' | 'multi-family' | 'manufactured' | 'commercial';
+  property_type: "single-family" | "condo-townhome" | "multi-family" | "manufactured" | "commercial";
   year_built: number | null;
   square_feet: number | null;
 }
@@ -76,10 +110,10 @@ export interface Client {
  * Inspection status values (aligned with database CHECK constraint)
  */
 export const InspectionStatus = {
-  DRAFT: 'draft',
-  IN_PROGRESS: 'in_progress',
-  COMPLETED: 'completed',
-  SUBMITTED: 'submitted',
+  DRAFT: "draft",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  SUBMITTED: "submitted",
 } as const;
 
 export type InspectionStatusValue = (typeof InspectionStatus)[keyof typeof InspectionStatus];
@@ -120,24 +154,24 @@ export interface LegacyInspection {
 export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspection> {
   return {
     id: legacy.inspectionId,
-    job_id: legacy.jobId || '',
+    job_id: legacy.jobId || "",
     inspector_id: legacy.inspectorId,
     status: legacy.status as InspectionStatusValue,
     notes: legacy.notes || null,
     job: {
-      id: legacy.jobId || '',
+      id: legacy.jobId || "",
       scheduled_date: legacy.date,
       scheduled_time: legacy.time,
       duration_minutes: legacy.durationMinutes || 120,
-      status: 'scheduled',
+      status: "scheduled",
       property: {
-        id: '',
+        id: "",
         address_line1: legacy.address,
         address_line2: null,
-        city: '',
-        state: '',
-        zip_code: '',
-        property_type: (legacy.propertyType as Property['property_type']) || 'single-family',
+        city: "",
+        state: "",
+        zip_code: "",
+        property_type: (legacy.propertyType as Property["property_type"]) || "single-family",
         year_built: legacy.yearBuilt || null,
         square_feet: legacy.sqft || null,
       },
@@ -152,7 +186,7 @@ export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspe
     inspector: {
       id: legacy.inspectorId,
       full_name: legacy.inspector,
-      email: '',
+      email: "",
       avatar_url: null,
     },
   };
@@ -165,5 +199,5 @@ export function formatAddress(property: Property): string {
   const parts = [property.address_line1];
   if (property.address_line2) parts.push(property.address_line2);
   parts.push(`${property.city}, ${property.state} ${property.zip_code}`);
-  return parts.join(', ');
+  return parts.join(", ");
 }

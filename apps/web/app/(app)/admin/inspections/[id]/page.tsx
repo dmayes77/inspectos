@@ -21,22 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Edit,
-  Archive,
-  FileText,
-  MapPin,
-  User,
-  Calendar,
-  ClipboardList,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  PenTool,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Edit, Archive, FileText, User, Calendar, ClipboardList, AlertTriangle, CheckCircle2, XCircle, PenTool, Image as ImageIcon, Mail } from "lucide-react";
 import { mockAdminUser } from "@/lib/constants/mock-users";
-import { ClientInfoCard } from "@/components/shared/client-info-card";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { formatInspectionDateTime } from "@/lib/utils/formatters";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
@@ -137,6 +123,8 @@ export default function InspectionDetailPage() {
   const formattedDateTime = scheduledDate ? formatInspectionDateTime(scheduledDate, scheduledTime) : "Unscheduled";
   const property = inspection.job?.property;
   const client = inspection.job?.client;
+  const linkedOrderId = inspection.job?.id ?? null;
+  const clientEmail = client?.email ?? null;
   const inspectorName = inspection.inspector?.full_name || inspection.inspector?.email || "Unassigned";
   const address = property
     ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
@@ -299,12 +287,17 @@ export default function InspectionDetailPage() {
                         <div>
                           <p className="text-sm text-muted-foreground">Client</p>
                           <p className="font-medium">{client?.name || "Unknown client"}</p>
+                          {client?.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
+                          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                            {client?.email && <p>{client.email}</p>}
+                            {client?.phone && <p>{client.phone}</p>}
+                          </div>
                         </div>
                       </div>
                       <div className="pt-4 border-t">
                         {client?.id ? (
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`/admin/contacts/clients/${client.id}`}>View Client Profile</Link>
+                            <Link href={`/admin/contacts/${client.id}`}>View Client Profile</Link>
                           </Button>
                         ) : null}
                       </div>
@@ -521,13 +514,68 @@ export default function InspectionDetailPage() {
           </div>
 
           <div className="space-y-6">
-            <ClientInfoCard
-              title="Client"
-              client={client ?? undefined}
-              actionLabel={client ? "View Client Profile" : undefined}
-              actionHref={client ? `/admin/contacts/clients/${client.id}` : undefined}
-              emptyLabel="No client assigned"
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>Handle common follow-ups without leaving this page.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link href={`/admin/inspections/${inspection.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Inspection
+                  </Link>
+                </Button>
+
+                {linkedOrderId ? (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href={`/admin/orders/${linkedOrderId}`}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Linked Order
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full justify-start" disabled>
+                    <FileText className="mr-2 h-4 w-4" />
+                    No Linked Order
+                  </Button>
+                )}
+
+                {client?.id ? (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <Link href={`/admin/contacts/${client.id}`}>
+                      <User className="mr-2 h-4 w-4" />
+                      Open Client Profile
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full justify-start" disabled>
+                    <User className="mr-2 h-4 w-4" />
+                    Client Not Linked
+                  </Button>
+                )}
+
+                {clientEmail ? (
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <a href={`mailto:${clientEmail}`}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Email Client
+                    </a>
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full justify-start" disabled>
+                    <Mail className="mr-2 h-4 w-4" />
+                    No Client Email
+                  </Button>
+                )}
+
+                <Button variant="destructive" className="w-full justify-start" onClick={() => setArchiveDialogOpen(true)}>
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive Inspection
+                </Button>
+              </CardContent>
+            </Card>
+
             <RecordInformationCard createdAt={inspection.created_at} updatedAt={inspection.updated_at} />
           </div>
         </div>

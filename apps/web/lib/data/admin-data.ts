@@ -3,13 +3,34 @@ import type { Client } from "@/hooks/use-clients";
 import type { TeamMember } from "@/hooks/use-team";
 import type { Service } from "@/hooks/use-services";
 
+const TENANT_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function fetchInspections(): Promise<Inspection[]> {
-  const response = await fetch("/api/admin/inspections");
+  const rawTenant = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID?.trim();
+  const tenant = rawTenant && TENANT_ID_REGEX.test(rawTenant) ? rawTenant : null;
+  if (rawTenant && !tenant) {
+    console.warn("[fetchInspections] Ignoring invalid NEXT_PUBLIC_SUPABASE_TENANT_ID; falling back to server default.", {
+      rawTenant,
+    });
+  }
+  const url = tenant ? `/api/admin/inspections?tenant=${encodeURIComponent(tenant)}` : "/api/admin/inspections";
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error("Failed to load inspections.");
   }
   const result = await response.json();
-  return Array.isArray(result) ? result : (result.data ?? []);
+  const normalized = Array.isArray(result) ? result : Array.isArray(result?.data) ? (result.data as Inspection[]) : [];
+  console.log("[fetchInspections] received", {
+    ok: response.ok,
+    status: response.status,
+    length: normalized.length,
+    rawType: Array.isArray(result) ? "array" : typeof result,
+    tenantEnv: rawTenant ?? null,
+    tenantParam: tenant,
+    tenantId: (result?.tenantId as string) ?? "unknown",
+    url,
+  });
+  return normalized;
 }
 
 export async function fetchInspectionById(inspectionId: string): Promise<LegacyInspection | null> {
@@ -33,9 +54,7 @@ export async function createInspection(data: Record<string, unknown>): Promise<I
   return result.data;
 }
 
-export async function updateInspectionById(
-  data: { inspectionId: string } & Record<string, unknown>
-): Promise<Inspection | null> {
+export async function updateInspectionById(data: { inspectionId: string } & Record<string, unknown>): Promise<Inspection | null> {
   const response = await fetch(`/api/admin/inspections/${data.inspectionId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -163,9 +182,7 @@ export async function createTeamMember(data: Partial<TeamMember>): Promise<TeamM
   };
 }
 
-export async function updateTeamMemberById(
-  data: { teamMemberId: string } & Partial<TeamMember>
-): Promise<TeamMember | null> {
+export async function updateTeamMemberById(data: { teamMemberId: string } & Partial<TeamMember>): Promise<TeamMember | null> {
   const memberId = data.teamMemberId?.trim();
   if (!memberId || memberId === "undefined") {
     throw new Error("Missing team member id.");

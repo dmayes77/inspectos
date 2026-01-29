@@ -28,7 +28,7 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
     enableSorting: true,
     enableHiding: false,
     cell: ({ row }: { row: ClientRow }) => (
-      <Link href={`/admin/contacts/clients/${row.original.clientId}`} className="font-medium hover:underline">
+      <Link href={`/admin/contacts/${row.original.clientId}`} className="font-medium hover:underline">
         {row.original.name}
       </Link>
     ),
@@ -71,16 +71,12 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
     accessorKey: "lastInspection",
     header: "Last Inspection",
     enableSorting: true,
-    cell: ({ row }: { row: ClientRow }) => (
-      <div className="text-sm text-muted-foreground">{row.original.lastInspection}</div>
-    ),
+    cell: ({ row }: { row: ClientRow }) => <div className="text-sm text-muted-foreground">{row.original.lastInspection}</div>,
   },
   {
     accessorKey: "totalSpent",
     header: "Total Spent",
     enableSorting: true,
-    cell: ({ row }: { row: ClientRow }) => (
-      <div className="font-medium">${row.original.totalSpent.toLocaleString()}</div>
-    ),
+    cell: ({ row }: { row: ClientRow }) => <div className="font-medium">${row.original.totalSpent.toLocaleString()}</div>,
   },
 ];
