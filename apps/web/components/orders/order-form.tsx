@@ -12,21 +12,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle2, Clock, DollarSign, FileText, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, Clock, DollarSign, FileText, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateOrder, useUpdateOrder, type Order } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { useAgents } from "@/hooks/use-agents";
 import { useInspectors } from "@/hooks/use-team";
-import { useInspections } from "@/hooks/use-inspections";
 import { useProperties, useCreateProperty, type Property } from "@/hooks/use-properties";
 import { useServices, type Service } from "@/hooks/use-services";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
-import { InspectionDetailsSection } from "@/components/inspections/inspection-details-section";
+import { ServiceAssignmentsSection, type ServiceAssignment } from "@/components/orders/service-assignments-section";
 import type { InspectionService } from "@/lib/data/orders";
 import type { Inspection } from "@/hooks/use-inspections";
+import { useVendors } from "@/hooks/use-vendors";
 import { cn } from "@/lib/utils";
 import { tryFormatDate } from "@/lib/utils/tryFormatDate";
 
@@ -62,14 +62,6 @@ type OrderFormState = {
 type OrderFormProps = {
   mode: "new" | "edit";
   order?: Order;
-};
-
-type LinkedInspectionDetails = {
-  inspectorId: string | null;
-  inspectorName: string | null;
-  scheduledDate: string | null;
-  scheduledTime: string | null;
-  services: Service[];
 };
 
 function getPropertyLabel(property: Property) {
@@ -113,16 +105,6 @@ function formatScheduleLabel(date?: string | null, time?: string | null) {
   return formattedDate ?? time ?? null;
 }
 
-function mapInspectionServiceToService(service: InspectionService): Service {
-  return {
-    serviceId: service.service_id ?? service.id,
-    name: service.name,
-    price: service.price,
-    durationMinutes: service.duration_minutes ?? undefined,
-    templateId: service.template_id ?? undefined,
-  };
-}
-
 function getServicePrice(service: Service) {
   const price = typeof service.price === "number" ? service.price : Number(service.price ?? 0);
   return Number.isFinite(price) ? price : 0;
@@ -130,14 +112,13 @@ function getServicePrice(service: Service) {
 
 export function OrderForm({ mode, order }: OrderFormProps) {
   const router = useRouter();
-  const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID ?? "demo";
   const createOrder = useCreateOrder();
   const updateOrder = useUpdateOrder();
   const { data: clients = [] } = useClients();
-  const { data: agents = [] } = useAgents(tenantSlug);
+  const { data: agents = [] } = useAgents();
   const { data: inspectors = [] } = useInspectors();
-  const { data: inspections = [] } = useInspections();
-  const { data: properties = [] } = useProperties(tenantSlug);
+  const { data: vendors = [] } = useVendors();
+  const { data: properties = [] } = useProperties();
   const { data: services = [] } = useServices();
   const createProperty = useCreateProperty();
   const orderInspection = useMemo(() => {
@@ -148,10 +129,8 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   const [serviceSearch, setServiceSearch] = useState("");
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [agentDialogOpen, setAgentDialogOpen] = useState(false);
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [serviceAssignments, setServiceAssignments] = useState<ServiceAssignment[]>([]);
   const [showInlinePropertyForm, setShowInlinePropertyForm] = useState(false);
-  const [selectedInspectionId, setSelectedInspectionId] = useState(() => orderInspection?.id ?? "");
-  const [showInlineInspectionForm, setShowInlineInspectionForm] = useState(false);
   const [propertyForm, setPropertyForm] = useState(() => createEmptyPropertyFormState());
   const [propertyFormErrors, setPropertyFormErrors] = useState<PropertyFormErrors>({});
 
@@ -186,114 +165,30 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   }, [form.client_id, showInlinePropertyForm]);
 
   useEffect(() => {
-    if (!orderInspection?.id) return;
-    setSelectedInspectionId(orderInspection.id);
-    setShowInlineInspectionForm(false);
-  }, [orderInspection?.id]);
-
-  useEffect(() => {
-    if (mode !== "edit" || selectedServiceIds.length > 0) return;
+    if (mode !== "edit" || serviceAssignments.length > 0) return;
     const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
     const existing: InspectionService[] = inspection?.services ?? [];
     if (existing.length === 0) return;
 
-    const fromIds = existing.map((service) => service.service_id).filter((value): value is string => Boolean(value));
-
-    if (fromIds.length > 0) {
-      setSelectedServiceIds(fromIds);
-      return;
-    }
-
-    const byName = existing
-      .map((service) => service.name?.toLowerCase())
-      .filter((name): name is string => Boolean(name))
-      .map((name) => serviceNameMap.get(name))
-      .filter((id): id is string => Boolean(id));
-
-    if (byName.length > 0) {
-      setSelectedServiceIds(Array.from(new Set(byName)));
-    }
-  }, [mode, order?.inspection, selectedServiceIds.length, serviceNameMap]);
-
-  const selectedInspection = useMemo(() => {
-    if (!selectedInspectionId) return null;
-    return inspections.find((inspection) => inspection.id === selectedInspectionId) ?? null;
-  }, [inspections, selectedInspectionId]);
-
-  const linkedInspectionDetails = useMemo<LinkedInspectionDetails | null>(() => {
-    if (!selectedInspectionId || showInlineInspectionForm) return null;
-
-    if (selectedInspection) {
-      const serviceIds = selectedInspection.summary?.service_ids ?? selectedInspection.selected_type_ids ?? [];
-      const derivedServices = serviceIds
-        .map((serviceId) => services.find((service) => service.serviceId === serviceId))
-        .filter((service): service is Service => Boolean(service));
+    const assignments: ServiceAssignment[] = existing.map((service) => {
+      const serviceId = service.service_id ?? serviceNameMap.get(service.name?.toLowerCase() ?? "");
       return {
-        inspectorId: selectedInspection.inspector_id ?? null,
-        inspectorName: selectedInspection.inspector?.full_name ?? null,
-        scheduledDate: selectedInspection.summary?.scheduled_date ?? selectedInspection.schedule?.slot_date ?? null,
-        scheduledTime: selectedInspection.summary?.scheduled_time ?? selectedInspection.schedule?.slot_start ?? null,
-        services: derivedServices,
+        serviceId: serviceId ?? service.id,
+        selected: true,
+        inspectorId: service.inspector_id ?? null,
+        vendorId: service.vendor_id ?? null,
       };
-    }
+    }).filter((assignment) => Boolean(assignment.serviceId));
 
-    if (orderInspection && orderInspection.id === selectedInspectionId) {
-      const derivedServices = orderInspection.services?.map((service: InspectionService) => mapInspectionServiceToService(service)) ?? [];
-      return {
-        inspectorId: orderInspection.inspector_id ?? null,
-        inspectorName: order?.inspector?.full_name ?? null,
-        scheduledDate: order?.scheduled_date ?? orderInspection.order_schedule?.slot_date ?? null,
-        scheduledTime: order?.scheduled_time ?? orderInspection.order_schedule?.slot_start ?? null,
-        services: derivedServices,
-      };
+    if (assignments.length > 0) {
+      setServiceAssignments(assignments);
     }
-
-    return null;
-  }, [
-    selectedInspectionId,
-    showInlineInspectionForm,
-    selectedInspection,
-    services,
-    orderInspection,
-    order?.inspector?.full_name,
-    order?.scheduled_date,
-    order?.scheduled_time,
-  ]);
+  }, [mode, order?.inspection, serviceAssignments.length, serviceNameMap]);
 
   const selectedServices = useMemo(() => {
-    if (!showInlineInspectionForm && linkedInspectionDetails) {
-      return linkedInspectionDetails.services;
-    }
-    return services.filter((service) => selectedServiceIds.includes(service.serviceId));
-  }, [showInlineInspectionForm, linkedInspectionDetails, services, selectedServiceIds]);
-
-  const isLinkingExistingInspection = !showInlineInspectionForm && Boolean(selectedInspectionId);
-
-  const linkedInspectionSchedule = useMemo(() => {
-    if (!linkedInspectionDetails) return null;
-    return formatScheduleLabel(linkedInspectionDetails.scheduledDate, linkedInspectionDetails.scheduledTime);
-  }, [linkedInspectionDetails]);
-
-  const inlineInspectorName = useMemo(() => {
-    if (!form.inspector_id) return null;
-    const inspector = inspectors.find((item) => item.teamMemberId === form.inspector_id);
-    return inspector?.name ?? null;
-  }, [form.inspector_id, inspectors]);
-
-  const inspectorSummaryLabel = isLinkingExistingInspection
-    ? (linkedInspectionDetails?.inspectorName ?? (linkedInspectionDetails?.inspectorId ? "Inspector assigned" : null))
-    : inlineInspectorName;
-
-  useEffect(() => {
-    if (!isLinkingExistingInspection) return;
-    const inspectorId = linkedInspectionDetails?.inspectorId ?? null;
-    setForm((prev) => {
-      if (prev.inspector_id === inspectorId) {
-        return prev;
-      }
-      return { ...prev, inspector_id: inspectorId };
-    });
-  }, [isLinkingExistingInspection, linkedInspectionDetails?.inspectorId]);
+    const selectedIds = serviceAssignments.filter((a) => a.selected).map((a) => a.serviceId);
+    return services.filter((service) => selectedIds.includes(service.serviceId));
+  }, [services, serviceAssignments]);
 
   const totals = useMemo(() => {
     const subtotal = selectedServices.reduce((sum, service) => sum + getServicePrice(service), 0);
@@ -301,16 +196,24 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     return { subtotal, duration, count: selectedServices.length };
   }, [selectedServices]);
 
-  const servicesSatisfied = isLinkingExistingInspection ? Boolean(selectedInspectionId) : totals.count > 0;
+  const servicesSatisfied = totals.count > 0;
 
   const handleServiceToggle = (serviceId: string, checked: boolean) => {
-    setSelectedServiceIds((prev) => {
-      const isChecked = prev.includes(serviceId);
-      if (checked) {
-        return isChecked ? prev : [...prev, serviceId];
+    setServiceAssignments((prev) => {
+      const existing = prev.find((a) => a.serviceId === serviceId);
+      if (existing) {
+        return prev.map((a) => (a.serviceId === serviceId ? { ...a, selected: checked } : a));
       }
-      return prev.filter((id) => id !== serviceId);
+      return [...prev, { serviceId, selected: checked, inspectorId: null, vendorId: null }];
     });
+  };
+
+  const handleServiceInspectorChange = (serviceId: string, inspectorId: string | null) => {
+    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, inspectorId } : a)));
+  };
+
+  const handleServiceVendorChange = (serviceId: string, vendorId: string | null) => {
+    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, vendorId } : a)));
   };
 
   const handleSubmit = () => {
@@ -318,11 +221,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       toast.error("Select a property to continue.");
       return;
     }
-    if (!showInlineInspectionForm && !selectedInspectionId) {
-      toast.error("Link an inspection or create one inline.");
-      return;
-    }
-    if (showInlineInspectionForm && selectedServices.length === 0) {
+    if (selectedServices.length === 0) {
       toast.error("Select at least one service.");
       return;
     }
@@ -338,14 +237,18 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       source: form.source || undefined,
       internal_notes: form.internal_notes || null,
       client_notes: form.client_notes || null,
-      inspection_id: isLinkingExistingInspection ? selectedInspectionId : undefined,
-      services: selectedServices.map((service) => ({
-        service_id: service.serviceId,
-        template_id: service.templateId ?? undefined,
-        name: service.name,
-        price: getServicePrice(service),
-        duration_minutes: service.durationMinutes ?? undefined,
-      })),
+      services: selectedServices.map((service) => {
+        const assignment = serviceAssignments.find((a) => a.serviceId === service.serviceId);
+        return {
+          service_id: service.serviceId,
+          template_id: service.templateId ?? undefined,
+          name: service.name,
+          price: getServicePrice(service),
+          duration_minutes: service.durationMinutes ?? undefined,
+          inspector_id: assignment?.inspectorId ?? null,
+          vendor_id: assignment?.vendorId ?? null,
+        };
+      }),
     };
 
     if (mode === "edit" && order) {
@@ -426,19 +329,6 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     }));
   };
 
-  const handleInspectionSelect = (value: string) => {
-    if (value === "__add_new_inspection__") {
-      setSelectedInspectionId("");
-      setShowInlineInspectionForm(true);
-      return;
-    }
-    if (value === "__no_inspections__") {
-      return;
-    }
-    setSelectedInspectionId(value);
-    setShowInlineInspectionForm(false);
-  };
-
   const handleInlinePropertyCancel = () => {
     setShowInlinePropertyForm(false);
     setPropertyForm(createEmptyPropertyFormState());
@@ -460,7 +350,6 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
     try {
       const created = await createProperty.mutateAsync({
-        tenant_slug: tenantSlug,
         address_line1: propertyForm.addressLine1.trim(),
         address_line2: propertyForm.addressLine2.trim() || null,
         city: propertyForm.city.trim(),
@@ -697,103 +586,24 @@ export function OrderForm({ mode, order }: OrderFormProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                Inspection
+                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                Services & Assignments
               </CardTitle>
-              <CardDescription>Select the inspector and services for this inspection.</CardDescription>
+              <CardDescription>Select services and assign inspectors/vendors for each service.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="inspection_id">Inspection</Label>
-                <Select value={selectedInspectionId || ""} onValueChange={handleInspectionSelect}>
-                  <SelectTrigger id="inspection_id">
-                    <SelectValue placeholder="Link existing inspection" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__add_new_inspection__" className="text-blue-600 font-semibold">
-                      <span className="inline-flex items-center gap-2">
-                        <Plus className="h-3 w-3" />
-                        Add new inspection
-                      </span>
-                    </SelectItem>
-                    {inspections.length === 0 ? (
-                      <SelectItem value="__no_inspections__" disabled>
-                        No inspections available
-                      </SelectItem>
-                    ) : (
-                      inspections.map((inspection) => (
-                        <SelectItem key={inspection.id} value={inspection.id}>
-                          <div className="flex flex-col gap-0.5 text-left">
-                            <span className="font-medium leading-tight">
-                              {getInspectionPropertyAddress(inspection) ?? `Inspection ${inspection.id.slice(0, 8)}`}
-                            </span>
-                            <span className="text-xs text-muted-foreground">{getInspectionMetaLabel(inspection)}</span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">Link an existing record or add a new inspection inline without leaving the order.</p>
-              </div>
-
-              {!showInlineInspectionForm && (
-                <div className="space-y-3 rounded-lg border bg-muted/30 p-4 text-sm">
-                  {selectedInspectionId ? (
-                    <>
-                      <div>
-                        <p className="font-medium">{linkedInspectionDetails?.inspectorName ?? "No inspector assigned"}</p>
-                        <p className="text-muted-foreground">{linkedInspectionSchedule ?? "No schedule information"}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">Services</p>
-                        {linkedInspectionDetails?.services.length ? (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {linkedInspectionDetails.services.map((service) => (
-                              <Badge key={`linked-service-${service.serviceId}`} variant="secondary">
-                                {service.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-muted-foreground">Service selections unavailable for this inspection.</p>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground">Select an inspection to view its details.</p>
-                  )}
-                </div>
-              )}
-
-              <div
-                className={cn(
-                  "overflow-hidden rounded-lg border bg-muted/20 transition-all duration-300 ease-in-out",
-                  showInlineInspectionForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
-                )}
-                aria-hidden={!showInlineInspectionForm}
-              >
-                <div className="space-y-4 p-4">
-                  <InspectionDetailsSection
-                    inspectors={inspectors}
-                    selectedInspectorId={form.inspector_id}
-                    onInspectorChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        inspector_id: value,
-                      }))
-                    }
-                    services={services}
-                    selectedServiceIds={selectedServiceIds}
-                    onServiceToggle={handleServiceToggle}
-                    searchValue={serviceSearch}
-                    onSearchChange={setServiceSearch}
-                    helperText="These selections will determine which services appear under the inspection container."
-                    allowUnassigned
-                    unassignedLabel="Unassigned"
-                  />
-                </div>
-              </div>
+              <ServiceAssignmentsSection
+                inspectors={inspectors}
+                vendors={vendors}
+                services={services}
+                serviceAssignments={serviceAssignments}
+                onServiceToggle={handleServiceToggle}
+                onServiceInspectorChange={handleServiceInspectorChange}
+                onServiceVendorChange={handleServiceVendorChange}
+                searchValue={serviceSearch}
+                onSearchChange={setServiceSearch}
+                helperText="For each service, you can optionally assign a specific inspector or vendor. Leave blank to use the order-level inspector."
+              />
             </CardContent>
           </Card>
 
@@ -1004,7 +814,9 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               </div>
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
-                {inspectorSummaryLabel ?? (form.inspector_id ? "Inspector assigned" : "No inspector yet")}
+                {form.inspector_id
+                  ? inspectors.find((i) => i.teamMemberId === form.inspector_id)?.name ?? "Inspector assigned"
+                  : "No inspector yet"}
               </div>
             </CardContent>
           </Card>

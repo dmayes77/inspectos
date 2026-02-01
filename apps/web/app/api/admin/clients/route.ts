@@ -70,5 +70,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error?.message ?? "Failed to create client." }, { status: 500 });
   }
 
+  // Trigger webhook for client.created event
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildClientPayload } = await import("@/lib/webhooks/payloads");
+
+    // Fetch complete client data including company and notes
+    const { data: completeClient } = await supabaseAdmin
+      .from("clients")
+      .select("id, name, email, phone, company, notes, created_at, updated_at")
+      .eq("id", data.id)
+      .single();
+
+    if (completeClient) {
+      triggerWebhookEvent("client.created", tenantId, buildClientPayload(completeClient));
+    }
+  } catch (error) {
+    console.error("Failed to trigger webhook:", error);
+  }
+
   return NextResponse.json(mapClient(data));
 }

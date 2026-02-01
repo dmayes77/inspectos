@@ -20,11 +20,10 @@ import {
 
 const PROPERTIES_KEY = 'properties';
 
-export function useProperties(tenantSlug: string, filters?: PropertyFilters) {
+export function useProperties(filters?: PropertyFilters) {
   return useQuery({
-    queryKey: [PROPERTIES_KEY, tenantSlug, filters],
-    queryFn: () => fetchProperties(tenantSlug, filters),
-    enabled: !!tenantSlug,
+    queryKey: [PROPERTIES_KEY, filters],
+    queryFn: () => fetchProperties(filters),
   });
 }
 

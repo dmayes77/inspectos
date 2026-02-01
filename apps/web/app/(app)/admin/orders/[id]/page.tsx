@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Check, Clock, DollarSign, Edit, Mail, MapPin, Phone, Send, Tag, Trash2, User, ClipboardList } from "lucide-react";
+import { Building2, Calendar, Check, Clock, DollarSign, Edit, Mail, MapPin, Phone, Send, Tag, Trash2, User, ClipboardList } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
 import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
 import { mockAdminUser } from "@/lib/constants/mock-users";
@@ -522,24 +522,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <p className="text-sm text-muted-foreground">Services</p>
                   <div className="space-y-2">
                     {services.map((service) => (
-                      <div key={service.id} className="flex items-center justify-between rounded border border-muted/70 px-3 py-2">
-                        <div>
-                          <p className="font-medium">{service.name}</p>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs",
-                              service.status === "completed"
-                                ? "bg-green-100 text-green-800"
-                                : service.status === "in_progress"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "",
-                            )}
-                          >
-                            {formatStatusLabel(service.status)}
-                          </Badge>
+                      <div key={service.id} className="rounded border border-muted/70 px-3 py-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{service.name}</p>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-xs",
+                                service.status === "completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : service.status === "in_progress"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "",
+                              )}
+                            >
+                              {formatStatusLabel(service.status)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-semibold">{formatMoney(service.price)}</p>
                         </div>
-                        <p className="text-sm font-semibold">{formatMoney(service.price)}</p>
+                        {(service.inspector || service.vendor) && (
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                            {service.inspector && (
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span>{service.inspector.full_name ?? service.inspector.email}</span>
+                              </div>
+                            )}
+                            {service.vendor && (
+                              <div className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                <span>{service.vendor.name}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

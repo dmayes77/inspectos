@@ -76,7 +76,6 @@ export type PropertyOwner = {
 };
 
 export interface CreatePropertyInput {
-  tenant_slug: string;
   client_id?: string | null;
   address_line1: string;
   address_line2?: string | null;
@@ -168,12 +167,13 @@ export interface PropertyFilters {
   client_id?: string;
 }
 
-export async function fetchProperties(tenantSlug: string, filters?: PropertyFilters): Promise<Property[]> {
-  const params = new URLSearchParams({ tenant: tenantSlug });
+export async function fetchProperties(filters?: PropertyFilters): Promise<Property[]> {
+  const params = new URLSearchParams();
 
   if (filters?.client_id) params.append('client_id', filters.client_id);
 
-  const response = await fetch(`/api/admin/properties?${params}`, {
+  const url = params.toString() ? `/api/admin/properties?${params}` : '/api/admin/properties';
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
     },

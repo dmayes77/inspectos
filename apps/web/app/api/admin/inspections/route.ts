@@ -254,14 +254,16 @@ export async function GET(request: Request) {
 
   const rows = Array.isArray(inspections) ? (inspections as unknown as InspectionRow[]) : [];
   // After inspections are fetched, get assigned vendors for those inspections
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const inspectionIds = rows.map((i: any) => i.id);
-  const { data: inspectionVendors, error: vendorError } = await supabaseAdmin
+  const { data: inspectionVendors } = await supabaseAdmin
     .from("inspection_vendors")
     .select("inspection_id, vendor_id, vendor:vendors(*)")
     .in("inspection_id", inspectionIds);
 
   // Map inspection_id to vendors
-  const vendorMap: Record<string, any[]> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const vendorMap: Record<string, any> = {};
   if (Array.isArray(inspectionVendors)) {
     for (const iv of inspectionVendors) {
       if (!vendorMap[iv.inspection_id]) vendorMap[iv.inspection_id] = [];
@@ -506,7 +508,7 @@ export async function POST(request: Request) {
       .eq("schedule_type", "primary")
       .maybeSingle();
 
-  let { data: existingSchedule, error: scheduleLookupError } = orderId ? await getPrimarySchedule() : { data: null, error: null };
+  const { data: existingSchedule, error: scheduleLookupError } = orderId ? await getPrimarySchedule() : { data: null, error: null };
   if (scheduleLookupError) {
     return NextResponse.json({ error: scheduleLookupError.message }, { status: 500 });
   }
@@ -642,6 +644,36 @@ export async function POST(request: Request) {
       ends_at: endsAt.toISOString(),
       status: "scheduled",
     });
+  }
+
+  // Trigger webhook for inspection.created event
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildInspectionPayload } = await import("@/lib/webhooks/payloads");
+
+    // Fetch complete inspection data
+    const { data: completeInspection } = await supabaseAdmin
+      .from("inspections")
+      .select(`
+        id,
+        order_id,
+        status,
+        template_id,
+        started_at,
+        completed_at,
+        created_at,
+        updated_at,
+        services:inspection_services(id, name, status, price)
+      `)
+      .eq("id", inspection.id)
+      .single();
+
+    if (completeInspection) {
+      triggerWebhookEvent("inspection.created", tenantId, buildInspectionPayload(completeInspection));
+    }
+  } catch (error) {
+    // Log but don't fail the request
+    console.error("Failed to trigger webhook:", error);
   }
 
   return NextResponse.json({ inspectionId: inspection.id });

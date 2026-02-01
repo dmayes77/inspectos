@@ -20,11 +20,10 @@ export default function VendorDetailPage() {
           <CardTitle>{vendor.name}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div>Type: {vendor.type}</div>
-          <div>Contact: {vendor.contact}</div>
-          <div>Specialties: {vendor.specialties}</div>
-          <div>Status: {vendor.status}</div>
-          <div>Notes: {vendor.notes}</div>
+          {vendor.vendor_type && <div>Type: {vendor.vendor_type}</div>}
+          {vendor.phone && <div>Phone: {vendor.phone}</div>}
+          {vendor.email && <div>Email: {vendor.email}</div>}
+          {vendor.status && <div>Status: {vendor.status}</div>}
         </CardContent>
       </Card>
       <div className="flex gap-2">

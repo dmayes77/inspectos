@@ -19,8 +19,6 @@ import { mockAdminUser } from "@/lib/constants/mock-users";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CompanyLogo } from "@/components/shared/company-logo";
 
-const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID ?? "demo";
-
 type AgencyRow = { original: Agency };
 type AgentRow = { original: Agent };
 
@@ -180,8 +178,8 @@ const agentColumns: ColumnDef<Agent>[] = [
 ];
 
 function AgentsPageContent() {
-  const { data: agencies = [] } = useAgencies(tenantSlug);
-  const { data: agents = [] } = useAgents(tenantSlug);
+  const { data: agencies = [] } = useAgencies();
+  const { data: agents = [] } = useAgents();
   const [agencyQuery, setAgencyQuery] = useState("");
   const [agentQuery, setAgentQuery] = useState("");
   const [agentStatusFilter, setAgentStatusFilter] = useState<"all" | "active" | "inactive">("all");

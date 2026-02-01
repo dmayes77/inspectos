@@ -13,10 +13,10 @@ import {
 
 export type { Agency, CreateAgencyInput, UpdateAgencyInput, AgencyFilters };
 
-export function useAgencies(tenantSlug: string = "demo", filters?: AgencyFilters) {
+export function useAgencies(filters?: AgencyFilters) {
   return useGet<Agency[]>(
-    `agencies-${tenantSlug}-${JSON.stringify(filters ?? {})}`,
-    async () => fetchAgencies(tenantSlug, filters)
+    `agencies-${JSON.stringify(filters ?? {})}`,
+    async () => fetchAgencies(filters)
   );
 }
 

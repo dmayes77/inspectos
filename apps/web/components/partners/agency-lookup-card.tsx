@@ -38,7 +38,6 @@ export function AgencyLookupCard({ tenantSlug = DEFAULT_TENANT_SLUG }: { tenantS
     const website = result.website ?? (result.domain ? `https://${result.domain}` : null);
     createAgency.mutate(
       {
-        tenant_slug: tenantSlug,
         name: result.name,
         status: "active",
         logo_url: result.logoUrl,

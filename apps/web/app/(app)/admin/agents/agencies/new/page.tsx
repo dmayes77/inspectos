@@ -225,7 +225,6 @@ export default function NewAgencyPage() {
 
     createAgency.mutate(
       {
-        tenant_slug: DEFAULT_TENANT_SLUG,
         name: form.name.trim(),
         status: form.status,
         logo_url: normalize(form.logoUrl),

@@ -14,10 +14,11 @@ import {
   Flag,
   DollarSign,
   Tag,
-  ShoppingCart,
+  Folders,
   MapPin,
   IdCard,
-  Wrench,
+  Target,
+  Zap,
 } from "lucide-react";
 
 export type NavItem = {
@@ -33,7 +34,7 @@ export type NavSection = {
 
 export const companyPinnedNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Overview" },
-  { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
+  { href: "/admin/orders", icon: Folders, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
   { href: "/admin/contacts", icon: Users, label: "Contacts" },
   { href: "/admin/agents", icon: IdCard, label: "Agents" },
@@ -45,11 +46,11 @@ export const companyNavSections: NavSection[] = [
     items: [
       { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
       { href: "/admin/properties", icon: MapPin, label: "Properties" },
-      { href: "/admin/services", icon: Wrench, label: "Services" },
+      { href: "/admin/services", icon: Target, label: "Services" },
       { href: "/admin/templates", icon: FileText, label: "Inspection Templates" },
       { href: "/admin/tags", icon: Tag, label: "Tags" },
       { href: "/admin/workflows", icon: Workflow, label: "Workflows" },
-      { href: "/admin/automations", icon: Workflow, label: "Automations" },
+      { href: "/admin/automations", icon: Zap, label: "Automations" },
     ],
   },
   {
@@ -109,7 +110,7 @@ export const platformSystemNav: NavItem[] = [{ href: "/platform/content", icon: 
 
 export const companyMobileNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Home" },
-  { href: "/admin/orders", icon: ShoppingCart, label: "Orders" },
+  { href: "/admin/orders", icon: Folders, label: "Orders" },
   { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
   { href: "/admin/contacts", icon: Users, label: "Contacts" },
   { href: "/admin/invoices", icon: Receipt, label: "Invoices" },

@@ -109,14 +109,15 @@ export interface AgentFilters {
   search?: string;
 }
 
-export async function fetchAgents(tenantSlug: string, filters?: AgentFilters): Promise<Agent[]> {
-  const params = new URLSearchParams({ tenant: tenantSlug });
+export async function fetchAgents(filters?: AgentFilters): Promise<Agent[]> {
+  const params = new URLSearchParams();
 
   if (filters?.status) params.append("status", filters.status);
   if (filters?.agency_id) params.append("agency_id", filters.agency_id);
   if (filters?.search) params.append("search", filters.search);
 
-  const response = await fetch(`/api/admin/agents?${params}`, {
+  const url = params.toString() ? `/api/admin/agents?${params}` : "/api/admin/agents";
+  const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
     },

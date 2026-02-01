@@ -47,7 +47,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       ),
       inspection:inspections(
         id, order_id, order_schedule_id, status, started_at, completed_at, weather_conditions, temperature, notes,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id, notes, sort_order),
+        services:inspection_services(
+          id, service_id, name, status, price, duration_minutes, template_id, notes, sort_order, inspector_id, vendor_id,
+          inspector:profiles!inspection_services_inspector_id_fkey(id, full_name, email, avatar_url),
+          vendor:vendors!inspection_services_vendor_id_fkey(id, name, vendor_type, email, phone)
+        ),
         assignments:inspection_assignments(
           id, role, assigned_at, unassigned_at,
           inspector:profiles(id, full_name, email, avatar_url)
@@ -76,6 +80,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return validation.error;
   }
   const payload = validation.data;
+
+  // Fetch current order to track status changes
+  const { data: currentOrder } = await supabaseAdmin
+    .from("orders")
+    .select("status")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .single();
+
+  const previousStatus = currentOrder?.status;
 
   // Build update object with only provided fields
   const updateData: Record<string, unknown> = {};
@@ -135,7 +149,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       ),
       inspection:inspections(
         id, order_id, order_schedule_id, status,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id),
+        services:inspection_services(
+          id, service_id, name, status, price, duration_minutes, template_id, inspector_id, vendor_id,
+          inspector:profiles!inspection_services_inspector_id_fkey(id, full_name, email, avatar_url),
+          vendor:vendors!inspection_services_vendor_id_fkey(id, name, vendor_type, email, phone)
+        ),
         assignments:inspection_assignments(
           id, role, assigned_at, unassigned_at,
           inspector:profiles(id, full_name, email, avatar_url)
@@ -147,6 +165,38 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   if (error || !data) {
     return NextResponse.json({ error: { message: error?.message ?? "Failed to update order." } }, { status: 500 });
+  }
+
+  // Update inspection services if provided
+  if (payload.services && Array.isArray(payload.services) && payload.services.length > 0) {
+    // Get the inspection for this order
+    const inspection = Array.isArray(data.inspection) ? data.inspection[0] : data.inspection;
+
+    if (inspection?.id) {
+      // For each service in the payload, update the corresponding inspection_service
+      for (const service of payload.services) {
+        // Find the existing inspection_service by matching service_id or name
+        const existingService = inspection.services?.find(
+          (s: { service_id: string | null; name: string }) =>
+            (service.service_id && s.service_id === service.service_id) ||
+            s.name === service.name
+        );
+
+        if (existingService?.id) {
+          // Update the existing inspection_service with new assignments
+          const updateData: { inspector_id?: string | null; vendor_id?: string | null } = {};
+          if (service.inspector_id !== undefined) updateData.inspector_id = service.inspector_id;
+          if (service.vendor_id !== undefined) updateData.vendor_id = service.vendor_id;
+
+          if (Object.keys(updateData).length > 0) {
+            await supabaseAdmin
+              .from("inspection_services")
+              .update(updateData)
+              .eq("id", existingService.id);
+          }
+        }
+      }
+    }
   }
 
   const propertyId = data.property_id;
@@ -226,6 +276,53 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     scheduleChanged = true;
+
+    // Trigger schedule webhooks
+    if (primarySchedule) {
+      try {
+        const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+        const { buildSchedulePayload } = await import("@/lib/webhooks/payloads");
+
+        // Fetch complete schedule data with inspector details
+        const { data: completeSchedule } = await supabaseAdmin
+          .from("order_schedules")
+          .select(`
+            id, order_id, schedule_type, label, slot_date, slot_start, slot_end,
+            duration_minutes, status, created_at, updated_at,
+            inspector:profiles(id, full_name, email)
+          `)
+          .eq("id", primarySchedule.id)
+          .single();
+
+        if (completeSchedule) {
+          // Flatten inspector relation if it's an array
+          const inspectorData = Array.isArray(completeSchedule.inspector)
+            ? completeSchedule.inspector[0]
+            : completeSchedule.inspector;
+
+          const scheduleData = {
+            ...completeSchedule,
+            inspector: inspectorData || null
+          };
+
+          // Determine if this was a creation or update
+          const wasJustCreated = !Array.isArray(data.schedules) || data.schedules.length === 0;
+
+          if (wasJustCreated) {
+            triggerWebhookEvent("schedule.created", tenantId, buildSchedulePayload(scheduleData));
+          } else {
+            triggerWebhookEvent("schedule.updated", tenantId, buildSchedulePayload(scheduleData));
+
+            // Trigger schedule.cancelled if status changed to cancelled
+            if (scheduleData.status === "cancelled") {
+              triggerWebhookEvent("schedule.cancelled", tenantId, buildSchedulePayload(scheduleData));
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to trigger schedule webhook:", error);
+      }
+    }
   }
 
   if (scheduleChanged && primarySchedule) {
@@ -269,6 +366,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       name: service.name,
       price: service.price,
       duration_minutes: service.duration_minutes ?? null,
+      inspector_id: (service as { inspector_id?: string | null }).inspector_id ?? null,
+      vendor_id: (service as { vendor_id?: string | null }).vendor_id ?? null,
       status: "pending" as const,
       sort_order: index,
     }));
@@ -278,6 +377,27 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (servicesError) {
       return NextResponse.json({ error: { message: servicesError.message } }, { status: 500 });
     }
+  }
+
+  // Trigger webhooks based on what changed
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildOrderUpdatedPayload, buildOrderCompletedPayload, buildOrderCancelledPayload } = await import("@/lib/webhooks/payloads");
+
+    // Always trigger order.updated
+    triggerWebhookEvent("order.updated", tenantId, buildOrderUpdatedPayload(data));
+
+    // Trigger status-specific events
+    if (payload.status === "completed" && previousStatus !== "completed") {
+      triggerWebhookEvent("order.completed", tenantId, buildOrderCompletedPayload(data));
+    }
+
+    if (payload.status === "cancelled" && previousStatus !== "cancelled") {
+      triggerWebhookEvent("order.cancelled", tenantId, buildOrderCancelledPayload(data));
+    }
+  } catch (error) {
+    // Log but don't fail the request
+    console.error("Failed to trigger webhook:", error);
   }
 
   return NextResponse.json({ data });

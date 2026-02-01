@@ -48,7 +48,11 @@ export async function GET(request: NextRequest) {
       ),
       inspection:inspections(
         id, order_id, order_schedule_id, status, started_at, completed_at,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id),
+        services:inspection_services(
+          id, service_id, name, status, price, duration_minutes, template_id, inspector_id, vendor_id,
+          inspector:profiles!inspection_services_inspector_id_fkey(id, full_name, email, avatar_url),
+          vendor:vendors!inspection_services_vendor_id_fkey(id, name, vendor_type, email, phone)
+        ),
         assignments:inspection_assignments(
           id, role, assigned_at, unassigned_at,
           inspector:profiles(id, full_name, email, avatar_url)
@@ -180,6 +184,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: { message: scheduleError?.message ?? "Failed to create schedule." } }, { status: 500 });
   }
 
+  // Trigger webhook for schedule.created event
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildSchedulePayload } = await import("@/lib/webhooks/payloads");
+
+    // Fetch complete schedule data with inspector details
+    const { data: completeSchedule } = await supabaseAdmin
+      .from("order_schedules")
+      .select(`
+        id, order_id, schedule_type, label, slot_date, slot_start, slot_end,
+        duration_minutes, status, created_at, updated_at,
+        inspector:profiles(id, full_name, email)
+      `)
+      .eq("id", primarySchedule.id)
+      .single();
+
+    if (completeSchedule) {
+      // Flatten inspector relation if it's an array
+      const inspectorData = Array.isArray(completeSchedule.inspector)
+        ? completeSchedule.inspector[0]
+        : completeSchedule.inspector;
+
+      const scheduleData = {
+        ...completeSchedule,
+        inspector: inspectorData || null
+      };
+
+      triggerWebhookEvent("schedule.created", tenantId, buildSchedulePayload(scheduleData));
+    }
+  } catch (error) {
+    console.error("Failed to trigger schedule webhook:", error);
+  }
+
   if (payload.client_id) {
     const ownerDate = format(new Date(), "yyyy-MM-dd");
     await supabaseAdmin
@@ -226,6 +263,8 @@ export async function POST(request: Request) {
     name: service.name,
     price: service.price,
     duration_minutes: service.duration_minutes ?? null,
+    inspector_id: (service as { inspector_id?: string | null }).inspector_id ?? null,
+    vendor_id: (service as { vendor_id?: string | null }).vendor_id ?? null,
     status: "pending" as const,
     sort_order: index,
   }));
@@ -261,7 +300,11 @@ export async function POST(request: Request) {
       ),
       inspection:inspections(
         id, order_id, order_schedule_id, status,
-        services:inspection_services(id, service_id, name, status, price, duration_minutes, template_id)
+        services:inspection_services(
+          id, service_id, name, status, price, duration_minutes, template_id, inspector_id, vendor_id,
+          inspector:profiles!inspection_services_inspector_id_fkey(id, full_name, email, avatar_url),
+          vendor:vendors!inspection_services_vendor_id_fkey(id, name, vendor_type, email, phone)
+        )
       )
     `,
     )
@@ -274,6 +317,16 @@ export async function POST(request: Request) {
       fetchError,
     });
     return NextResponse.json({ error: { message: fetchError.message } }, { status: 500 });
+  }
+
+  // Trigger webhook for order.created event
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildOrderCreatedPayload } = await import("@/lib/webhooks/payloads");
+    triggerWebhookEvent("order.created", tenantId, buildOrderCreatedPayload(completeOrder));
+  } catch (error) {
+    // Log but don't fail the request
+    console.error("Failed to trigger webhook:", error);
   }
 
   return NextResponse.json({ data: completeOrder });

@@ -10,6 +10,8 @@ export const orderServiceSchema = z.object({
   name: z.string().min(1, "Service name is required"),
   price: z.number().min(0, "Price must be non-negative"),
   duration_minutes: z.number().int().positive().optional(),
+  inspector_id: z.string().uuid("Invalid inspector ID").optional().nullable(),
+  vendor_id: z.string().uuid("Invalid vendor ID").optional().nullable(),
 });
 
 export const createOrderSchema = z.object({

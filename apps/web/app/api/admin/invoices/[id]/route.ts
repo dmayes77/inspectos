@@ -76,6 +76,14 @@ export async function PATCH(
   const { id } = await params;
   const invoiceId = id?.trim?.() ?? "";
 
+  // Fetch current invoice status for change detection
+  const { data: currentInvoice } = await supabaseAdmin
+    .from("invoices")
+    .select("status")
+    .eq("id", invoiceId)
+    .eq("tenant_id", tenantId)
+    .single();
+
   try {
     const payload = await request.json();
     const orderId = payload?.order_id?.toString?.() ?? "";
@@ -139,8 +147,50 @@ export async function PATCH(
       );
     }
 
+    // Trigger webhooks for invoice.updated and status-specific events
+    try {
+      const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+      const { buildInvoicePayload } = await import("@/lib/webhooks/payloads");
+
+      // Fetch complete invoice data including all fields
+      const { data: completeInvoice } = await supabaseAdmin
+        .from("invoices")
+        .select(`
+          id, invoice_number, order_id, status, subtotal, tax, total,
+          issued_at, due_at, paid_at, created_at,
+          client:clients(id, name, email)
+        `)
+        .eq("id", invoiceId)
+        .single();
+
+      if (completeInvoice) {
+        // Flatten client relation if it's an array
+        const clientData = Array.isArray(completeInvoice.client)
+          ? completeInvoice.client[0]
+          : completeInvoice.client;
+
+        const invoiceData = {
+          ...completeInvoice,
+          client: clientData || null
+        };
+
+        // Always trigger invoice.updated
+        triggerWebhookEvent("invoice.updated", tenantId, buildInvoicePayload(invoiceData));
+
+        // Trigger invoice.paid when status changes to paid
+        const previousStatus = currentInvoice?.status;
+        const newStatus = payload?.status;
+
+        if (newStatus === "paid" && previousStatus !== "paid") {
+          triggerWebhookEvent("invoice.paid", tenantId, buildInvoicePayload(invoiceData));
+        }
+      }
+    } catch (webhookError) {
+      console.error("Failed to trigger webhook:", webhookError);
+    }
+
     return NextResponse.json({ data: mapInvoice(data) });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: { message: "Invalid request body" } },
       { status: 400 }

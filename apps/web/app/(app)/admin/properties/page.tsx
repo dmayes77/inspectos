@@ -19,8 +19,7 @@ import { PROPERTY_TYPE_FILTER_OPTIONS } from "@/lib/constants/property-options";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
 
 export default function PropertiesPage() {
-  const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID ?? "demo";
-  const { data, isLoading, isError } = useProperties(tenantSlug);
+  const { data, isLoading, isError } = useProperties();
   const properties = data ?? [];
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");

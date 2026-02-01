@@ -25,7 +25,6 @@ type InlinePropertyDialogProps = {
 };
 
 export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, clientId }: InlinePropertyDialogProps) {
-  const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID ?? "demo";
   const createProperty = useCreateProperty();
   const [form, setForm] = useState(() => {
     const initial = createEmptyPropertyFormState();
@@ -63,7 +62,6 @@ export function InlinePropertyDialog({ open, onOpenChange, onPropertyCreated, cl
 
     try {
       const created = await createProperty.mutateAsync({
-        tenant_slug: tenantSlug,
         address_line1: form.addressLine1.trim(),
         address_line2: form.addressLine2.trim() || null,
         city: form.city.trim(),

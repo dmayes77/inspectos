@@ -220,7 +220,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const { data: inspection } = await supabaseAdmin
     .from("inspections")
-    .select("id, order_id, order_schedule_id, template_id, selected_type_ids")
+    .select("id, order_id, order_schedule_id, template_id, selected_type_ids, status")
     .eq("tenant_id", tenantId)
     .eq("id", id)
     .maybeSingle();
@@ -408,6 +408,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     scheduleUpdate.package_id = primaryPackageId;
   }
 
+  let scheduleWasCreated = false;
+  let scheduleWasUpdated = false;
+
   if (Object.keys(scheduleUpdate).length > 0) {
     if (primarySchedule) {
       const { data: updatedSchedule, error: scheduleError } = await supabaseAdmin
@@ -420,6 +423,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: scheduleError.message }, { status: 500 });
       }
       primarySchedule = updatedSchedule;
+      scheduleWasUpdated = true;
     } else {
       const { data: createdSchedule, error: scheduleError } = await supabaseAdmin
         .from("order_schedules")
@@ -436,6 +440,51 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: scheduleError?.message ?? "Failed to update schedule." }, { status: 500 });
       }
       primarySchedule = createdSchedule;
+      scheduleWasCreated = true;
+    }
+
+    // Trigger schedule webhooks
+    if (primarySchedule && (scheduleWasCreated || scheduleWasUpdated)) {
+      try {
+        const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+        const { buildSchedulePayload } = await import("@/lib/webhooks/payloads");
+
+        // Fetch complete schedule data with inspector details
+        const { data: completeSchedule } = await supabaseAdmin
+          .from("order_schedules")
+          .select(`
+            id, order_id, schedule_type, label, slot_date, slot_start, slot_end,
+            duration_minutes, status, created_at, updated_at,
+            inspector:profiles(id, full_name, email)
+          `)
+          .eq("id", primarySchedule.id)
+          .single();
+
+        if (completeSchedule) {
+          // Flatten inspector relation if it's an array
+          const inspectorData = Array.isArray(completeSchedule.inspector)
+            ? completeSchedule.inspector[0]
+            : completeSchedule.inspector;
+
+          const scheduleData = {
+            ...completeSchedule,
+            inspector: inspectorData || null
+          };
+
+          if (scheduleWasCreated) {
+            triggerWebhookEvent("schedule.created", tenantId, buildSchedulePayload(scheduleData));
+          } else if (scheduleWasUpdated) {
+            triggerWebhookEvent("schedule.updated", tenantId, buildSchedulePayload(scheduleData));
+
+            // Trigger schedule.cancelled if status changed to cancelled
+            if (scheduleData.status === "cancelled") {
+              triggerWebhookEvent("schedule.cancelled", tenantId, buildSchedulePayload(scheduleData));
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to trigger schedule webhook:", error);
+      }
     }
   }
 
@@ -503,6 +552,59 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (payload.inspectorId) {
       await assignInspectionLead(tenantId, id, payload.inspectorId);
     }
+  }
+
+  // Trigger webhooks for inspection.updated and status-specific events
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildInspectionPayload } = await import("@/lib/webhooks/payloads");
+
+    // Fetch complete inspection data for webhook payload
+    const { data: completeInspection } = await supabaseAdmin
+      .from("inspections")
+      .select(`
+        id, order_id, status, template_id, started_at, completed_at, submitted_at,
+        created_at, updated_at,
+        property:orders!inspections_order_id_fkey(properties(id, address_line1, address_line2, city, state, zip_code)),
+        services:inspection_services(id, name, status, price)
+      `)
+      .eq("id", id)
+      .single();
+
+    if (completeInspection) {
+      // Flatten the property relation
+      const propertyData = Array.isArray(completeInspection.property)
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (completeInspection.property[0] as any)?.properties
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (completeInspection.property as any)?.properties;
+
+      const inspectionData = {
+        ...completeInspection,
+        property: propertyData || null
+      };
+
+      // Always trigger inspection.updated
+      triggerWebhookEvent("inspection.updated", tenantId, buildInspectionPayload(inspectionData));
+
+      // Trigger status-specific events when status changes
+      const previousStatus = inspection.status;
+      const newStatus = mapStatusToDb(payload.status ?? "");
+
+      if (payload.status !== undefined && newStatus !== previousStatus) {
+        if (newStatus === "in_progress" && previousStatus !== "in_progress") {
+          triggerWebhookEvent("inspection.started", tenantId, buildInspectionPayload(inspectionData));
+        }
+        if (newStatus === "completed" && previousStatus !== "completed") {
+          triggerWebhookEvent("inspection.completed", tenantId, buildInspectionPayload(inspectionData));
+        }
+        if (newStatus === "submitted" && previousStatus !== "submitted") {
+          triggerWebhookEvent("inspection.submitted", tenantId, buildInspectionPayload(inspectionData));
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Failed to trigger webhook:", error);
   }
 
   return NextResponse.json({ success: true });

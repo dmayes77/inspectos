@@ -1,42 +1,48 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+export interface Vendor {
+  id: string;
+  name: string;
+  vendor_type?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status?: string;
+}
+
 // Mock API for demonstration
-const mockVendors = [
-  { id: "1", name: "Acme Pest Control", type: "Pest", contact: "555-1234", specialties: "Termites", status: "active", notes: "" },
-  { id: "2", name: "Roof Pros", type: "Roof", contact: "555-5678", specialties: "Shingles, Flat Roofs", status: "active", notes: "" },
+const mockVendors: Vendor[] = [
+  { id: "1", name: "Acme Pest Control", vendor_type: "Pest", phone: "555-1234", status: "active" },
+  { id: "2", name: "Roof Pros", vendor_type: "Roof", phone: "555-5678", status: "active" },
 ];
 
 let vendorStore = [...mockVendors];
 
 export function useVendors() {
-  return useQuery({
+  return useQuery<Vendor[]>({
     queryKey: ["vendors"],
     queryFn: async () => {
-      // Fetch vendors from Supabase
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data, error } = await supabase.from("vendors").select("*");
-      if (error) throw error;
-      return data || [];
+      // TODO: Create /api/admin/vendors endpoint
+      const response = await fetch("/api/admin/vendors");
+      if (!response.ok) {
+        throw new Error("Failed to fetch vendors");
+      }
+      const result = await response.json();
+      return Array.isArray(result) ? result : (result.data ?? []);
     },
   });
 }
 
 export function useVendor(id: string) {
-  // TODO: Replace with dynamic tenant_id from user/session
-  const tenantId = "f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3";
-  return useQuery({
+  return useQuery<Vendor>({
     queryKey: ["vendors", id],
     queryFn: async () => {
-      const { createClient } = await import("@supabase/supabase-js");
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data, error } = await supabase.from("vendors").select("*").eq("id", id).eq("tenant_id", tenantId).single();
-      if (error) throw error;
-      return data;
+      // TODO: Create /api/admin/vendors/[id] endpoint
+      const response = await fetch(`/api/admin/vendors/${id}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch vendor");
+      }
+      const result = await response.json();
+      return result.data ?? result;
     },
   });
 }

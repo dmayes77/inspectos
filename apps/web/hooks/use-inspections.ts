@@ -10,8 +10,7 @@ import type { Inspection } from "@/types/inspection";
 export function useInspections() {
   return useGet<Inspection[]>(
     "inspections",
-    async () => (await fetchInspections()) ?? [],
-    { initialData: [] }
+    async () => (await fetchInspections()) ?? []
   );
 }
 

@@ -41,7 +41,6 @@ export interface Agency {
 }
 
 export interface CreateAgencyInput {
-  tenant_slug: string;
   name: string;
   logo_url?: string | null;
   license_number?: string | null;
@@ -79,13 +78,14 @@ export interface AgencyFilters {
   search?: string;
 }
 
-export async function fetchAgencies(tenantSlug: string, filters?: AgencyFilters): Promise<Agency[]> {
-  const params = new URLSearchParams({ tenant: tenantSlug });
+export async function fetchAgencies(filters?: AgencyFilters): Promise<Agency[]> {
+  const params = new URLSearchParams();
 
   if (filters?.status) params.append("status", filters.status);
   if (filters?.search) params.append("search", filters.search);
 
-  const response = await fetch(`/api/admin/agencies?${params}`, {
+  const url = params.toString() ? `/api/admin/agencies?${params}` : "/api/admin/agencies";
+  const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
     },

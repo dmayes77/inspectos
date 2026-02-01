@@ -121,5 +121,38 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Trigger webhook for invoice.created event
+  try {
+    const { triggerWebhookEvent } = await import("@/lib/webhooks/delivery");
+    const { buildInvoicePayload } = await import("@/lib/webhooks/payloads");
+
+    // Fetch complete invoice data including all fields
+    const { data: completeInvoice } = await supabaseAdmin
+      .from("invoices")
+      .select(`
+        id, invoice_number, order_id, status, subtotal, tax, total,
+        issued_at, due_at, paid_at, created_at,
+        client:clients(id, name, email)
+      `)
+      .eq("id", data.id)
+      .single();
+
+    if (completeInvoice) {
+      // Flatten client relation if it's an array
+      const clientData = Array.isArray(completeInvoice.client)
+        ? completeInvoice.client[0]
+        : completeInvoice.client;
+
+      const invoiceData = {
+        ...completeInvoice,
+        client: clientData || null
+      };
+
+      triggerWebhookEvent("invoice.created", tenantId, buildInvoicePayload(invoiceData));
+    }
+  } catch (error) {
+    console.error("Failed to trigger webhook:", error);
+  }
+
   return NextResponse.json({ data: mapInvoice(data) });
 }

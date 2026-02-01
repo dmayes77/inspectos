@@ -27,7 +27,6 @@ const normalizeOptionValue = <T extends string>(value: string | null | undefined
 
 export default function NewPropertyPage() {
   const router = useRouter();
-  const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID ?? "demo";
   const createProperty = useCreateProperty();
   const { data: clientsData } = useClients();
   const clients = clientsData ?? [];
@@ -54,7 +53,6 @@ export default function NewPropertyPage() {
 
     try {
       const result = await createProperty.mutateAsync({
-        tenant_slug: tenantSlug,
         address_line1: form.addressLine1.trim(),
         address_line2: form.addressLine2.trim() || null,
         city: form.city.trim(),

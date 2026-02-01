@@ -18,10 +18,14 @@ import {
   Bell,
   ArrowRight,
   CheckCircle2,
+  Webhook,
+  Zap,
 } from "lucide-react";
+import Link from "next/link";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
+import { useWebhooks } from "@/hooks/use-webhooks";
 
 type AutomationTemplate = {
   id: string;
@@ -131,6 +135,7 @@ const CHANNEL_COLORS: Record<string, string> = {
 };
 
 export default function AutomationsPage() {
+  const { data: webhooks = [] } = useWebhooks();
   const [enabledAutomations, setEnabledAutomations] = useState<Set<string>>(
     new Set(["booking-confirmation", "inspection-reminder-24h", "report-delivery"])
   );
@@ -165,6 +170,63 @@ export default function AutomationsPage() {
             </Button>
           }
         />
+
+        {/* Webhooks Integration Card */}
+        <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-transparent">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-500 p-2">
+                  <Webhook className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Webhook Integrations</CardTitle>
+                  <CardDescription>
+                    Connect to Zapier, Make, and custom applications
+                  </CardDescription>
+                </div>
+              </div>
+              <Button asChild>
+                <Link href="/admin/automations/webhooks">
+                  Configure Webhooks
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-lg border bg-white p-3">
+                <p className="text-xs text-muted-foreground">Total Webhooks</p>
+                <p className="text-2xl font-semibold mt-1">{webhooks.length}</p>
+              </div>
+              <div className="rounded-lg border bg-white p-3">
+                <p className="text-xs text-muted-foreground">Active</p>
+                <p className="text-2xl font-semibold mt-1 text-green-600">
+                  {webhooks.filter((w) => w.status === "active").length}
+                </p>
+              </div>
+              <div className="rounded-lg border bg-white p-3">
+                <p className="text-xs text-muted-foreground">Event Types</p>
+                <p className="text-2xl font-semibold mt-1">14</p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                <span>Zapier</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                <span>Make</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Webhook className="h-4 w-4" />
+                <span>Custom APIs</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">

@@ -36,6 +36,8 @@ export interface InspectionService {
   inspection_id: string;
   service_id: string | null;
   template_id: string | null;
+  inspector_id: string | null;
+  vendor_id: string | null;
   name: string;
   price: number;
   duration_minutes: number | null;
@@ -48,6 +50,19 @@ export interface InspectionService {
     id: string;
     name: string;
   };
+  inspector?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  } | null;
+  vendor?: {
+    id: string;
+    name: string;
+    vendor_type: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null;
 }
 
 export interface OrderInspection {
