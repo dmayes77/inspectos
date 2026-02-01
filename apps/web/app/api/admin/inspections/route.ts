@@ -317,7 +317,7 @@ export async function GET(request: Request) {
       job: normalizedJob,
       schedule: scheduleRelation ?? null,
       vendors: vendorMap[row.id] ?? [],
-      vendorIds: Array.isArray(vendorMap[row.id]) ? vendorMap[row.id].map((v) => v?.id).filter(Boolean) : [],
+      vendorIds: Array.isArray(vendorMap[row.id]) ? vendorMap[row.id].map((v: { id?: string }) => v?.id).filter(Boolean) : [],
       summary: {
         property,
         client,
