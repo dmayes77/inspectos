@@ -29,7 +29,7 @@ export function InspectionVendorSection({ selectedVendorIds, onChange }: { selec
           return vendor ? (
             <span key={id} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1 text-sm">
               {vendor.name}
-              <Button size="xs" variant="ghost" onClick={() => handleRemove(id)}>
+              <Button size="sm" variant="ghost" onClick={() => handleRemove(id)}>
                 ×
               </Button>
             </span>
@@ -57,6 +57,7 @@ export function InspectionVendorSection({ selectedVendorIds, onChange }: { selec
         {showVendorDialog && (
           <VendorForm
             mode="new"
+            initialData={undefined}
             onSubmit={() => {
               setShowVendorDialog(false);
               // Optionally refetch vendors and select the new one

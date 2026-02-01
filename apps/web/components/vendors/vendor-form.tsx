@@ -11,7 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const vendorTypes = ["Pest", "HVAC", "Roof", "Plumbing", "Electrical", "Other"];
 const statusOptions = ["active", "inactive", "pending"];
 
-export function VendorForm({ mode, initialData, onSubmit, onCancel }) {
+interface VendorFormProps {
+  mode: "new" | "edit";
+  initialData?: any;
+  onSubmit: (data: any) => void | Promise<void>;
+  onCancel: () => void;
+}
+
+export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorFormProps) {
   const [form, setForm] = useState(
     initialData || {
       name: "",
@@ -24,7 +31,7 @@ export function VendorForm({ mode, initialData, onSubmit, onCancel }) {
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: string, value: string) => setForm((prev: any) => ({ ...prev, [field]: value }));
 
   return (
     <form

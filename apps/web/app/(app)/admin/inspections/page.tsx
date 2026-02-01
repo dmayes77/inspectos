@@ -277,8 +277,10 @@ export default function InspectionsPage() {
     if (!mobileQuery.trim()) return true;
     const query = mobileQuery.toLowerCase();
     // Defensive: always treat missing property/client as empty string
-    const property = inspection.summary?.property ?? inspection.job?.property ?? {};
-    const address = [property.address_line1, property.address_line2, property.city, property.state, property.zip_code].filter(Boolean).join(", ");
+    const property = inspection.summary?.property ?? inspection.job?.property;
+    const address = property
+      ? [property.address_line1, property.address_line2, property.city, property.state, property.zip_code].filter(Boolean).join(", ")
+      : "";
     const clientName = inspection.summary?.client?.name ?? inspection.job?.client?.name ?? "";
     return address.toLowerCase().includes(query) || clientName.toLowerCase().includes(query);
   });

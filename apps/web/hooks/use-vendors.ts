@@ -14,8 +14,8 @@ export function useVendors() {
     queryFn: async () => {
       // Fetch vendors from Supabase
       const { createClient } = await import("@supabase/supabase-js");
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
       const supabase = createClient(supabaseUrl, supabaseKey);
       const { data, error } = await supabase.from("vendors").select("*");
       if (error) throw error;
@@ -28,18 +28,30 @@ export function useVendor(id: string) {
   // TODO: Replace with dynamic tenant_id from user/session
   const tenantId = "f54f7c28-2dc7-4bc3-9c23-0a1dca0bd4e3";
   return useQuery({
-    queryKey: ["vendors", tenantId],
+    queryKey: ["vendors", id],
     queryFn: async () => {
       const { createClient } = await import("@supabase/supabase-js");
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const { data, error } = await supabase.from("vendors").select("*").eq("tenant_id", tenantId);
+      const { data, error } = await supabase.from("vendors").select("*").eq("id", id).eq("tenant_id", tenantId).single();
       if (error) throw error;
-      return data || [];
+      return data;
     },
   });
-  return Promise.resolve();
+}
+
+export function createVendor(data: any) {
+  vendorStore.push({ ...data, id: String(Date.now()) });
+  return Promise.resolve(data);
+}
+
+export function updateVendor(id: string, data: any) {
+  const index = vendorStore.findIndex((v) => v.id === id);
+  if (index !== -1) {
+    vendorStore[index] = { ...vendorStore[index], ...data };
+  }
+  return Promise.resolve(data);
 }
 
 export function deleteVendor(id: string) {

@@ -50,7 +50,7 @@ export default function VendorsPage() {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {vendors.map((vendor) => (
+                {vendors.map((vendor: any) => (
                   <Card key={vendor.id} className="border">
                     <CardHeader>
                       <CardTitle>{vendor.name}</CardTitle>

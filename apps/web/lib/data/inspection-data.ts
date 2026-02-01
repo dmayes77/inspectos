@@ -119,6 +119,8 @@ export interface InspectionWithData {
     email: string;
     avatar_url: string | null;
   };
+  vendorIds?: string[];
+  vendors?: any[];
 }
 
 export interface InspectionDataResponse {

@@ -10,6 +10,7 @@ export default function NewVendorPage() {
   return (
     <VendorForm
       mode="new"
+      initialData={undefined}
       onSubmit={async (data) => {
         await createVendor(data);
         router.push("/admin/vendors");

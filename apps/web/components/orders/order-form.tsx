@@ -161,7 +161,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     inspector_id: order?.inspector_id ?? null,
     property_id: order?.property_id ?? "",
     scheduled_date: order?.scheduled_date ?? "",
-        showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
+    scheduled_time: order?.scheduled_time ?? "",
     duration_minutes: order?.duration_minutes ? String(order.duration_minutes) : "",
     status: order?.status ?? "pending",
     payment_status: order?.payment_status ?? "unpaid",
