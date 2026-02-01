@@ -161,7 +161,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     inspector_id: order?.inspector_id ?? null,
     property_id: order?.property_id ?? "",
     scheduled_date: order?.scheduled_date ?? "",
-    scheduled_time: order?.scheduled_time ?? "",
+        showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
     duration_minutes: order?.duration_minutes ? String(order.duration_minutes) : "",
     status: order?.status ?? "pending",
     payment_status: order?.payment_status ?? "unpaid",
@@ -598,7 +598,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               <div
                 className={cn(
                   "overflow-hidden rounded-lg border bg-muted/20 transition-all duration-300 ease-in-out",
-                  showInlinePropertyForm ? "max-h-[5000px] opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
+                  showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
                 )}
                 aria-hidden={!showInlinePropertyForm}
               >
@@ -769,7 +769,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               <div
                 className={cn(
                   "overflow-hidden rounded-lg border bg-muted/20 transition-all duration-300 ease-in-out",
-                  showInlineInspectionForm ? "max-h-[5000px] opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
+                  showInlineInspectionForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
                 )}
                 aria-hidden={!showInlineInspectionForm}
               >

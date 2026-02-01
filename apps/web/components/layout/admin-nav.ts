@@ -90,10 +90,7 @@ export const companyNavSections: NavSection[] = [
   },
 ];
 
-export const companyMainNav: NavItem[] = [
-  ...companyPinnedNav,
-  ...companyNavSections.flatMap((section) => section.items),
-];
+export const companyMainNav: NavItem[] = [...companyPinnedNav, ...companyNavSections.flatMap((section) => section.items)];
 
 export const companySystemNav: NavItem[] = [
   { href: "/admin/compliance", icon: Flag, label: "Compliance" },
@@ -108,9 +105,7 @@ export const platformMainNav: NavItem[] = [
   { href: "/platform/pricing", icon: DollarSign, label: "Pricing" },
 ];
 
-export const platformSystemNav: NavItem[] = [
-  { href: "/platform/content", icon: FileText, label: "Content" },
-];
+export const platformSystemNav: NavItem[] = [{ href: "/platform/content", icon: FileText, label: "Content" }];
 
 export const companyMobileNav: NavItem[] = [
   { href: "/admin/overview", icon: LayoutDashboard, label: "Home" },

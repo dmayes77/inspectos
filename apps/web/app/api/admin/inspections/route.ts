@@ -134,6 +134,9 @@ const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: 
 };
 
 export async function GET(request: Request) {
+  // ...existing code...
+
+  // ...existing code...
   const url = new URL(request.url);
   const tenantParam = url.searchParams.get("tenant");
   const tenantId = tenantParam || getTenantId();
@@ -250,6 +253,21 @@ export async function GET(request: Request) {
   }
 
   const rows = Array.isArray(inspections) ? (inspections as unknown as InspectionRow[]) : [];
+  // After inspections are fetched, get assigned vendors for those inspections
+  const inspectionIds = rows.map((i: any) => i.id);
+  const { data: inspectionVendors, error: vendorError } = await supabaseAdmin
+    .from("inspection_vendors")
+    .select("inspection_id, vendor_id, vendor:vendors(*)")
+    .in("inspection_id", inspectionIds);
+
+  // Map inspection_id to vendors
+  const vendorMap: Record<string, any[]> = {};
+  if (Array.isArray(inspectionVendors)) {
+    for (const iv of inspectionVendors) {
+      if (!vendorMap[iv.inspection_id]) vendorMap[iv.inspection_id] = [];
+      vendorMap[iv.inspection_id].push(iv.vendor);
+    }
+  }
   const mapped = rows.map((row) => {
     const orderRelation = unwrap(row.order);
     const scheduleRelation = unwrap(row.order_schedule);
@@ -296,6 +314,8 @@ export async function GET(request: Request) {
       inspector: inspector ?? null,
       job: normalizedJob,
       schedule: scheduleRelation ?? null,
+      vendors: vendorMap[row.id] ?? [],
+      vendorIds: Array.isArray(vendorMap[row.id]) ? vendorMap[row.id].map((v) => v?.id).filter(Boolean) : [],
       summary: {
         property,
         client,

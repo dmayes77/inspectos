@@ -35,6 +35,27 @@ import {
   countFindingsBySeverity,
   groupAnswersBySection,
 } from "@/hooks/use-inspection-data";
+import { useVendors } from "@/hooks/use-vendors";
+
+function VendorList({ vendorIds }: { vendorIds: string[] }) {
+  const { data: vendors = [], isLoading } = useVendors();
+  if (isLoading) return <div>Loading vendors...</div>;
+  const assignedVendors = vendors.filter((v) => vendorIds.includes(v.id));
+  if (assignedVendors.length === 0) return <div className="text-muted-foreground">No vendors found.</div>;
+  return (
+    <ul className="space-y-2">
+      {assignedVendors.map((vendor) => (
+        <li key={vendor.id} className="border rounded px-3 py-2">
+          <div className="font-medium">{vendor.name}</div>
+          <div className="text-xs text-muted-foreground">Type: {vendor.type}</div>
+          <div className="text-xs text-muted-foreground">Contact: {vendor.contact}</div>
+          <div className="text-xs text-muted-foreground">Specialties: {vendor.specialties}</div>
+          <div className="text-xs text-muted-foreground">Status: {vendor.status}</div>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function InspectionDetailPage() {
   const params = useParams();
@@ -47,14 +68,10 @@ export default function InspectionDetailPage() {
   const { data: inspectionData, isLoading: dataLoading } = useInspectionData(id);
 
   const isLoading = dataLoading;
-
-  // Calculate stats from inspection data
   const stats = useMemo(() => {
     if (!inspectionData) return null;
-
     const { answers, findings, signatures } = inspectionData;
     const sections = inspectionData.inspection.template?.template_sections || [];
-
     return {
       completionPercentage: calculateCompletionPercentage(answers, sections),
       findingCounts: countFindingsBySeverity(findings),
@@ -65,7 +82,6 @@ export default function InspectionDetailPage() {
     };
   }, [inspectionData]);
 
-  // Group answers by section
   const groupedAnswers = useMemo(() => {
     if (!inspectionData) return null;
     const sections = inspectionData.inspection.template?.template_sections || [];
@@ -165,24 +181,6 @@ export default function InspectionDetailPage() {
             </>
           }
           backHref="/admin/inspections"
-          actions={
-            <>
-              <Button asChild variant="outline">
-                <Link href={`/admin/inspections/${inspection.id}/edit`}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </Button>
-              <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}>
-                <Archive className="mr-2 h-4 w-4" />
-                Archive
-              </Button>
-              <Button variant="outline" onClick={handleGenerateReport} disabled={!isCompleted}>
-                <FileText className="mr-2 h-4 w-4" />
-                Generate Report
-              </Button>
-            </>
-          }
         />
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -212,164 +210,53 @@ export default function InspectionDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="answers">Answers {stats && `(${stats.answeredItems}/${stats.totalItems})`}</TabsTrigger>
-                <TabsTrigger value="findings">Findings {stats && stats.totalFindings > 0 && `(${stats.totalFindings})`}</TabsTrigger>
-                <TabsTrigger value="signatures">Signatures {stats && stats.totalSignatures > 0 && `(${stats.totalSignatures})`}</TabsTrigger>
-              </TabsList>
-
-              {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-6">
-                {/* Stats Cards */}
+            {/* Single-scroll stacked sections */}
+            {/* Overview Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Overview</CardTitle>
+                <CardDescription>Schedule, status, inspector, and completion summary.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Scheduled</p>
+                  <p className="font-medium">{formattedDateTime}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Inspector</p>
+                  <p className="font-medium">{inspectorName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Template</p>
+                  <p className="font-medium">{inspection.template?.name || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Status</p>
+                  {inspectionStatusBadge(inspection.status)}
+                </div>
                 {stats && (
-                  <div className="grid gap-4 md:grid-cols-4">
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          <span className="text-sm text-muted-foreground">Completion</span>
-                        </div>
-                        <div className="mt-2">
-                          <Progress value={stats.completionPercentage} className="h-2" />
-                          <p className="mt-1 text-sm font-medium">{stats.completionPercentage}%</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4 text-orange-600" />
-                          <span className="text-sm text-muted-foreground">Findings</span>
-                        </div>
-                        <p className="mt-2 text-2xl font-bold">{stats.totalFindings}</p>
-                        <div className="mt-1 flex gap-2 text-xs">
-                          {stats.findingCounts.safety && <span className="text-red-600">{stats.findingCounts.safety} safety</span>}
-                          {stats.findingCounts.major && <span className="text-orange-600">{stats.findingCounts.major} major</span>}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-2">
-                          <ClipboardList className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm text-muted-foreground">Answers</span>
-                        </div>
-                        <p className="mt-2 text-2xl font-bold">
-                          {stats.answeredItems}/{stats.totalItems}
-                        </p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-2">
-                          <PenTool className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm text-muted-foreground">Signatures</span>
-                        </div>
-                        <p className="mt-2 text-2xl font-bold">{stats.totalSignatures}</p>
-                      </CardContent>
-                    </Card>
+                  <div className="col-span-2 flex gap-4 mt-2">
+                    <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4" />
+                      {stats.completionPercentage}% Complete
+                    </span>
+                    {stats.findingCounts.safety ? <span className="text-red-600">{stats.findingCounts.safety} safety</span> : null}
+                    {stats.findingCounts.major ? <span className="text-orange-600">{stats.findingCounts.major} major</span> : null}
                   </div>
                 )}
+              </CardContent>
+            </Card>
 
-                {/* Details Grid */}
-                <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-                  {/* Client Information */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Client Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
-                      <div className="flex items-start gap-3">
-                        <User className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Client</p>
-                          <p className="font-medium">{client?.name || "Unknown client"}</p>
-                          {client?.company && <p className="text-sm text-muted-foreground">{client.company}</p>}
-                          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                            {client?.email && <p>{client.email}</p>}
-                            {client?.phone && <p>{client.phone}</p>}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="pt-4 border-t">
-                        {client?.id ? (
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/admin/contacts/${client.id}`}>View Client Profile</Link>
-                          </Button>
-                        ) : null}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Inspector Information */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Inspector</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-4">
-                      <div className="flex items-start gap-3">
-                        <User className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                        <div className="flex-1">
-                          <p className="text-sm text-muted-foreground">Inspector</p>
-                          <p className="font-medium">{inspectorName}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Tags */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Inspection Tags</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <TagAssignmentEditor scope="inspection" entityId={inspection.id} />
-                    </CardContent>
-                  </Card>
-
-                  {/* Property Details */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Property Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                      {property?.square_feet && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Sqft</span>
-                          <span>{property.square_feet.toLocaleString()}</span>
-                        </div>
-                      )}
-                      {property?.year_built && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Year Built</span>
-                          <span>{property.year_built}</span>
-                        </div>
-                      )}
-                      {property?.property_type && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">Type</span>
-                          <span className="capitalize">{property.property_type}</span>
-                        </div>
-                      )}
-                      {inspection.notes && (
-                        <div className="pt-3 border-t">
-                          <p className="text-muted-foreground mb-1">Notes</p>
-                          <p>{inspection.notes}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-
-              {/* Answers Tab */}
-              <TabsContent value="answers" className="space-y-4">
+            {/* Answers Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Answers</CardTitle>
+                <CardDescription>All answers collected during the inspection, grouped by section.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 {groupedAnswers && inspectionData ? (
                   Array.from(groupedAnswers.entries()).map(([sectionId, { section, answers }]) => (
-                    <Card key={sectionId}>
+                    <Card key={sectionId} className="border border-muted">
                       <CardHeader>
                         <CardTitle>{section.name}</CardTitle>
                         {section.description && <CardDescription>{section.description}</CardDescription>}
@@ -413,10 +300,16 @@ export default function InspectionDetailPage() {
                     </CardContent>
                   </Card>
                 )}
-              </TabsContent>
+              </CardContent>
+            </Card>
 
-              {/* Findings Tab */}
-              <TabsContent value="findings" className="space-y-4">
+            {/* Findings Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Findings</CardTitle>
+                <CardDescription>All findings/issues identified during the inspection.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 {inspectionData && inspectionData.findings.length > 0 ? (
                   inspectionData.findings.map((finding) => (
                     <Card key={finding.id} className={`border ${getSeverityColor(finding.severity)}`}>
@@ -469,10 +362,16 @@ export default function InspectionDetailPage() {
                     </CardContent>
                   </Card>
                 )}
-              </TabsContent>
+              </CardContent>
+            </Card>
 
-              {/* Signatures Tab */}
-              <TabsContent value="signatures" className="space-y-4">
+            {/* Signatures Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Signatures</CardTitle>
+                <CardDescription>All signatures collected for this inspection.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 {inspectionData && inspectionData.signatures.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2">
                     {inspectionData.signatures.map((sig) => (
@@ -509,12 +408,27 @@ export default function InspectionDetailPage() {
                     </CardContent>
                   </Card>
                 )}
-              </TabsContent>
-            </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Vendors Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Vendors</CardTitle>
+                <CardDescription>Vendors assigned to this inspection.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {inspection.vendorIds && inspection.vendorIds.length > 0 ? (
+                  <VendorList vendorIds={inspection.vendorIds} />
+                ) : (
+                  <div className="text-muted-foreground">No vendors assigned.</div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-6">
-            <Card>
+            <Card id="quick-actions-card">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
                 <CardDescription>Handle common follow-ups without leaving this page.</CardDescription>
@@ -525,6 +439,11 @@ export default function InspectionDetailPage() {
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Inspection
                   </Link>
+                </Button>
+
+                <Button variant="outline" className="w-full justify-start" onClick={handleGenerateReport} disabled={!isCompleted}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Generate Report
                 </Button>
 
                 {linkedOrderId ? (
@@ -569,6 +488,16 @@ export default function InspectionDetailPage() {
                   </Button>
                 )}
 
+                <Button
+                  variant="default"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    /* TODO: Implement deploy logic */
+                  }}
+                >
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Deploy to Inspector
+                </Button>
                 <Button variant="destructive" className="w-full justify-start" onClick={() => setArchiveDialogOpen(true)}>
                   <Archive className="mr-2 h-4 w-4" />
                   Archive Inspection

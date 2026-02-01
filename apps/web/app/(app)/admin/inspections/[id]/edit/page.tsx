@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -33,6 +33,8 @@ import type { LegacyInspection } from "@/types/inspection";
 import { Loader2, Save } from "lucide-react";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
+import { InspectionVendorSection } from "@/components/inspections/inspection-vendor-section";
+import { useVendors } from "@/hooks/use-vendors";
 
 // Helper function to safely extract string from FormData (defined outside component for performance)
 const getString = (value: FormDataEntryValue | undefined): string | undefined => {
@@ -56,6 +58,7 @@ const ServiceCheckbox = ({ service, checked, onToggle }: { service: ServiceType;
 };
 
 export default function EditInspectionPage(props: { isNew?: boolean; orderId?: string } = {}) {
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const params = useParams();
   const router = useRouter();
   const { data: services = [] } = useServices();
@@ -196,7 +199,8 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         notes: toString(getString(raw.notes)),
         price: calculatedPrice,
         orderId: orderId,
-      };
+        vendorIds: selectedVendorIds,
+      } as Partial<LegacyInspection>;
 
       // Use React Query mutations with proper error handling
       if (inspection?.inspectionId) {
@@ -238,6 +242,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
       createMutation,
       router,
       orderId,
+      selectedVendorIds,
     ],
   );
 
@@ -289,6 +294,15 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     },
     [resolvedTypeIds],
   );
+
+  // Add vendor state immediately after other useState declarations
+
+  // After inspection is loaded, update selectedVendorIds if inspection?.vendorIds exists
+  useEffect(() => {
+    if (inspection && Array.isArray(inspection.vendorIds)) {
+      setSelectedVendorIds(inspection.vendorIds);
+    }
+  }, [inspection]);
 
   return (
     <AdminShell user={mockAdminUser}>
@@ -512,6 +526,10 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    {/* Vendor Assignment Section */}
+                    <div className="space-y-2">
+                      <InspectionVendorSection selectedVendorIds={selectedVendorIds} onChange={setSelectedVendorIds} />
                     </div>
                     <div className="space-y-4">
                       <div className="space-y-2">

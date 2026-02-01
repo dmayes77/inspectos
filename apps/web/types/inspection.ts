@@ -49,6 +49,8 @@ export interface Inspection {
     email: string;
     avatar_url: string | null;
   };
+  vendors?: any[];
+  vendorIds?: string[];
 }
 
 export type InspectionScheduleType = "primary" | "addon" | "package" | "follow_up" | "reinspection" | "other";
@@ -146,6 +148,7 @@ export interface LegacyInspection {
   pool?: boolean;
   notes?: string;
   durationMinutes?: number;
+  vendorIds?: string[];
 }
 
 /**

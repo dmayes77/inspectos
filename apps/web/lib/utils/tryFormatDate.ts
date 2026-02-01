@@ -4,8 +4,8 @@ export function tryFormatDate(date?: string | null): string | null {
   const d = new Date(date);
   if (isNaN(d.getTime())) return null;
   return d.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    year: "numeric",
+    month: "short",
+    day: "numeric",
   });
 }

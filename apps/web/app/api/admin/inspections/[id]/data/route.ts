@@ -6,6 +6,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const tenantId = getTenantId();
   const { id } = await params;
 
+  // Fetch assigned vendors for this inspection (after id is available)
+  const { data: assignedVendors, error: vendorError } = await supabaseAdmin
+    .from("inspection_vendors")
+    .select("vendor_id, vendor:vendors(*)")
+    .eq("inspection_id", id);
+
+  if (vendorError) {
+    return NextResponse.json({ error: { message: vendorError.message } }, { status: 500 });
+  }
+
   const { data: inspection, error: inspectionError } = await supabaseAdmin
     .from("inspections")
     .select(
@@ -135,9 +145,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const { order, ...rest } = inspection as typeof inspection & { order?: typeof inspection.job };
+  // Ensure vendorIds is present (from inspection or default to empty array)
   const normalizedInspection = {
     ...rest,
     job: order ?? null,
+    vendorIds: assignedVendors?.map((v) => v.vendor_id) ?? [],
+    vendors: assignedVendors?.map((v) => v.vendor) ?? [],
   };
 
   return NextResponse.json({

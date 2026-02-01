@@ -145,7 +145,6 @@ const columns = (
     cell: ({ row }) => <div className="text-sm max-w-xs">{getInspectionInspectorName(row.original)}</div>,
   },
   {
-    accessorKey: "date",
     header: "Date",
     enableSorting: true,
     cell: ({ row }) => (
@@ -181,7 +180,7 @@ const columns = (
       const currentStatus = getStatus(inspectionId, row.original.status);
       return (
         <Select value={currentStatus} onValueChange={(value) => onStatusChange(inspectionId, value)}>
-          <SelectTrigger className={cn("h-8 w-[160px] font-medium shadow-none", getStatusTriggerClasses(currentStatus))}>
+          <SelectTrigger className={cn("h-8 w-40 font-medium shadow-none", getStatusTriggerClasses(currentStatus))}>
             <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -213,13 +212,16 @@ export default function InspectionsPage() {
   const { data: services = [] } = useServices();
   const serviceMap = useMemo(() => createServiceMap(services), [services]) as Map<string, { serviceId: string; name: string; price: number }>;
   const updateInspection = useUpdateInspection();
+  // Always show all inspections, sorted by created_at
   const inspections = useMemo(() => {
     if (!data) return [] as Inspection[];
-    return [...data].sort((a, b) => {
-      const aTime = a.created_at ? Date.parse(a.created_at) : 0;
-      const bTime = b.created_at ? Date.parse(b.created_at) : 0;
-      return bTime - aTime;
-    });
+    return Array.isArray(data)
+      ? [...data].sort((a, b) => {
+          const aTime = a.created_at ? Date.parse(a.created_at) : 0;
+          const bTime = b.created_at ? Date.parse(b.created_at) : 0;
+          return bTime - aTime;
+        })
+      : [];
   }, [data]);
   const [mobileQuery, setMobileQuery] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -274,10 +276,9 @@ export default function InspectionsPage() {
     if (!matchesStatus) return false;
     if (!mobileQuery.trim()) return true;
     const query = mobileQuery.toLowerCase();
-    const property = inspection.summary?.property ?? inspection.job?.property;
-    const address = property
-      ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
-      : "";
+    // Defensive: always treat missing property/client as empty string
+    const property = inspection.summary?.property ?? inspection.job?.property ?? {};
+    const address = [property.address_line1, property.address_line2, property.city, property.state, property.zip_code].filter(Boolean).join(", ");
     const clientName = inspection.summary?.client?.name ?? inspection.job?.client?.name ?? "";
     return address.toLowerCase().includes(query) || clientName.toLowerCase().includes(query);
   });
@@ -366,7 +367,7 @@ export default function InspectionsPage() {
           <CardContent className="pt-6">
             <div className="flex flex-wrap items-center gap-3">
               <Select onValueChange={handleApplyView}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-50">
                   <SelectValue placeholder="Saved views" />
                 </SelectTrigger>
                 <SelectContent>
@@ -484,24 +485,30 @@ export default function InspectionsPage() {
                   )}
                 </div>
                 <div className="hidden md:block">
-                  {inspections.length === 0 && !isLoading ? (
-                    <div className="rounded-lg border border-dashed p-10 text-center">
-                      <h3 className="text-lg font-semibold">No inspections yet</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">Create your first inspection to start tracking jobs.</p>
-                      {can(userRole, "create_inspections") && (
-                        <Button asChild className="mt-4">
-                          <Link href="/admin/inspections/new">Create inspection</Link>
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <DataTable
-                      columns={columns(handleStatusChange, getStatusValue, serviceMap)}
-                      data={inspections}
-                      searchKey="address"
-                      searchPlaceholder="Search by property address..."
-                    />
-                  )}
+                  {(() => {
+                    console.log("[InspectionsPage] DataTable data", { count: inspections.length, ids: inspections.map((i) => i.id) });
+                    if (inspections.length === 0 && !isLoading) {
+                      return (
+                        <div className="rounded-lg border border-dashed p-10 text-center">
+                          <h3 className="text-lg font-semibold">No inspections yet</h3>
+                          <p className="mt-2 text-sm text-muted-foreground">Create your first inspection to start tracking jobs.</p>
+                          {can(userRole, "create_inspections") && (
+                            <Button asChild className="mt-4">
+                              <Link href="/admin/inspections/new">Create inspection</Link>
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <DataTable
+                        columns={columns(handleStatusChange, getStatusValue, serviceMap)}
+                        data={inspections}
+                        searchKey="address"
+                        searchPlaceholder="Search by property address..."
+                      />
+                    );
+                  })()}
                 </div>
               </>
             )}
