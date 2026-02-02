@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useWebhooks } from "@/hooks/use-webhooks";
 import { useWorkflows, useUpdateWorkflow } from "@/hooks/use-workflows";
 import type { Webhook } from "@/lib/types/webhook";
+import type { Workflow } from "@/types/workflow";
 const formatEventLabel = (value: string) =>
   value
     .split(".")
@@ -33,6 +34,11 @@ export default function AutomationsPage() {
   const [automationTab, setAutomationTab] = useState<"event" | "rule">("event");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  const eventWorkflows = workflows.filter(
+    (workflow): workflow is Workflow & { eventType?: string | null } => workflow.triggerType === "event"
+  );
+  const ruleWorkflows = workflows.filter((workflow) => workflow.triggerType !== "event");
+
   const eventStats = useMemo(() => {
     const map = new Map<string, { total: number; active: number; failureCount: number }>();
     webhooks.forEach((webhook: Webhook) => {
@@ -47,8 +53,6 @@ export default function AutomationsPage() {
     return map;
   }, [webhooks]);
 
-  const eventWorkflows = workflows.filter((workflow) => workflow.triggerType === "event");
-  const ruleWorkflows = workflows.filter((workflow) => workflow.triggerType !== "event");
   const activeCount = workflows.filter((workflow) => workflow.isActive).length;
 
   const updateState = (workflowId: string, isActive: boolean) => {
