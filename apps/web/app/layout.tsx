@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ReactQueryProvider } from "@/components/providers/query-provider";
+import { TenantProvider } from "@/lib/api/tenant-context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -41,6 +42,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // TODO: In a multi-tenant scenario, this should come from:
+  // - URL subdomain (e.g., acme.inspectos.com)
+  // - URL path parameter (e.g., /tenants/acme/...)
+  // - User session after authentication
+  // For now, use environment variable as the tenant identifier
+  const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -49,10 +57,12 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <ReactQueryProvider>
-            {children}
-            <Toaster />
-          </ReactQueryProvider>
+          <TenantProvider tenantSlug={tenantSlug}>
+            <ReactQueryProvider>
+              {children}
+              <Toaster />
+            </ReactQueryProvider>
+          </TenantProvider>
         </ThemeProvider>
       </body>
     </html>
