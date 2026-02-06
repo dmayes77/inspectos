@@ -6,9 +6,13 @@ import {
   unauthorized,
   badRequest,
   serverError,
-  success
+  success,
+  validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
+import { createServiceSchema } from '@/lib/validations/service';
+import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
+import { buildServicePayload } from '@/lib/webhooks/payloads';
 
 /**
  * GET /api/admin/services
@@ -79,14 +83,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tenant_slug, name, description, category, price, durationMinutes, templateId, status } = body;
 
-    if (!name) {
-      return badRequest('Missing required field: name');
+    // Validate request body
+    const validation = createServiceSchema.safeParse(body);
+    if (!validation.success) {
+      return validationError(validation.error.issues[0]?.message || 'Validation failed');
     }
+    const payload = validation.data;
 
+    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenant_slug);
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
@@ -95,19 +102,26 @@ export async function POST(request: NextRequest) {
       .from('services')
       .insert({
         tenant_id: tenant.id,
-        name,
-        description: description || null,
-        category: category || 'core',
-        price: price ?? null,
-        duration_minutes: durationMinutes ?? null,
-        template_id: templateId ?? null,
-        is_active: status ? status === 'active' : true
+        name: payload.name,
+        description: payload.description ?? null,
+        category: payload.category ?? 'core',
+        price: payload.price ?? null,
+        duration_minutes: payload.durationMinutes ?? null,
+        template_id: payload.templateId ?? null,
+        is_active: true
       })
       .select('*')
       .single();
 
     if (error || !service) {
       return serverError('Failed to create service', error);
+    }
+
+    // Trigger webhook for service.created event
+    try {
+      triggerWebhookEvent("service.created", tenant.id, buildServicePayload(service));
+    } catch (webhookError) {
+      console.error("Failed to trigger webhook:", webhookError);
     }
 
     return success({

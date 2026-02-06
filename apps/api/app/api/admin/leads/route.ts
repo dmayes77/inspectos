@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const validation = createLeadSchema.safeParse(body);
     if (!validation.success) {
-      return validationError(validation.error.errors[0]?.message || 'Validation failed');
+      return validationError(validation.error.issues[0]?.message || 'Validation failed');
     }
     const payload = validation.data;
 

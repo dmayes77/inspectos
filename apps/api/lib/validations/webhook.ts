@@ -21,6 +21,10 @@ export const WEBHOOK_EVENTS = [
   "client.created",
   "client.updated",
 
+  // Service events
+  "service.created",
+  "service.updated",
+
   // Invoice events
   "invoice.created",
   "invoice.updated",

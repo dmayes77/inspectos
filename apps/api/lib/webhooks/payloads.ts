@@ -204,3 +204,24 @@ export function buildSchedulePayload(schedule: any) {
     },
   };
 }
+
+/**
+ * Build payload for service events
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function buildServicePayload(service: any) {
+  return {
+    service: {
+      id: service.id,
+      name: service.name,
+      description: service.description,
+      price: service.price,
+      duration_minutes: service.duration_minutes,
+      category: service.category,
+      template_id: service.template_id,
+      is_active: service.is_active,
+      created_at: service.created_at,
+      updated_at: service.updated_at,
+    },
+  };
+}

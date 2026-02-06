@@ -241,12 +241,19 @@ export async function deleteTeamMemberById(teamMemberId: string): Promise<boolea
 }
 
 export async function fetchServices(): Promise<Service[]> {
-  const response = await fetch("/api/admin/services");
-  if (!response.ok) {
-    throw new Error("Failed to load services.");
+  if (shouldUseExternalApi("services")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Service[]>("/admin/services");
+  } else {
+    // Use local Next.js API route
+    const response = await fetch("/api/admin/services");
+    if (!response.ok) {
+      throw new Error("Failed to load services.");
+    }
+    const result = await response.json();
+    return Array.isArray(result) ? result : (result.data ?? []);
   }
-  const result = await response.json();
-  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function fetchInspectors(): Promise<{ teamMemberId: string; name: string }[]> {
@@ -259,38 +266,63 @@ export async function fetchInspectors(): Promise<{ teamMemberId: string; name: s
 }
 
 export async function createService(data: Partial<Service>): Promise<Service> {
-  const response = await fetch("/api/admin/services", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to create service.");
+  if (shouldUseExternalApi("services")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Service>("/admin/services", data);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch("/api/admin/services", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to create service.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateServiceById(data: { serviceId: string } & Partial<Service>): Promise<Service | null> {
-  const response = await fetch(`/api/admin/services/${data.serviceId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update service.");
+  if (shouldUseExternalApi("services")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.put<Service>(`/admin/services/${data.serviceId}`, data);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/services/${data.serviceId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to update service.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteServiceById(serviceId: string): Promise<boolean> {
-  const response = await fetch(`/api/admin/services/${serviceId}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to archive service.");
+  if (shouldUseExternalApi("services")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/services/${serviceId}`);
+    return result.deleted ?? true;
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/services/${serviceId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to delete service.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }

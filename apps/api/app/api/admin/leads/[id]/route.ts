@@ -109,7 +109,7 @@ export async function PUT(
     // Validate request body
     const validation = updateLeadSchema.safeParse(body);
     if (!validation.success) {
-      return validationError(validation.error.errors[0]?.message || 'Validation failed');
+      return validationError(validation.error.issues[0]?.message || 'Validation failed');
     }
     const payload = validation.data;
 
