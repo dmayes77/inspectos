@@ -257,12 +257,19 @@ export async function fetchServices(): Promise<Service[]> {
 }
 
 export async function fetchInspectors(): Promise<{ teamMemberId: string; name: string }[]> {
-  const response = await fetch("/api/admin/inspectors");
-  if (!response.ok) {
-    throw new Error("Failed to load inspectors.");
+  if (shouldUseExternalApi("inspectors")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<{ teamMemberId: string; name: string }[]>("/admin/inspectors");
+  } else {
+    // Use local Next.js API route
+    const response = await fetch("/api/admin/inspectors");
+    if (!response.ok) {
+      throw new Error("Failed to load inspectors.");
+    }
+    const result = await response.json();
+    return Array.isArray(result) ? result : (result.data ?? []);
   }
-  const result = await response.json();
-  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function createService(data: Partial<Service>): Promise<Service> {
