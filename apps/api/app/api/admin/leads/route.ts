@@ -6,9 +6,40 @@ import {
   unauthorized,
   badRequest,
   serverError,
-  success
+  success,
+  validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
+import { createLeadSchema } from '@/lib/validations/lead';
+
+const normalizeStage = (stage?: string | null) => {
+  if (!stage) return "new";
+  return stage.toLowerCase().replace(/\s+/g, "_");
+};
+
+const mapLead = (lead: {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  stage: string;
+  source: string | null;
+  notes: string | null;
+  service_name?: string | null;
+  requested_date?: string | null;
+  estimated_value?: number | null;
+}) => ({
+  leadId: lead.id,
+  name: lead.name,
+  email: lead.email ?? "",
+  phone: lead.phone ?? "",
+  stage: lead.stage,
+  source: lead.source ?? "",
+  notes: lead.notes ?? "",
+  serviceName: lead.service_name ?? "",
+  requestedDate: lead.requested_date ?? "",
+  estimatedValue: Number(lead.estimated_value ?? 0),
+});
 
 /**
  * GET /api/admin/leads
@@ -34,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const { data: leads, error } = await supabase
       .from('leads')
-      .select('*')
+      .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
 
@@ -42,18 +73,7 @@ export async function GET(request: NextRequest) {
       return serverError('Failed to fetch leads', error);
     }
 
-    const payload = (leads || []).map((lead) => ({
-      leadId: lead.id,
-      name: lead.name,
-      email: lead.email || '',
-      phone: lead.phone || '',
-      stage: lead.stage,
-      source: lead.source || '',
-      notes: lead.notes || '',
-      serviceName: '',
-      requestedDate: '',
-      estimatedValue: 0
-    }));
+    const payload = (leads || []).map(mapLead);
 
     return success(payload);
   } catch (error) {
@@ -77,13 +97,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tenant_slug, name, email, phone, stage, source, notes } = body;
-    if (!name) {
-      return badRequest('Missing required field: name');
-    }
 
+    // Validate request body
+    const validation = createLeadSchema.safeParse(body);
+    if (!validation.success) {
+      return validationError(validation.error.errors[0]?.message || 'Validation failed');
+    }
+    const payload = validation.data;
+
+    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenant_slug);
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
@@ -92,32 +116,24 @@ export async function POST(request: NextRequest) {
       .from('leads')
       .insert({
         tenant_id: tenant.id,
-        name,
-        email: email || null,
-        phone: phone || null,
-        stage: stage || 'new',
-        source: source || null,
-        notes: notes || null
+        name: payload.name,
+        email: payload.email ?? null,
+        phone: payload.phone ?? null,
+        stage: normalizeStage(payload.stage),
+        source: payload.source ?? null,
+        notes: payload.notes ?? null,
+        service_name: payload.serviceName ?? null,
+        requested_date: payload.requestedDate || null,
+        estimated_value: payload.estimatedValue ?? null,
       })
-      .select('*')
+      .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
       .single();
 
     if (error || !lead) {
       return serverError('Failed to create lead', error);
     }
 
-    return success({
-      leadId: lead.id,
-      name: lead.name,
-      email: lead.email || '',
-      phone: lead.phone || '',
-      stage: lead.stage,
-      source: lead.source || '',
-      notes: lead.notes || '',
-      serviceName: '',
-      requestedDate: '',
-      estimatedValue: 0
-    });
+    return success(mapLead(lead));
   } catch (error) {
     return serverError('Failed to create lead', error);
   }
