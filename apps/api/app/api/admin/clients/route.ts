@@ -1,14 +1,19 @@
 import { NextRequest } from 'next/server';
 import {
   createUserClient,
+  createServiceClient,
   getAccessToken,
   getUserFromToken,
   unauthorized,
   badRequest,
   serverError,
-  success
+  success,
+  validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
+import { createClientSchema } from '@/lib/validations/client';
+import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
+import { buildClientPayload } from '@/lib/webhooks/payloads';
 
 /**
  * GET /api/admin/clients
@@ -69,10 +74,14 @@ export async function GET(request: NextRequest) {
         name: client.name,
         email: client.email || '',
         phone: client.phone || '',
-        type: client.company ? 'Real Estate Agent' : 'Homebuyer',
+        type: client.type || (client.company ? 'Agent' : 'Homebuyer'),
+        company: client.company || '',
+        notes: client.notes || '',
         inspections: stats.inspections,
         lastInspection: stats.lastInspection || '—',
-        totalSpent: 0
+        totalSpent: 0,
+        createdAt: client.created_at,
+        updatedAt: client.updated_at,
       };
     });
 
@@ -98,13 +107,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { tenant_slug, name, email, phone, company, notes } = body;
-    if (!name) {
-      return badRequest('Missing required field: name');
-    }
 
+    // Validate request body
+    const validation = createClientSchema.safeParse(body);
+    if (!validation.success) {
+      return validationError(validation.error.errors[0]?.message || 'Validation failed');
+    }
+    const payload = validation.data;
+
+    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenant_slug);
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
@@ -113,11 +126,12 @@ export async function POST(request: NextRequest) {
       .from('clients')
       .insert({
         tenant_id: tenant.id,
-        name,
-        email: email || null,
-        phone: phone || null,
-        company: company || null,
-        notes: notes || null
+        name: payload.name,
+        email: payload.email ?? null,
+        phone: payload.phone ?? null,
+        type: payload.type ?? null,
+        company: payload.company ?? null,
+        notes: payload.notes ?? null,
       })
       .select('*')
       .single();
@@ -126,15 +140,26 @@ export async function POST(request: NextRequest) {
       return serverError('Failed to create client', error);
     }
 
+    // Trigger webhook for client.created event
+    try {
+      triggerWebhookEvent("client.created", tenant.id, buildClientPayload(client));
+    } catch (webhookError) {
+      console.error("Failed to trigger webhook:", webhookError);
+    }
+
     return success({
       clientId: client.id,
       name: client.name,
       email: client.email || '',
       phone: client.phone || '',
-      type: client.company ? 'Real Estate Agent' : 'Homebuyer',
+      type: client.type || (client.company ? 'Agent' : 'Homebuyer'),
+      company: client.company || '',
+      notes: client.notes || '',
       inspections: 0,
       lastInspection: '—',
-      totalSpent: 0
+      totalSpent: 0,
+      createdAt: client.created_at,
+      updatedAt: client.updated_at,
     });
   } catch (error) {
     return serverError('Failed to create client', error);

@@ -2,6 +2,16 @@ import type { Inspection, LegacyInspection } from "@/types/inspection";
 import type { Client } from "@/hooks/use-clients";
 import type { TeamMember } from "@/hooks/use-team";
 import type { Service } from "@/hooks/use-services";
+import { shouldUseExternalApi } from "@/lib/api/feature-flags";
+import { createApiClient } from "@/lib/api/client";
+
+/**
+ * Get tenant slug from environment
+ * TODO: In production, this should come from user session or URL
+ */
+function getTenantSlug(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+}
 
 export async function fetchInspections(): Promise<Inspection[]> {
   const response = await fetch("/api/admin/inspections");
@@ -68,61 +78,91 @@ export async function deleteInspectionById(inspectionId: string): Promise<boolea
 }
 
 export async function fetchClients(): Promise<Client[]> {
-  const response = await fetch("/api/admin/clients");
-  if (!response.ok) {
-    throw new Error("Failed to load clients.");
+  if (shouldUseExternalApi("clients")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Client[]>("/admin/clients");
+  } else {
+    const response = await fetch("/api/admin/clients");
+    if (!response.ok) {
+      throw new Error("Failed to load clients.");
+    }
+    const result = await response.json();
+    return Array.isArray(result) ? result : (result.data ?? []);
   }
-  const result = await response.json();
-  return Array.isArray(result) ? result : (result.data ?? []);
 }
 
 export async function fetchClientById(clientId: string): Promise<Client | null> {
-  const response = await fetch(`/api/admin/clients/${clientId}`);
-  if (!response.ok) {
-    return null;
+  if (shouldUseExternalApi("clients")) {
+    try {
+      const apiClient = createApiClient(getTenantSlug());
+      return await apiClient.get<Client>(`/admin/clients/${clientId}`);
+    } catch {
+      return null;
+    }
+  } else {
+    const response = await fetch(`/api/admin/clients/${clientId}`);
+    if (!response.ok) {
+      return null;
+    }
+    const result = await response.json();
+    return (result.data ?? result) as Client;
   }
-  const result = await response.json();
-  return (result.data ?? result) as Client;
 }
 
 export async function createClient(data: Omit<Client, "clientId" | "archived">): Promise<Client> {
-  const response = await fetch("/api/admin/clients", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error?.error ?? "Failed to create client.");
+  if (shouldUseExternalApi("clients")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Client>("/admin/clients", data);
+  } else {
+    const response = await fetch("/api/admin/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to create client.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateClientById(data: { clientId: string } & Partial<Client>): Promise<Client | null> {
-  const response = await fetch(`/api/admin/clients/${data.clientId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error?.error ?? "Failed to update client.");
+  if (shouldUseExternalApi("clients")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.put<Client>(`/admin/clients/${data.clientId}`, data);
+  } else {
+    const response = await fetch(`/api/admin/clients/${data.clientId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to update client.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteClientById(clientId: string): Promise<boolean> {
-  const response = await fetch(`/api/admin/clients/${clientId}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error?.error ?? "Failed to delete client.");
+  if (shouldUseExternalApi("clients")) {
+    const apiClient = createApiClient(getTenantSlug());
+    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/clients/${clientId}`);
+    return result.deleted ?? true;
+  } else {
+    const response = await fetch(`/api/admin/clients/${clientId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to delete client.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
