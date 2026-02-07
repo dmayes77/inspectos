@@ -3,6 +3,13 @@
  * Handles property CRUD operations
  */
 
+import { shouldUseExternalApi } from "@/lib/api/feature-flags";
+import { createApiClient } from "@/lib/api/client";
+
+function getTenantSlug(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+}
+
 export interface Property {
   id: string;
   tenant_id: string;
@@ -168,89 +175,125 @@ export interface PropertyFilters {
 }
 
 export async function fetchProperties(filters?: PropertyFilters): Promise<Property[]> {
-  const params = new URLSearchParams();
+  if (shouldUseExternalApi("properties")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const params = new URLSearchParams();
+    if (filters?.client_id) params.append('client_id', filters.client_id);
+    const endpoint = params.toString() ? `/admin/properties?${params}` : '/admin/properties';
+    return await apiClient.get<Property[]>(endpoint);
+  } else {
+    // Use local Next.js API route
+    const params = new URLSearchParams();
+    if (filters?.client_id) params.append('client_id', filters.client_id);
+    const url = params.toString() ? `/api/admin/properties?${params}` : '/api/admin/properties';
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (filters?.client_id) params.append('client_id', filters.client_id);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to fetch properties');
+    }
 
-  const url = params.toString() ? `/api/admin/properties?${params}` : '/api/admin/properties';
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch properties');
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function createProperty(input: CreatePropertyInput): Promise<Property> {
-  const response = await fetch('/api/admin/properties', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
+  if (shouldUseExternalApi("properties")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Property>('/admin/properties', input);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch('/api/admin/properties', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to create property');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to create property');
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function fetchProperty(propertyId: string): Promise<Property> {
-  const response = await fetch(`/api/admin/properties/${propertyId}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  if (shouldUseExternalApi("properties")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Property>(`/admin/properties/${propertyId}`);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/properties/${propertyId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch property');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to fetch property');
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateProperty(propertyId: string, input: UpdatePropertyInput): Promise<Property> {
-  const response = await fetch(`/api/admin/properties/${propertyId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
+  if (shouldUseExternalApi("properties")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.patch<Property>(`/admin/properties/${propertyId}`, input);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/properties/${propertyId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to update property');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to update property');
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteProperty(propertyId: string): Promise<void> {
-  const response = await fetch(`/api/admin/properties/${propertyId}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  if (shouldUseExternalApi("properties")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    await apiClient.delete<{ deleted: boolean }>(`/admin/properties/${propertyId}`);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/properties/${propertyId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to delete property');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to delete property');
+    }
   }
 }
 

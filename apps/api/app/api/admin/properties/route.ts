@@ -6,8 +6,11 @@ import {
   unauthorized,
   badRequest,
   serverError,
-  success
+  success,
+  validationError
 } from '@/lib/supabase';
+import { resolveTenant } from '@/lib/tenants';
+import { createPropertySchema } from '@/lib/validations/property';
 import { createLogger, generateRequestId } from '@/lib/logger';
 import { rateLimitByIP, RateLimitPresets } from '@/lib/rate-limit';
 
@@ -38,21 +41,10 @@ export async function GET(request: NextRequest) {
     }
 
     const tenantSlug = request.nextUrl.searchParams.get('tenant');
-    if (!tenantSlug) {
-      return badRequest('Missing tenant parameter');
-    }
-
     const clientId = request.nextUrl.searchParams.get('client_id');
 
     const supabase = createUserClient(accessToken);
-
-    // Get tenant
-    const { data: tenant, error: tenantError } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('slug', tenantSlug)
-      .single();
-
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
@@ -109,33 +101,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      tenant_slug,
-      client_id,
-      address_line1,
-      address_line2,
-      city,
-      state,
-      zip_code,
-      property_type,
-      year_built,
-      square_feet,
-      notes
-    } = body;
 
-    if (!tenant_slug || !address_line1 || !city || !state || !zip_code) {
-      return badRequest('Missing required fields: tenant_slug, address_line1, city, state, zip_code');
+    // Validate request body
+    const validation = createPropertySchema.safeParse(body);
+    if (!validation.success) {
+      return validationError(validation.error.issues[0]?.message || 'Validation failed');
     }
+    const payload = validation.data;
 
+    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
-
-    // Get tenant
-    const { data: tenant, error: tenantError } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('slug', tenant_slug)
-      .single();
-
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
@@ -145,16 +121,37 @@ export async function POST(request: NextRequest) {
       .from('properties')
       .insert({
         tenant_id: tenant.id,
-        client_id: client_id || null,
-        address_line1,
-        address_line2: address_line2 || null,
-        city,
-        state,
-        zip_code,
-        property_type: property_type || 'residential',
-        year_built: year_built || null,
-        square_feet: square_feet || null,
-        notes: notes || null
+        client_id: payload.client_id ?? null,
+        address_line1: payload.address_line1,
+        address_line2: payload.address_line2 ?? null,
+        city: payload.city,
+        state: payload.state,
+        zip_code: payload.zip_code,
+        property_type: payload.property_type ?? 'single-family',
+        year_built: payload.year_built ?? null,
+        square_feet: payload.square_feet ?? null,
+        notes: payload.notes ?? null,
+        bedrooms: payload.bedrooms ?? null,
+        bathrooms: payload.bathrooms ?? null,
+        stories: payload.stories ?? null,
+        foundation: payload.foundation ?? null,
+        garage: payload.garage ?? null,
+        pool: payload.pool ?? null,
+        basement: payload.basement ?? null,
+        lot_size_acres: payload.lot_size_acres ?? null,
+        heating_type: payload.heating_type ?? null,
+        cooling_type: payload.cooling_type ?? null,
+        roof_type: payload.roof_type ?? null,
+        building_class: payload.building_class ?? null,
+        loading_docks: payload.loading_docks ?? null,
+        zoning: payload.zoning ?? null,
+        occupancy_type: payload.occupancy_type ?? null,
+        ceiling_height: payload.ceiling_height ?? null,
+        number_of_units: payload.number_of_units ?? null,
+        unit_mix: payload.unit_mix ?? null,
+        laundry_type: payload.laundry_type ?? null,
+        parking_spaces: payload.parking_spaces ?? null,
+        elevator: payload.elevator ?? null,
       })
       .select(`
         *,
