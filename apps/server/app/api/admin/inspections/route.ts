@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       order: orderMap.get(inspection.order_id) || null
     }));
 
-    return success(result);
+    return Response.json({ success: true, data: result, _v: 'v2' }, { status: 200 });
   } catch (error) {
     return serverError('Failed to fetch inspections', error);
   }
