@@ -32,7 +32,9 @@ export const USE_EXTERNAL_API = {
   // Phase 5: Administrative
   team: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_TEAM === "true",
   tags: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_TAGS === "true",
+  vendors: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_VENDORS === "true",
   emailTemplates: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_EMAIL_TEMPLATES === "true",
+  tagAssignments: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_TAG_ASSIGNMENTS === "true",
   templates: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_TEMPLATES === "true",
   workflows: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_WORKFLOWS === "true",
   integrations: process.env.NEXT_PUBLIC_USE_EXTERNAL_API_INTEGRATIONS === "true",

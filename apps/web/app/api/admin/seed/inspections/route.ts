@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getTenantId } from "@/lib/supabase/admin-helpers";
-import { assignInspectionLead } from "@/app/api/admin/inspections/assignments";
+// TODO: Restore inspection lead assignment after inspections migration
+// import { assignInspectionLead } from "@/app/api/admin/inspections/assignments";
 
 type ServiceRow = {
   id: string;
@@ -353,7 +354,8 @@ export async function POST() {
       }
     }
 
-    await assignInspectionLead(tenantId, createdInspection.id, inspector.id);
+    // TODO: Restore inspection lead assignment after inspections migration
+    // await assignInspectionLead(tenantId, createdInspection.id, inspector.id);
   }
 
   if (!createdInspections) {
