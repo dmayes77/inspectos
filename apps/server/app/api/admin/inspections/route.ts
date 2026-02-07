@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import {
   createUserClient,
+  createServiceClient,
   getAccessToken,
   getUserFromToken,
   unauthorized,
@@ -31,20 +32,45 @@ export async function GET(request: NextRequest) {
 
     const tenantSlug = request.nextUrl.searchParams.get('tenant');
     const status = request.nextUrl.searchParams.get('status');
-    const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
+
+    // Use user client for tenant resolution
+    const userSupabase = createUserClient(accessToken);
+    const { tenant, error: tenantError } = await resolveTenant(userSupabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
 
+    // Use service client for the query to ensure joins work
+    const supabase = createServiceClient();
     let query = supabase
       .from('inspections')
       .select(`
         *,
-        order:orders!inspections_order_id_fkey(
+        orders(
           id,
           scheduled_date,
-          status
+          status,
+          property:properties(
+            id,
+            address_line1,
+            address_line2,
+            city,
+            state,
+            zip_code
+          ),
+          client:clients(
+            id,
+            name,
+            email,
+            phone,
+            company
+          ),
+          inspector:profiles(
+            id,
+            full_name,
+            email,
+            avatar_url
+          )
         )
       `)
       .eq('tenant_id', tenant.id)
