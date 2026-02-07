@@ -1,6 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
+// Only enable BYPASS_AUTH in development mode for security
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+const BYPASS_AUTH = IS_DEVELOPMENT && process.env.BYPASS_AUTH === 'true';
 const BYPASS_USER = { userId: 'bypass-user', email: 'bypass@example.com' };
 
 // Server-side Supabase client with service role (bypasses RLS)

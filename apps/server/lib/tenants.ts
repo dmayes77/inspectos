@@ -6,8 +6,10 @@ type TenantRecord = {
   slug: string;
 };
 
-const BYPASS_AUTH = process.env.BYPASS_AUTH === 'true';
-const BYPASS_TENANT_ID = process.env.SUPABASE_TENANT_ID;
+// Only enable BYPASS_AUTH in development mode for security
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+const BYPASS_AUTH = IS_DEVELOPMENT && process.env.BYPASS_AUTH === 'true';
+const BYPASS_TENANT_ID = IS_DEVELOPMENT ? process.env.SUPABASE_TENANT_ID : undefined;
 
 export async function resolveTenant(
   supabase: SupabaseClient,

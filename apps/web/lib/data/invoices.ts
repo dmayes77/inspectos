@@ -6,7 +6,11 @@ import { createApiClient } from "@/lib/api/client";
  * TODO: In production, this should come from user session or URL
  */
 function getTenantSlug(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (isDevelopment && process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID) {
+    return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID;
+  }
+  return "default";
 }
 
 export type InvoiceRecord = {

@@ -3,6 +3,7 @@ import { shouldUseExternalApi } from "@/lib/api/feature-flags";
 import { createApiClient } from "@/lib/api/client";
 
 function getTenantSlug(): string {
+  const isDevelopment = process.env.NODE_ENV === 'development';
   if (typeof window !== "undefined") {
     const pathParts = window.location.pathname.split("/");
     return pathParts[1] || "default";

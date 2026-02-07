@@ -7,10 +7,15 @@ import { createApiClient } from "@/lib/api/client";
 
 /**
  * Get tenant slug from environment
- * TODO: In production, this should come from user session or URL
+ * In development, uses NEXT_PUBLIC_SUPABASE_TENANT_ID for convenience
+ * In production, should come from user session or URL (defaults to "default")
  */
 function getTenantSlug(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  if (isDevelopment && process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID) {
+    return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID;
+  }
+  return "default";
 }
 
 export async function fetchInspections(): Promise<Inspection[]> {
