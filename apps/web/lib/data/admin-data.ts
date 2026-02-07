@@ -14,67 +14,99 @@ function getTenantSlug(): string {
 }
 
 export async function fetchInspections(): Promise<Inspection[]> {
-  const response = await fetch("/api/admin/inspections");
-  if (!response.ok) {
-    throw new Error("Failed to load inspections.");
+  if (shouldUseExternalApi("inspections")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Inspection[]>("/admin/inspections");
+  } else {
+    // Use local Next.js API route
+    const response = await fetch("/api/admin/inspections");
+    if (!response.ok) {
+      throw new Error("Failed to load inspections.");
+    }
+    const result = await response.json();
+    const normalized = Array.isArray(result) ? result : Array.isArray(result?.data) ? (result.data as Inspection[]) : [];
+    console.log("[fetchInspections] received", {
+      ok: response.ok,
+      status: response.status,
+      length: normalized.length,
+      rawType: Array.isArray(result) ? "array" : typeof result,
+      tenantId: (result?.tenantId as string) ?? "unknown",
+    });
+    return normalized;
   }
-  const result = await response.json();
-  const normalized = Array.isArray(result) ? result : Array.isArray(result?.data) ? (result.data as Inspection[]) : [];
-  console.log("[fetchInspections] received", {
-    ok: response.ok,
-    status: response.status,
-    length: normalized.length,
-    rawType: Array.isArray(result) ? "array" : typeof result,
-    tenantId: (result?.tenantId as string) ?? "unknown",
-  });
-  return normalized;
 }
 
 export async function fetchInspectionById(inspectionId: string): Promise<LegacyInspection | null> {
-  const response = await fetch(`/api/admin/inspections/${inspectionId}`);
-  if (!response.ok) return null;
-  const result = await response.json();
-  return (result.data ?? result) as LegacyInspection;
+  if (shouldUseExternalApi("inspections")) {
+    try {
+      const apiClient = createApiClient(getTenantSlug());
+      return await apiClient.get<LegacyInspection>(`/admin/inspections/${inspectionId}`);
+    } catch {
+      return null;
+    }
+  } else {
+    const response = await fetch(`/api/admin/inspections/${inspectionId}`);
+    if (!response.ok) return null;
+    const result = await response.json();
+    return (result.data ?? result) as LegacyInspection;
+  }
 }
 
 export async function createInspection(data: Record<string, unknown>): Promise<Inspection> {
-  const response = await fetch("/api/admin/inspections", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error?.error ?? "Failed to create inspection.");
+  if (shouldUseExternalApi("inspections")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Inspection>("/admin/inspections", data);
+  } else {
+    const response = await fetch("/api/admin/inspections", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to create inspection.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateInspectionById(data: { inspectionId: string } & Record<string, unknown>): Promise<Inspection | null> {
-  const response = await fetch(`/api/admin/inspections/${data.inspectionId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error?.error ?? "Failed to update inspection.");
+  if (shouldUseExternalApi("inspections")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.put<Inspection>(`/admin/inspections/${data.inspectionId}`, data);
+  } else {
+    const response = await fetch(`/api/admin/inspections/${data.inspectionId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to update inspection.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteInspectionById(inspectionId: string): Promise<boolean> {
-  const response = await fetch(`/api/admin/inspections/${inspectionId}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error?.error ?? "Failed to delete inspection.");
+  if (shouldUseExternalApi("inspections")) {
+    const apiClient = createApiClient(getTenantSlug());
+    const result = await apiClient.delete<{ deleted: boolean } | boolean>(`/admin/inspections/${inspectionId}`);
+    return typeof result === "boolean" ? result : (result.deleted ?? true);
+  } else {
+    const response = await fetch(`/api/admin/inspections/${inspectionId}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error?.error ?? "Failed to delete inspection.");
+    }
+    const result = await response.json();
+    return result.data;
   }
-  const result = await response.json();
-  return result.data;
 }
 
 export async function fetchClients(): Promise<Client[]> {

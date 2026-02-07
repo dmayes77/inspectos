@@ -4,10 +4,12 @@ import {
   getAccessToken,
   getUserFromToken,
   unauthorized,
+  badRequest,
   notFound,
   serverError,
   success
 } from '@/lib/supabase';
+import { resolveTenant } from '@/lib/tenants';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -29,7 +31,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return unauthorized('Invalid access token');
     }
 
+    const tenantSlug = request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
+    if (tenantError || !tenant) {
+      return badRequest('Tenant not found');
+    }
+
     const { data: inspection, error } = await supabase
       .from('inspections')
       .select(`
@@ -46,6 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ),
         inspector:profiles(id, full_name, email, avatar_url)
       `)
+      .eq('tenant_id', tenant.id)
       .eq('id', id)
       .single();
 
@@ -89,6 +98,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       notes
     } = body;
 
+    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
+    const supabase = createUserClient(accessToken);
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
+    if (tenantError || !tenant) {
+      return badRequest('Tenant not found');
+    }
+
     const updateData: Record<string, unknown> = {};
     if (status !== undefined) updateData.status = status;
     if (started_at !== undefined) updateData.started_at = started_at || null;
@@ -98,10 +114,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (present_parties !== undefined) updateData.present_parties = present_parties || null;
     if (notes !== undefined) updateData.notes = notes || null;
 
-    const supabase = createUserClient(accessToken);
     const { data: inspection, error } = await supabase
       .from('inspections')
       .update(updateData)
+      .eq('tenant_id', tenant.id)
       .eq('id', id)
       .select('*')
       .single();
@@ -139,10 +155,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return unauthorized('Invalid access token');
     }
 
+    const tenantSlug = request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
+    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
+    if (tenantError || !tenant) {
+      return badRequest('Tenant not found');
+    }
+
     const { error } = await supabase
       .from('inspections')
       .delete()
+      .eq('tenant_id', tenant.id)
       .eq('id', id);
 
     if (error) {
