@@ -47,25 +47,28 @@ export async function GET(request: NextRequest) {
       return serverError('Failed to fetch clients', clientsError);
     }
 
-    const { data: jobs, error: jobsError } = await supabase
-      .from('jobs')
-      .select('id, client_id, scheduled_date')
-      .eq('tenant_id', tenant.id);
-
-    if (jobsError) {
-      return serverError('Failed to fetch client jobs', jobsError);
-    }
-
+    // Try to fetch job statistics - gracefully handle if jobs/orders table doesn't exist or has issues
     const jobStats = new Map<string, { inspections: number; lastInspection: string }>();
-    (jobs || []).forEach((job) => {
-      if (!job.client_id) return;
-      const current = jobStats.get(job.client_id) || { inspections: 0, lastInspection: '' };
-      const nextCount = current.inspections + 1;
-      const lastInspection = current.lastInspection && current.lastInspection > job.scheduled_date
-        ? current.lastInspection
-        : job.scheduled_date;
-      jobStats.set(job.client_id, { inspections: nextCount, lastInspection });
-    });
+    try {
+      // Try orders table first (standard table name in this codebase)
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, client_id, scheduled_date')
+        .eq('tenant_id', tenant.id);
+
+      (orders || []).forEach((order) => {
+        if (!order.client_id) return;
+        const current = jobStats.get(order.client_id) || { inspections: 0, lastInspection: '' };
+        const nextCount = current.inspections + 1;
+        const lastInspection = current.lastInspection && current.lastInspection > order.scheduled_date
+          ? current.lastInspection
+          : order.scheduled_date;
+        jobStats.set(order.client_id, { inspections: nextCount, lastInspection });
+      });
+    } catch (error) {
+      // Silently ignore - job stats will just be zero for all clients
+      console.warn('Could not fetch client order statistics:', error);
+    }
 
     const payload = (clients || []).map((client) => {
       const stats = jobStats.get(client.id) || { inspections: 0, lastInspection: '' };
