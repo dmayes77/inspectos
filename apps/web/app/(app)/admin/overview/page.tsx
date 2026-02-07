@@ -24,6 +24,7 @@ import { can } from "@/lib/admin/permissions";
 import { formatTime12 } from "@/lib/utils/dates";
 import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const formatStatusLabel = (status?: string | null) => {
   if (!status) return "—";
@@ -63,7 +64,100 @@ const getServiceSummary = (order: { inspection?: { services?: Array<{ name: stri
 
 export default function OverviewPage() {
   const { data: orders = [], isLoading: ordersLoading } = useOrders();
-  const { data: clients = [] } = useClients();
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+
+  // Show loading skeleton while data is being fetched
+  if (ordersLoading || clientsLoading) {
+    return (
+      <AdminShell user={mockAdminUser}>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-96" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-24 mb-2" />
+                  <Skeleton className="h-3 w-20" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Skeleton className="h-6 w-40 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4 rounded-lg border p-4">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-4 w-64" />
+                        <Skeleton className="h-4 w-48" />
+                      </div>
+                      <Skeleton className="h-8 w-8" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="flex items-start gap-3 border-b pb-4 last:border-0">
+                      <Skeleton className="h-2 w-2 rounded-full mt-2" />
+                      <div className="space-y-2 flex-1">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-24" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader className="pb-2">
+                  <Skeleton className="h-4 w-32" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-24 mb-2" />
+                  <Skeleton className="h-3 w-40 mb-2" />
+                  <Skeleton className="h-4 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </AdminShell>
+    );
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = orders.filter((order) => order.scheduled_date === today);
