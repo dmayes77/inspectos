@@ -82,12 +82,14 @@ export async function GET(request: NextRequest) {
 
     const { data: inspections, error } = await query;
 
-    console.log('[DEBUG] Inspections query result:', {
+    console.log('[DEBUG] Inspections query:', {
       hasData: !!inspections,
       dataCount: inspections?.length,
       hasError: !!error,
-      error: error,
-      firstInspection: inspections?.[0]
+      error: error ? JSON.stringify(error) : null,
+      firstInspectionKeys: inspections?.[0] ? Object.keys(inspections[0]) : [],
+      firstInspectionSample: inspections?.[0] ? JSON.stringify(inspections[0]).substring(0, 500) : null,
+      supabaseUrl: process.env.SUPABASE_URL
     });
 
     if (error) {
