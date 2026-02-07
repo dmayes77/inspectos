@@ -228,6 +228,14 @@ export function createApiClient(tenantSlug: string): ApiClient {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
   const getAccessToken = async (): Promise<string | null> => {
+    // In development mode with BYPASS_AUTH, use a dummy token
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    if (isDevelopment) {
+      // Return bypass token for development - server will handle BYPASS_AUTH
+      return 'bypass-token';
+    }
+
+    // Production: get real access token from Supabase auth
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
