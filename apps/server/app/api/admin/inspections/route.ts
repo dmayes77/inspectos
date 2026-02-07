@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       .from('inspections')
       .select(`
         *,
-        orders(
+        order:orders(
           id,
           scheduled_date,
           status,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
             phone,
             company
           ),
-          inspector:profiles(
+          inspector:profiles!orders_inspector_id_fkey(
             id,
             full_name,
             email,
