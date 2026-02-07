@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .from('inspections')
       .select(`
         *,
-        order:orders(
+        order:orders!inspections_order_id_fkey(
           id,
           scheduled_date,
           status,
