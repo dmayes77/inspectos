@@ -19,6 +19,7 @@ import { resolveTenant } from '@/lib/tenants';
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[INSPECTIONS GET] Request received - NEW CODE VERSION 2025-02-07');
     const accessToken = getAccessToken(request);
     if (!accessToken) {
       return unauthorized('Missing access token');
