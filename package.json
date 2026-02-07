@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev:web": "pnpm -C apps/web dev",
-    "dev:api": "pnpm -C apps/api dev --port 4000",
+    "dev:server": "pnpm -C apps/server dev --port 4000",
     "dev:mobile": "pnpm -C apps/mobile dev",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint --fix",
@@ -22,9 +22,9 @@
       "pnpm -C apps/web exec eslint --fix",
       "pnpm -C apps/web exec tsc --noEmit"
     ],
-    "apps/api/**/*.{ts,tsx}": [
-      "pnpm -C apps/api exec eslint --fix",
-      "pnpm -C apps/api exec tsc --noEmit"
+    "apps/server/**/*.{ts,tsx}": [
+      "pnpm -C apps/server exec eslint --fix",
+      "pnpm -C apps/server exec tsc --noEmit"
     ],
     "apps/mobile/**/*.{ts,tsx}": [
       "pnpm -C apps/mobile exec eslint --fix"
