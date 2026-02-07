@@ -229,7 +229,12 @@ export function createApiClient(tenantSlug: string): ApiClient {
 
   const getAccessToken = async (): Promise<string | null> => {
     // In development mode with BYPASS_AUTH, use a dummy token
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    // Supports: local dev, Vercel preview, and custom dev deployments (dev.inspectos.co)
+    const isDevelopment =
+      process.env.NODE_ENV === 'development' ||
+      process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview' ||
+      process.env.NEXT_PUBLIC_IS_DEV_DEPLOYMENT === 'true';
+
     if (isDevelopment) {
       // Return bypass token for development - server will handle BYPASS_AUTH
       return 'bypass-token';

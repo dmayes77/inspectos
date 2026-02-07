@@ -2,7 +2,10 @@ import { shouldUseExternalApi } from "@/lib/api/feature-flags";
 import { createApiClient } from "@/lib/api/client";
 
 function getTenantSlug(): string {
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDevelopment =
+    process.env.NODE_ENV === 'development' ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview' ||
+    process.env.NEXT_PUBLIC_IS_DEV_DEPLOYMENT === 'true';
   if (isDevelopment && process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID) {
     return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID;
   }

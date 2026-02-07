@@ -1,7 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Only enable BYPASS_AUTH in development mode for security
-const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
+// Supports: local dev, Vercel preview, and custom dev deployments (dev.inspectos.co)
+const IS_DEVELOPMENT =
+  process.env.NODE_ENV === 'development' ||
+  process.env.VERCEL_ENV === 'preview' ||
+  process.env.NEXT_PUBLIC_IS_DEV_DEPLOYMENT === 'true';
 const BYPASS_AUTH = IS_DEVELOPMENT && process.env.BYPASS_AUTH === 'true';
 const BYPASS_USER = { userId: 'bypass-user', email: 'bypass@example.com' };
 
