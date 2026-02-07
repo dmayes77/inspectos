@@ -3,6 +3,13 @@
  * Handles real estate agency CRUD operations
  */
 
+import { shouldUseExternalApi } from "@/lib/api/feature-flags";
+import { createApiClient } from "@/lib/api/client";
+
+function getTenantSlug(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+}
+
 export type AgencyStatus = "active" | "inactive";
 
 export interface Agency {
@@ -79,92 +86,131 @@ export interface AgencyFilters {
 }
 
 export async function fetchAgencies(filters?: AgencyFilters): Promise<Agency[]> {
-  const params = new URLSearchParams();
+  if (shouldUseExternalApi("agencies")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const params = new URLSearchParams();
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.search) params.append("search", filters.search);
+    const endpoint = params.toString() ? `/admin/agencies?${params}` : "/admin/agencies";
+    return await apiClient.get<Agency[]>(endpoint);
+  } else {
+    // Use local Next.js API route
+    const params = new URLSearchParams();
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.search) params.append("search", filters.search);
+    const url = params.toString() ? `/api/admin/agencies?${params}` : "/api/admin/agencies";
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (filters?.status) params.append("status", filters.status);
-  if (filters?.search) params.append("search", filters.search);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch agencies");
+    }
 
-  const url = params.toString() ? `/api/admin/agencies?${params}` : "/api/admin/agencies";
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to fetch agencies");
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function fetchAgencyById(id: string): Promise<Agency> {
-  const response = await fetch(`/api/admin/agencies/${id}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  if (shouldUseExternalApi("agencies")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Agency>(`/admin/agencies/${id}`);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/agencies/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to fetch agency");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch agency");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function createAgency(input: CreateAgencyInput): Promise<Agency> {
-  const response = await fetch(`/api/admin/agencies`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
+  if (shouldUseExternalApi("agencies")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Agency>("/admin/agencies", input);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/agencies`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to create agency");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to create agency");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateAgency(input: UpdateAgencyInput): Promise<Agency> {
-  const { id, ...data } = input;
-  const response = await fetch(`/api/admin/agencies/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
+  if (shouldUseExternalApi("agencies")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const { id, ...data } = input;
+    return await apiClient.put<Agency>(`/admin/agencies/${id}`, data);
+  } else {
+    // Use local Next.js API route
+    const { id, ...data } = input;
+    const response = await fetch(`/api/admin/agencies/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to update agency");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to update agency");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteAgency(id: string): Promise<boolean> {
-  const response = await fetch(`/api/admin/agencies/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  if (shouldUseExternalApi("agencies")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/agencies/${id}`);
+    return result.deleted ?? true;
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/agencies/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to delete agency");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to delete agency");
+    }
+
+    return true;
   }
-
-  return true;
 }
