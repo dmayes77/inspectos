@@ -23,18 +23,14 @@ import { useUpdateInspection, useCreateInspection } from "@/hooks/use-inspection
 import { useOrderById } from "@/hooks/use-orders";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { FOUNDATION_OPTIONS, GARAGE_OPTIONS, STORY_OPTIONS } from "@/lib/constants/property-options";
-import { formatAddress, parseAddress } from "@/lib/utils/address";
 import { calculateServiceTotal } from "@/lib/utils/pricing";
-import { booleanToYesNo, yesNoToBoolean, toString, toNumber } from "@/lib/utils/formatters";
-import { inspectionSchema } from "@/lib/validations/inspection";
 import { toast } from "sonner";
 import type { ServiceType } from "@/types/service";
-import type { Inspection } from "@/types/inspection";
+import type { Inspection, InspectionStatusValue } from "@/types/inspection";
 import { Loader2, Save } from "lucide-react";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { InspectionVendorSection } from "@/components/inspections/inspection-vendor-section";
-import { useVendors } from "@/hooks/use-vendors";
 
 // Helper function to safely extract string from FormData (defined outside component for performance)
 const getString = (value: FormDataEntryValue | undefined): string | undefined => {
@@ -58,7 +54,6 @@ const ServiceCheckbox = ({ service, checked, onToggle }: { service: ServiceType;
 };
 
 export default function EditInspectionPage(props: { isNew?: boolean; orderId?: string } = {}) {
-  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>([]);
   const params = useParams();
   const router = useRouter();
   const { data: services = [] } = useServices();
@@ -77,8 +72,11 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     return fetchInspectionById(inspectionId);
   });
 
-  const [selectedClientId, setSelectedClientId] = useState<string>(inspection?.clientId || "");
-  const [selectedInspectorId, setSelectedInspectorId] = useState<string>(inspection?.inspectorId || "");
+  const [selectedClientId, setSelectedClientId] = useState<string>(inspection?.order?.client?.id || "");
+  const [selectedInspectorId, setSelectedInspectorId] = useState<string>(inspection?.inspector_id || "");
+  const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>(
+    inspection?.vendorIds && Array.isArray(inspection.vendorIds) ? inspection.vendorIds : []
+  );
   const { data: inspectors = [] } = useInspectors();
   const orderProperty = linkedOrder?.property;
 
@@ -91,26 +89,24 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
 
   // Parse address using utility function (memoized)
   const addressParts = useMemo(() => {
-    if (inspection) {
-      return parseAddress(inspection.address);
-    }
-    if (orderProperty) {
+    const property = inspection?.order?.property || orderProperty;
+    if (property) {
       return {
-        street: orderProperty.address_line1,
-        city: orderProperty.city,
-        state: orderProperty.state,
-        zip: orderProperty.zip_code,
+        street: property.address_line1,
+        city: property.city,
+        state: property.state,
+        zip: property.zip_code,
       };
     }
     return { street: "", city: "", state: "", zip: "" };
   }, [inspection, orderProperty]);
 
   const { street, city, state, zip } = addressParts;
-  const resolvedClientId = selectedClientId || inspection?.clientId || linkedOrder?.client?.id || "";
-  const resolvedInspectorId = selectedInspectorId || inspection?.inspectorId || linkedOrder?.inspector?.id || "";
+  const resolvedClientId = selectedClientId || inspection?.order?.client?.id || linkedOrder?.client?.id || "";
+  const resolvedInspectorId = selectedInspectorId || inspection?.inspector_id || linkedOrder?.inspector?.id || "";
   const resolvedTypeIds = useMemo(() => {
     if (selectedTypeIds.length) return selectedTypeIds;
-    if (Array.isArray(inspection?.types)) return inspection.types;
+    if (Array.isArray(inspection?.selected_type_ids)) return inspection.selected_type_ids;
     return [];
   }, [inspection, selectedTypeIds]);
 
@@ -143,73 +139,36 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
       const formData = new FormData(e.currentTarget);
       const raw = Object.fromEntries(formData);
 
-      const validation = inspectionSchema.safeParse({
-        street: toString(getString(raw.street)),
-        city: toString(getString(raw.city)),
-        state: toString(getString(raw.state)),
-        zip: toString(getString(raw.zip)),
-        sqft: getString(raw.sqft) ?? "",
-        yearBuilt: getString(raw.yearBuilt) ?? "",
-        bedrooms: getString(raw.bedrooms) ?? "",
-        bathrooms: getString(raw.bathrooms) ?? "",
-        stories: toString(getString(raw.stories)),
-        propertyType: toString(getString(raw.propertyType)),
-        foundation: toString(getString(raw.foundation)),
-        garage: toString(getString(raw.garage)),
-        pool: toString(getString(raw.pool)) || undefined,
-        clientId: resolvedClientId,
-        inspectorId: resolvedInspectorId,
-        date: toString(getString(raw.date)),
-        time: toString(getString(raw.time)),
-        status: toString(getString(raw.status)),
-        notes: toString(getString(raw.notes)),
-        types: resolvedTypeIds,
-      });
+      // Basic validation
+      if (!resolvedInspectorId) {
+        toast.error("Please select an inspector");
+        return;
+      }
 
-      if (!validation.success) {
-        toast.error(validation.error.issues[0]?.message || "Please check the inspection details.");
+      if (resolvedTypeIds.length === 0) {
+        toast.error("Please select at least one service");
         return;
       }
 
       // Build payload with proper typing (no type assertions needed)
-      const payload: Partial<LegacyInspection> & { types?: string[]; orderId?: string } = {
-        address: formatAddress({
-          street: toString(getString(raw.street)) || "",
-          city: toString(getString(raw.city)) || "",
-          state: toString(getString(raw.state)) || "",
-          zip: toString(getString(raw.zip)) || "",
-        }),
-        types: resolvedTypeIds,
-        client: clientObj?.name || "",
-        clientId: resolvedClientId,
-        inspector: inspectorObj?.name || "",
-        inspectorId: inspectorObj?.teamMemberId || resolvedInspectorId,
-        date: toString(getString(raw.date)) || "",
-        time: toString(getString(raw.time)) || "",
-        status: toString(getString(raw.status)) || "scheduled",
-        sqft: toNumber(getString(raw.sqft)),
-        yearBuilt: toNumber(getString(raw.yearBuilt)),
-        bedrooms: toNumber(getString(raw.bedrooms)),
-        bathrooms: toNumber(getString(raw.bathrooms)),
-        stories: toString(getString(raw.stories)),
-        propertyType: toString(getString(raw.propertyType)),
-        foundation: toString(getString(raw.foundation)),
-        garage: toString(getString(raw.garage)),
-        pool: yesNoToBoolean(getString(raw.pool)),
-        notes: toString(getString(raw.notes)),
-        price: calculatedPrice,
-        orderId: orderId,
+      const statusValue = getString(raw.status) || "draft";
+      const payload: Partial<Inspection> & { orderId?: string } = {
+        selected_type_ids: resolvedTypeIds,
+        inspector_id: resolvedInspectorId,
+        status: statusValue as InspectionStatusValue,
+        notes: getString(raw.notes) || "",
+        order_id: orderId || null,
         vendorIds: selectedVendorIds,
-      } as Partial<LegacyInspection>;
+      };
 
       // Use React Query mutations with proper error handling
-      if (inspection?.inspectionId) {
+      if (inspection?.id) {
         updateMutation.mutate(
-          { inspectionId: inspection.inspectionId, ...payload },
+          { inspectionId: inspection.id, ...payload },
           {
             onSuccess: () => {
               toast.success("Inspection updated successfully");
-              router.push(`/admin/inspections/${inspection.inspectionId}`);
+              router.push(`/admin/inspections/${inspection.id}`);
             },
             onError: (error) => {
               const errorMessage = error instanceof Error ? error.message : "Failed to update inspection";
@@ -232,11 +191,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     },
     [
       resolvedTypeIds,
-      resolvedClientId,
       resolvedInspectorId,
-      clientObj,
-      inspectorObj,
-      calculatedPrice,
       inspection,
       updateMutation,
       createMutation,
@@ -247,10 +202,11 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
   );
 
   // Format default values using formatters
-  const poolDefaultValue = useMemo(() => booleanToYesNo(inspection?.pool), [inspection]);
-  const storiesDefaultValue = useMemo(() => toString(inspection?.stories), [inspection]);
-  const garageDefaultValue = useMemo(() => toString(inspection?.garage), [inspection]);
-  const foundationDefaultValue = useMemo(() => toString(inspection?.foundation), [inspection]);
+  // Note: These fields don't exist in the database schema, keeping for UI only
+  const poolDefaultValue = "no";
+  const storiesDefaultValue = "1";
+  const garageDefaultValue = "None";
+  const foundationDefaultValue = "Slab";
   const handleClientCreate = useCallback(
     (client: { name: string; email: string }) => {
       const newClient = {
@@ -295,27 +251,18 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     [resolvedTypeIds],
   );
 
-  // Add vendor state immediately after other useState declarations
-
-  // After inspection is loaded, update selectedVendorIds if inspection?.vendorIds exists
-  useEffect(() => {
-    if (inspection && Array.isArray(inspection.vendorIds)) {
-      setSelectedVendorIds(inspection.vendorIds);
-    }
-  }, [inspection]);
-
   return (
     <AdminShell user={mockAdminUser}>
       <div className="space-y-4 w-full">
         <BackButton
-          href={inspection ? `/admin/inspections/${inspection.inspectionId}` : "/admin/inspections"}
+          href={inspection ? `/admin/inspections/${inspection.id}` : "/admin/inspections"}
           label={inspection ? "Back to Inspection" : "Back to Inspections"}
           variant="ghost"
         />
 
         <AdminPageHeader
           title={inspection ? "Edit Inspection" : "New Inspection"}
-          description={inspection ? `Update inspection ${inspection.inspectionId}` : "Create a new inspection appointment"}
+          description={inspection ? `Update inspection ${inspection.id}` : "Create a new inspection appointment"}
         />
 
         {/* Form */}
@@ -350,7 +297,13 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="sqft">Square Footage (optional)</Label>
-                        <Input id="sqft" name="sqft" type="number" placeholder="2400" defaultValue={inspection ? inspection.sqft : ""} />
+                        <Input
+                          id="sqft"
+                          name="sqft"
+                          type="number"
+                          placeholder="2400"
+                          defaultValue={inspection?.order?.property?.square_feet || orderProperty?.square_feet || ""}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="yearBuilt">Year Built (optional)</Label>
@@ -361,17 +314,22 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                           placeholder="1985"
                           min="1800"
                           max={new Date().getFullYear()}
-                          defaultValue={inspection ? inspection.yearBuilt : ""}
+                          defaultValue={inspection?.order?.property?.year_built || orderProperty?.year_built || ""}
                         />
                       </div>
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="propertyType">Property Type</Label>
-                        <Input id="propertyType" name="propertyType" placeholder="Single Family" defaultValue={inspection ? inspection.propertyType : ""} />
+                        <Input
+                          id="propertyType"
+                          name="propertyType"
+                          placeholder="Single Family"
+                          defaultValue={inspection?.order?.property?.property_type || orderProperty?.property_type || ""}
+                        />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="bedrooms">Bedrooms</Label>
+                        <Label htmlFor="bedrooms">Bedrooms (optional)</Label>
                         <Input
                           id="bedrooms"
                           name="bedrooms"
@@ -379,7 +337,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                           min="1"
                           step="1"
                           placeholder="4"
-                          defaultValue={inspection ? inspection.bedrooms : ""}
+                          defaultValue=""
                           onFocus={(event) => {
                             if (!event.currentTarget.value) {
                               event.currentTarget.value = "1";
@@ -390,7 +348,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="bathrooms">Bathrooms</Label>
+                        <Label htmlFor="bathrooms">Bathrooms (optional)</Label>
                         <Input
                           id="bathrooms"
                           name="bathrooms"
@@ -398,7 +356,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                           min="1"
                           step="0.5"
                           placeholder="2.5"
-                          defaultValue={inspection ? inspection.bathrooms : ""}
+                          defaultValue=""
                           onChange={(event) => {
                             const numeric = Number(event.currentTarget.value);
                             if (!Number.isNaN(numeric) && numeric > 4) {
@@ -562,25 +520,30 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                     </div>
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="date">Date</Label>
-                        <Input id="date" name="date" type="date" defaultValue={inspection ? inspection.date : ""} required />
+                        <Label htmlFor="date">Date (optional)</Label>
+                        <Input
+                          id="date"
+                          name="date"
+                          type="date"
+                          defaultValue={inspection?.order?.scheduled_date || linkedOrder?.scheduled_date || ""}
+                        />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="time">Time</Label>
-                        <Input id="time" name="time" type="time" defaultValue={inspection ? inspection.time : ""} required />
+                        <Label htmlFor="time">Time (optional)</Label>
+                        <Input id="time" name="time" type="time" defaultValue="" />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="status">Status</Label>
-                      <Select name="status" defaultValue={inspection ? inspection.status : ""}>
+                      <Select name="status" defaultValue={inspection?.status || "draft"}>
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="draft">Draft</SelectItem>
                           <SelectItem value="in_progress">In Progress</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="pending_report">Pending Report</SelectItem>
+                          <SelectItem value="submitted">Submitted</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -595,7 +558,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                         name="notes"
                         placeholder="Add any special instructions or notes..."
                         rows={4}
-                        defaultValue={inspection ? inspection.notes : ""}
+                        defaultValue={inspection?.notes || ""}
                       />
                     </div>
                   </CardContent>
@@ -620,7 +583,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                       )}
                     </Button>
                     <Button type="button" variant="outline" asChild>
-                      <Link href={inspection ? `/admin/inspections/${inspection.inspectionId}` : "/admin/inspections"}>Cancel</Link>
+                      <Link href={inspection ? `/admin/inspections/${inspection.id}` : "/admin/inspections"}>Cancel</Link>
                     </Button>
                   </>
                 }

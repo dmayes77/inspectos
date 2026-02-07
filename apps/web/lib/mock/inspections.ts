@@ -1,7 +1,32 @@
 import { generateReadableId } from "@/lib/id-generator";
 import { services, SERVICE_IDS } from "@/lib/mock/services";
 import { normalizeServiceIds } from "@/lib/utils/services";
-import type { LegacyInspection } from "@/types/inspection";
+
+// Legacy inspection type for mock data only
+interface LegacyInspection {
+  inspectionId: string;
+  address: string;
+  client: string;
+  clientId: string;
+  inspector: string;
+  inspectorId: string;
+  date: string;
+  time: string;
+  types: string[];
+  status: string;
+  price: number;
+  sqft?: number;
+  yearBuilt?: number;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  stories?: string;
+  foundation?: string;
+  garage?: string;
+  pool?: boolean;
+  notes?: string;
+}
+
 export const inspections: LegacyInspection[] = [
   {
     inspectionId: "G6P7-R8T9",
