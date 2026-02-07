@@ -134,12 +134,12 @@ export default function InspectionDetailPage() {
   };
 
   const isCompleted = inspection.status === "completed";
-  const scheduledDate = inspection.job?.scheduled_date || "";
-  const scheduledTime = inspection.job?.scheduled_time || "";
+  const scheduledDate = inspection.order?.scheduled_date || "";
+  const scheduledTime = ""; // Order doesn't have scheduled_time at top level
   const formattedDateTime = scheduledDate ? formatInspectionDateTime(scheduledDate, scheduledTime) : "Unscheduled";
-  const property = inspection.job?.property;
-  const client = inspection.job?.client;
-  const linkedOrderId = inspection.job?.id ?? null;
+  const property = inspection.order?.property;
+  const client = inspection.order?.client;
+  const linkedOrderId = inspection.order?.id ?? null;
   const clientEmail = client?.email ?? null;
   const inspectorName = inspection.inspector?.full_name || inspection.inspector?.email || "Unassigned";
   const address = property

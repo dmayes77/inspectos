@@ -8,9 +8,10 @@
  */
 export interface Inspection {
   id: string;
-  job_id: string | null;
+  /** @deprecated Use order_id instead - kept for backwards compatibility */
+  job_id?: string | null;
   tenant_id: string;
-  order_id?: string | null;
+  order_id: string | null;
   template_id: string | null;
   template_version: number;
   inspector_id: string | null;
@@ -41,6 +42,7 @@ export interface Inspection {
       avatar_url: string | null;
     } | null;
   } | null;
+  /** @deprecated Use order instead - kept for backwards compatibility */
   job?: {
     id: string;
     scheduled_date: string;
@@ -170,15 +172,13 @@ export interface LegacyInspection {
 export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspection> {
   return {
     id: legacy.inspectionId,
-    job_id: legacy.jobId || "",
+    order_id: legacy.jobId || null,
     inspector_id: legacy.inspectorId,
     status: legacy.status as InspectionStatusValue,
     notes: legacy.notes || null,
-    job: {
+    order: {
       id: legacy.jobId || "",
       scheduled_date: legacy.date,
-      scheduled_time: legacy.time,
-      duration_minutes: legacy.durationMinutes || 120,
       status: "scheduled",
       property: {
         id: "",
@@ -198,6 +198,7 @@ export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspe
         phone: null,
         company: null,
       },
+      inspector: null,
     },
     inspector: {
       id: legacy.inspectorId,

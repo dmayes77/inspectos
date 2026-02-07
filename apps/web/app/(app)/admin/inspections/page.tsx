@@ -57,7 +57,7 @@ function getStatusTriggerClasses(status: string) {
 }
 
 const getInspectionAddress = (inspection: Inspection) => {
-  const property = inspection.summary?.property ?? inspection.order?.property ?? inspection.job?.property;
+  const property = inspection.summary?.property ?? inspection.order?.property;
   if (property) {
     return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ");
   }
@@ -65,7 +65,7 @@ const getInspectionAddress = (inspection: Inspection) => {
 };
 
 const getInspectionClientName = (inspection: Inspection) => {
-  return inspection.summary?.client?.name ?? inspection.order?.client?.name ?? inspection.job?.client?.name ?? "Unknown client";
+  return inspection.summary?.client?.name ?? inspection.order?.client?.name ?? "Unknown client";
 };
 
 const getInspectionInspectorName = (inspection: Inspection) => {
@@ -73,8 +73,8 @@ const getInspectionInspectorName = (inspection: Inspection) => {
 };
 
 const getInspectionDateTime = (inspection: Inspection) => {
-  const scheduledDate = inspection.summary?.scheduled_date ?? inspection.order?.scheduled_date ?? inspection.schedule?.slot_date ?? inspection.job?.scheduled_date ?? "";
-  const scheduledTime = inspection.summary?.scheduled_time ?? inspection.schedule?.slot_start ?? inspection.job?.scheduled_time ?? "";
+  const scheduledDate = inspection.summary?.scheduled_date ?? inspection.order?.scheduled_date ?? inspection.schedule?.slot_date ?? "";
+  const scheduledTime = inspection.summary?.scheduled_time ?? inspection.schedule?.slot_start ?? "";
   return {
     dateLabel: scheduledDate ? formatDateShort(scheduledDate) : "Unscheduled",
     timeLabel: scheduledTime ? `at ${formatTime12(scheduledTime)}` : "",
@@ -86,8 +86,6 @@ const getInspectionServiceIds = (inspection: Inspection) => {
   if (Array.isArray(summaryServices) && summaryServices.length > 0) return summaryServices;
   const selectedTypeIds = inspection.selected_type_ids;
   if (Array.isArray(selectedTypeIds) && selectedTypeIds.length > 0) return selectedTypeIds;
-  const jobServiceIds = inspection.job?.selected_service_ids;
-  if (Array.isArray(jobServiceIds) && jobServiceIds.length > 0) return jobServiceIds;
   if (inspection.schedule?.service_id) return [inspection.schedule.service_id];
   return [];
 };
@@ -110,7 +108,7 @@ const columns = (
   {
     id: "address",
     accessorFn: (row) => {
-      const property = row.summary?.property ?? row.order?.property ?? row.job?.property;
+      const property = row.summary?.property ?? row.order?.property;
       return property
         ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
         : "";
@@ -277,11 +275,11 @@ export default function InspectionsPage() {
     if (!mobileQuery.trim()) return true;
     const query = mobileQuery.toLowerCase();
     // Defensive: always treat missing property/client as empty string
-    const property = inspection.summary?.property ?? inspection.order?.property ?? inspection.job?.property;
+    const property = inspection.summary?.property ?? inspection.order?.property;
     const address = property
       ? [property.address_line1, property.address_line2, property.city, property.state, property.zip_code].filter(Boolean).join(", ")
       : "";
-    const clientName = inspection.summary?.client?.name ?? inspection.order?.client?.name ?? inspection.job?.client?.name ?? "";
+    const clientName = inspection.summary?.client?.name ?? inspection.order?.client?.name ?? "";
     return address.toLowerCase().includes(query) || clientName.toLowerCase().includes(query);
   });
 

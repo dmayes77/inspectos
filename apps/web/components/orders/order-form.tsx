@@ -76,7 +76,7 @@ function formatStatusLabel(status: string) {
 }
 
 function getInspectionPropertyAddress(inspection: Inspection) {
-  const property = inspection.summary?.property ?? inspection.job?.property ?? null;
+  const property = inspection.summary?.property ?? inspection.order?.property ?? null;
   if (!property) return null;
   const cityState = [property.city, property.state].filter(Boolean).join(", ");
   const postal = property.zip_code ? `${property.zip_code}` : "";
