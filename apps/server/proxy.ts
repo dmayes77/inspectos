@@ -14,7 +14,8 @@ export function proxy(request: NextRequest) {
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'https://dev.inspectos.co', // Development deployment
-    process.env.NEXT_PUBLIC_WEB_URL, // Production web app URL
+    'https://inspectos.co', // Production deployment
+    process.env.NEXT_PUBLIC_WEB_URL, // Dynamic web app URL (prod or dev)
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null, // Vercel preview deployments
   ].filter(Boolean);
 
