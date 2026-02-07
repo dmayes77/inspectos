@@ -28,6 +28,19 @@ export interface Inspection {
   schedule?: InspectionSchedule | null;
   summary?: InspectionSummary | null;
   // Joined relations
+  order?: {
+    id: string;
+    scheduled_date: string | null;
+    status: string;
+    property?: Property | null;
+    client?: Client | null;
+    inspector?: {
+      id: string;
+      full_name: string | null;
+      email: string;
+      avatar_url: string | null;
+    } | null;
+  } | null;
   job?: {
     id: string;
     scheduled_date: string;
