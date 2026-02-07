@@ -3,6 +3,13 @@
  * Handles real estate agent CRUD operations
  */
 
+import { shouldUseExternalApi } from "@/lib/api/feature-flags";
+import { createApiClient } from "@/lib/api/client";
+
+function getTenantSlug(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+}
+
 export type AgentStatus = "active" | "inactive";
 export type ReportFormat = "pdf" | "html" | "both";
 
@@ -110,95 +117,135 @@ export interface AgentFilters {
 }
 
 export async function fetchAgents(filters?: AgentFilters): Promise<Agent[]> {
-  const params = new URLSearchParams();
+  if (shouldUseExternalApi("agents")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const params = new URLSearchParams();
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.agency_id) params.append("agency_id", filters.agency_id);
+    if (filters?.search) params.append("search", filters.search);
+    const endpoint = params.toString() ? `/admin/agents?${params}` : "/admin/agents";
+    return await apiClient.get<Agent[]>(endpoint);
+  } else {
+    // Use local Next.js API route
+    const params = new URLSearchParams();
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.agency_id) params.append("agency_id", filters.agency_id);
+    if (filters?.search) params.append("search", filters.search);
+    const url = params.toString() ? `/api/admin/agents?${params}` : "/api/admin/agents";
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (filters?.status) params.append("status", filters.status);
-  if (filters?.agency_id) params.append("agency_id", filters.agency_id);
-  if (filters?.search) params.append("search", filters.search);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch agents");
+    }
 
-  const url = params.toString() ? `/api/admin/agents?${params}` : "/api/admin/agents";
-  const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to fetch agents");
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function fetchAgentById(id: string): Promise<Agent> {
-  const response = await fetch(`/api/admin/agents/${id}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  if (shouldUseExternalApi("agents")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Agent>(`/admin/agents/${id}`);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/agents/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to fetch agent");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch agent");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function createAgent(input: CreateAgentInput): Promise<Agent> {
-  const response = await fetch(`/api/admin/agents`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
+  if (shouldUseExternalApi("agents")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Agent>("/admin/agents", input);
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/agents`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to create agent");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to create agent");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateAgent(input: UpdateAgentInput): Promise<Agent> {
-  const { id, ...data } = input;
-  const response = await fetch(`/api/admin/agents/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
+  if (shouldUseExternalApi("agents")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const { id, ...data } = input;
+    return await apiClient.put<Agent>(`/admin/agents/${id}`, data);
+  } else {
+    // Use local Next.js API route
+    const { id, ...data } = input;
+    const response = await fetch(`/api/admin/agents/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to update agent");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to update agent");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteAgent(id: string): Promise<boolean> {
-  const response = await fetch(`/api/admin/agents/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  if (shouldUseExternalApi("agents")) {
+    // Use external central API
+    const apiClient = createApiClient(getTenantSlug());
+    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/agents/${id}`);
+    return result.deleted ?? true;
+  } else {
+    // Use local Next.js API route
+    const response = await fetch(`/api/admin/agents/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to delete agent");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to delete agent");
+    }
+
+    return true;
   }
-
-  return true;
 }
 
 export async function sendPortalLink(agentId: string): Promise<{ success: boolean; expires_at: string }> {
