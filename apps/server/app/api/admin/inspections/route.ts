@@ -76,6 +76,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { data: inspections, error } = await query;
+
+    console.log('[DEBUG] Inspections query result:', {
+      hasData: !!inspections,
+      dataCount: inspections?.length,
+      hasError: !!error,
+      error: error,
+      firstInspection: inspections?.[0]
+    });
+
     if (error) {
       return serverError('Failed to fetch inspections', error);
     }
