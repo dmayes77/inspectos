@@ -70,7 +70,7 @@ export interface TemplateSection {
 
 export interface InspectionWithData {
   id: string;
-  job_id: string;
+  order_id: string | null;
   tenant_id: string;
   template_id: string;
   template_version: number;
@@ -84,10 +84,10 @@ export interface InspectionWithData {
   notes: string | null;
   created_at: string;
   updated_at: string;
-  job?: {
+  order?: {
     id: string;
-    scheduled_date: string;
-    scheduled_time: string | null;
+    scheduled_date: string | null;
+    status: string;
     property?: {
       id: string;
       address_line1: string;
