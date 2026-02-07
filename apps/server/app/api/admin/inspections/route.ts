@@ -44,28 +44,7 @@ export async function GET(request: NextRequest) {
         order:orders!inspections_order_id_fkey(
           id,
           scheduled_date,
-          status,
-          property:properties(
-            id,
-            address_line1,
-            address_line2,
-            city,
-            state,
-            zip_code
-          ),
-          client:clients(
-            id,
-            name,
-            email,
-            phone,
-            company
-          ),
-          inspector:profiles(
-            id,
-            full_name,
-            email,
-            avatar_url
-          )
+          status
         )
       `)
       .eq('tenant_id', tenant.id)
