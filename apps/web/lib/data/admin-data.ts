@@ -1,4 +1,4 @@
-import type { Inspection, LegacyInspection } from "@/types/inspection";
+import type { Inspection } from "@/types/inspection";
 import type { Client } from "@/hooks/use-clients";
 import type { TeamMember } from "@/hooks/use-team";
 import type { Service } from "@/hooks/use-services";
@@ -38,11 +38,11 @@ export async function fetchInspections(): Promise<Inspection[]> {
   }
 }
 
-export async function fetchInspectionById(inspectionId: string): Promise<LegacyInspection | null> {
+export async function fetchInspectionById(inspectionId: string): Promise<Inspection | null> {
   if (shouldUseExternalApi("inspections")) {
     try {
       const apiClient = createApiClient(getTenantSlug());
-      return await apiClient.get<LegacyInspection>(`/admin/inspections/${inspectionId}`);
+      return await apiClient.get<Inspection>(`/admin/inspections/${inspectionId}`);
     } catch {
       return null;
     }
@@ -50,7 +50,7 @@ export async function fetchInspectionById(inspectionId: string): Promise<LegacyI
     const response = await fetch(`/api/admin/inspections/${inspectionId}`);
     if (!response.ok) return null;
     const result = await response.json();
-    return (result.data ?? result) as LegacyInspection;
+    return (result.data ?? result) as Inspection;
   }
 }
 

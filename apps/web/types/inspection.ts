@@ -8,8 +8,6 @@
  */
 export interface Inspection {
   id: string;
-  /** @deprecated Use order_id instead - kept for backwards compatibility */
-  job_id?: string | null;
   tenant_id: string;
   order_id: string | null;
   template_id: string | null;
@@ -42,17 +40,6 @@ export interface Inspection {
       avatar_url: string | null;
     } | null;
   } | null;
-  /** @deprecated Use order instead - kept for backwards compatibility */
-  job?: {
-    id: string;
-    scheduled_date: string;
-    scheduled_time: string | null;
-    duration_minutes: number;
-    status: string;
-    selected_service_ids?: string[] | null;
-    property?: Property;
-    client?: Client | null;
-  };
   template?: {
     id: string;
     name: string;
@@ -134,80 +121,6 @@ export const InspectionStatus = {
 } as const;
 
 export type InspectionStatusValue = (typeof InspectionStatus)[keyof typeof InspectionStatus];
-
-/**
- * Legacy type for backwards compatibility with mock data
- * @deprecated Use Inspection type instead
- */
-export interface LegacyInspection {
-  inspectionId: string;
-  address: string;
-  client: string;
-  clientId: string;
-  jobId?: string;
-  inspector: string;
-  inspectorId: string;
-  date: string;
-  time: string;
-  types: string[];
-  status: string;
-  price: number;
-  sqft?: number;
-  yearBuilt?: number;
-  propertyType?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  stories?: string;
-  foundation?: string;
-  garage?: string;
-  pool?: boolean;
-  notes?: string;
-  durationMinutes?: number;
-  vendorIds?: string[];
-}
-
-/**
- * Convert legacy inspection to new format
- */
-export function convertLegacyInspection(legacy: LegacyInspection): Partial<Inspection> {
-  return {
-    id: legacy.inspectionId,
-    order_id: legacy.jobId || null,
-    inspector_id: legacy.inspectorId,
-    status: legacy.status as InspectionStatusValue,
-    notes: legacy.notes || null,
-    order: {
-      id: legacy.jobId || "",
-      scheduled_date: legacy.date,
-      status: "scheduled",
-      property: {
-        id: "",
-        address_line1: legacy.address,
-        address_line2: null,
-        city: "",
-        state: "",
-        zip_code: "",
-        property_type: (legacy.propertyType as Property["property_type"]) || "single-family",
-        year_built: legacy.yearBuilt || null,
-        square_feet: legacy.sqft || null,
-      },
-      client: {
-        id: legacy.clientId,
-        name: legacy.client,
-        email: null,
-        phone: null,
-        company: null,
-      },
-      inspector: null,
-    },
-    inspector: {
-      id: legacy.inspectorId,
-      full_name: legacy.inspector,
-      email: "",
-      avatar_url: null,
-    },
-  };
-}
 
 /**
  * Format property address for display

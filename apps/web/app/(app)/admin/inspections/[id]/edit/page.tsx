@@ -29,7 +29,7 @@ import { booleanToYesNo, yesNoToBoolean, toString, toNumber } from "@/lib/utils/
 import { inspectionSchema } from "@/lib/validations/inspection";
 import { toast } from "sonner";
 import type { ServiceType } from "@/types/service";
-import type { LegacyInspection } from "@/types/inspection";
+import type { Inspection } from "@/types/inspection";
 import { Loader2, Save } from "lucide-react";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
@@ -72,7 +72,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
 
   // Get inspection by ID
   const inspectionId = typeof params.id === "string" ? params.id : undefined;
-  const { data: inspection } = useGet<LegacyInspection | null>(inspectionId ? `inspection-${inspectionId}` : "inspection-new", async () => {
+  const { data: inspection } = useGet<Inspection | null>(inspectionId ? `inspection-${inspectionId}` : "inspection-new", async () => {
     if (!inspectionId || isNew) return null;
     return fetchInspectionById(inspectionId);
   });
