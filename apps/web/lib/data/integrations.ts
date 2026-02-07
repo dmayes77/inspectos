@@ -1,3 +1,14 @@
+import { shouldUseExternalApi } from "@/lib/api/feature-flags";
+import { createApiClient } from "@/lib/api/client";
+
+function getTenantSlug(): string {
+  if (typeof window !== "undefined") {
+    const pathParts = window.location.pathname.split("/");
+    return pathParts[1] || "default";
+  }
+  return "default";
+}
+
 export type IntegrationType = 'email' | 'sms' | 'payments' | 'accounting' | 'payroll' | 'calendar';
 export type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'pending';
 
@@ -24,11 +35,16 @@ export type IntegrationConfig = {
 };
 
 export async function fetchIntegrations(): Promise<Integration[]> {
-  const response = await fetch("/api/admin/integrations");
-  if (!response.ok) {
-    throw new Error("Failed to load integrations.");
+  if (shouldUseExternalApi("integrations")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Integration[]>("/admin/integrations");
+  } else {
+    const response = await fetch("/api/admin/integrations");
+    if (!response.ok) {
+      throw new Error("Failed to load integrations.");
+    }
+    return response.json();
   }
-  return response.json();
 }
 
 export async function connectIntegration(
@@ -36,25 +52,35 @@ export async function connectIntegration(
   provider: string,
   config?: Record<string, unknown>
 ): Promise<Integration> {
-  const response = await fetch("/api/admin/integrations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ type, provider, config }),
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || "Failed to connect integration.");
+  if (shouldUseExternalApi("integrations")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Integration>("/admin/integrations", { type, provider, config });
+  } else {
+    const response = await fetch("/api/admin/integrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, provider, config }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || "Failed to connect integration.");
+    }
+    return response.json();
   }
-  return response.json();
 }
 
 export async function disconnectIntegration(id: string): Promise<void> {
-  const response = await fetch(`/api/admin/integrations/${id}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || "Failed to disconnect integration.");
+  if (shouldUseExternalApi("integrations")) {
+    const apiClient = createApiClient(getTenantSlug());
+    await apiClient.delete(`/admin/integrations/${id}`);
+  } else {
+    const response = await fetch(`/api/admin/integrations/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || "Failed to disconnect integration.");
+    }
   }
 }
 
@@ -62,14 +88,19 @@ export async function updateIntegrationConfig(
   id: string,
   config: Record<string, unknown>
 ): Promise<Integration> {
-  const response = await fetch(`/api/admin/integrations/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ config }),
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || "Failed to update integration.");
+  if (shouldUseExternalApi("integrations")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.put<Integration>(`/admin/integrations/${id}`, { config });
+  } else {
+    const response = await fetch(`/api/admin/integrations/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || "Failed to update integration.");
+    }
+    return response.json();
   }
-  return response.json();
 }
