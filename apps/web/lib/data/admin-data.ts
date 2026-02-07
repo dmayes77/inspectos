@@ -29,17 +29,21 @@ export async function fetchInspections(): Promise<Inspection[]> {
   } else {
     // Use local Next.js API route
     const response = await fetch("/api/admin/inspections");
+    console.log('[fetchInspections] API response status:', response.status, response.ok);
     if (!response.ok) {
       throw new Error("Failed to load inspections.");
     }
     const result = await response.json();
     const normalized = Array.isArray(result) ? result : Array.isArray(result?.data) ? (result.data as Inspection[]) : [];
-    console.log("[fetchInspections] received", {
+    console.log("[fetchInspections] API result:", {
       ok: response.ok,
       status: response.status,
       length: normalized.length,
       rawType: Array.isArray(result) ? "array" : typeof result,
       tenantId: (result?.tenantId as string) ?? "unknown",
+      hasData: !!result?.data,
+      dataLength: result?.data?.length,
+      rawResult: result
     });
     return normalized;
   }

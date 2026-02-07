@@ -15,6 +15,7 @@ import { useServices, useDeleteService } from "@/hooks/use-services";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 type FilterValue = "all" | "service" | "addon" | "package";
 
@@ -56,6 +57,11 @@ export default function ServicesAdminPage() {
     const addOns = allServices.filter((service) => service.category === "addon" && !service.isPackage).length;
     return { total, services, packages, addOns };
   }, [allServices]);
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return <AdminPageSkeleton showStats showTable listItems={10} />;
+  }
 
   const hasNoServices = allServices.length === 0 && !isLoading;
   const hasNoMatches = filteredByType.length === 0 && allServices.length > 0 && !isLoading;

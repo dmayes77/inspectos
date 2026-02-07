@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
 import { createServiceMap, getServiceNameById } from "@/lib/utils/services";
 import { PageHeader } from "@/components/layout/page-header";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 // Data is loaded from `useInspections` hook so the UI can be built while the API/auth are implemented.
 // Keep mock data in the hook as a fallback when the API is not available.
@@ -210,8 +210,21 @@ const columns = (
 export default function InspectionsPage() {
   const { data, isLoading, isError, error } = useInspections();
   const { data: services = [] } = useServices();
+
+  console.log('[InspectionsPage] Hook data:', {
+    isLoading,
+    isError,
+    error: error instanceof Error ? error.message : error,
+    dataType: typeof data,
+    isArray: Array.isArray(data),
+    itemsCount: Array.isArray(data) ? data.length : 'not array',
+    firstItem: Array.isArray(data) ? data[0] : null,
+    rawData: data
+  });
+
   const serviceMap = useMemo(() => createServiceMap(services), [services]) as Map<string, { serviceId: string; name: string; price: number }>;
   const updateInspection = useUpdateInspection();
+
   // Always show all inspections, sorted by created_at
   const inspections = useMemo(() => {
     if (!data) return [] as Inspection[];
@@ -271,6 +284,20 @@ export default function InspectionsPage() {
     window.localStorage.setItem(stateStorageKey, JSON.stringify({ statusFilter, query: mobileQuery }));
   }, [statusFilter, mobileQuery]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    console.log("[InspectionsPage] render data", {
+      count: inspections.length,
+      first: inspections[0]?.id ?? null,
+      tenantId: (data as unknown as { tenantId?: string })?.tenantId ?? null,
+    });
+  }, [isLoading, inspections, data]);
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return <AdminPageSkeleton showTable listItems={10} />;
+  }
+
   const filteredMobile = inspections.filter((inspection) => {
     const matchesStatus = statusFilter === "all" || inspection.status === statusFilter;
     if (!matchesStatus) return false;
@@ -286,15 +313,6 @@ export default function InspectionsPage() {
   });
 
   const statusOptions = inspectionStatusOptions;
-
-  useEffect(() => {
-    if (isLoading) return;
-    console.log("[InspectionsPage] render data", {
-      count: inspections.length,
-      first: inspections[0]?.id ?? null,
-      tenantId: (data as unknown as { tenantId?: string })?.tenantId ?? null,
-    });
-  }, [isLoading, inspections, data]);
 
   const handleSaveView = () => {
     const name = window.prompt("Save view as:");

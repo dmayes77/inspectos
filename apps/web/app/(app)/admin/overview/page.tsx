@@ -63,8 +63,77 @@ const getServiceSummary = (order: { inspection?: { services?: Array<{ name: stri
 };
 
 export default function OverviewPage() {
-  const { data: orders = [], isLoading: ordersLoading } = useOrders();
-  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: ordersData, isLoading: ordersLoading } = useOrders();
+  const { data: clientsData, isLoading: clientsLoading } = useClients();
+
+  const orders = useMemo(() => ordersData ?? [], [ordersData]);
+  const clients = useMemo(() => clientsData ?? [], [clientsData]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayOrders = orders.filter((order) => order.scheduled_date === today);
+
+  const stats = useMemo(() => {
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const inspectionsThisWeek = orders.filter((order) => {
+      if (!order.scheduled_date) return false;
+      const date = new Date(order.scheduled_date);
+      return date >= weekAgo;
+    }).length;
+
+    const revenueThisWeek = orders
+      .filter((order) => order.scheduled_date && new Date(order.scheduled_date) >= weekAgo)
+      .reduce((sum, order) => sum + order.total, 0);
+
+    const outstandingOrders = orders.filter((order) => order.payment_status === "unpaid");
+    const outstandingTotal = outstandingOrders.reduce((sum, order) => sum + order.total, 0);
+    const outstandingCount = outstandingOrders.length;
+
+    return [
+      {
+        title: "Inspections This Week",
+        value: inspectionsThisWeek.toString(),
+        change: ordersLoading ? "—" : "Updated",
+        changeType: "positive" as const,
+        icon: ClipboardList,
+      },
+      {
+        title: "Revenue This Week",
+        value: `$${revenueThisWeek.toLocaleString()}`,
+        change: ordersLoading ? "—" : "Updated",
+        changeType: "positive" as const,
+        icon: DollarSign,
+      },
+      {
+        title: "Active Clients",
+        value: clients.length.toString(),
+        change: ordersLoading ? "—" : "Updated",
+        changeType: "positive" as const,
+        icon: Users,
+      },
+      {
+        title: "Outstanding Invoices",
+        value: `$${outstandingTotal.toLocaleString()}`,
+        change: outstandingCount ? `${outstandingCount} unpaid` : "All caught up",
+        changeType: "positive" as const,
+        icon: TrendingUp,
+      },
+    ];
+  }, [clients, orders, ordersLoading]);
+
+  const recentActivity = useMemo(() => {
+    return orders
+      .slice()
+      .sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1))
+      .slice(0, 4)
+      .map((order) => ({
+        id: order.id,
+        action: `Order ${formatStatusLabel(order.status)}`,
+        details: `${getOrderAddress(order)} • ${order.client?.name ?? "No client"}`,
+        time: new Date(order.updated_at).toLocaleString(),
+      }));
+  }, [orders]);
 
   // Show loading skeleton while data is being fetched
   if (ordersLoading || clientsLoading) {
@@ -158,72 +227,6 @@ export default function OverviewPage() {
       </AdminShell>
     );
   }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((order) => order.scheduled_date === today);
-
-  const stats = useMemo(() => {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
-    const inspectionsThisWeek = orders.filter((order) => {
-      if (!order.scheduled_date) return false;
-      const date = new Date(order.scheduled_date);
-      return date >= weekAgo;
-    }).length;
-
-    const revenueThisWeek = orders
-      .filter((order) => order.scheduled_date && new Date(order.scheduled_date) >= weekAgo)
-      .reduce((sum, order) => sum + order.total, 0);
-
-    const outstandingOrders = orders.filter((order) => order.payment_status === "unpaid");
-    const outstandingTotal = outstandingOrders.reduce((sum, order) => sum + order.total, 0);
-    const outstandingCount = outstandingOrders.length;
-
-    return [
-      {
-        title: "Inspections This Week",
-        value: inspectionsThisWeek.toString(),
-        change: ordersLoading ? "—" : "Updated",
-        changeType: "positive" as const,
-        icon: ClipboardList,
-      },
-      {
-        title: "Revenue This Week",
-        value: `$${revenueThisWeek.toLocaleString()}`,
-        change: ordersLoading ? "—" : "Updated",
-        changeType: "positive" as const,
-        icon: DollarSign,
-      },
-      {
-        title: "Active Clients",
-        value: clients.length.toString(),
-        change: ordersLoading ? "—" : "Updated",
-        changeType: "positive" as const,
-        icon: Users,
-      },
-      {
-        title: "Outstanding Invoices",
-        value: `$${outstandingTotal.toLocaleString()}`,
-        change: outstandingCount ? `${outstandingCount} unpaid` : "All caught up",
-        changeType: "positive" as const,
-        icon: TrendingUp,
-      },
-    ];
-  }, [clients.length, orders, ordersLoading]);
-
-  const recentActivity = useMemo(() => {
-    return orders
-      .slice()
-      .sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1))
-      .slice(0, 4)
-      .map((order) => ({
-        id: order.id,
-        action: `Order ${formatStatusLabel(order.status)}`,
-        details: `${getOrderAddress(order)} • ${order.client?.name ?? "No client"}`,
-        time: new Date(order.updated_at).toLocaleString(),
-      }));
-  }, [orders]);
 
   return (
     <AdminShell user={mockAdminUser}>

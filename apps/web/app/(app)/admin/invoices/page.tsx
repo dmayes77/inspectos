@@ -23,12 +23,34 @@ import {
   invoiceStatusOptions,
   invoiceTableColumns,
 } from "@/components/invoices/invoice-table-columns";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 export default function InvoicesPage() {
   const { data: invoices = [], isLoading, isError } = useInvoices();
   const { data: orders = [] } = useOrders();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((invoice) => {
+      const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
+      if (!matchesStatus) return false;
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      const clientName = invoice.clientName?.toLowerCase() ?? "";
+      return (
+        invoice.invoiceId.toLowerCase().includes(query) ||
+        invoice.invoiceNumber?.toLowerCase().includes(query) ||
+        clientName.includes(query)
+      );
+    });
+  }, [invoices, searchQuery, statusFilter]);
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return <AdminPageSkeleton showStats showTable listItems={10} />;
+  }
+
   const hasInvoices = invoices.length > 0;
   const totals = invoices.reduce(
     (acc, invoice) => {
@@ -53,20 +75,6 @@ export default function InvoicesPage() {
   const outstandingTotal = hasInvoices ? totals.outstanding : orderTotals.outstanding;
   const paidTotal = hasInvoices ? totals.paid : orderTotals.paid;
   const overdueTotal = hasInvoices ? totals.overdue : 0;
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter((invoice) => {
-      const matchesStatus = statusFilter === "all" || invoice.status === statusFilter;
-      if (!matchesStatus) return false;
-      if (!searchQuery.trim()) return true;
-      const query = searchQuery.toLowerCase();
-      const clientName = invoice.clientName?.toLowerCase() ?? "";
-      return (
-        invoice.invoiceId.toLowerCase().includes(query) ||
-        invoice.invoiceNumber?.toLowerCase().includes(query) ||
-        clientName.includes(query)
-      );
-    });
-  }, [invoices, searchQuery, statusFilter]);
 
   const emptyState = (
     <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">

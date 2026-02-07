@@ -24,7 +24,6 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({
-  title,
   showBackButton = false,
   onBack,
   headerActions,
@@ -40,6 +39,7 @@ export function AdminHeader({
   const [now, setNow] = useState<Date>(() => new Date());
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
@@ -73,7 +73,7 @@ export function AdminHeader({
             <ChevronLeft className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-[0.875rem] font-medium text-muted-foreground tabular-nums" suppressHydrationWarning>
+        <h1 className="text-sm font-medium text-muted-foreground tabular-nums" suppressHydrationWarning>
           {mounted ? timeLabel : "Loading time..."}
         </h1>
       </div>

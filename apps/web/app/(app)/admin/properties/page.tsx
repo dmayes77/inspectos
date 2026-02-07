@@ -17,10 +17,11 @@ import { propertiesTableColumns } from "@/components/properties/properties-table
 import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
 import { PROPERTY_TYPE_FILTER_OPTIONS } from "@/lib/constants/property-options";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 export default function PropertiesPage() {
   const { data, isLoading, isError } = useProperties();
-  const properties = data ?? [];
+  const properties = useMemo(() => data ?? [], [data]);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
@@ -45,6 +46,11 @@ export default function PropertiesPage() {
     const manufactured = properties.filter((p) => p.property_type === "manufactured").length;
     return { singleFamily, condoTownhome, commercial, multiFamily, manufactured, total: properties.length };
   }, [properties]);
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return <AdminPageSkeleton showStats showTable listItems={10} />;
+  }
 
   return (
     <AdminShell user={mockAdminUser}>

@@ -18,6 +18,7 @@ import { can } from "@/lib/admin/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CONTACT_TYPE_FILTER_OPTIONS } from "@/lib/constants/contact-options";
 import { contactsTableColumns, getContactTypeBadge } from "@/components/contacts/contacts-table-columns";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 function ClientsPageContent() {
   const { data: clientList = [] as Client[], isLoading } = useClients();
@@ -31,9 +32,13 @@ function ClientsPageContent() {
     const tab = searchParams.get("tab");
     return tab === "leads" ? "leads" : "clients";
   }, [searchParams]);
-  const formatStage = (stage: string) => stage.replace(/_/g, " ").replace(/\b\w/g, (match) => match.toUpperCase());
-
   const contactClients = useMemo(() => clientList.filter((client: Client) => client.type !== "Real Estate Agent"), [clientList]);
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading || leadsLoading) {
+    return <AdminPageSkeleton showTable listItems={10} />;
+  }
+  const formatStage = (stage: string) => stage.replace(/_/g, " ").replace(/\b\w/g, (match) => match.toUpperCase());
 
   const filteredMobile = contactClients.filter((client: Client) => {
     const matchesType = typeFilter === "all" || client.type === typeFilter;

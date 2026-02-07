@@ -33,14 +33,23 @@ export async function fetchScheduleItems(from?: string, to?: string): Promise<Sc
     if (from) params.append("from", from);
     if (to) params.append("to", to);
     const endpoint = params.toString() ? `/admin/schedule?${params}` : "/admin/schedule";
-    return await apiClient.get<ScheduleItem[]>(endpoint);
+    const data = await apiClient.get<ScheduleItem[]>(endpoint);
+    console.log('[fetchScheduleItems] External API response:', data);
+    return data;
   } else {
     // Use local Next.js API route
     const response = await fetch("/api/admin/schedule");
+    console.log('[fetchScheduleItems] API response status:', response.status, response.ok);
     if (!response.ok) {
       throw new Error("Failed to load schedule.");
     }
     const result = await response.json();
+    console.log('[fetchScheduleItems] API result:', {
+      isArray: Array.isArray(result),
+      hasData: !!result.data,
+      resultLength: Array.isArray(result) ? result.length : result.data?.length,
+      rawResult: result
+    });
     return Array.isArray(result) ? result : (result.data ?? []);
   }
 }

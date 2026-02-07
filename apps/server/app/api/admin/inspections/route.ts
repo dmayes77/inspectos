@@ -40,32 +40,33 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('inspections')
       .select(`
-        id,
-        job_id,
-        tenant_id,
-        template_id,
-        template_version,
-        inspector_id,
-        status,
-        started_at,
-        completed_at,
-        weather_conditions,
-        temperature,
-        present_parties,
-        notes,
-        created_at,
-        updated_at,
-        job:jobs(
+        *,
+        order:orders(
           id,
           scheduled_date,
-          scheduled_time,
-          duration_minutes,
           status,
-          selected_service_ids,
-          property:properties(address_line1, address_line2, city, state, zip_code),
-          client:clients(id, name, email, phone, company)
-        ),
-        inspector:profiles(id, full_name, email, avatar_url)
+          property:properties(
+            id,
+            address_line1,
+            address_line2,
+            city,
+            state,
+            zip_code
+          ),
+          client:clients(
+            id,
+            name,
+            email,
+            phone,
+            company
+          ),
+          inspector:profiles!orders_inspector_id_fkey(
+            id,
+            full_name,
+            email,
+            avatar_url
+          )
+        )
       `)
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
@@ -103,21 +104,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       tenant_slug,
-      job_id,
+      order_id,
+      order_schedule_id,
       template_id,
       template_version,
-      inspector_id,
       status,
       started_at,
       completed_at,
       weather_conditions,
       temperature,
       present_parties,
-      notes
+      notes,
+      selected_type_ids
     } = body;
 
-    if (!job_id || !template_id || !inspector_id) {
-      return badRequest('Missing required fields: job_id, template_id, inspector_id');
+    if (!order_id || !template_id) {
+      return badRequest('Missing required fields: order_id, template_id');
     }
 
     const supabase = createUserClient(accessToken);
@@ -130,17 +132,18 @@ export async function POST(request: NextRequest) {
       .from('inspections')
       .insert({
         tenant_id: tenant.id,
-        job_id,
+        order_id,
+        order_schedule_id: order_schedule_id || null,
         template_id,
         template_version: template_version || 1,
-        inspector_id,
         status: status || 'draft',
         started_at: started_at || null,
         completed_at: completed_at || null,
         weather_conditions: weather_conditions || null,
         temperature: temperature || null,
         present_parties: present_parties || null,
-        notes: notes || null
+        notes: notes || null,
+        selected_type_ids: selected_type_ids || []
       })
       .select('*')
       .single();

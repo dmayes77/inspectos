@@ -17,6 +17,7 @@ import { mockAdminUser } from "@/lib/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils";
 import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 const orderStatusOptions = [
   { value: "all", label: "All Orders" },
@@ -203,11 +204,10 @@ const columns: ColumnDef<Order>[] = [
 
 export default function OrdersPage() {
   const { data, isLoading, isError } = useOrders();
-  const orders = data ?? [];
+  const orders = useMemo(() => data ?? [], [data]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const userRole = mockAdminUser.role;
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -234,6 +234,12 @@ export default function OrdersPage() {
     const totalRevenue = orders.filter((o) => o.payment_status === "paid").reduce((sum, o) => sum + o.total, 0);
     return { pending, scheduled, inProgress, unpaid, completed, totalRevenue };
   }, [orders]);
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return <AdminPageSkeleton showTable listItems={10} />;
+  }
+  const userRole = mockAdminUser.role;
 
   return (
     <AdminShell user={mockAdminUser}>

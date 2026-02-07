@@ -9,13 +9,24 @@ import { CalendarDays, Plus } from "lucide-react";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { useSchedule } from "@/hooks/use-schedule";
 import { Badge } from "@/components/ui/badge";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { formatTime12 } from "@/lib/utils/dates";
 
 export default function SchedulePage() {
-  const { data: scheduleItems = [], isLoading } = useSchedule();
+  const { data: scheduleItems = [], isLoading, isError, error } = useSchedule();
+
+  console.log('[SchedulePage] Hook data:', {
+    isLoading,
+    isError,
+    error: error instanceof Error ? error.message : error,
+    itemsCount: scheduleItems.length,
+    firstItem: scheduleItems[0],
+    rawData: scheduleItems
+  });
+
   const initialDate = scheduleItems[0]?.date ?? new Date().toISOString().slice(0, 10);
   const [currentDate, setCurrentDate] = useState(() => new Date(`${initialDate}T00:00:00`));
   const [activeView, setActiveView] = useState<"month" | "week" | "day">("month");
@@ -111,12 +122,10 @@ export default function SchedulePage() {
     }
     return reference.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   };
+
+  // Show loading skeleton while data is being fetched
   if (isLoading) {
-    return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading schedule...</div>
-      </AdminShell>
-    );
+    return <AdminPageSkeleton listItems={8} />;
   }
 
   return (

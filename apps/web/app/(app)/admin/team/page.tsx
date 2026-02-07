@@ -14,6 +14,7 @@ import { useTeamMembers } from "@/hooks/use-team";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { can } from "@/lib/admin/permissions";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 function formatShortMemberId(id?: string | null) {
   if (!id) return "TM-0000";
@@ -23,11 +24,17 @@ function formatShortMemberId(id?: string | null) {
 
 export default function TeamPage() {
   const { data: teamMembers = [], isLoading } = useTeamMembers();
-  const inspectors = teamMembers.filter((m) => m.role === "INSPECTOR");
-  const activeMembers = teamMembers.filter((m) => m.status === "active");
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const userRole = mockAdminUser.role;
+
+  const inspectors = teamMembers.filter((m) => m.role === "INSPECTOR");
+  const activeMembers = teamMembers.filter((m) => m.status === "active");
+
+  // Show loading skeleton while data is being fetched
+  if (isLoading) {
+    return <AdminPageSkeleton listItems={8} />;
+  }
 
   const filteredMembers = teamMembers.filter((member) => {
     const matchesRole = roleFilter === "all" || member.role === roleFilter;

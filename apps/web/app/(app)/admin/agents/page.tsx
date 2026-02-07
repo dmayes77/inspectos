@@ -18,6 +18,7 @@ import { useAgents, type Agent } from "@/hooks/use-agents";
 import { mockAdminUser } from "@/lib/constants/mock-users";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CompanyLogo } from "@/components/shared/company-logo";
+import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 type AgencyRow = { original: Agency };
 type AgentRow = { original: Agent };
@@ -178,8 +179,8 @@ const agentColumns: ColumnDef<Agent>[] = [
 ];
 
 function AgentsPageContent() {
-  const { data: agencies = [] } = useAgencies();
-  const { data: agents = [] } = useAgents();
+  const { data: agencies = [], isLoading: agenciesLoading } = useAgencies();
+  const { data: agents = [], isLoading: agentsLoading } = useAgents();
   const [agencyQuery, setAgencyQuery] = useState("");
   const [agentQuery, setAgentQuery] = useState("");
   const [agentStatusFilter, setAgentStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -228,6 +229,11 @@ function AgentsPageContent() {
     const totalRevenue = agents.reduce((sum, agent) => sum + agent.total_revenue, 0);
     return { active, inactive, totalReferrals, totalRevenue };
   }, [agents]);
+
+  // Show loading skeleton while data is being fetched
+  if (agenciesLoading || agentsLoading) {
+    return <AdminPageSkeleton showStats showTable listItems={10} />;
+  }
 
   return (
     <AdminShell user={mockAdminUser}>
