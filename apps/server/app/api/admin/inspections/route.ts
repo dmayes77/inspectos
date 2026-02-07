@@ -33,70 +33,78 @@ export async function GET(request: NextRequest) {
     const tenantSlug = request.nextUrl.searchParams.get('tenant');
     const status = request.nextUrl.searchParams.get('status');
 
-    // Use user client for tenant resolution
     const userSupabase = createUserClient(accessToken);
     const { tenant, error: tenantError } = await resolveTenant(userSupabase, user.userId, tenantSlug);
     if (tenantError || !tenant) {
       return badRequest('Tenant not found');
     }
 
-    // Use service client for the query to ensure joins work
     const supabase = createServiceClient();
-    let query = supabase
+
+    // Fetch inspections
+    let inspectionsQuery = supabase
       .from('inspections')
-      .select(`
-        *,
-        order:orders(
-          id,
-          scheduled_date,
-          status,
-          property:properties(
-            id,
-            address_line1,
-            address_line2,
-            city,
-            state,
-            zip_code
-          ),
-          client:clients(
-            id,
-            name,
-            email,
-            phone,
-            company
-          ),
-          inspector:profiles!orders_inspector_id_fkey(
-            id,
-            full_name,
-            email,
-            avatar_url
-          )
-        )
-      `)
+      .select('*')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
 
     if (status) {
-      query = query.eq('status', status);
+      inspectionsQuery = inspectionsQuery.eq('status', status);
     }
 
-    const { data: inspections, error } = await query;
-
-    console.log('[DEBUG] Inspections query:', {
-      hasData: !!inspections,
-      dataCount: inspections?.length,
-      hasError: !!error,
-      error: error ? JSON.stringify(error) : null,
-      firstInspectionKeys: inspections?.[0] ? Object.keys(inspections[0]) : [],
-      firstInspectionSample: inspections?.[0] ? JSON.stringify(inspections[0]).substring(0, 500) : null,
-      supabaseUrl: process.env.SUPABASE_URL
-    });
-
-    if (error) {
-      return serverError('Failed to fetch inspections', error);
+    const { data: inspections, error: inspectionsError } = await inspectionsQuery;
+    if (inspectionsError) {
+      return serverError('Failed to fetch inspections', inspectionsError);
     }
 
-    return success(inspections || []);
+    if (!inspections || inspections.length === 0) {
+      return success([]);
+    }
+
+    // Collect unique order IDs
+    const orderIds = [...new Set(inspections.map(i => i.order_id).filter(Boolean))];
+
+    // Fetch related orders with nested data
+    const { data: orders } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        scheduled_date,
+        status,
+        property:properties(
+          id,
+          address_line1,
+          address_line2,
+          city,
+          state,
+          zip_code
+        ),
+        client:clients(
+          id,
+          name,
+          email,
+          phone,
+          company
+        ),
+        inspector:profiles(
+          id,
+          full_name,
+          email,
+          avatar_url
+        )
+      `)
+      .in('id', orderIds);
+
+    // Build order lookup map
+    const orderMap = new Map((orders || []).map(o => [o.id, o]));
+
+    // Merge inspections with order data
+    const result = inspections.map(inspection => ({
+      ...inspection,
+      order: orderMap.get(inspection.order_id) || null
+    }));
+
+    return success(result);
   } catch (error) {
     return serverError('Failed to fetch inspections', error);
   }
