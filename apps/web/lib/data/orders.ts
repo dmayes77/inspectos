@@ -1,4 +1,14 @@
 import type { InspectionSchedule, InspectionScheduleStatus, InspectionScheduleType } from "@/types/inspection";
+import { shouldUseExternalApi } from "@/lib/api/feature-flags";
+import { createApiClient } from "@/lib/api/client";
+
+/**
+ * Get tenant slug from environment
+ * TODO: In production, this should come from user session or URL
+ */
+function getTenantSlug(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+}
 
 /**
  * Orders data layer
@@ -234,99 +244,137 @@ export interface OrderFilters {
 }
 
 export async function fetchOrders(tenantSlug: string, filters?: OrderFilters): Promise<Order[]> {
-  const params = new URLSearchParams({ tenant: tenantSlug });
+  if (shouldUseExternalApi("orders")) {
+    const apiClient = createApiClient(tenantSlug);
+    const params = new URLSearchParams();
 
-  if (filters?.status) params.append("status", filters.status);
-  if (filters?.payment_status) params.append("payment_status", filters.payment_status);
-  if (filters?.inspector_id) params.append("inspector_id", filters.inspector_id);
-  if (filters?.client_id) params.append("client_id", filters.client_id);
-  if (filters?.agent_id) params.append("agent_id", filters.agent_id);
-  if (filters?.from) params.append("from", filters.from);
-  if (filters?.to) params.append("to", filters.to);
-  if (filters?.search) params.append("search", filters.search);
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.payment_status) params.append("payment_status", filters.payment_status);
+    if (filters?.inspector_id) params.append("inspector_id", filters.inspector_id);
+    if (filters?.client_id) params.append("client_id", filters.client_id);
+    if (filters?.agent_id) params.append("agent_id", filters.agent_id);
+    if (filters?.from) params.append("from", filters.from);
+    if (filters?.to) params.append("to", filters.to);
+    if (filters?.search) params.append("search", filters.search);
 
-  const response = await fetch(`/api/admin/orders?${params}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+    const endpoint = params.toString() ? `/admin/orders?${params}` : "/admin/orders";
+    return await apiClient.get<Order[]>(endpoint);
+  } else {
+    const params = new URLSearchParams({ tenant: tenantSlug });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to fetch orders");
+    if (filters?.status) params.append("status", filters.status);
+    if (filters?.payment_status) params.append("payment_status", filters.payment_status);
+    if (filters?.inspector_id) params.append("inspector_id", filters.inspector_id);
+    if (filters?.client_id) params.append("client_id", filters.client_id);
+    if (filters?.agent_id) params.append("agent_id", filters.agent_id);
+    if (filters?.from) params.append("from", filters.from);
+    if (filters?.to) params.append("to", filters.to);
+    if (filters?.search) params.append("search", filters.search);
+
+    const response = await fetch(`/api/admin/orders?${params}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch orders");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function fetchOrderById(id: string): Promise<Order> {
-  const response = await fetch(`/api/admin/orders/${id}`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  if (shouldUseExternalApi("orders")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.get<Order>(`/admin/orders/${id}`);
+  } else {
+    const response = await fetch(`/api/admin/orders/${id}`, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to fetch order");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to fetch order");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
-  const response = await fetch(`/api/admin/orders`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
+  if (shouldUseExternalApi("orders")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.post<Order>("/admin/orders", input);
+  } else {
+    const response = await fetch(`/api/admin/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to create order");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to create order");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function updateOrder(input: UpdateOrderInput): Promise<Order> {
   const { id, ...data } = input;
-  const response = await fetch(`/api/admin/orders/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
+  if (shouldUseExternalApi("orders")) {
+    const apiClient = createApiClient(getTenantSlug());
+    return await apiClient.put<Order>(`/admin/orders/${id}`, data);
+  } else {
+    const response = await fetch(`/api/admin/orders/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to update order");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to update order");
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {
-  const response = await fetch(`/api/admin/orders/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+  if (shouldUseExternalApi("orders")) {
+    const apiClient = createApiClient(getTenantSlug());
+    await apiClient.delete(`/admin/orders/${id}`);
+    return true;
+  } else {
+    const response = await fetch(`/api/admin/orders/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || "Failed to delete order");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || "Failed to delete order");
+    }
+
+    return true;
   }
-
-  return true;
 }
 
 export async function scheduleOrder(
