@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
             phone,
             company
           ),
-          inspector:profiles!orders_inspector_id_fkey(
+          inspector:profiles(
             id,
             full_name,
             email,
