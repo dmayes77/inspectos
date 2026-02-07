@@ -19,7 +19,6 @@ import { resolveTenant } from '@/lib/tenants';
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[INSPECTIONS GET] Request received - NEW CODE VERSION 2025-02-07');
     const accessToken = getAccessToken(request);
     if (!accessToken) {
       return unauthorized('Missing access token');
@@ -38,10 +37,37 @@ export async function GET(request: NextRequest) {
       return badRequest('Tenant not found');
     }
 
-    // Simplified query without joins to test
     let query = supabase
       .from('inspections')
-      .select('*')
+      .select(`
+        *,
+        order:orders(
+          id,
+          scheduled_date,
+          status,
+          property:properties(
+            id,
+            address_line1,
+            address_line2,
+            city,
+            state,
+            zip_code
+          ),
+          client:clients(
+            id,
+            name,
+            email,
+            phone,
+            company
+          ),
+          inspector:profiles!orders_inspector_id_fkey(
+            id,
+            full_name,
+            email,
+            avatar_url
+          )
+        )
+      `)
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
 
