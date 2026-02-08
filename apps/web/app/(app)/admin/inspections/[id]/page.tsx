@@ -213,47 +213,18 @@ export default function InspectionDetailPage() {
                   <p className="text-sm text-muted-foreground mb-1">Status</p>
                   {inspectionStatusBadge(inspection.status)}
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Single-scroll stacked sections */}
-            {/* Overview Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Overview</CardTitle>
-                <CardDescription>Property, client, schedule, inspector, and completion summary.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Property</p>
-                  <p className="font-medium">{address}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Client</p>
-                  <p className="font-medium">{client?.name || "No client assigned"}</p>
-                  {client?.email && <p className="text-sm text-muted-foreground">{client.email}</p>}
-                  {client?.phone && <p className="text-sm text-muted-foreground">{client.phone}</p>}
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Scheduled</p>
-                  <p className="font-medium">{formattedDateTime}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Inspector</p>
-                  <p className="font-medium">{inspectorName}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground mb-1">Status</p>
-                  {inspectionStatusBadge(inspection.status)}
-                </div>
                 {stats && (
-                  <div className="col-span-2 flex gap-4 mt-2">
+                  <div className="col-span-2 flex gap-4 mt-2 pt-3 border-t">
                     <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
                       <CheckCircle2 className="h-4 w-4" />
                       {stats.completionPercentage}% Complete
                     </span>
-                    {stats.findingCounts.safety ? <span className="text-red-600">{stats.findingCounts.safety} safety</span> : null}
-                    {stats.findingCounts.major ? <span className="text-orange-600">{stats.findingCounts.major} major</span> : null}
+                    {stats.totalFindings > 0 && (
+                      <>
+                        {stats.findingCounts.safety > 0 && <span className="text-red-600 text-xs">{stats.findingCounts.safety} safety</span>}
+                        {stats.findingCounts.major > 0 && <span className="text-orange-600 text-xs">{stats.findingCounts.major} major</span>}
+                      </>
+                    )}
                   </div>
                 )}
               </CardContent>
