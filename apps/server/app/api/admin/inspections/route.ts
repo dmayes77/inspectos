@@ -132,14 +132,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Transform the orders data to have singular property/client/inspector
+    // Transform the orders data to rename properties/clients/profiles to property/client/inspector
     const transformedOrders = (orders || []).map(order => ({
       id: order.id,
       scheduled_date: order.scheduled_date,
       status: order.status,
-      property: order.properties?.[0] || null,
-      client: order.clients?.[0] || null,
-      inspector: order.profiles?.[0] || null,
+      property: order.properties || null,
+      client: order.clients || null,
+      inspector: order.profiles || null,
     }));
 
     logger.info('Fetched orders with relations', {
