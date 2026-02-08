@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd ../.. && pnpm -C apps/server build",
+  "outputDirectory": ".next",
+  "installCommand": "cd ../.. && pnpm install",
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "dev": true
+    }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
+}
