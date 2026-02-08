@@ -47,7 +47,7 @@ export default function RootLayout({
   // - URL path parameter (e.g., /tenants/acme/...)
   // - User session after authentication
   // For now, use environment variable as the tenant identifier
-  const tenantSlug = process.env.NEXT_PUBLIC_SUPABASE_TENANT_ID || "default";
+  const tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || "acme-inspections";
 
   return (
     <html lang="en" suppressHydrationWarning>

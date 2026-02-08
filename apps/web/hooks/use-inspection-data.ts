@@ -4,6 +4,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import { useApiClient } from '@/lib/api/tenant-context';
 import {
   fetchInspectionData,
   getSeverityColor,
@@ -23,9 +24,11 @@ import {
 const INSPECTION_DATA_KEY = 'inspection-data';
 
 export function useInspectionData(inspectionId: string) {
+  const apiClient = useApiClient();
+
   return useQuery({
     queryKey: [INSPECTION_DATA_KEY, inspectionId],
-    queryFn: () => fetchInspectionData(inspectionId),
+    queryFn: () => fetchInspectionData(inspectionId, apiClient),
     enabled: !!inspectionId,
   });
 }

@@ -3,6 +3,9 @@
  * Handles fetching inspection answers, findings, signatures, and media
  */
 
+import { shouldUseExternalApi } from '@/lib/api/feature-flags';
+import type { ApiClient } from '@/lib/api/client';
+
 export interface InspectionAnswer {
   id: string;
   template_item_id: string;
@@ -134,20 +137,29 @@ export interface InspectionDataResponse {
 /**
  * Fetch complete inspection data including answers, findings, signatures, and media
  */
-export async function fetchInspectionData(inspectionId: string): Promise<InspectionDataResponse> {
-  const response = await fetch(`/api/admin/inspections/${inspectionId}/data`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+export async function fetchInspectionData(
+  inspectionId: string,
+  apiClient: ApiClient
+): Promise<InspectionDataResponse> {
+  if (shouldUseExternalApi('inspections')) {
+    // Use external central API
+    return await apiClient.get<InspectionDataResponse>(`/admin/inspections/${inspectionId}/data`);
+  } else {
+    // Use local Next.js API routes (fallback)
+    const response = await fetch(`/api/admin/inspections/${inspectionId}/data`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Failed to fetch inspection data');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to fetch inspection data');
+    }
+
+    const result = await response.json();
+    return result.data;
   }
-
-  const result = await response.json();
-  return result.data;
 }
 
 /**
