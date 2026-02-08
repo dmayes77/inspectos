@@ -96,7 +96,10 @@ export async function GET(request: NextRequest) {
         id,
         scheduled_date,
         status,
-        property:property_id(
+        property_id,
+        client_id,
+        inspector_id,
+        properties!property_id(
           id,
           address_line1,
           address_line2,
@@ -104,14 +107,14 @@ export async function GET(request: NextRequest) {
           state,
           zip_code
         ),
-        client:client_id(
+        clients!client_id(
           id,
           name,
           email,
           phone,
           company
         ),
-        inspector:inspector_id(
+        profiles!inspector_id(
           id,
           full_name,
           email,
@@ -129,21 +132,31 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Transform the orders data to have singular property/client/inspector
+    const transformedOrders = (orders || []).map(order => ({
+      id: order.id,
+      scheduled_date: order.scheduled_date,
+      status: order.status,
+      property: order.properties?.[0] || null,
+      client: order.clients?.[0] || null,
+      inspector: order.profiles?.[0] || null,
+    }));
+
     logger.info('Fetched orders with relations', {
       operation: 'fetch_orders',
       tenantId: tenant.id,
-      orderCount: orders?.length || 0,
-      sampleOrderId: orders?.[0]?.id,
-      hasProperty: !!orders?.[0]?.property,
-      hasClient: !!orders?.[0]?.client,
-      hasInspector: !!orders?.[0]?.inspector,
-      sampleProperty: orders?.[0]?.property,
-      sampleClient: orders?.[0]?.client,
-      sampleInspector: orders?.[0]?.inspector
+      orderCount: transformedOrders.length,
+      sampleOrderId: transformedOrders[0]?.id,
+      hasProperty: !!transformedOrders[0]?.property,
+      hasClient: !!transformedOrders[0]?.client,
+      hasInspector: !!transformedOrders[0]?.inspector,
+      sampleProperty: transformedOrders[0]?.property,
+      sampleClient: transformedOrders[0]?.client,
+      sampleInspector: transformedOrders[0]?.inspector
     });
 
     // Build order lookup map
-    const orderMap = new Map((orders || []).map(o => [o.id, o]));
+    const orderMap = new Map(transformedOrders.map(o => [o.id, o]));
 
     // Merge inspections with order data
     const result = inspections.map(inspection => ({
