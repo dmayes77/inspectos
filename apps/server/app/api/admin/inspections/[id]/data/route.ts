@@ -198,8 +198,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       mediaCount: media?.length || 0
     });
 
+    // Transform the inspection data to match UI expectations
+    const transformedInspection = {
+      ...inspection,
+      // Rename order.clients/properties/profiles to singular for UI compatibility
+      order: inspection.order ? {
+        ...inspection.order,
+        property: (inspection.order as any).properties || null,
+        client: (inspection.order as any).clients || null,
+        inspector: (inspection.order as any).profiles || null,
+      } : null,
+      // Add inspector at top level for backward compatibility
+      inspector: inspection.order ? (inspection.order as any).profiles : null,
+    };
+
     return success({
-      inspection,
+      inspection: transformedInspection,
       answers: answers || [],
       findings: findings || [],
       signatures: signatures || [],

@@ -82,7 +82,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return serverError('Failed to fetch inspection', error);
     }
 
-    return success(inspection);
+    // Transform the inspection data to match UI expectations
+    const transformedInspection = {
+      ...inspection,
+      // Rename order.clients/properties/profiles to singular for UI compatibility
+      order: inspection.order ? {
+        ...inspection.order,
+        property: (inspection.order as any).properties || null,
+        client: (inspection.order as any).clients || null,
+        inspector: (inspection.order as any).profiles || null,
+      } : null,
+      // Add inspector at top level for backward compatibility
+      inspector: inspection.order ? (inspection.order as any).profiles : null,
+    };
+
+    return success(transformedInspection);
   } catch (error) {
     return serverError('Failed to fetch inspection', error);
   }
