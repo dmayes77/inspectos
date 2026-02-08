@@ -10,6 +10,7 @@ import {
   success
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/admin/inspections
@@ -54,29 +55,38 @@ export async function GET(request: NextRequest) {
 
     const { data: inspections, error: inspectionsError } = await inspectionsQuery;
     if (inspectionsError) {
-      console.error('[Inspections API] Error fetching inspections:', inspectionsError);
+      logger.error('Failed to fetch inspections', {
+        operation: 'fetch_inspections',
+        tenantId: tenant.id,
+        error: inspectionsError
+      });
       return serverError('Failed to fetch inspections', inspectionsError);
     }
 
-    console.log('[Inspections API] Fetched inspections:', {
+    logger.info('Fetched inspections', {
+      operation: 'fetch_inspections',
+      tenantId: tenant.id,
       count: inspections?.length || 0,
-      sample: inspections?.[0] ? {
-        id: inspections[0].id,
-        order_id: inspections[0].order_id,
-        status: inspections[0].status
-      } : null
+      sampleId: inspections?.[0]?.id,
+      sampleOrderId: inspections?.[0]?.order_id,
+      sampleStatus: inspections?.[0]?.status
     });
 
     if (!inspections || inspections.length === 0) {
-      console.log('[Inspections API] No inspections found');
+      logger.info('No inspections found', {
+        operation: 'fetch_inspections',
+        tenantId: tenant.id
+      });
       return success([]);
     }
 
     // Collect unique order IDs
     const orderIds = [...new Set(inspections.map(i => i.order_id).filter(Boolean))];
-    console.log('[Inspections API] Fetching orders for IDs:', {
-      count: orderIds.length,
-      ids: orderIds.slice(0, 3) // Log first 3 IDs
+    logger.info('Fetching orders with relations', {
+      operation: 'fetch_orders',
+      tenantId: tenant.id,
+      orderCount: orderIds.length,
+      sampleOrderIds: orderIds.slice(0, 3)
     });
 
     // Fetch related orders with nested data
@@ -111,17 +121,25 @@ export async function GET(request: NextRequest) {
       .in('id', orderIds);
 
     if (ordersError) {
-      console.error('[Inspections API] Error fetching orders:', ordersError);
+      logger.error('Failed to fetch orders with relations', {
+        operation: 'fetch_orders',
+        tenantId: tenant.id,
+        orderIds: orderIds,
+        error: ordersError
+      });
     }
 
-    console.log('[Inspections API] Fetched orders:', {
-      count: orders?.length || 0,
-      sample: orders?.[0] ? {
-        id: orders[0].id,
-        property: orders[0].property,
-        client: orders[0].client,
-        inspector: orders[0].inspector
-      } : null
+    logger.info('Fetched orders with relations', {
+      operation: 'fetch_orders',
+      tenantId: tenant.id,
+      orderCount: orders?.length || 0,
+      sampleOrderId: orders?.[0]?.id,
+      hasProperty: !!orders?.[0]?.property,
+      hasClient: !!orders?.[0]?.client,
+      hasInspector: !!orders?.[0]?.inspector,
+      sampleProperty: orders?.[0]?.property,
+      sampleClient: orders?.[0]?.client,
+      sampleInspector: orders?.[0]?.inspector
     });
 
     // Build order lookup map
@@ -133,18 +151,17 @@ export async function GET(request: NextRequest) {
       order: orderMap.get(inspection.order_id) || null
     }));
 
-    console.log('[Inspections API] Merged result:', {
-      count: result.length,
-      sample: result[0] ? {
-        id: result[0].id,
-        order_id: result[0].order_id,
-        hasOrder: !!result[0].order,
-        orderSample: result[0].order ? {
-          hasProperty: !!result[0].order.property,
-          hasClient: !!result[0].order.client,
-          hasInspector: !!result[0].order.inspector
-        } : null
-      } : null
+    logger.info('Merged inspections with order data', {
+      operation: 'merge_results',
+      tenantId: tenant.id,
+      resultCount: result.length,
+      sampleInspectionId: result[0]?.id,
+      sampleOrderId: result[0]?.order_id,
+      sampleHasOrder: !!result[0]?.order,
+      sampleHasProperty: !!result[0]?.order?.property,
+      sampleHasClient: !!result[0]?.order?.client,
+      sampleHasInspector: !!result[0]?.order?.inspector,
+      inspectionsWithoutOrders: result.filter(r => !r.order).length
     });
 
     return success(result);
