@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
         id,
         scheduled_date,
         status,
-        property:properties(
+        property:property_id(
           id,
           address_line1,
           address_line2,
@@ -79,14 +79,14 @@ export async function GET(request: NextRequest) {
           state,
           zip_code
         ),
-        client:clients(
+        client:client_id(
           id,
           name,
           email,
           phone,
           company
         ),
-        inspector:profiles(
+        inspector:inspector_id(
           id,
           full_name,
           email,
