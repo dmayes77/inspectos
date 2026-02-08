@@ -188,9 +188,19 @@ export default function InspectionDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Inspection Summary</CardTitle>
-                <CardDescription>Schedule, status, and inspector details.</CardDescription>
+                <CardDescription>Property, client, schedule, and inspector details.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Property</p>
+                  <p className="font-medium">{address}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Client</p>
+                  <p className="font-medium">{client?.name || "No client assigned"}</p>
+                  {client?.email && <p className="text-sm text-muted-foreground">{client.email}</p>}
+                  {client?.phone && <p className="text-sm text-muted-foreground">{client.phone}</p>}
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Scheduled</p>
                   <p className="font-medium">{formattedDateTime}</p>
@@ -199,11 +209,7 @@ export default function InspectionDetailPage() {
                   <p className="text-sm text-muted-foreground mb-1">Inspector</p>
                   <p className="font-medium">{inspectorName}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Template</p>
-                  <p className="font-medium">{inspection.template?.name || "—"}</p>
-                </div>
-                <div>
+                <div className="col-span-2">
                   <p className="text-sm text-muted-foreground mb-1">Status</p>
                   {inspectionStatusBadge(inspection.status)}
                 </div>
@@ -215,9 +221,19 @@ export default function InspectionDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Overview</CardTitle>
-                <CardDescription>Schedule, status, inspector, and completion summary.</CardDescription>
+                <CardDescription>Property, client, schedule, inspector, and completion summary.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Property</p>
+                  <p className="font-medium">{address}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Client</p>
+                  <p className="font-medium">{client?.name || "No client assigned"}</p>
+                  {client?.email && <p className="text-sm text-muted-foreground">{client.email}</p>}
+                  {client?.phone && <p className="text-sm text-muted-foreground">{client.phone}</p>}
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Scheduled</p>
                   <p className="font-medium">{formattedDateTime}</p>
@@ -226,11 +242,7 @@ export default function InspectionDetailPage() {
                   <p className="text-sm text-muted-foreground mb-1">Inspector</p>
                   <p className="font-medium">{inspectorName}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Template</p>
-                  <p className="font-medium">{inspection.template?.name || "—"}</p>
-                </div>
-                <div>
+                <div className="col-span-2">
                   <p className="text-sm text-muted-foreground mb-1">Status</p>
                   {inspectionStatusBadge(inspection.status)}
                 </div>
