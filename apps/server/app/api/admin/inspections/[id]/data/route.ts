@@ -59,10 +59,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             state,
             zip_code,
             property_type,
-            sqft,
-            year_built,
-            bedrooms,
-            bathrooms
+            square_feet,
+            year_built
           ),
           clients!client_id(
             id,
@@ -78,7 +76,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             avatar_url
           )
         ),
-        template:templates(
+        templates!template_id(
           id,
           name,
           description,

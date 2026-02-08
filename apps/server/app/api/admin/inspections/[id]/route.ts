@@ -42,17 +42,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from('inspections')
       .select(`
         *,
-        job:jobs(
+        order:order_id(
           id,
           scheduled_date,
           scheduled_time,
           duration_minutes,
           status,
-          selected_service_ids,
-          property:properties(address_line1, address_line2, city, state, zip_code),
-          client:clients(id, name, email, phone, company)
-        ),
-        inspector:profiles(id, full_name, email, avatar_url)
+          properties!property_id(
+            id,
+            address_line1,
+            address_line2,
+            city,
+            state,
+            zip_code
+          ),
+          clients!client_id(
+            id,
+            name,
+            email,
+            phone,
+            company
+          ),
+          profiles!inspector_id(
+            id,
+            full_name,
+            email,
+            avatar_url
+          )
+        )
       `)
       .eq('tenant_id', tenant.id)
       .eq('id', id)
