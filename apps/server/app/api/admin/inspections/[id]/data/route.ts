@@ -47,12 +47,36 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from('inspections')
       .select(`
         *,
-        job:jobs(
+        order:order_id(
           id,
           scheduled_date,
           scheduled_time,
-          property:properties(*),
-          client:clients(id, name, email, phone, company)
+          properties!property_id(
+            id,
+            address_line1,
+            address_line2,
+            city,
+            state,
+            zip_code,
+            property_type,
+            sqft,
+            year_built,
+            bedrooms,
+            bathrooms
+          ),
+          clients!client_id(
+            id,
+            name,
+            email,
+            phone,
+            company
+          ),
+          profiles!inspector_id(
+            id,
+            full_name,
+            email,
+            avatar_url
+          )
         ),
         template:templates(
           id,
@@ -73,8 +97,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               sort_order
             )
           )
-        ),
-        inspector:profiles(id, full_name, email, avatar_url)
+        )
       `)
       .eq('id', id)
       .single();
