@@ -54,18 +54,33 @@ export async function GET(request: NextRequest) {
 
     const { data: inspections, error: inspectionsError } = await inspectionsQuery;
     if (inspectionsError) {
+      console.error('[Inspections API] Error fetching inspections:', inspectionsError);
       return serverError('Failed to fetch inspections', inspectionsError);
     }
 
+    console.log('[Inspections API] Fetched inspections:', {
+      count: inspections?.length || 0,
+      sample: inspections?.[0] ? {
+        id: inspections[0].id,
+        order_id: inspections[0].order_id,
+        status: inspections[0].status
+      } : null
+    });
+
     if (!inspections || inspections.length === 0) {
+      console.log('[Inspections API] No inspections found');
       return success([]);
     }
 
     // Collect unique order IDs
     const orderIds = [...new Set(inspections.map(i => i.order_id).filter(Boolean))];
+    console.log('[Inspections API] Fetching orders for IDs:', {
+      count: orderIds.length,
+      ids: orderIds.slice(0, 3) // Log first 3 IDs
+    });
 
     // Fetch related orders with nested data
-    const { data: orders } = await supabase
+    const { data: orders, error: ordersError } = await supabase
       .from('orders')
       .select(`
         id,
@@ -95,6 +110,20 @@ export async function GET(request: NextRequest) {
       `)
       .in('id', orderIds);
 
+    if (ordersError) {
+      console.error('[Inspections API] Error fetching orders:', ordersError);
+    }
+
+    console.log('[Inspections API] Fetched orders:', {
+      count: orders?.length || 0,
+      sample: orders?.[0] ? {
+        id: orders[0].id,
+        property: orders[0].property,
+        client: orders[0].client,
+        inspector: orders[0].inspector
+      } : null
+    });
+
     // Build order lookup map
     const orderMap = new Map((orders || []).map(o => [o.id, o]));
 
@@ -103,6 +132,20 @@ export async function GET(request: NextRequest) {
       ...inspection,
       order: orderMap.get(inspection.order_id) || null
     }));
+
+    console.log('[Inspections API] Merged result:', {
+      count: result.length,
+      sample: result[0] ? {
+        id: result[0].id,
+        order_id: result[0].order_id,
+        hasOrder: !!result[0].order,
+        orderSample: result[0].order ? {
+          hasProperty: !!result[0].order.property,
+          hasClient: !!result[0].order.client,
+          hasInspector: !!result[0].order.inspector
+        } : null
+      } : null
+    });
 
     return success(result);
   } catch (error) {
