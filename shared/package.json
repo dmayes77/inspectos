@@ -2,6 +2,11 @@
   "name": "@inspectos/shared",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "lint": "echo 'No linting configured for shared package'",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
   "exports": {
     "./types": "./types/index.ts",
     "./types/*": "./types/*.ts",

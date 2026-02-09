@@ -2,6 +2,11 @@
   "name": "@inspectos/auth",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "lint": "echo 'No linting configured for auth package'",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
   "exports": {
     "./client": "./client/index.ts",
     "./client/*": "./client/*.ts",

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "test": "echo 'No tests configured for server app'"
   },
   "dependencies": {
     "@inspectos/auth": "workspace:*",
