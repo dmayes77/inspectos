@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { WEBHOOK_EVENTS } from "@/lib/validations/webhook";
+import { WEBHOOK_EVENTS } from "./webhook";
 
 const workflowScopes = ["lead", "client", "inspection", "invoice", "job", "payment", "service", "template"] as const;
 const workflowTriggerTypes = ["tag_added", "tag_removed", "status_changed", "event"] as const;

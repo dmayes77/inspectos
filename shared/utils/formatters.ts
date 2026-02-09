@@ -69,12 +69,11 @@ export function formatInspectionDateTime(date: string, time: string): string {
     month: "long",
     day: "numeric",
   });
-    if (!time) return dateStr;
-    const timeStr = dateObj.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    return `${dateStr} at ${timeStr}`;
-  }
+  if (!time) return dateStr;
+  const timeStr = dateObj.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  return `${dateStr} at ${timeStr}`;
 }
