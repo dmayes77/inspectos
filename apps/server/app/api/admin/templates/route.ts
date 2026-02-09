@@ -106,22 +106,22 @@ export async function GET(request: NextRequest) {
     const serviceByTemplateId = new Map<string, Record<string, unknown>[]>();
     (services ?? []).forEach((service: Record<string, unknown>) => {
       if (service.template_id) {
-        const list = serviceByTemplateId.get(service.template_id) ?? [];
+        const list = serviceByTemplateId.get(service.template_id as string) ?? [];
         list.push({
           id: service.id,
           name: service.name,
           price: service.price,
           category: service.category,
         });
-        serviceByTemplateId.set(service.template_id, list);
+        serviceByTemplateId.set(service.template_id as string, list);
       }
     });
 
     const templates = (templateRows ?? []).map((row: Record<string, unknown>) => {
-      const sections = (row.template_sections ?? [])
+      const sections = ((row.template_sections as Record<string, unknown>[]) ?? [])
         .sort((a: Record<string, unknown>, b: Record<string, unknown>) => (a.sort_order as number) - (b.sort_order as number))
         .map((section: Record<string, unknown>) => {
-          const items = (section.template_items ?? [])
+          const items = ((section.template_items as Record<string, unknown>[]) ?? [])
             .sort((a: Record<string, unknown>, b: Record<string, unknown>) => (a.sort_order as number) - (b.sort_order as number))
             .map((item: Record<string, unknown>) => ({
               id: item.id,
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
           };
         });
 
-      return mapTemplate(row as TemplateRow, sections, serviceByTemplateId.get(row.id) ?? []);
+      return mapTemplate(row as TemplateRow, sections, serviceByTemplateId.get(row.id as string) ?? []);
     });
 
     return success(templates);

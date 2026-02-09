@@ -13,7 +13,7 @@ import { resolveTenant } from '@/lib/tenants';
 
 const normalizeOptions = (options: unknown): string[] | undefined => {
   if (!Array.isArray(options)) return undefined;
-  return options.map((opt) => (typeof opt === 'string' ? opt : (opt as Record<string, unknown>)?.label ?? (opt as Record<string, unknown>)?.value)).filter(Boolean);
+  return options.map((opt) => (typeof opt === 'string' ? opt : (opt as Record<string, unknown>)?.label ?? (opt as Record<string, unknown>)?.value)).filter(Boolean) as string[];
 };
 
 interface RouteParams {
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         name: section.name,
         description: section.description,
         sortOrder: section.sort_order ?? 0,
-        items: (section.template_items ?? [])
+        items: ((section.template_items as Record<string, unknown>[]) ?? [])
           .sort((a: Record<string, unknown>, b: Record<string, unknown>) => (a.sort_order as number) - (b.sort_order as number))
           .map((item: Record<string, unknown>) => ({
             id: item.id,

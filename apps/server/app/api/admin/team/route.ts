@@ -73,13 +73,13 @@ export async function GET(request: NextRequest) {
         name: profile?.full_name ?? profile?.email ?? 'Unknown',
         email: profile?.email ?? '',
         phone: profile?.phone ?? '',
-        role: mapRole(row.role),
+        role: mapRole(row.role as string | null | undefined),
         status: 'active',
         location: '',
         inspections: 0,
         rating: null,
         certifications: [],
-        joinedDate: formatJoinedDate(row.created_at),
+        joinedDate: formatJoinedDate(row.created_at as string | null | undefined),
         customPermissions: [],
       };
     });
