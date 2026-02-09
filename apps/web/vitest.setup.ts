@@ -9,6 +9,13 @@ expect.extend(matchers);
 // Enable React 19 act environment
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
+// Mock ResizeObserver (not available in jsdom)
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
