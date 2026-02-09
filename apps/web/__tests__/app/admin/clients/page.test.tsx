@@ -149,7 +149,7 @@ describe("ClientsPage", () => {
 
     // Use getAllByText since badges appear in both mobile and desktop views
     expect(screen.getAllByText("Homebuyer").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Agent").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Real Estate Agent").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Seller").length).toBeGreaterThan(0);
   });
 
