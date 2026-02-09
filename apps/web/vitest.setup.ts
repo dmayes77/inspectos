@@ -29,6 +29,18 @@ vi.mock("next/link", () => ({
     React.createElement("a", { href }, children),
 }));
 
+// Mock TenantProvider and useApiClient
+vi.mock("@/lib/api/tenant-context", () => ({
+  TenantProvider: ({ children }: { children: React.ReactNode }) => children,
+  useTenant: () => ({ tenantSlug: "test-tenant" }),
+  useApiClient: () => ({
+    get: vi.fn(() => Promise.resolve([])),
+    post: vi.fn(() => Promise.resolve({})),
+    put: vi.fn(() => Promise.resolve({})),
+    delete: vi.fn(() => Promise.resolve({})),
+  }),
+}));
+
 // Reset mocks between tests
 beforeEach(() => {
   vi.clearAllMocks();

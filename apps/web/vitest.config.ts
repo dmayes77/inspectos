@@ -19,6 +19,11 @@ export default defineConfig({
     include: ["**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["node_modules", ".next", "dist"],
     css: false, // Don't process CSS files in tests
+    env: {
+      // Mock Supabase environment variables for tests
+      NEXT_PUBLIC_SUPABASE_URL: "https://test.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-anon-key",
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
