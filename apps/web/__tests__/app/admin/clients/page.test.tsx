@@ -98,11 +98,14 @@ describe("ClientsPage", () => {
     expect(screen.getByRole("heading", { name: "Contacts" })).toBeInTheDocument();
   });
 
-  it("displays client statistics", () => {
+  it("displays client statistics", async () => {
     renderWithQueryClient(<ClientsPage />);
 
-    // Check stat labels exist
-    expect(screen.getByText("Total Clients")).toBeInTheDocument();
+    // Wait for stats to load
+    await waitFor(() => {
+      expect(screen.getByText("Total Clients")).toBeInTheDocument();
+    });
+
     expect(screen.getByText("Real Estate Agents")).toBeInTheDocument();
     expect(screen.getByText("Total Inspections")).toBeInTheDocument();
     expect(screen.getByText("Total Revenue")).toBeInTheDocument();
@@ -135,20 +138,26 @@ describe("ClientsPage", () => {
     expect(screen.getByText("Add your first client to start scheduling inspections.")).toBeInTheDocument();
   });
 
-  it("displays client names in the list", () => {
+  it("displays client names in the list", async () => {
     renderWithQueryClient(<ClientsPage />);
 
-    // Use getAllByText since names appear in both mobile and desktop views
-    expect(screen.getAllByText("John Doe").length).toBeGreaterThan(0);
+    // Wait for client names to load
+    await waitFor(() => {
+      expect(screen.getAllByText("John Doe").length).toBeGreaterThan(0);
+    });
+
     expect(screen.getAllByText("Jane Smith").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Bob Wilson").length).toBeGreaterThan(0);
   });
 
-  it("displays client type badges", () => {
+  it("displays client type badges", async () => {
     renderWithQueryClient(<ClientsPage />);
 
-    // Use getAllByText since badges appear in both mobile and desktop views
-    expect(screen.getAllByText("Homebuyer").length).toBeGreaterThan(0);
+    // Wait for badges to load
+    await waitFor(() => {
+      expect(screen.getAllByText("Homebuyer").length).toBeGreaterThan(0);
+    });
+
     expect(screen.getAllByText("Real Estate Agent").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Seller").length).toBeGreaterThan(0);
   });
