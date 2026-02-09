@@ -8,15 +8,6 @@ expect.extend(matchers);
 // Enable React 19 act environment
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
-// Mock React Suspense to render children immediately in tests
-vi.mock("react", async () => {
-  const actual = await vi.importActual<typeof import("react")>("react");
-  return {
-    ...actual,
-    Suspense: ({ children }: { children: React.ReactNode; fallback?: React.ReactNode }) => children,
-  };
-});
-
 // Mock ResizeObserver (not available in jsdom)
 global.ResizeObserver = class ResizeObserver {
   observe() {}
