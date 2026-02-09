@@ -355,7 +355,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         city: propertyForm.city.trim(),
         state: propertyForm.state.trim(),
         zip_code: propertyForm.zipCode.trim(),
-        property_type: propertyForm.propertyType as "residential" | "commercial",
+        property_type: propertyForm.propertyType as 'single-family' | 'condo-townhome' | 'multi-family' | 'manufactured' | 'commercial',
         year_built: propertyForm.yearBuilt ? parseInt(propertyForm.yearBuilt, 10) : null,
         square_feet: propertyForm.squareFeet ? parseInt(propertyForm.squareFeet, 10) : null,
         notes: propertyForm.notes.trim() || null,

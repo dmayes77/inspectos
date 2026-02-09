@@ -22,7 +22,7 @@ interface VendorFormData {
 
 interface VendorFormProps {
   mode: "new" | "edit";
-  initialData?: VendorFormData;
+  initialData?: Partial<VendorFormData>;
   onSubmit: (data: VendorFormData) => void | Promise<void>;
   onCancel: () => void;
 }

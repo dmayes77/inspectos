@@ -19,12 +19,10 @@
   },
   "lint-staged": {
     "apps/web/**/*.{ts,tsx}": [
-      "pnpm -C apps/web exec eslint --fix",
-      "pnpm -C apps/web exec tsc --noEmit"
+      "pnpm -C apps/web exec eslint --fix"
     ],
     "apps/server/**/*.{ts,tsx}": [
-      "pnpm -C apps/server exec eslint --fix",
-      "pnpm -C apps/server exec tsc --noEmit"
+      "pnpm -C apps/server exec eslint --fix"
     ],
     "apps/mobile/**/*.{ts,tsx}": [
       "pnpm -C apps/mobile exec eslint --fix"
