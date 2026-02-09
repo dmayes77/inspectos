@@ -184,7 +184,7 @@ describe("ClientsPage", () => {
     renderWithQueryClient(<ClientsPage />);
 
     const addLeadLink = screen.getByRole("link", { name: /add lead/i });
-    expect(addLeadLink).toHaveAttribute("href", "/admin/leads/new");
+    expect(addLeadLink).toHaveAttribute("href", "/admin/contacts/leads/new");
   });
 });
 
@@ -207,14 +207,13 @@ describe("ClientsPage mobile view", () => {
     expect(screen.getByPlaceholderText("Search clients...")).toBeInTheDocument();
   });
 
-  it("has filter buttons for client types", () => {
+  it("has filter dropdowns for client types", () => {
     renderWithQueryClient(<ClientsPage />);
 
-    // The mobile view has filter buttons
-    const allButtons = screen.getAllByRole("button");
-    const filterButtons = allButtons.filter((btn) => ["All", "Homebuyer", "Agent", "Seller"].includes(btn.textContent || ""));
-
-    expect(filterButtons.length).toBeGreaterThan(0);
+    // The page uses Select dropdowns for filtering
+    const comboboxes = screen.getAllByRole("combobox");
+    // Should have at least type filter and sort dropdowns
+    expect(comboboxes.length).toBeGreaterThan(0);
   });
 
   it("filters clients by search query", async () => {
