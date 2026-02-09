@@ -8,17 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, MapPin, Clock, User, Search } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/ui/data-table";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useInspections, useUpdateInspection, type Inspection } from "@/hooks/use-inspections";
 import { useServices } from "@/hooks/use-services";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { inspectionStatusOptions } from "@/lib/admin/badges";
 import { can } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils";
-import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
-import { createServiceMap, getServiceNameById } from "@/lib/utils/services";
+import { formatDateShort, formatTime12 } from "@inspectos/shared/utils/dates";
+import { createServiceMap, getServiceNameById } from "@inspectos/shared/utils/services";
 import { PageHeader } from "@/components/layout/page-header";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
@@ -115,14 +115,12 @@ const columns = (
     },
     header: "Property",
     enableSorting: false,
+    enableHiding: false,
     cell: ({ row }) => {
       const address = getInspectionAddress(row.original);
       return (
-        <Link href={`/admin/inspections/${row.original.id}`} className="flex items-start gap-2 max-w-xs hover:text-foreground">
-          <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <div className="font-medium">{address}</div>
-          </div>
+        <Link href={`/admin/inspections/${row.original.id}`} className="text-xs max-w-xs hover:underline">
+          {address}
         </Link>
       );
     },
@@ -131,35 +129,26 @@ const columns = (
     accessorKey: "client",
     header: "Client",
     enableSorting: false,
-    cell: ({ row }) => (
-      <div className="flex items-start gap-2 max-w-xs">
-        <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-        <span className="text-sm">{getInspectionClientName(row.original)}</span>
-      </div>
-    ),
+    cell: ({ row }) => <span className="text-xs">{getInspectionClientName(row.original)}</span>,
   },
   {
     accessorKey: "inspector",
     header: "Inspector",
     enableSorting: true,
-    cell: ({ row }) => <div className="text-sm max-w-xs">{getInspectionInspectorName(row.original)}</div>,
+    cell: ({ row }) => <span className="text-xs text-muted-foreground">{getInspectionInspectorName(row.original)}</span>,
   },
   {
     header: "Date",
     enableSorting: true,
-    cell: ({ row }) => (
-      <div className="text-sm">
-        {(() => {
-          const { dateLabel, timeLabel } = getInspectionDateTime(row.original);
-          return (
-            <>
-              <div>{dateLabel}</div>
-              <div className="text-muted-foreground">{timeLabel || "—"}</div>
-            </>
-          );
-        })()}
-      </div>
-    ),
+    cell: ({ row }) => {
+      const { dateLabel, timeLabel } = getInspectionDateTime(row.original);
+      return (
+        <div className="text-xs">
+          <div>{dateLabel}</div>
+          {timeLabel && <div className="text-muted-foreground">{timeLabel}</div>}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "types",
@@ -167,8 +156,8 @@ const columns = (
     enableSorting: false,
     cell: ({ row }) => {
       const selectedServices = getInspectionServiceIds(row.original);
-      const label = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
-      return <Badge variant="outline">{label}</Badge>;
+      const label = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "—";
+      return <Badge variant="outline" className="text-xs">{label}</Badge>;
     },
   },
   {
@@ -180,7 +169,7 @@ const columns = (
       const currentStatus = getStatus(inspectionId, row.original.status);
       return (
         <Select value={currentStatus} onValueChange={(value) => onStatusChange(inspectionId, value)}>
-          <SelectTrigger className={cn("h-8 w-40 font-medium shadow-none", getStatusTriggerClasses(currentStatus))}>
+          <SelectTrigger className={cn("h-7 w-32 text-xs shadow-none", getStatusTriggerClasses(currentStatus))}>
             <SelectValue>{getStatusLabel(currentStatus)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -202,7 +191,7 @@ const columns = (
     enableSorting: true,
     cell: ({ row }) => {
       const amount = getInspectionPrice(row.original, serviceMap);
-      return <div className="text-sm font-medium">${amount.toFixed(2)}</div>;
+      return <span className="text-xs font-medium">${amount.toFixed(2)}</span>;
     },
   },
 ];
@@ -380,130 +369,130 @@ export default function InspectionsPage() {
           </CardContent>
         </Card>
 
-        {/* Inspections Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Inspections</CardTitle>
-            <CardDescription>{isLoading ? "Loading..." : `${inspections.length} total inspections`}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isError ? (
-              <div className="text-red-500">
+        {/* Mobile View - Custom Cards */}
+        <div className="md:hidden space-y-4">
+          {isError ? (
+            <div className="rounded-lg border border-dashed p-6 text-center">
+              <p className="text-sm text-red-500">
                 Failed to load inspections.
-                {error instanceof Error && <span className="ml-2 text-xs text-muted-foreground">{error.message}</span>}
+                {error instanceof Error && <span className="ml-2 text-xs">{error.message}</span>}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={mobileQuery}
+                    onChange={(event) => setMobileQuery(event.target.value)}
+                    placeholder="Search inspections..."
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {statusOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      type="button"
+                      variant={statusFilter === option.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setStatusFilter(option.value)}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <>
-                <div className="md:hidden space-y-4">
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={mobileQuery}
-                        onChange={(event) => setMobileQuery(event.target.value)}
-                        placeholder="Search inspections..."
-                        className="pl-9"
-                      />
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {statusOptions.map((option) => (
-                        <Button
-                          key={option.value}
-                          type="button"
-                          variant={statusFilter === option.value ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setStatusFilter(option.value)}
-                        >
-                          {option.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  {filteredMobile.length === 0 && !isLoading ? (
-                    <div className="py-6 text-center text-sm text-muted-foreground">No inspections yet.</div>
-                  ) : (
-                    filteredMobile.map((inspection, index) => {
-                      const address = getInspectionAddress(inspection);
-                      const selectedServices = getInspectionServiceIds(inspection);
-                      const serviceLabel = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
-                      const inspectionPrice = getInspectionPrice(inspection, serviceMap);
-                      return (
-                        <Link
-                          key={inspection.id || `inspection-${index}`}
-                          href={`/admin/inspections/${inspection.id}`}
-                          className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              {(() => {
-                                return (
-                                  <>
-                                    <p className="text-sm font-semibold">{address}</p>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                            <div className="shrink-0">
-                              <span
-                                className={cn(
-                                  "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                                  getStatusTriggerClasses(getStatusValue(inspection.id, inspection.status)),
-                                )}
-                              >
-                                {getStatusLabel(getStatusValue(inspection.id, inspection.status))}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <User className="h-3.5 w-3.5" />
-                              <span>{getInspectionClientName(inspection)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-3.5 w-3.5" />
-                              <span>
-                                {getInspectionDateTime(inspection).dateLabel} {getInspectionDateTime(inspection).timeLabel}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline">{serviceLabel || "—"}</Badge>
-                              <span className="font-semibold text-foreground">${inspectionPrice.toFixed(2)}</span>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })
+              {filteredMobile.length === 0 && !isLoading ? (
+                <div className="rounded-lg border border-dashed p-6 text-center">
+                  <p className="text-sm text-muted-foreground">No inspections yet.</p>
+                </div>
+              ) : (
+                filteredMobile.map((inspection, index) => {
+                  const address = getInspectionAddress(inspection);
+                  const selectedServices = getInspectionServiceIds(inspection);
+                  const serviceLabel = selectedServices.length > 0 ? getServiceNameById(selectedServices[0], serviceMap) : "";
+                  const inspectionPrice = getInspectionPrice(inspection, serviceMap);
+                  return (
+                    <Link
+                      key={inspection.id || `inspection-${index}`}
+                      href={`/admin/inspections/${inspection.id}`}
+                      className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold">{address}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                              getStatusTriggerClasses(getStatusValue(inspection.id, inspection.status)),
+                            )}
+                          >
+                            {getStatusLabel(getStatusValue(inspection.id, inspection.status))}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <User className="h-3.5 w-3.5" />
+                          <span>{getInspectionClientName(inspection)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>
+                            {getInspectionDateTime(inspection).dateLabel} {getInspectionDateTime(inspection).timeLabel}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{serviceLabel || "—"}</Badge>
+                          <span className="font-semibold text-foreground">${inspectionPrice.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Desktop View - ModernDataTable */}
+        <div className="hidden md:block">
+          <ModernDataTable
+            columns={columns(handleStatusChange, getStatusValue, serviceMap)}
+            data={inspections}
+            title="All Inspections"
+            description={`${inspections.length} total inspections`}
+            emptyState={
+              isError ? (
+                <div className="rounded-lg border border-dashed p-10 text-center">
+                  <MapPin className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold text-red-500">Failed to load inspections</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {error instanceof Error ? error.message : "Please try refreshing the page."}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-10 text-center">
+                  <MapPin className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold">No inspections yet</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">Create your first inspection to start tracking jobs.</p>
+                  {can(userRole, "create_inspections") && (
+                    <Button asChild className="mt-6">
+                      <Link href="/admin/inspections/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Inspection
+                      </Link>
+                    </Button>
                   )}
                 </div>
-                <div className="hidden md:block">
-                  {(() => {
-                    if (inspections.length === 0 && !isLoading) {
-                      return (
-                        <div className="rounded-lg border border-dashed p-10 text-center">
-                          <h3 className="text-lg font-semibold">No inspections yet</h3>
-                          <p className="mt-2 text-sm text-muted-foreground">Create your first inspection to start tracking jobs.</p>
-                          {can(userRole, "create_inspections") && (
-                            <Button asChild className="mt-4">
-                              <Link href="/admin/inspections/new">Create inspection</Link>
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    }
-                    return (
-                      <DataTable
-                        columns={columns(handleStatusChange, getStatusValue, serviceMap)}
-                        data={inspections}
-                        searchKey="address"
-                        searchPlaceholder="Search by property address..."
-                      />
-                    );
-                  })()}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+              )
+            }
+          />
+        </div>
       </div>
     </AdminShell>
   );

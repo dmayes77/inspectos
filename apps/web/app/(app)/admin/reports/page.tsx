@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useOrders } from "@/hooks/use-orders";
 import { useInspections } from "@/hooks/use-inspections";
 import { useLeads } from "@/hooks/use-leads";

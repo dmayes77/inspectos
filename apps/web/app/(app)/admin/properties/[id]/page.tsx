@@ -23,13 +23,13 @@ import {
 import { Edit, Trash2, FileText, Loader2 } from "lucide-react";
 import { useProperty, useDeleteProperty, formatPropertyAddress } from "@/hooks/use-properties";
 import { useClientById } from "@/hooks/use-clients";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
 import { ClientInfoCard } from "@/components/shared/client-info-card";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
-import { RESIDENTIAL_PROPERTY_TYPES } from "@/lib/constants/property-options";
+import { RESIDENTIAL_PROPERTY_TYPES } from "@inspectos/shared/constants/property-options";
 import { getContactTypeBadge } from "@/components/contacts/contacts-table-columns";
-import type { PropertyOwner } from "@/lib/data/properties";
+import type { PropertyOwner } from "@/hooks/use-properties";
 
 export default function PropertyDetailPage() {
   const params = useParams();

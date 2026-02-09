@@ -1,66 +1,70 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApiClient } from "@/lib/api/tenant-context";
 
-export interface Vendor {
+export type Vendor = {
   id: string;
   name: string;
-  vendor_type?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  status?: string;
-}
-
-// Mock API for demonstration
-const mockVendors: Vendor[] = [
-  { id: "1", name: "Acme Pest Control", vendor_type: "Pest", phone: "555-1234", status: "active" },
-  { id: "2", name: "Roof Pros", vendor_type: "Roof", phone: "555-5678", status: "active" },
-];
-
-let vendorStore = [...mockVendors];
+  vendorType?: string;
+  email?: string;
+  phone?: string;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
 export function useVendors() {
+  const apiClient = useApiClient();
+
   return useQuery<Vendor[]>({
     queryKey: ["vendors"],
-    queryFn: async () => {
-      // TODO: Create /api/admin/vendors endpoint
-      const response = await fetch("/api/admin/vendors");
-      if (!response.ok) {
-        throw new Error("Failed to fetch vendors");
-      }
-      const result = await response.json();
-      return Array.isArray(result) ? result : (result.data ?? []);
-    },
+    queryFn: async () => apiClient.get<Vendor[]>("/admin/vendors"),
   });
 }
 
 export function useVendor(id: string) {
+  const apiClient = useApiClient();
+
   return useQuery<Vendor>({
     queryKey: ["vendors", id],
-    queryFn: async () => {
-      // TODO: Create /api/admin/vendors/[id] endpoint
-      const response = await fetch(`/api/admin/vendors/${id}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch vendor");
-      }
-      const result = await response.json();
-      return result.data ?? result;
+    queryFn: async () => apiClient.get<Vendor>(`/admin/vendors/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateVendor() {
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Partial<Vendor>) => apiClient.post<Vendor>("/admin/vendors", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
     },
   });
 }
 
-export function createVendor(data: any) {
-  vendorStore.push({ ...data, id: String(Date.now()) });
-  return Promise.resolve(data);
+export function useUpdateVendor() {
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Vendor> & { id: string }) =>
+      apiClient.put<Vendor>(`/admin/vendors/${id}`, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      queryClient.invalidateQueries({ queryKey: ["vendors", variables.id] });
+    },
+  });
 }
 
-export function updateVendor(id: string, data: any) {
-  const index = vendorStore.findIndex((v) => v.id === id);
-  if (index !== -1) {
-    vendorStore[index] = { ...vendorStore[index], ...data };
-  }
-  return Promise.resolve(data);
-}
+export function useDeleteVendor() {
+  const apiClient = useApiClient();
+  const queryClient = useQueryClient();
 
-export function deleteVendor(id: string) {
-  vendorStore = vendorStore.filter((v) => v.id !== id);
-  return Promise.resolve();
+  return useMutation({
+    mutationFn: async (id: string) => apiClient.delete<boolean>(`/admin/vendors/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+    },
+  });
 }

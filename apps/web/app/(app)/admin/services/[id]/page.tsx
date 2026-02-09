@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 import { useServices, useDeleteService } from "@/hooks/use-services";
 import { useTemplates } from "@/hooks/use-templates";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 

@@ -10,8 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, RefreshCw, Copy, Check } from "lucide-react";
 import { useCreateWebhook, useUpdateWebhook, useWebhook } from "@/hooks/use-webhooks";
-import { WEBHOOK_EVENTS, type WebhookEvent } from "@/lib/validations/webhook";
-import type { Webhook } from "@/lib/types/webhook";
+import { WEBHOOK_EVENTS, type WebhookEvent } from "@inspectos/shared/validations/webhook";
+import type { Webhook } from "@inspectos/shared/types/webhook";
 import { toast } from "sonner";
 
 export type WebhookFormMode = "create" | "edit";

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CONTACT_TYPE_OPTIONS } from "@/lib/constants/contact-options";
+import { CONTACT_TYPE_OPTIONS } from "@inspectos/shared/constants/contact-options";
 
 export type ContactFormValues = {
   name: string;

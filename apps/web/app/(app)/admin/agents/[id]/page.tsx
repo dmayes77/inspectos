@@ -23,10 +23,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useAgentById, useDeleteAgent, useSendAgentPortalLink } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatTimestamp } from "@/lib/utils/dates";
+import { formatTimestamp } from "@inspectos/shared/utils/dates";
 import { toast } from "sonner";
 import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, MapPin, type LucideIcon } from "lucide-react";
 import { CompanyLogo } from "@/components/shared/company-logo";

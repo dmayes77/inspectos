@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, RefreshCw, Copy, Check } from "lucide-react";
 import { useCreateWebhook, useUpdateWebhook, useWebhook } from "@/hooks/use-webhooks";
-import { WEBHOOK_EVENTS, type WebhookEvent } from "@/lib/validations/webhook";
+import { WEBHOOK_EVENTS, type WebhookEvent } from "@inspectos/shared/validations/webhook";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 

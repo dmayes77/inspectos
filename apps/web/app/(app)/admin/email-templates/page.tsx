@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Mail, Pencil, Trash2 } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { useEmailTemplates, useDeleteEmailTemplate } from "@/hooks/use-email-templates";
 import type { EmailTemplate } from "@/types/email-template";

@@ -12,9 +12,9 @@ import { AgentForm, type AgentFormValues } from "@/components/partners/agent-for
 import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgentById, useUpdateAgent } from "@/hooks/use-agents";
 import { useAgencies } from "@/hooks/use-agencies";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
-import type { Agent } from "@/lib/data/agents";
+import type { Agent } from "@/hooks/use-agents";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 
 type Params = { id: string };

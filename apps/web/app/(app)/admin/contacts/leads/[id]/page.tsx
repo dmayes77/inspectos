@@ -20,7 +20,7 @@ import {
 import { Edit, Trash2, Mail, Phone, ClipboardList } from "lucide-react";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import { useDeleteLead, useLeadById, useUpdateLead } from "@/hooks/use-leads";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import {

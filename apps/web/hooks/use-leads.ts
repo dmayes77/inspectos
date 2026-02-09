@@ -1,5 +1,5 @@
 import { useDelete, useGet, usePost, usePut } from "@/hooks/crud";
-import { createLead, deleteLeadById, fetchLeadById, fetchLeads, updateLeadById } from "@/lib/data/leads";
+import { useApiClient } from "@/lib/api/tenant-context";
 
 export type Lead = {
   leadId: string;
@@ -15,21 +15,42 @@ export type Lead = {
 };
 
 export function useLeads() {
-  return useGet<Lead[]>("leads", async () => (await fetchLeads()) ?? [], { initialData: [] });
+  const apiClient = useApiClient();
+  return useGet<Lead[]>("leads", async () => {
+    const result = await apiClient.get<Lead[]>('/admin/leads');
+    return result ?? [];
+  }, { initialData: [] });
 }
 
 export function useLeadById(leadId: string) {
-  return useGet<Lead | null>(`lead-${leadId}`, async () => fetchLeadById(leadId));
+  const apiClient = useApiClient();
+  return useGet<Lead | null>(`lead-${leadId}`, async () => {
+    try {
+      return await apiClient.get<Lead>(`/admin/leads/${leadId}`);
+    } catch {
+      return null;
+    }
+  });
 }
 
 export function useCreateLead() {
-  return usePost<Lead, Partial<Lead>>("leads", async (data) => createLead(data));
+  const apiClient = useApiClient();
+  return usePost<Lead, Partial<Lead>>("leads", async (data) => {
+    return await apiClient.post<Lead>('/admin/leads', data);
+  });
 }
 
 export function useUpdateLead() {
-  return usePut<Lead | null, { leadId: string } & Partial<Lead>>("leads", async (data) => updateLeadById(data));
+  const apiClient = useApiClient();
+  return usePut<Lead | null, { leadId: string } & Partial<Lead>>("leads", async (data) => {
+    return await apiClient.put<Lead>(`/admin/leads/${data.leadId}`, data);
+  });
 }
 
 export function useDeleteLead() {
-  return useDelete<boolean>("leads", async (leadId: string) => deleteLeadById(leadId));
+  const apiClient = useApiClient();
+  return useDelete<boolean>("leads", async (leadId: string) => {
+    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/leads/${leadId}`);
+    return result.deleted ?? true;
+  });
 }

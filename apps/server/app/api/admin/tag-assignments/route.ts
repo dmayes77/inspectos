@@ -14,7 +14,7 @@ import {
   createTagAssignmentSchema,
   tagAssignmentDeleteSchema,
   tagAssignmentQuerySchema,
-} from '@/lib/validations/tag-assignment';
+} from '@inspectos/shared/validations/tag-assignment';
 
 const formatValidationErrors = (issues: { path: PropertyKey[]; message: string }[]) =>
   issues.map((issue: { path: PropertyKey[]; message: string }) => ({

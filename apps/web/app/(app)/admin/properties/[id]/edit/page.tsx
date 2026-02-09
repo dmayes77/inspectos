@@ -10,8 +10,8 @@ import { Loader2, Save } from "lucide-react";
 import { useProperty, useUpdateProperty } from "@/hooks/use-properties";
 import { useClients } from "@/hooks/use-clients";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
-import { mockAdminUser } from "@/lib/constants/mock-users";
-import { COOLING_OPTIONS, FOUNDATION_OPTIONS, GARAGE_OPTIONS, HEATING_OPTIONS, ROOF_OPTIONS } from "@/lib/constants/property-options";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { COOLING_OPTIONS, FOUNDATION_OPTIONS, GARAGE_OPTIONS, HEATING_OPTIONS, ROOF_OPTIONS } from "@inspectos/shared/constants/property-options";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import {

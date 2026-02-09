@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DataTable } from "@/components/ui/data-table";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus, MapPin, User, Search, Calendar, DollarSign, Building2, FileText, Clock } from "lucide-react";
 import { useOrders, type Order } from "@/hooks/use-orders";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils";
-import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
+import { formatDateShort, formatTime12 } from "@inspectos/shared/utils/dates";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 
 const orderStatusOptions = [
@@ -112,9 +112,9 @@ const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "order_number",
     header: "Order",
+    enableHiding: false,
     cell: ({ row }) => (
-      <Link href={`/admin/orders/${row.original.id}`} className="flex items-center gap-2 font-medium hover:underline">
-        <FileText className="h-4 w-4 text-muted-foreground" />
+      <Link href={`/admin/orders/${row.original.id}`} className="font-medium hover:underline text-xs">
         {row.original.order_number}
       </Link>
     ),
@@ -123,31 +123,20 @@ const columns: ColumnDef<Order>[] = [
     id: "property",
     header: "Property",
     cell: ({ row }) => (
-      <Link href={`/admin/orders/${row.original.id}`} className="flex items-start gap-2 max-w-xs hover:text-foreground">
-        <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-        <span className="text-sm">{getOrderAddress(row.original)}</span>
+      <Link href={`/admin/orders/${row.original.id}`} className="text-xs max-w-xs hover:underline">
+        {getOrderAddress(row.original)}
       </Link>
     ),
   },
   {
     id: "client",
     header: "Client",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <User className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm">{row.original.client?.name ?? "—"}</span>
-      </div>
-    ),
+    cell: ({ row }) => <span className="text-xs">{row.original.client?.name ?? "—"}</span>,
   },
   {
     id: "agent",
     header: "Agent",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm">{row.original.agent?.name ?? "—"}</span>
-      </div>
-    ),
+    cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.agent?.name ?? "—"}</span>,
   },
   {
     id: "scheduled",
@@ -155,19 +144,11 @@ const columns: ColumnDef<Order>[] = [
     cell: ({ row }) => {
       const date = row.original.scheduled_date;
       const time = row.original.scheduled_time;
-      if (!date) return <span className="text-muted-foreground">Unscheduled</span>;
+      if (!date) return <span className="text-xs text-muted-foreground">Unscheduled</span>;
       return (
-        <div className="text-sm">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            {formatDateShort(date)}
-          </div>
-          {time && (
-            <div className="text-muted-foreground flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {formatTime12(time)}
-            </div>
-          )}
+        <div className="text-xs">
+          <div>{formatDateShort(date)}</div>
+          {time && <div className="text-muted-foreground">{formatTime12(time)}</div>}
         </div>
       );
     },
@@ -176,7 +157,7 @@ const columns: ColumnDef<Order>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge variant={getStatusBadgeVariant(row.original.status)} className={cn("font-medium", getStatusBadgeClasses(row.original.status))}>
+      <Badge variant={getStatusBadgeVariant(row.original.status)} className={cn("text-xs", getStatusBadgeClasses(row.original.status))}>
         {formatStatusLabel(row.original.status)}
       </Badge>
     ),
@@ -185,7 +166,7 @@ const columns: ColumnDef<Order>[] = [
     accessorKey: "payment_status",
     header: "Payment",
     cell: ({ row }) => (
-      <Badge variant="outline" className={cn("font-medium", getPaymentBadgeClasses(row.original.payment_status))}>
+      <Badge variant="outline" className={cn("text-xs", getPaymentBadgeClasses(row.original.payment_status))}>
         {formatStatusLabel(row.original.payment_status)}
       </Badge>
     ),
@@ -193,12 +174,7 @@ const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "total",
     header: "Total",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-1 font-medium">
-        <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-        {row.original.total.toFixed(2)}
-      </div>
-    ),
+    cell: ({ row }) => <span className="text-xs font-medium">${row.original.total.toFixed(2)}</span>,
   },
 ];
 
@@ -299,17 +275,98 @@ export default function OrdersPage() {
           </Card>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-              <div className="relative w-full md:flex-1 md:min-w-50">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search orders..." className="pl-9" />
-              </div>
-              <div className="flex items-center gap-2">
+        {/* Mobile View - Custom Cards */}
+        <div className="md:hidden space-y-4">
+          {isError ? (
+            <div className="rounded-lg border border-dashed p-6 text-center">
+              <p className="text-sm text-red-500">Failed to load orders.</p>
+            </div>
+          ) : filteredOrders.length === 0 && !isLoading ? (
+            <div className="rounded-lg border border-dashed p-6 text-center">
+              <p className="text-sm text-muted-foreground">No orders found.</p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => {
+              const inspection = Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
+              return (
+                <Link
+                  key={order.id}
+                  href={`/admin/orders/${order.id}`}
+                  className="block rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">Order</p>
+                      <p className="text-sm font-semibold truncate">{order.order_number}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">Total</p>
+                      <p className="text-sm font-semibold text-foreground">${order.total.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Badge
+                      variant={getStatusBadgeVariant(order.status)}
+                      className={cn("font-medium text-[0.65rem] px-2 py-0.5", getStatusBadgeClasses(order.status))}
+                    >
+                      {formatStatusLabel(order.status)}
+                    </Badge>
+                    <Badge variant="outline" className={cn("font-medium text-[0.65rem] px-2 py-0.5", getPaymentBadgeClasses(order.payment_status))}>
+                      {formatStatusLabel(order.payment_status)}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
+                    <span className="rounded-full border px-2 py-0.5">Agent: {order.agent?.name ?? "Unassigned"}</span>
+                    <span className="rounded-full border px-2 py-0.5">Services: {inspection?.services?.length ?? 0}</span>
+                  </div>
+
+                  <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span className="line-clamp-2">{getOrderAddress(order)}</span>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3.5 w-3.5" />
+                      <span className="truncate">{order.client?.name ?? "No client"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>
+                        {order.scheduled_date ? formatDateShort(order.scheduled_date) : "Unscheduled"}
+                        {order.scheduled_time ? ` • ${formatTime12(order.scheduled_time)}` : ""}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View - ModernDataTable */}
+        <div className="hidden md:block">
+          <ModernDataTable
+            columns={columns}
+            data={filteredOrders}
+            title="All Orders"
+            description={`${filteredOrders.length} of ${orders.length} orders`}
+            filterControls={
+              <>
+                <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search orders..."
+                    className="pl-9"
+                  />
+                </div>
+
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full min-w-35 md:w-40">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="All Orders" />
                   </SelectTrigger>
                   <SelectContent>
@@ -320,8 +377,9 @@ export default function OrdersPage() {
                     ))}
                   </SelectContent>
                 </Select>
+
                 <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-                  <SelectTrigger className="w-full min-w-35 md:w-40">
+                  <SelectTrigger className="w-[140px]">
                     <SelectValue placeholder="All Payments" />
                   </SelectTrigger>
                   <SelectContent>
@@ -332,120 +390,33 @@ export default function OrdersPage() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="flex w-full justify-end md:ml-auto md:w-auto">
-                <Button
-                  variant="ghost"
-                  className="w-auto"
-                  onClick={() => {
-                    setStatusFilter("all");
-                    setPaymentFilter("all");
-                    setSearchQuery("");
-                  }}
-                >
-                  Clear
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Orders Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Orders</CardTitle>
-            <CardDescription>{isLoading ? "Loading..." : `${filteredOrders.length} orders`}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isError ? (
-              <div className="text-red-500">Failed to load orders.</div>
-            ) : (
-              <>
-                {/* Mobile View */}
-                <div className="md:hidden space-y-4">
-                  {filteredOrders.length === 0 && !isLoading ? (
-                    <div className="py-6 text-center text-sm text-muted-foreground">No orders found.</div>
-                  ) : (
-                    filteredOrders.map((order) => {
-                      const inspection = Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
-                      return (
-                        <Link
-                          key={order.id}
-                          href={`/admin/orders/${order.id}`}
-                          className="block rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                              <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">Order</p>
-                              <p className="text-sm font-semibold truncate">{order.order_number}</p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-[0.65rem] uppercase tracking-wide text-muted-foreground">Total</p>
-                              <p className="text-sm font-semibold text-foreground">${order.total.toFixed(2)}</p>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <Badge
-                              variant={getStatusBadgeVariant(order.status)}
-                              className={cn("font-medium text-[0.65rem] px-2 py-0.5", getStatusBadgeClasses(order.status))}
-                            >
-                              {formatStatusLabel(order.status)}
-                            </Badge>
-                            <Badge variant="outline" className={cn("font-medium text-[0.65rem] px-2 py-0.5", getPaymentBadgeClasses(order.payment_status))}>
-                              {formatStatusLabel(order.payment_status)}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
-                            <span className="rounded-full border px-2 py-0.5">Agent: {order.agent?.name ?? "Unassigned"}</span>
-                            <span className="rounded-full border px-2 py-0.5">Services: {inspection?.services?.length ?? 0}</span>
-                          </div>
-
-                          <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-                            <span className="line-clamp-2">{getOrderAddress(order)}</span>
-                          </div>
-
-                          <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                            <div className="flex items-center gap-2">
-                              <User className="h-3.5 w-3.5" />
-                              <span className="truncate">{order.client?.name ?? "No client"}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3.5 w-3.5" />
-                              <span>
-                                {order.scheduled_date ? formatDateShort(order.scheduled_date) : "Unscheduled"}
-                                {order.scheduled_time ? ` • ${formatTime12(order.scheduled_time)}` : ""}
-                              </span>
-                            </div>
-                          </div>
-                        </Link>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Desktop View */}
-                <div className="hidden md:block">
-                  {filteredOrders.length === 0 && !isLoading ? (
-                    <div className="rounded-lg border border-dashed p-10 text-center">
-                      <h3 className="text-lg font-semibold">No orders yet</h3>
-                      <p className="mt-2 text-sm text-muted-foreground">Create your first order to start managing inspections.</p>
-                      {can(userRole, "create_inspections") && (
-                        <Button asChild className="mt-4">
-                          <Link href="/admin/orders/new">Create Order</Link>
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <DataTable columns={columns} data={filteredOrders} searchKey="order_number" searchPlaceholder="Search by order number..." />
-                  )}
-                </div>
               </>
-            )}
-          </CardContent>
-        </Card>
+            }
+            emptyState={
+              isError ? (
+                <div className="rounded-lg border border-dashed p-10 text-center">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold text-red-500">Failed to load orders</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">Please try refreshing the page.</p>
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-10 text-center">
+                  <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold">No orders yet</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">Create your first order to start managing inspections.</p>
+                  {can(userRole, "create_inspections") && (
+                    <Button asChild className="mt-6">
+                      <Link href="/admin/orders/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Order
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              )
+            }
+          />
+        </div>
       </div>
     </AdminShell>
   );

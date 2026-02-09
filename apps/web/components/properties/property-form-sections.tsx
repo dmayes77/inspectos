@@ -17,7 +17,7 @@ import {
   PROPERTY_TYPE_OPTIONS,
   RESIDENTIAL_PROPERTY_TYPES,
   ROOF_OPTIONS,
-} from "@/lib/constants/property-options";
+} from "@inspectos/shared/constants/property-options";
 
 export type PropertyFormState = {
   addressLine1: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTemplateStubSchema, updateTemplateSchema } from "@/lib/validations/template";
+import { createTemplateStubSchema, updateTemplateSchema } from "@inspectos/shared/validations/template";
 
 describe("createTemplateStubSchema", () => {
   it("should validate a valid stub request", () => {

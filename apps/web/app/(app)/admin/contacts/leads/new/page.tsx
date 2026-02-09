@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useCreateLead } from "@/hooks/use-leads";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import {

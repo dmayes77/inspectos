@@ -11,7 +11,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { updateOrderSchema } from '@/lib/validations/order';
+import { updateOrderSchema } from '@inspectos/shared/validations/order';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import {
@@ -419,7 +419,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       await supabase.from("inspection_services").delete().eq("inspection_id", inspectionId);
 
-      const inspectionServices = payload.services.map((service: any, index: number) => ({
+      const inspectionServices = payload.services.map((service: { service_id: string; template_id?: string | null; name: string; price: number; duration_minutes?: number | null; inspector_id?: string | null }, index: number) => ({
         inspection_id: inspectionId,
         service_id: service.service_id,
         template_id: service.template_id ?? null,

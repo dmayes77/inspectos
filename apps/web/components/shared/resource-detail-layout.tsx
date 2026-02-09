@@ -37,9 +37,9 @@ export function ResourceDetailLayout({
         backHref={backHref}
         actions={headerActions}
       />
-      <div className="grid gap-4 lg:grid-cols-4">
-        <div className="space-y-4 lg:col-span-3">{main}</div>
-        <div className="space-y-4 lg:order-1 lg:col-start-4">{sidebar}</div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">{main}</div>
+        <div className="space-y-6">{sidebar}</div>
       </div>
     </div>
   );

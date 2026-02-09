@@ -10,7 +10,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { createTagSchema } from '@/lib/validations/tag';
+import { createTagSchema } from '@inspectos/shared/validations/tag';
 
 /**
  * GET /api/admin/tags

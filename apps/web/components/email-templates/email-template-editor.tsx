@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateEmailTemplate, useEmailTemplates, useUpdateEmailTemplate } from "@/hooks/use-email-templates";
 import type { EmailTemplate } from "@/types/email-template";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 export function EmailTemplateEditor() {

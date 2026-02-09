@@ -10,7 +10,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { createPropertySchema } from '@/lib/validations/property';
+import { createPropertySchema } from '@inspectos/shared/validations/property';
 import { createLogger, generateRequestId } from '@/lib/logger';
 import { rateLimitByIP, RateLimitPresets } from '@/lib/rate-limit';
 

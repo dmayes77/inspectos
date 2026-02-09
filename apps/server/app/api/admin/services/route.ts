@@ -10,7 +10,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { createServiceSchema } from '@/lib/validations/service';
+import { createServiceSchema } from '@inspectos/shared/validations/service';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildServicePayload } from '@/lib/webhooks/payloads';
 

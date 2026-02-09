@@ -1,7 +1,7 @@
 import { inspections } from "@/lib/mock/inspections";
 import { services } from "@/lib/mock/services";
-import { calculateServiceDurationMinutes } from "@/lib/utils/pricing";
-import { createServiceMap, getServiceNameById } from "@/lib/utils/services";
+import { calculateServiceDurationMinutes } from "@inspectos/shared/utils/pricing";
+import { createServiceMap, getServiceNameById } from "@inspectos/shared/utils/services";
 
 type LeadStage = "New" | "Qualified" | "Quoted" | "Scheduled" | "Won" | "Lost";
 

@@ -12,13 +12,13 @@ import { Separator } from "@/components/ui/separator";
 import { Building2, Calendar, Check, Clock, DollarSign, Edit, Mail, MapPin, Phone, Send, Tag, Trash2, User, ClipboardList } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
 import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { cn } from "@/lib/utils";
-import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@/lib/utils/dates";
-import { formatInvoiceNumber } from "@/lib/utils/invoices";
-import { RESIDENTIAL_PROPERTY_TYPES } from "@/lib/constants/property-options";
+import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@inspectos/shared/utils/dates";
+import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
+import { RESIDENTIAL_PROPERTY_TYPES } from "@inspectos/shared/constants/property-options";
 import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
-import type { InspectionAssignment, InspectionService } from "@/lib/data/orders";
+import type { InspectionAssignment, InspectionService } from "@/hooks/use-orders";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {

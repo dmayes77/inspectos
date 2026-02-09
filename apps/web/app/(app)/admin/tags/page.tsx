@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Tag as TagIcon, Pencil } from "lucide-react";
 import { useDeleteTag, useTags } from "@/hooks/use-tags";
 import type { TagScope } from "@/types/tag";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const scopeOptions: { value: TagScope; label: string }[] = [

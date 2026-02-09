@@ -4,20 +4,103 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/ui/data-table";
-import { Plus, MapPin, Search, User } from "lucide-react";
-import { useProperties, formatPropertyAddress } from "@/hooks/use-properties";
-import { mockAdminUser } from "@/lib/constants/mock-users";
-import { propertiesTableColumns } from "@/components/properties/properties-table-columns";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
+import { ColumnDef } from "@tanstack/react-table";
+import { Plus, MapPin, Search, User, Calendar } from "lucide-react";
+import { useProperties, formatPropertyAddress, Property } from "@/hooks/use-properties";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
-import { PROPERTY_TYPE_FILTER_OPTIONS } from "@/lib/constants/property-options";
+import { PROPERTY_TYPE_FILTER_OPTIONS } from "@inspectos/shared/constants/property-options";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
+import { formatTimestamp } from "@inspectos/shared/utils/dates";
+
+const createPropertiesColumns = (): ColumnDef<Property>[] => [
+  {
+    id: "address",
+    header: "Address",
+    enableHiding: false,
+    enableSorting: true,
+    cell: ({ row }) => (
+      <Link
+        href={`/admin/properties/${row.original.id}`}
+        className="flex items-start gap-2 hover:underline"
+      >
+        <PropertyTypeIcon type={row.original.property_type} className="text-xs" />
+        <div className="text-xs">
+          <p className="font-medium">{row.original.address_line1}</p>
+          {row.original.address_line2 && (
+            <p className="text-muted-foreground">{row.original.address_line2}</p>
+          )}
+          <p className="text-muted-foreground">
+            {row.original.city}, {row.original.state} {row.original.zip_code}
+          </p>
+        </div>
+      </Link>
+    ),
+  },
+  {
+    accessorKey: "property_type",
+    header: "Type",
+    cell: ({ row }) => (
+      <Badge variant="outline" className="text-xs capitalize">
+        {row.original.property_type.replace("-", " ")}
+      </Badge>
+    ),
+  },
+  {
+    id: "client",
+    header: "Owner/Contact",
+    cell: ({ row }) => {
+      if (!row.original.client) {
+        return <span className="text-xs text-muted-foreground">—</span>;
+      }
+      return (
+        <Link
+          href={`/admin/contacts/${row.original.client.id}`}
+          className="text-xs hover:underline"
+        >
+          {row.original.client.name}
+        </Link>
+      );
+    },
+  },
+  {
+    accessorKey: "year_built",
+    header: "Year Built",
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {row.original.year_built ?? "—"}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "square_feet",
+    header: "Size",
+    cell: ({ row }) => (
+      <span className="text-sm">
+        {row.original.square_feet
+          ? `${row.original.square_feet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} sqft`
+          : <span className="text-muted-foreground">—</span>}
+      </span>
+    ),
+  },
+  {
+    id: "created",
+    header: "Added",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Calendar className="h-3.5 w-3.5" />
+        {formatTimestamp(row.original.created_at)}
+      </div>
+    ),
+  },
+];
 
 export default function PropertiesPage() {
   const { data, isLoading, isError } = useProperties();
@@ -109,10 +192,14 @@ export default function PropertiesPage() {
             </Card>
           </div>
         }
-        filters={
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-wrap items-center gap-3">
+        table={
+          <ModernDataTable
+            columns={createPropertiesColumns()}
+            data={filteredProperties}
+            title="All Properties"
+            description={`${filteredProperties.length} properties`}
+            filterControls={
+              <>
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -143,22 +230,14 @@ export default function PropertiesPage() {
                 >
                   Clear
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        }
-        table={
-          <Card>
-            <CardHeader>
-              <CardTitle>All Properties</CardTitle>
-              <CardDescription>
-                {isLoading ? "Loading..." : `${filteredProperties.length} properties`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isError ? (
-                <div className="text-red-500">Failed to load properties.</div>
-              ) : filteredProperties.length === 0 && !isLoading ? (
+              </>
+            }
+            emptyState={
+              isError ? (
+                <div className="rounded-lg border border-dashed p-10 text-center text-red-500">
+                  Failed to load properties.
+                </div>
+              ) : properties.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-10 text-center">
                   <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-semibold">No properties yet</h3>
@@ -170,56 +249,15 @@ export default function PropertiesPage() {
                   </Button>
                 </div>
               ) : (
-                <>
-                  <div className="space-y-3 md:hidden">
-                    {filteredProperties.map((property) => (
-                      <Link
-                        key={property.id}
-                        href={`/admin/properties/${property.id}`}
-                        className="block rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                      >
-                        <div className="flex items-start gap-3">
-                          <PropertyTypeIcon type={property.property_type} />
-                          <div className="min-w-0 flex-1 space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="font-semibold leading-tight">{property.address_line1}</p>
-                                {property.address_line2 && (
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {property.address_line2}
-                                  </p>
-                                )}
-                                <p className="text-xs text-muted-foreground">
-                                  {property.city}, {property.state} {property.zip_code}
-                                </p>
-                              </div>
-                              <Badge variant="outline" className="shrink-0 capitalize">
-                                {property.property_type.replace("-", " ")}
-                              </Badge>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              <span className="inline-flex items-center gap-1.5">
-                                <User className="h-3.5 w-3.5" />
-                                {property.client?.name ?? "No client"}
-                              </span>
-                              <span>
-                                {property.square_feet
-                                  ? `${property.square_feet.toLocaleString()} sqft`
-                                  : "Size —"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="hidden md:block">
-                    <DataTable columns={propertiesTableColumns} data={filteredProperties} />
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                <div className="rounded-lg border border-dashed p-10 text-center">
+                  <h3 className="text-lg font-semibold">No properties match your filters</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Adjust your search or type filter to find the property you need.
+                  </p>
+                </div>
+              )
+            }
+          />
         }
       />
     </AdminShell>

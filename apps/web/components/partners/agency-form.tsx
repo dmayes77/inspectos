@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { AgencyStatus } from "@/lib/data/agencies";
+import type { AgencyStatus } from "@/hooks/use-agencies";
 import { CompanyLogo } from "@/components/shared/company-logo";
 
 export type AgencyFormValues = {

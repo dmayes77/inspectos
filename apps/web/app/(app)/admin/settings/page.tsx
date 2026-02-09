@@ -23,7 +23,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 

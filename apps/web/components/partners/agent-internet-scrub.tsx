@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CompanyLogo } from "@/components/shared/company-logo";
 import { useAgentScrub } from "@/hooks/use-agent-scrub";
-import { logoDevUrl } from "@/lib/utils/logos";
+import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 import { Mail, Phone, ShieldCheck, Link2, MapPin } from "lucide-react";
 

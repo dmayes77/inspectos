@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Mail, MessageSquare, PhoneCall, Bell, AlertTriangle, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useIntegrations } from "@/hooks/use-integrations";
 
 const CHANNEL_CONFIG = [

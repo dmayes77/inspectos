@@ -18,7 +18,7 @@ function getRoleDescription(role: string): string {
 import { Shield, Unlock, Lock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { permissionCategories, getPermissionsForRole } from "@/lib/permissions";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 
 import Link from "next/link";

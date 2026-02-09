@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useVendor, deleteVendor } from "@/hooks/use-vendors";
+import { useVendor, useDeleteVendor } from "@/hooks/use-vendors";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -9,6 +9,7 @@ export default function VendorDetailPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { data: vendor, isLoading } = useVendor(id);
+  const { mutate: deleteVendor } = useDeleteVendor();
 
   if (isLoading) return <div>Loading...</div>;
   if (!vendor) return <div>Vendor not found.</div>;
@@ -20,7 +21,7 @@ export default function VendorDetailPage() {
           <CardTitle>{vendor.name}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {vendor.vendor_type && <div>Type: {vendor.vendor_type}</div>}
+          {vendor.vendorType && <div>Type: {vendor.vendorType}</div>}
           {vendor.phone && <div>Phone: {vendor.phone}</div>}
           {vendor.email && <div>Email: {vendor.email}</div>}
           {vendor.status && <div>Status: {vendor.status}</div>}
@@ -31,9 +32,10 @@ export default function VendorDetailPage() {
           Edit
         </Button>
         <Button
-          onClick={async () => {
-            await deleteVendor(id);
-            router.push("/admin/vendors");
+          onClick={() => {
+            deleteVendor(id, {
+              onSuccess: () => router.push("/admin/vendors")
+            });
           }}
           variant="destructive"
         >

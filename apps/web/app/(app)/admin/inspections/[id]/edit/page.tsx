@@ -16,14 +16,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useServices } from "@/hooks/use-services";
 import { useGet } from "@/hooks/crud";
-import { fetchInspectionById } from "@/lib/data/admin-data";
+import type { Inspection } from "@/types/inspection";
 import { useClients } from "@/hooks/use-clients";
 import { useInspectors } from "@/hooks/use-team";
 import { useUpdateInspection, useCreateInspection } from "@/hooks/use-inspections";
+import { useApiClient } from "@/lib/api/tenant-context";
 import { useOrderById } from "@/hooks/use-orders";
-import { mockAdminUser } from "@/lib/constants/mock-users";
-import { FOUNDATION_OPTIONS, GARAGE_OPTIONS, STORY_OPTIONS } from "@/lib/constants/property-options";
-import { calculateServiceTotal } from "@/lib/utils/pricing";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { FOUNDATION_OPTIONS, GARAGE_OPTIONS, STORY_OPTIONS } from "@inspectos/shared/constants/property-options";
+import { calculateServiceTotal } from "@inspectos/shared/utils/pricing";
 import { toast } from "sonner";
 import type { ServiceType } from "@/types/service";
 import type { Inspection, InspectionStatusValue } from "@/types/inspection";
@@ -56,6 +57,7 @@ const ServiceCheckbox = ({ service, checked, onToggle }: { service: ServiceType;
 export default function EditInspectionPage(props: { isNew?: boolean; orderId?: string } = {}) {
   const params = useParams();
   const router = useRouter();
+  const apiClient = useApiClient();
   const { data: services = [] } = useServices();
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const { data: clientsData = [] } = useClients();
@@ -69,7 +71,11 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
   const inspectionId = typeof params.id === "string" ? params.id : undefined;
   const { data: inspection } = useGet<Inspection | null>(inspectionId ? `inspection-${inspectionId}` : "inspection-new", async () => {
     if (!inspectionId || isNew) return null;
-    return fetchInspectionById(inspectionId);
+    try {
+      return await apiClient.get<Inspection>(`/admin/inspections/${inspectionId}`);
+    } catch {
+      return null;
+    }
   });
 
   const [selectedClientId, setSelectedClientId] = useState<string>(inspection?.order?.client?.id || "");

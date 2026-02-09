@@ -10,7 +10,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { createEmailTemplateSchema } from '@/lib/validations/email-template';
+import { createEmailTemplateSchema } from '@inspectos/shared/validations/email-template';
 
 /**
  * GET /api/admin/email-templates

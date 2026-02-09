@@ -11,8 +11,9 @@ import {
   ColumnFiltersState,
   getPaginationRowModel,
   VisibilityState,
+  Table,
 } from "@tanstack/react-table";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -30,10 +30,9 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   searchPlaceholder?: string;
   toolbarActions?: ReactNode;
+  showColumnVisibility?: boolean;
+  onTableReady?: (table: Table<TData>) => void;
 }
-
-type Density = "comfortable" | "compact";
-const densityStorageKey = "inspectos_admin_table_density";
 
 export function DataTable<TData, TValue>({
   columns,
@@ -41,24 +40,12 @@ export function DataTable<TData, TValue>({
   searchKey,
   searchPlaceholder = "Search...",
   toolbarActions,
+  showColumnVisibility = true,
+  onTableReady,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [density, setDensity] = useState<Density>("comfortable");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem(densityStorageKey) as Density | null;
-    if (stored === "comfortable" || stored === "compact") {
-      setDensity(stored);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    localStorage.setItem(densityStorageKey, density);
-  }, [density]);
 
   const table = useReactTable({
     data,
@@ -82,70 +69,68 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  useEffect(() => {
+    if (onTableReady) {
+      onTableReady(table);
+    }
+  }, [table, onTableReady]);
+
+  const showToolbar = searchKey || toolbarActions || showColumnVisibility;
+
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-4">
-        {searchKey && (
-          <div className="flex-1 min-w-[200px]">
-            <Input
-              placeholder={searchPlaceholder}
-              value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-              onChange={(event) =>
-                table.getColumn(searchKey)?.setFilterValue(event.target.value)
-              }
-              className="max-w-sm"
-            />
-          </div>
-        )}
-        {toolbarActions && (
-          <div className="flex flex-wrap items-center gap-2">{toolbarActions}</div>
-        )}
-        <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant={density === "comfortable" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDensity("comfortable")}
-          >
-            Comfort
-          </Button>
-          <Button
-            variant={density === "compact" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setDensity("compact")}
-          >
-            Dense
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {showToolbar && (
+        <div className="flex flex-wrap items-center gap-4">
+          {searchKey && (
+            <div className="flex-1 min-w-[200px]">
+              <Input
+                placeholder={searchPlaceholder}
+                value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+                onChange={(event) =>
+                  table.getColumn(searchKey)?.setFilterValue(event.target.value)
+                }
+                className="max-w-sm"
+              />
+            </div>
+          )}
+          {toolbarActions && (
+            <div className="flex flex-wrap items-center gap-2">{toolbarActions}</div>
+          )}
+          {showColumnVisibility && (
+            <div className="ml-auto flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    Columns <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          className="capitalize"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        >
+                          {column.id}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Table */}
       <div className="relative overflow-x-auto">
-        <table className={cn("w-full", density === "compact" && "text-sm")}>
+        <table className="w-full">
           <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b text-left text-sm text-muted-foreground">
@@ -184,10 +169,7 @@ export function DataTable<TData, TValue>({
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      className={cn(
-                        "px-2",
-                        density === "compact" ? "py-2" : "py-4"
-                      )}
+                      className="px-2 py-4"
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
@@ -250,5 +232,36 @@ export function DataTable<TData, TValue>({
         </div>
       </div>
     </div>
+  );
+}
+
+export function ColumnVisibilityDropdown<TData>({ table }: { table: Table<TData> | null }) {
+  if (!table) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline">
+          Columns <ChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {table
+          .getAllColumns()
+          .filter((column) => column.getCanHide())
+          .map((column) => {
+            return (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                className="capitalize"
+                checked={column.getIsVisible()}
+                onCheckedChange={(value) => column.toggleVisibility(!!value)}
+              >
+                {column.id}
+              </DropdownMenuCheckboxItem>
+            );
+          })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

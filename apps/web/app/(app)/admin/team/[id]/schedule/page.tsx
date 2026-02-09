@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, MapPin, Clock, Home, Plus, CheckCircle, AlertCircle, XCircle } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
-import { formatDateShort, formatTime12 } from "@/lib/utils/dates";
+import { formatDateShort, formatTime12 } from "@inspectos/shared/utils/dates";
 
 import { useTeamMembers } from "@/hooks/use-team";
 

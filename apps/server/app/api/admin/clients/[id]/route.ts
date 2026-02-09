@@ -11,7 +11,7 @@ import {
   notFound
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { updateClientSchema } from '@/lib/validations/client';
+import { updateClientSchema } from '@inspectos/shared/validations/client';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildClientPayload } from '@/lib/webhooks/payloads';
 

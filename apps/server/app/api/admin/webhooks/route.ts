@@ -11,7 +11,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { createWebhookSchema } from '@/lib/validations/webhook';
+import { createWebhookSchema } from '@inspectos/shared/validations/webhook';
 
 /**
  * GET /api/admin/webhooks

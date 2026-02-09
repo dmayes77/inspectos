@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createClientSchema, updateClientSchema } from "@/lib/validations/client";
+import { createClientSchema, updateClientSchema } from "@inspectos/shared/validations/client";
 
 describe("createClientSchema", () => {
   it("should validate a valid client", () => {

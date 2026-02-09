@@ -18,7 +18,7 @@ import { useServices } from "@/hooks/use-services";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import type { Template, TemplateItemType, TemplateSection } from "@/types/template";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const itemTypeOptions: { value: TemplateItemType; label: string }[] = [

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // experimental configuration removed - turbo is no longer a supported option
+  // Transpile workspace packages for Turbopack
+  transpilePackages: ['@inspectos/auth', '@inspectos/database', '@inspectos/shared'],
 };
 
 export default nextConfig;

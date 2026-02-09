@@ -28,9 +28,9 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { usePayouts, usePayRules } from "@/hooks/use-payouts";
-import { formatDate } from "@/lib/utils/dates";
+import { formatDate } from "@inspectos/shared/utils/dates";
 
 function getStatusBadge(status?: string | null) {
   if (!status) {

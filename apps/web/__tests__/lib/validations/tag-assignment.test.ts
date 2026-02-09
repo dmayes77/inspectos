@@ -3,7 +3,7 @@ import {
   createTagAssignmentSchema,
   tagAssignmentDeleteSchema,
   tagAssignmentQuerySchema,
-} from "@/lib/validations/tag-assignment";
+} from "@inspectos/shared/validations/tag-assignment";
 
 describe("createTagAssignmentSchema", () => {
   it("should validate a valid tag assignment", () => {

@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateTag, useTags, useUpdateTag } from "@/hooks/use-tags";
 import type { Tag, TagScope, TagType } from "@/types/tag";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const scopeOptions: { value: TagScope; label: string }[] = [

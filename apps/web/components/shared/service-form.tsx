@@ -14,7 +14,7 @@ import { IncludesEditor } from "@/components/ui/includes-editor";
 import { Loader2, Save } from "lucide-react";
 import { Service } from "@/hooks/use-services";
 import type { Template } from "@/types/template";
-import { calculatePackageDiscount } from "@/lib/utils/pricing";
+import { calculatePackageDiscount } from "@inspectos/shared/utils/pricing";
 
 const durationOptions = [30, 60, 90, 120, 180, 240, 300];
 

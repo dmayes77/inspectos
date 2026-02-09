@@ -1,0 +1,9 @@
+# Supabase CLI metadata
+.supabase/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/

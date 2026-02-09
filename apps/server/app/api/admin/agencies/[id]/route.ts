@@ -10,7 +10,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { updateAgencySchema } from '@/lib/validations/agency';
+import { updateAgencySchema } from '@inspectos/shared/validations/agency';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

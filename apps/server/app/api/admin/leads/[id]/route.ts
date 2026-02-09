@@ -11,7 +11,7 @@ import {
   notFound
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { updateLeadSchema } from '@/lib/validations/lead';
+import { updateLeadSchema } from '@inspectos/shared/validations/lead';
 
 const normalizeStage = (stage?: string | null) => {
   if (!stage) return "new";

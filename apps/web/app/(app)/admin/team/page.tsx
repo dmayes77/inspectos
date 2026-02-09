@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Mail, Phone, MapPin, Star, ClipboardList, Search } from "lucide-react";
 import { useTeamMembers } from "@/hooks/use-team";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { can } from "@/lib/admin/permissions";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";

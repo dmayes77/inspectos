@@ -10,7 +10,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { createLeadSchema } from '@/lib/validations/lead';
+import { createLeadSchema } from '@inspectos/shared/validations/lead';
 
 const normalizeStage = (stage?: string | null) => {
   if (!stage) return "new";

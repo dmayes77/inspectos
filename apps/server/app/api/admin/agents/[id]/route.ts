@@ -11,7 +11,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { updateAgentSchema } from '@/lib/validations/agent';
+import { updateAgentSchema } from '@inspectos/shared/validations/agent';
 import { resolveAgencyAssociation } from '@/lib/agents/agency-helpers';
 
 interface RouteParams {

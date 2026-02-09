@@ -9,7 +9,7 @@ import {
   success
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { formatInvoiceNumber } from '@/lib/utils/invoices';
+import { formatInvoiceNumber } from '@inspectos/shared/utils/invoices';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildInvoicePayload } from '@/lib/webhooks/payloads';
 

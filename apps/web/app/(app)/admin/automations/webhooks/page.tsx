@@ -24,7 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreVertical, Zap, Pause, Play, Trash2, ExternalLink, TestTube } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useWebhooks, useDeleteWebhook, useUpdateWebhook } from "@/hooks/use-webhooks";
 import { WebhookDialog } from "@/components/webhooks/webhook-dialog";
 import { TestWebhookDialog } from "@/components/webhooks/test-webhook-dialog";

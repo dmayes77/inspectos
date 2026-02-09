@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ColumnDef } from "@tanstack/react-table";
-import { DataTable } from "@/components/ui/data-table";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
 import { Building2, DollarSign, Mail, Phone, Plus, Search, Users } from "lucide-react";
 import { useAgencies, type Agency } from "@/hooks/use-agencies";
 import { useAgents, type Agent } from "@/hooks/use-agents";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CompanyLogo } from "@/components/shared/company-logo";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
@@ -37,35 +37,36 @@ const agencyColumns: ColumnDef<Agency>[] = [
   {
     accessorKey: "name",
     header: "Agency",
-    cell: ({ row }: { row: AgencyRow }) => (
-      <Link href={`/admin/agents/agencies/${row.original.id}`} className="flex items-center gap-3 hover:underline">
-        <CompanyLogo name={row.original.name} logoUrl={row.original.logo_url} website={row.original.website ?? undefined} size={40} className="h-10 w-10" />
-        <div className="text-sm">
-          <p className="font-medium leading-tight">{row.original.name}</p>
-          {getAgencyDomain(row.original) && <p className="text-xs text-muted-foreground">{getAgencyDomain(row.original)}</p>}
+    enableSorting: true,
+    enableHiding: false,
+    cell: ({ row }: { row: AgencyRow }) => {
+      const agency = row.original;
+      return (
+        <div className="flex items-center gap-3">
+          <CompanyLogo name={agency.name} logoUrl={agency.logo_url} website={agency.website ?? undefined} size={40} className="h-10 w-10 shrink-0" />
+          <div className="flex flex-col gap-0.5">
+            <Link href={`/admin/agents/agencies/${agency.id}`} className="font-medium hover:underline">
+              {agency.name}
+            </Link>
+            {getAgencyDomain(agency) && (
+              <p className="text-xs text-muted-foreground">{getAgencyDomain(agency)}</p>
+            )}
+            {agency.email && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="truncate">{agency.email}</span>
+              </div>
+            )}
+            {agency.phone && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Phone className="h-3 w-3 shrink-0" />
+                <span>{agency.phone}</span>
+              </div>
+            )}
+          </div>
         </div>
-      </Link>
-    ),
-  },
-  {
-    id: "contact",
-    header: "Contact",
-    cell: ({ row }: { row: AgencyRow }) => (
-      <div className="space-y-1 text-sm">
-        {row.original.email && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Mail className="h-3 w-3" />
-            {row.original.email}
-          </div>
-        )}
-        {row.original.phone && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Phone className="h-3 w-3" />
-            {row.original.phone}
-          </div>
-        )}
-      </div>
-    ),
+      );
+    },
   },
   {
     id: "location",
@@ -108,20 +109,39 @@ const agentColumns: ColumnDef<Agent>[] = [
   {
     accessorKey: "name",
     header: "Agent",
-    cell: ({ row }: { row: AgentRow }) => (
-      <div className="flex items-center gap-3">
-        <Avatar className="h-8 w-8">
-          {row.original.avatar_url ? (
-            <AvatarImage src={row.original.avatar_url} alt={row.original.name} />
-          ) : (
-            <AvatarFallback>{row.original.name.charAt(0)}</AvatarFallback>
-          )}
-        </Avatar>
-        <Link href={`/admin/agents/${row.original.id}`} className="font-medium hover:underline">
-          {row.original.name}
-        </Link>
-      </div>
-    ),
+    enableSorting: true,
+    enableHiding: false,
+    cell: ({ row }: { row: AgentRow }) => {
+      const agent = row.original;
+      return (
+        <div className="flex items-start gap-3 py-1">
+          <Avatar className="h-12 w-12 shrink-0">
+            {agent.avatar_url ? (
+              <AvatarImage src={agent.avatar_url} alt={agent.name} />
+            ) : (
+              <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
+            )}
+          </Avatar>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <Link href={`/admin/agents/${agent.id}`} className="font-medium hover:underline">
+              {agent.name}
+            </Link>
+            {agent.email && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Mail className="h-3 w-3 shrink-0" />
+                <span className="truncate">{agent.email}</span>
+              </div>
+            )}
+            {agent.phone && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Phone className="h-3 w-3 shrink-0" />
+                <span>{agent.phone}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    },
   },
   {
     id: "agency",
@@ -135,26 +155,6 @@ const agentColumns: ColumnDef<Agent>[] = [
       ) : (
         <span className="text-muted-foreground">Independent</span>
       ),
-  },
-  {
-    id: "contact",
-    header: "Contact",
-    cell: ({ row }: { row: AgentRow }) => (
-      <div className="space-y-1 text-sm">
-        {row.original.email && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Mail className="h-3 w-3" />
-            {row.original.email}
-          </div>
-        )}
-        {row.original.phone && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Phone className="h-3 w-3" />
-            {row.original.phone}
-          </div>
-        )}
-      </div>
-    ),
   },
   {
     accessorKey: "total_referrals",
@@ -311,76 +311,32 @@ function AgentsPageContent() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>All Agents</CardTitle>
-                <CardDescription>{filteredAgents.length} total agents</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-2 pb-4">
-                  {["all", "active", "inactive"].map((status) => (
-                    <Button
-                      key={status}
-                      variant={agentStatusFilter === status ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAgentStatusFilter(status as typeof agentStatusFilter)}
-                    >
-                      {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
-                    </Button>
-                  ))}
-                </div>
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={agentQuery} onChange={(event) => setAgentQuery(event.target.value)} placeholder="Search agents..." className="pl-9" />
-                </div>
-                <div className="space-y-4 md:hidden">
-                  {filteredAgents.map((agent) => (
-                    <Link
-                      key={agent.id}
-                      href={`/admin/agents/${agent.id}`}
-                      className="block rounded-lg border p-4 transition hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                      aria-label={`View ${agent.name}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            {agent.avatar_url ? (
-                              <AvatarImage src={agent.avatar_url} alt={agent.name} />
-                            ) : (
-                              <AvatarFallback>{agent.name.charAt(0)}</AvatarFallback>
-                            )}
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{agent.name}</p>
-                            <p className="text-xs text-muted-foreground">{agent.email ?? "—"}</p>
-                          </div>
-                        </div>
-                        <Badge variant={agent.status === "active" ? "default" : "secondary"}>{agent.status}</Badge>
-                      </div>
-                      <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-                        {agent.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>{agent.phone}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{agent.total_revenue.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{agent.total_referrals} referrals</span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-                <div className="hidden md:block">
-                  <DataTable columns={agentColumns} data={filteredAgents} searchKey="name" searchPlaceholder="Search agents..." />
-                </div>
-              </CardContent>
-            </Card>
+            <ModernDataTable
+              columns={agentColumns}
+              data={filteredAgents}
+              title="All Agents"
+              description={`${filteredAgents.length} total agents`}
+              filterControls={
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {["all", "active", "inactive"].map((status) => (
+                      <Button
+                        key={status}
+                        variant={agentStatusFilter === status ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAgentStatusFilter(status as typeof agentStatusFilter)}
+                      >
+                        {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input value={agentQuery} onChange={(event) => setAgentQuery(event.target.value)} placeholder="Search agents..." className="pl-9" />
+                  </div>
+                </>
+              }
+            />
           </TabsContent>
 
           <TabsContent value="agencies" className="space-y-6">
@@ -417,73 +373,32 @@ function AgentsPageContent() {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>All Agencies</CardTitle>
-                <CardDescription>{filteredAgencies.length} total agencies</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-2 pb-4">
-                  {["all", "active", "inactive"].map((status) => (
-                    <Button
-                      key={status}
-                      variant={agencyStatusFilter === status ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAgencyStatusFilter(status as typeof agencyStatusFilter)}
-                    >
-                      {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
-                    </Button>
-                  ))}
-                </div>
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={agencyQuery} onChange={(event) => setAgencyQuery(event.target.value)} placeholder="Search agencies..." className="pl-9" />
-                </div>
-                <div className="space-y-4 md:hidden">
-                  {filteredAgencies.map((agency) => (
-                    <div key={agency.id} className="rounded-lg border p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <CompanyLogo name={agency.name} logoUrl={agency.logo_url} website={agency.website ?? undefined} size={44} className="h-11 w-11" />
-                          <div>
-                            <p className="font-medium leading-tight">{agency.name}</p>
-                            {getAgencyDomain(agency) && <p className="text-xs text-muted-foreground">{getAgencyDomain(agency)}</p>}
-                            {getAgencyLocation(agency) && <p className="text-xs text-muted-foreground">{getAgencyLocation(agency)}</p>}
-                            {!getAgencyDomain(agency) && !getAgencyLocation(agency) && <p className="text-xs text-muted-foreground">—</p>}
-                          </div>
-                        </div>
-                        <Badge variant={agency.status === "active" ? "default" : "secondary"}>{agency.status}</Badge>
-                      </div>
-                      <div className="mt-3 grid gap-2 text-sm text-muted-foreground">
-                        {agency.email && (
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-3.5 w-3.5" />
-                            <span>{agency.email}</span>
-                          </div>
-                        )}
-                        {agency.phone && (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>{agency.phone}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                          <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{agency.agents?.length ?? 0} agents</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>${agency.total_revenue.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="hidden md:block">
-                  <DataTable columns={agencyColumns} data={filteredAgencies} searchKey="name" searchPlaceholder="Search agencies..." />
-                </div>
-              </CardContent>
-            </Card>
+            <ModernDataTable
+              columns={agencyColumns}
+              data={filteredAgencies}
+              title="All Agencies"
+              description={`${filteredAgencies.length} total agencies`}
+              filterControls={
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {["all", "active", "inactive"].map((status) => (
+                      <Button
+                        key={status}
+                        variant={agencyStatusFilter === status ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setAgencyStatusFilter(status as typeof agencyStatusFilter)}
+                      >
+                        {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input value={agencyQuery} onChange={(event) => setAgencyQuery(event.target.value)} placeholder="Search agencies..." className="pl-9" />
+                  </div>
+                </>
+              }
+            />
           </TabsContent>
         </Tabs>
       </div>

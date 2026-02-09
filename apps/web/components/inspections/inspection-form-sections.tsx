@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { InspectionDetailsSection, type InspectorOption } from "./inspection-details-section";
-import { calculateServiceDurationMinutes, calculateServiceTotal, formatPrice } from "@/lib/utils/pricing";
+import { calculateServiceDurationMinutes, calculateServiceTotal, formatPrice } from "@inspectos/shared/utils/pricing";
 import type { Service } from "@/hooks/use-services";
 
 export type InspectionFormState = {

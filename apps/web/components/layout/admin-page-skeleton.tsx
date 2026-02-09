@@ -1,7 +1,7 @@
 import { AdminShell } from "@/components/layout/admin-shell";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 interface AdminPageSkeletonProps {
   /**

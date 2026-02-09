@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CalendarDays, Plus } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useSchedule } from "@/hooks/use-schedule";
 import { Badge } from "@/components/ui/badge";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { formatTime12 } from "@/lib/utils/dates";
+import { formatTime12 } from "@inspectos/shared/utils/dates";
 
 export default function SchedulePage() {
   const { data: scheduleItems = [], isLoading, isError, error } = useSchedule();

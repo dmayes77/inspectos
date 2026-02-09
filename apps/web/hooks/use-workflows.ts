@@ -1,22 +1,34 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
-import { fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow } from "@/lib/data/workflows";
 import type { Workflow } from "@/types/workflow";
+import { useApiClient } from "@/lib/api/tenant-context";
 
 export function useWorkflows() {
-  return useGet<Workflow[]>("workflows", async () => fetchWorkflows());
+  const apiClient = useApiClient();
+  return useGet<Workflow[]>("workflows", async () => {
+    return await apiClient.get<Workflow[]>('/admin/workflows');
+  });
 }
 
 export function useCreateWorkflow() {
-  return usePost<Workflow, Partial<Workflow>>("workflows", async (data) => createWorkflow(data));
+  const apiClient = useApiClient();
+  return usePost<Workflow, Partial<Workflow>>("workflows", async (data) => {
+    return await apiClient.post<Workflow>('/admin/workflows', data);
+  });
 }
 
 export function useUpdateWorkflow() {
+  const apiClient = useApiClient();
   return usePut<Workflow, { id: string } & Partial<Workflow>>(
     "workflows",
-    async (data) => updateWorkflow(data.id, data)
+    async (data) => {
+      return await apiClient.put<Workflow>(`/admin/workflows/${data.id}`, data);
+    }
   );
 }
 
 export function useDeleteWorkflow() {
-  return useDelete<boolean>("workflows", async (id) => deleteWorkflow(id));
+  const apiClient = useApiClient();
+  return useDelete<boolean>("workflows", async (id) => {
+    return await apiClient.delete<boolean>(`/admin/workflows/${id}`);
+  });
 }

@@ -3,7 +3,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { User, Calendar } from "lucide-react";
 import { PropertyTypeIcon } from "./property-type-icon";
-import { formatTimestamp } from "@/lib/utils/dates";
+import { formatTimestamp } from "@inspectos/shared/utils/dates";
 import { Property } from "@/hooks/use-properties";
 
 function PropertyAddressCell({ property }: { property: Property }) {

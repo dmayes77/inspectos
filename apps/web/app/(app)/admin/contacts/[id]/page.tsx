@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/ui/back-button";
 import { Edit, Trash2, Mail, Phone, User, DollarSign, ClipboardList, Calendar } from "lucide-react";
 import { useClientById, useDeleteClient } from "@/hooks/use-clients";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";

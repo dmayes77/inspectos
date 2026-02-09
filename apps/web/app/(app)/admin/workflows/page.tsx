@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Workflow as WorkflowIcon, Pencil, Trash2 } from "lucide-react";
 import { useDeleteWorkflow, useWorkflows } from "@/hooks/use-workflows";
 import type { Workflow } from "@/types/workflow";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 export default function WorkflowsPage() {

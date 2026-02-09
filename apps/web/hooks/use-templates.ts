@@ -1,27 +1,47 @@
 import { useGet, usePut, usePost } from "@/hooks/crud";
-import { fetchTemplates, fetchTemplateById, updateTemplate, createTemplateStub, duplicateTemplate } from "@/lib/data/templates";
 import type { Template } from "@/types/template";
+import { useApiClient } from "@/lib/api/tenant-context";
 
 export function useTemplates() {
-  return useGet<Template[]>("templates", async () => fetchTemplates());
+  const apiClient = useApiClient();
+  return useGet<Template[]>("templates", async () => {
+    return await apiClient.get<Template[]>('/admin/templates');
+  });
 }
 
 export function useTemplate(id: string | null) {
+  const apiClient = useApiClient();
   return useGet<Template | null>(
     id ? `template-${id}` : "template-null",
-    async () => (id ? fetchTemplateById(id) : null),
+    async () => {
+      if (!id) return null;
+      try {
+        return await apiClient.get<Template>(`/admin/templates/${id}`);
+      } catch {
+        return null;
+      }
+    },
     { enabled: !!id }
   );
 }
 
 export function useUpdateTemplate() {
-  return usePut<Template, { id: string; data: Partial<Template> }>("templates", async ({ id, data }) => updateTemplate(id, data));
+  const apiClient = useApiClient();
+  return usePut<Template, { id: string; data: Partial<Template> }>("templates", async ({ id, data }) => {
+    return await apiClient.put(`/admin/templates/${id}`, data);
+  });
 }
 
 export function useCreateTemplateStub() {
-  return usePost<Template, { name: string; description?: string }>("templates", async (payload) => createTemplateStub(payload));
+  const apiClient = useApiClient();
+  return usePost<Template, { name: string; description?: string }>("templates", async (payload) => {
+    return await apiClient.post('/admin/templates', { action: 'create_stub', ...payload });
+  });
 }
 
 export function useDuplicateTemplate() {
-  return usePost<Template, string>("templates", async (id) => duplicateTemplate(id));
+  const apiClient = useApiClient();
+  return usePost<Template, string>("templates", async (id) => {
+    return await apiClient.post<Template>(`/admin/templates/${id}/duplicate`, {});
+  });
 }

@@ -24,11 +24,11 @@ import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
 import { ServiceAssignmentsSection, type ServiceAssignment } from "@/components/orders/service-assignments-section";
-import type { InspectionService } from "@/lib/data/orders";
+import type { InspectionService } from "@/hooks/use-orders";
 import type { Inspection } from "@/hooks/use-inspections";
 import { useVendors } from "@/hooks/use-vendors";
 import { cn } from "@/lib/utils";
-import { tryFormatDate } from "@/lib/utils/tryFormatDate";
+import { tryFormatDate } from "@inspectos/shared/utils/tryFormatDate";
 
 const orderStatusOptions = ["pending", "scheduled", "in_progress", "pending_report", "delivered", "completed", "cancelled"] as const;
 

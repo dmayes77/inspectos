@@ -22,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Save, Shield, Info } from "lucide-react";
 import { generateNextTeamMemberId, type TeamMemberRole } from "@/lib/team-member-id";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const roles = [
   {

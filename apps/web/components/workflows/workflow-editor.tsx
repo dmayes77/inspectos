@@ -20,7 +20,7 @@ import { useTags } from "@/hooks/use-tags";
 import { useCreateWorkflow, useUpdateWorkflow, useWorkflows } from "@/hooks/use-workflows";
 import { useEmailTemplates } from "@/hooks/use-email-templates";
 import type { Workflow, WorkflowScope, WorkflowTriggerType } from "@/types/workflow";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const scopeOptions: { value: WorkflowScope; label: string }[] = [

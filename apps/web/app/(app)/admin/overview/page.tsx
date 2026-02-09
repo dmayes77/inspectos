@@ -19,9 +19,9 @@ import {
   Plus,
 } from "lucide-react";
 
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
-import { formatTime12 } from "@/lib/utils/dates";
+import { formatTime12 } from "@inspectos/shared/utils/dates";
 import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { Skeleton } from "@/components/ui/skeleton";

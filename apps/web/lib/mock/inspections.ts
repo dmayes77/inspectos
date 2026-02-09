@@ -1,6 +1,6 @@
 import { generateReadableId } from "@/lib/id-generator";
 import { services, SERVICE_IDS } from "@/lib/mock/services";
-import { normalizeServiceIds } from "@/lib/utils/services";
+import { normalizeServiceIds } from "@inspectos/shared/utils/services";
 
 // Legacy inspection type for mock data only
 interface LegacyInspection {

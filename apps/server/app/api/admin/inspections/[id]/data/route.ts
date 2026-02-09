@@ -4,82 +4,86 @@ import {
   getAccessToken,
   getUserFromToken,
   unauthorized,
-  notFound,
+  badRequest,
   serverError,
-  success
+  success,
 } from '@/lib/supabase';
-import { createLogger, generateRequestId } from '@/lib/logger';
-import { rateLimitByIP, RateLimitPresets } from '@/lib/rate-limit';
-
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+import { resolveTenant } from '@/lib/tenants';
 
 /**
  * GET /api/admin/inspections/[id]/data
- *
- * Fetches all inspection data: answers, findings, signatures, and media
- * This is the main endpoint for viewing completed inspection details
+ * Fetch inspection with all related data (answers, findings, signatures, media)
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
-  const requestId = generateRequestId();
-  const log = createLogger({ requestId, operation: 'inspection-data' });
-
-  const rateLimitResponse = rateLimitByIP(request, RateLimitPresets.api);
-  if (rateLimitResponse) return rateLimitResponse;
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: inspectionId } = await params;
 
   try {
     const accessToken = getAccessToken(request);
     if (!accessToken) {
-      return unauthorized('Missing access token', { requestId });
+      return unauthorized('Missing access token');
     }
 
     const user = getUserFromToken(accessToken);
     if (!user) {
-      return unauthorized('Invalid access token', { requestId });
+      return unauthorized('Invalid access token');
     }
 
+    const tenantSlug = request.nextUrl.searchParams.get('tenant');
     const supabase = createUserClient(accessToken);
 
-    // Get inspection with full details
+    const { tenant, error: tenantError } = await resolveTenant(
+      supabase,
+      user.userId,
+      tenantSlug
+    );
+
+    if (tenantError || !tenant) {
+      return badRequest('Tenant not found or access denied');
+    }
+
+    // Fetch inspection with related data
     const { data: inspection, error: inspectionError } = await supabase
       .from('inspections')
       .select(`
         *,
-        order:order_id(
+        order:orders(
           id,
           scheduled_date,
-          scheduled_time,
-          properties!property_id(
+          status,
+          property:properties(
             id,
             address_line1,
             address_line2,
             city,
             state,
             zip_code,
-            property_type,
-            square_feet,
-            year_built
+            property_type
           ),
-          clients!client_id(
+          client:clients(
             id,
             name,
             email,
-            phone,
-            company
+            phone
           ),
-          profiles!inspector_id(
+          agent:agents(
             id,
             full_name,
             email,
-            avatar_url
+            phone
           )
         ),
-        templates!template_id(
+        inspector:profiles(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        template:templates(
           id,
           name,
-          description,
           template_sections(
             id,
             name,
@@ -97,130 +101,71 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           )
         )
       `)
-      .eq('id', id)
+      .eq('id', inspectionId)
+      .eq('tenant_id', tenant.id)
       .single();
 
-    if (inspectionError) {
-      if (inspectionError.code === 'PGRST116') {
-        return notFound('Inspection not found');
-      }
-      log.error('Failed to fetch inspection', { inspectionId: id }, inspectionError);
-      return serverError('Failed to fetch inspection', inspectionError, { requestId });
+    if (inspectionError || !inspection) {
+      return serverError('Failed to fetch inspection', inspectionError);
     }
 
-    // Get answers
+    // Fetch answers
     const { data: answers, error: answersError } = await supabase
-      .from('answers')
-      .select(`
-        id,
-        template_item_id,
-        section_id,
-        value,
-        notes,
-        created_at,
-        updated_at
-      `)
-      .eq('inspection_id', id);
+      .from('inspection_answers')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .eq('tenant_id', tenant.id)
+      .order('created_at');
 
     if (answersError) {
-      log.error('Failed to fetch answers', { inspectionId: id }, answersError);
+      return serverError('Failed to fetch answers', answersError);
     }
 
-    // Get findings
+    // Fetch findings
     const { data: findings, error: findingsError } = await supabase
-      .from('findings')
-      .select(`
-        id,
-        section_id,
-        template_item_id,
-        defect_library_id,
-        title,
-        description,
-        severity,
-        location,
-        recommendation,
-        estimated_cost_min,
-        estimated_cost_max,
-        created_at,
-        updated_at,
-        media:media_assets(id, storage_path, file_name, mime_type, caption)
-      `)
-      .eq('inspection_id', id)
-      .order('severity', { ascending: false });
+      .from('inspection_findings')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .eq('tenant_id', tenant.id)
+      .order('created_at');
 
     if (findingsError) {
-      log.error('Failed to fetch findings', { inspectionId: id }, findingsError);
+      return serverError('Failed to fetch findings', findingsError);
     }
 
-    // Get signatures
+    // Fetch signatures
     const { data: signatures, error: signaturesError } = await supabase
-      .from('signatures')
-      .select(`
-        id,
-        signer_name,
-        signer_type,
-        signature_data,
-        signed_at
-      `)
-      .eq('inspection_id', id)
-      .order('signed_at', { ascending: true });
+      .from('inspection_signatures')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .eq('tenant_id', tenant.id)
+      .order('signed_at');
 
     if (signaturesError) {
-      log.error('Failed to fetch signatures', { inspectionId: id }, signaturesError);
+      return serverError('Failed to fetch signatures', signaturesError);
     }
 
-    // Get media assets
+    // Fetch media assets
     const { data: media, error: mediaError } = await supabase
-      .from('media_assets')
-      .select(`
-        id,
-        finding_id,
-        answer_id,
-        storage_path,
-        file_name,
-        mime_type,
-        file_size,
-        caption,
-        created_at
-      `)
-      .eq('inspection_id', id)
-      .order('created_at', { ascending: true });
+      .from('inspection_media')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .eq('tenant_id', tenant.id)
+      .order('created_at');
 
     if (mediaError) {
-      log.error('Failed to fetch media', { inspectionId: id }, mediaError);
+      return serverError('Failed to fetch media', mediaError);
     }
 
-    log.info('Inspection data fetched', {
-      inspectionId: id,
-      answersCount: answers?.length || 0,
-      findingsCount: findings?.length || 0,
-      signaturesCount: signatures?.length || 0,
-      mediaCount: media?.length || 0
-    });
-
-    // Transform the inspection data to match UI expectations
-    const transformedInspection = {
-      ...inspection,
-      // Rename order.clients/properties/profiles to singular for UI compatibility
-      order: inspection.order ? {
-        ...inspection.order,
-        property: (inspection.order as any).properties || null,
-        client: (inspection.order as any).clients || null,
-        inspector: (inspection.order as any).profiles || null,
-      } : null,
-      // Add inspector at top level for backward compatibility
-      inspector: inspection.order ? (inspection.order as any).profiles : null,
-    };
-
     return success({
-      inspection: transformedInspection,
+      inspection,
       answers: answers || [],
       findings: findings || [],
       signatures: signatures || [],
-      media: media || []
+      media: media || [],
     });
   } catch (error) {
-    log.error('Inspection data fetch failed', { requestId, inspectionId: id }, error);
-    return serverError('Failed to fetch inspection data', error, { requestId });
+    console.error('Error fetching inspection data:', error);
+    return serverError('Internal server error', error);
   }
 }

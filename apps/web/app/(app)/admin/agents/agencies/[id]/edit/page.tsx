@@ -15,8 +15,8 @@ import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgencyById, useUpdateAgency } from "@/hooks/use-agencies";
 import { useAgents, useUpdateAgent } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
-import { mockAdminUser } from "@/lib/constants/mock-users";
-import { logoDevUrl } from "@/lib/utils/logos";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 

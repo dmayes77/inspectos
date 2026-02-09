@@ -10,7 +10,7 @@ import { Loader2, Save } from "lucide-react";
 import { useCreateProperty } from "@/hooks/use-properties";
 import { useClients } from "@/hooks/use-clients";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";

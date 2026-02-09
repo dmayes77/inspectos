@@ -10,7 +10,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { updateWebhookSchema } from '@/lib/validations/webhook';
+import { updateWebhookSchema } from '@inspectos/shared/validations/webhook';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

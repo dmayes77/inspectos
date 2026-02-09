@@ -10,7 +10,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { createIntegrationSchema } from '@/lib/validations/integration';
+import { createIntegrationSchema } from '@inspectos/shared/validations/integration';
 
 /**
  * GET /api/admin/integrations

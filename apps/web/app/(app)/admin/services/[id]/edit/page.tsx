@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useServices, useUpdateService, type Service } from "@/hooks/use-services";
 import { useTemplates, useCreateTemplateStub } from "@/hooks/use-templates";
 import { ServiceForm } from "@/components/shared/service-form";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const SERVICE_TIPS = [
   "Use durations and price together to keep scheduling accurate.",

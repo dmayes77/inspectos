@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTagSchema, updateTagSchema } from "@/lib/validations/tag";
+import { createTagSchema, updateTagSchema } from "@inspectos/shared/validations/tag";
 
 describe("createTagSchema", () => {
   it("should validate a valid tag", () => {

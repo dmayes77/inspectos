@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
-import { formatTimestamp } from "@/lib/utils/dates";
+import { formatTimestamp } from "@inspectos/shared/utils/dates";
 
 type RecordInformationCardProps = {
   title?: string;

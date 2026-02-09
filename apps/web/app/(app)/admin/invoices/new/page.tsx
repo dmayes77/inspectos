@@ -6,7 +6,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/invoices/invoice-form";
 import { useCreateInvoice } from "@/hooks/use-invoices";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const initialValues: InvoiceFormValues = {
   orderId: "",

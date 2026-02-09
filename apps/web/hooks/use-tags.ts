@@ -1,19 +1,31 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
-import { fetchTags, createTag, updateTag, deleteTag } from "@/lib/data/tags";
 import type { Tag } from "@/types/tag";
+import { useApiClient } from "@/lib/api/tenant-context";
 
 export function useTags() {
-  return useGet<Tag[]>("tags", async () => fetchTags());
+  const apiClient = useApiClient();
+  return useGet<Tag[]>("tags", async () => {
+    return await apiClient.get<Tag[]>('/admin/tags');
+  });
 }
 
 export function useCreateTag() {
-  return usePost<Tag, Partial<Tag>>("tags", async (data) => createTag(data));
+  const apiClient = useApiClient();
+  return usePost<Tag, Partial<Tag>>("tags", async (data) => {
+    return await apiClient.post<Tag>('/admin/tags', data);
+  });
 }
 
 export function useUpdateTag() {
-  return usePut<Tag, { id: string } & Partial<Tag>>("tags", async (data) => updateTag(data.id, data));
+  const apiClient = useApiClient();
+  return usePut<Tag, { id: string } & Partial<Tag>>("tags", async (data) => {
+    return await apiClient.put<Tag>(`/admin/tags/${data.id}`, data);
+  });
 }
 
 export function useDeleteTag() {
-  return useDelete<boolean>("tags", async (id: string) => deleteTag(id));
+  const apiClient = useApiClient();
+  return useDelete<boolean>("tags", async (id: string) => {
+    return await apiClient.delete<boolean>(`/admin/tags/${id}`);
+  });
 }

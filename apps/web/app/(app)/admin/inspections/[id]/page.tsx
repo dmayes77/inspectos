@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
-import { PageHeader } from "@/components/layout/page-header";
+import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Edit, Archive, FileText, User, Calendar, ClipboardList, AlertTriangle, CheckCircle2, XCircle, PenTool, Image as ImageIcon, Mail } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
-import { formatInspectionDateTime } from "@/lib/utils/formatters";
+import { formatInspectionDateTime } from "@inspectos/shared/utils/formatters";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import {
@@ -68,6 +68,7 @@ export default function InspectionDetailPage() {
   const { data: inspectionData, isLoading: dataLoading } = useInspectionData(id);
 
   const isLoading = dataLoading;
+
   const stats = useMemo(() => {
     if (!inspectionData) return null;
     const { answers, findings, signatures } = inspectionData;
@@ -88,41 +89,7 @@ export default function InspectionDetailPage() {
     return groupAnswersBySection(inspectionData.answers, sections);
   }, [inspectionData]);
 
-  if (isLoading) {
-    return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading inspection...</div>
-      </AdminShell>
-    );
-  }
-
-  const inspection = inspectionData?.inspection;
-
-  if (!inspection) {
-    return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <PageHeader
-            breadcrumb={
-              <>
-                <Link href="/admin/overview" className="hover:text-foreground">
-                  Overview
-                </Link>
-                <span className="text-muted-foreground">/</span>
-                <Link href="/admin/inspections" className="hover:text-foreground">
-                  Inspections
-                </Link>
-              </>
-            }
-            title="Inspection Not Found"
-            description="The inspection you are looking for does not exist."
-            backHref="/admin/inspections"
-          />
-        </div>
-      </AdminShell>
-    );
-  }
-
+  // Handler functions - defined BEFORE useMemos that reference them
   const handleArchive = () => {
     // TODO: Implement API call to archive inspection
     setArchiveDialogOpen(false);
@@ -133,59 +100,72 @@ export default function InspectionDetailPage() {
     // TODO: Implement report generation
   };
 
-  const isCompleted = inspection.status === "completed";
-  const scheduledDate = inspection.order?.scheduled_date || "";
-  const scheduledTime = ""; // Order doesn't have scheduled_time at top level
+  // Pre-compute all derived values before any conditional returns
+  const inspection = inspectionData?.inspection;
+  const isCompleted = inspection?.status === "completed";
+  const scheduledDate = inspection?.order?.scheduled_date || "";
+  const scheduledTime = "";
   const formattedDateTime = scheduledDate ? formatInspectionDateTime(scheduledDate, scheduledTime) : "Unscheduled";
-  const property = inspection.order?.property;
-  const client = inspection.order?.client;
-  const linkedOrderId = inspection.order?.id ?? null;
+  const property = inspection?.order?.property;
+  const client = inspection?.order?.client;
+  const linkedOrderId = inspection?.order?.id ?? null;
   const clientEmail = client?.email ?? null;
-  const inspectorName = inspection.inspector?.full_name || inspection.inspector?.email || "Unassigned";
+  const inspectorName = inspection?.inspector?.full_name || inspection?.inspector?.email || "Unassigned";
   const address = property
     ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
     : "Property unavailable";
 
-  return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/inspections" className="hover:text-foreground">
-                Inspections
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <span>{address}</span>
-            </>
-          }
-          title="Inspection Details"
-          description={address}
-          meta={
-            <>
-              {inspectionStatusBadge(inspection.status)}
-              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                {formattedDateTime}
-              </span>
-              {stats && (
-                <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {stats.completionPercentage}% Complete
-                </span>
-              )}
-            </>
-          }
-          backHref="/admin/inspections"
-        />
+  // ALL hooks must be called before any conditional returns
+  const breadcrumbContent = useMemo(
+    () => (
+      <>
+        <Link href="/admin/overview" className="hover:text-foreground">
+          Overview
+        </Link>
+        <span className="text-muted-foreground">/</span>
+        <Link href="/admin/inspections" className="hover:text-foreground">
+          Inspections
+        </Link>
+        {inspection && (
+          <>
+            <span className="text-muted-foreground">/</span>
+            <span>{address}</span>
+          </>
+        )}
+      </>
+    ),
+    [inspection, address]
+  );
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
+  const metaContent = useMemo(
+    () => {
+      if (!inspection) return null;
+      return (
+        <>
+          {inspectionStatusBadge(inspection.status)}
+          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            {formattedDateTime}
+          </span>
+          {stats && (
+            <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4" />
+              {stats.completionPercentage}% Complete
+            </span>
+          )}
+        </>
+      );
+    },
+    [inspection, formattedDateTime, stats]
+  );
+
+  // Memoize main content to prevent unnecessary rerenders
+  const mainContent = useMemo(
+    () => {
+      if (!inspection) return null;
+      return (
+        <>
+          <Card>
               <CardHeader>
                 <CardTitle>Inspection Summary</CardTitle>
                 <CardDescription>Property, client, schedule, and inspector details.</CardDescription>
@@ -408,9 +388,18 @@ export default function InspectionDetailPage() {
                 )}
               </CardContent>
             </Card>
-          </div>
+          </>
+      );
+    },
+    [inspection, inspectionData, stats, groupedAnswers, address, client, formattedDateTime, inspectorName]
+  );
 
-          <div className="space-y-6">
+  // Memoize sidebar content to prevent unnecessary rerenders
+  const sidebarContent = useMemo(
+    () => {
+      if (!inspection) return null;
+      return (
+        <>
             <Card id="quick-actions-card">
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
@@ -489,10 +478,56 @@ export default function InspectionDetailPage() {
             </Card>
 
             <RecordInformationCard createdAt={inspection.created_at} updatedAt={inspection.updated_at} />
+          </>
+      );
+    },
+    [inspection, linkedOrderId, client, clientEmail, isCompleted, handleGenerateReport, handleArchive]
+  );
+
+  // Early returns after all hooks
+  if (isLoading) {
+    return (
+      <AdminShell user={mockAdminUser}>
+        <div className="py-12 text-center text-muted-foreground">Loading inspection...</div>
+      </AdminShell>
+    );
+  }
+
+  if (!inspection) {
+    return (
+      <AdminShell user={mockAdminUser}>
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Link href="/admin/overview" className="hover:text-foreground">
+              Overview
+            </Link>
+            <span>/</span>
+            <Link href="/admin/inspections" className="hover:text-foreground">
+              Inspections
+            </Link>
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold">Inspection Not Found</h1>
+            <p className="text-muted-foreground mt-2">The inspection you are looking for does not exist.</p>
           </div>
         </div>
+      </AdminShell>
+    );
+  }
 
-        {/* Archive Confirmation Dialog */}
+  return (
+    <AdminShell user={mockAdminUser}>
+      <ResourceDetailLayout
+        breadcrumb={breadcrumbContent}
+        title="Inspection Details"
+        description={address}
+        meta={metaContent}
+        backHref="/admin/inspections"
+        main={mainContent}
+        sidebar={sidebarContent}
+      />
+
+      {/* Archive Confirmation Dialog */}
         <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -507,7 +542,6 @@ export default function InspectionDetailPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>
     </AdminShell>
   );
 }

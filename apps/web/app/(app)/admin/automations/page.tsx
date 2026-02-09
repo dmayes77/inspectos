@@ -10,11 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { AdminTabSwitch } from "@/components/layout/admin-tab-switch";
 import Link from "next/link";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { useWebhooks } from "@/hooks/use-webhooks";
 import { useWorkflows, useUpdateWorkflow } from "@/hooks/use-workflows";
-import type { Webhook } from "@/lib/types/webhook";
+import type { Webhook } from "@inspectos/shared/types/webhook";
 import type { Workflow } from "@/types/workflow";
 const formatEventLabel = (value: string) =>
   value

@@ -1,22 +1,34 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
-import { fetchEmailTemplates, createEmailTemplate, updateEmailTemplate, deleteEmailTemplate } from "@/lib/data/email-templates";
 import type { EmailTemplate } from "@/types/email-template";
+import { useApiClient } from "@/lib/api/tenant-context";
 
 export function useEmailTemplates() {
-  return useGet<EmailTemplate[]>("email-templates", async () => fetchEmailTemplates());
+  const apiClient = useApiClient();
+  return useGet<EmailTemplate[]>("email-templates", async () => {
+    return await apiClient.get<EmailTemplate[]>('/admin/email-templates');
+  });
 }
 
 export function useCreateEmailTemplate() {
-  return usePost<EmailTemplate, Partial<EmailTemplate>>("email-templates", async (data) => createEmailTemplate(data));
+  const apiClient = useApiClient();
+  return usePost<EmailTemplate, Partial<EmailTemplate>>("email-templates", async (data) => {
+    return await apiClient.post<EmailTemplate>('/admin/email-templates', data);
+  });
 }
 
 export function useUpdateEmailTemplate() {
+  const apiClient = useApiClient();
   return usePut<EmailTemplate, { id: string } & Partial<EmailTemplate>>(
     "email-templates",
-    async (data) => updateEmailTemplate(data.id, data)
+    async (data) => {
+      return await apiClient.put<EmailTemplate>(`/admin/email-templates/${data.id}`, data);
+    }
   );
 }
 
 export function useDeleteEmailTemplate() {
-  return useDelete<boolean>("email-templates", async (id) => deleteEmailTemplate(id));
+  const apiClient = useApiClient();
+  return useDelete<boolean>("email-templates", async (id) => {
+    return await apiClient.delete<boolean>(`/admin/email-templates/${id}`);
+  });
 }

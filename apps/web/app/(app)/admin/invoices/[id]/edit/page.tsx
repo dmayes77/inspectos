@@ -6,9 +6,9 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/invoices/invoice-form";
 import { useInvoice, useUpdateInvoice } from "@/hooks/use-invoices";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { Loader2 } from "lucide-react";
-import { formatInvoiceNumber } from "@/lib/utils/invoices";
+import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
 
 export default function EditInvoicePage() {
   const params = useParams();

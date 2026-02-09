@@ -21,9 +21,9 @@ import {
 import { Check, Download, Edit, Link2, Loader2, Send, Trash2 } from "lucide-react";
 import { useInvoice, useDeleteInvoice } from "@/hooks/use-invoices";
 import { useOrderById } from "@/hooks/use-orders";
-import type { InspectionService } from "@/lib/data/orders";
-import { mockAdminUser } from "@/lib/constants/mock-users";
-import { formatInvoiceNumber } from "@/lib/utils/invoices";
+import type { InspectionService } from "@/hooks/use-orders";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
 import { toast } from "sonner";
 import { ClientInfoCard } from "@/components/shared/client-info-card";
 import { RecordInformationCard } from "@/components/shared/record-information-card";

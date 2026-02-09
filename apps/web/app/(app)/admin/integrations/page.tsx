@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, CreditCard, FileText, Users, Calendar, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useIntegrations, useConnectIntegration, useDisconnectIntegration, type IntegrationType } from "@/hooks/use-integrations";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";

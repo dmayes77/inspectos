@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Plus, Lock, Users, CheckCircle, Hash } from "lucide-react";
 import { rolePermissions } from "@/lib/permissions";
 import { getRolePrefix } from "@/lib/team-member-id";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const roles = [
   {

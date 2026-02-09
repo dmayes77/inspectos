@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import {
   createUserClient,
-  createServiceClient,
   getAccessToken,
   getUserFromToken,
   unauthorized,
@@ -11,7 +10,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { createClientSchema } from '@/lib/validations/client';
+import { createClientSchema } from '@inspectos/shared/validations/client';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildClientPayload } from '@/lib/webhooks/payloads';
 

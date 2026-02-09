@@ -10,7 +10,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { updateTagSchema } from '@/lib/validations/tag';
+import { updateTagSchema } from '@inspectos/shared/validations/tag';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

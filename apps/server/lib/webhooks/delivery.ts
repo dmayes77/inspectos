@@ -1,7 +1,7 @@
 import { createServiceClient } from "../supabase";
 import { createHmac } from "crypto";
-import type { Webhook } from "../types/webhook";
-import type { WebhookEvent } from "../validations/webhook";
+import type { Webhook } from "@inspectos/shared/types/webhook";
+import type { WebhookEvent } from "@inspectos/shared/validations/webhook";
 
 export interface WebhookDeliveryOptions {
   webhookId: string;

@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useAgencyById, useDeleteAgency } from "@/hooks/use-agencies";
 import { useQueryClient } from "@tanstack/react-query";
 import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";

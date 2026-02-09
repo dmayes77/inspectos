@@ -10,7 +10,7 @@ import {
   validationError
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
-import { createAgentSchema } from '@/lib/validations/agent';
+import { createAgentSchema } from '@inspectos/shared/validations/agent';
 import { resolveAgencyAssociation } from '@/lib/agents/agency-helpers';
 
 /**

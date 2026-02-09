@@ -5,7 +5,7 @@ import { resolveTenant } from "@/lib/tenants";
 /**
  * GET /api/admin/schedule
  *
- * Returns schedule items derived from jobs.
+ * Returns schedule items derived from orders.
  * Query params:
  * - tenant: tenant slug (optional; defaults to user's first tenant)
  * - from: start date (YYYY-MM-DD)
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     let query = supabase
-      .from("jobs")
+      .from("orders")
       .select(
         `
         id,
@@ -42,9 +42,8 @@ export async function GET(request: NextRequest) {
         scheduled_time,
         status,
         duration_minutes,
-        selected_service_ids,
+        inspector_id,
         property:properties(address_line1, address_line2, city, state, zip_code),
-        template:templates(id, name),
         inspector:profiles(id, full_name, email)
       `,
       )
@@ -59,15 +58,14 @@ export async function GET(request: NextRequest) {
       query = query.lte("scheduled_date", to);
     }
 
-    const { data: jobs, error: jobsError } = await query;
-    if (jobsError) {
-      console.error("Schedule query error:", jobsError);
-      // Temporarily return empty array instead of failing
-      return success([]);
+    const { data: orders, error: ordersError } = await query;
+    if (ordersError) {
+      console.error("Schedule query error:", ordersError);
+      return serverError("Failed to fetch schedule", ordersError);
     }
 
-    const scheduleItems = (jobs || []).map((job) => {
-      const propertyData = Array.isArray(job.property) ? job.property[0] : job.property;
+    const scheduleItems = (orders || []).map((order) => {
+      const propertyData = Array.isArray(order.property) ? order.property[0] : order.property;
       const property = propertyData as {
         address_line1: string;
         address_line2: string | null;
@@ -75,23 +73,23 @@ export async function GET(request: NextRequest) {
         state: string;
         zip_code: string;
       } | null;
-      const inspectorData = Array.isArray(job.inspector) ? job.inspector[0] : job.inspector;
+      const inspectorData = Array.isArray(order.inspector) ? order.inspector[0] : order.inspector;
       const inspector = inspectorData as { id: string; full_name: string | null; email: string } | null;
       const address = property
         ? [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ")
         : "Unknown address";
 
       return {
-        id: job.id,
-        date: job.scheduled_date,
-        time: job.scheduled_time || "09:00",
+        id: order.id,
+        date: order.scheduled_date,
+        time: order.scheduled_time || "09:00",
         address,
         inspector: inspector?.full_name || inspector?.email || "Unassigned",
-        inspectorId: inspector?.id || "unassigned",
-        status: job.status,
-        type: (job.template as { name?: string | null })?.name || "Inspection",
+        inspectorId: inspector?.id || order.inspector_id || "unassigned",
+        status: order.status,
+        type: "Inspection",
         price: 0,
-        durationMinutes: job.duration_minutes || 120,
+        durationMinutes: order.duration_minutes || 120,
       };
     });
 

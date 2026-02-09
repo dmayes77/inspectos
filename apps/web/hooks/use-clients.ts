@@ -1,11 +1,5 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
-import {
-  fetchClients,
-  createClient,
-  updateClientById,
-  deleteClientById,
-  fetchClientById,
-} from "@/lib/data/admin-data";
+import { useApiClient } from "@/lib/api/tenant-context";
 
 export type ClientProperty = {
   propertyId: string;
@@ -33,28 +27,48 @@ export type Client = {
 };
 
 export function useClients() {
-  return useGet<Client[]>("clients", async () => fetchClients());
+  const apiClient = useApiClient();
+  return useGet<Client[]>("clients", async () => {
+    return await apiClient.get<Client[]>("/admin/clients");
+  });
 }
 
 export function useCreateClient() {
-  return usePost<Client, Omit<Client, "clientId" | "archived">>("clients", async (data) => createClient(data));
+  const apiClient = useApiClient();
+  return usePost<Client, Omit<Client, "clientId" | "archived">>("clients", async (data) => {
+    return await apiClient.post<Client>("/admin/clients", data);
+  });
 }
 
 export function useUpdateClient() {
+  const apiClient = useApiClient();
   return usePut<Client | null, { clientId: string } & Partial<Client>>(
     "clients",
-    async (data) => updateClientById(data)
+    async (data) => {
+      return await apiClient.put<Client>(`/admin/clients/${data.clientId}`, data);
+    }
   );
 }
 
 export function useDeleteClient() {
-  return useDelete<boolean>("clients", async (clientId: string) => deleteClientById(clientId));
+  const apiClient = useApiClient();
+  return useDelete<boolean>("clients", async (clientId: string) => {
+    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/clients/${clientId}`);
+    return result.deleted ?? true;
+  });
 }
 
 export function useClientById(clientId?: string) {
+  const apiClient = useApiClient();
   return useGet<Client | null>(
     clientId ? `client-${clientId}` : "client-undefined",
-    async () => (await fetchClientById(clientId ?? "")) ?? null,
+    async () => {
+      try {
+        return await apiClient.get<Client>(`/admin/clients/${clientId ?? ""}`);
+      } catch {
+        return null;
+      }
+    },
     { enabled: Boolean(clientId) }
   );
 }

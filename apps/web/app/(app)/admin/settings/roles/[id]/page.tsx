@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Save, Shield, Lock, Trash, Users } from "lucide-react";
 import { permissionCategories, rolePermissions } from "@/lib/permissions";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const roles = [
   {

@@ -7,7 +7,7 @@ import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { useClientById, useUpdateClient, type Client } from "@/hooks/use-clients";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { ContactFormErrors, ContactFormSections, ContactFormValues, validateContactForm } from "@/components/contacts/contact-form-sections";

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ZodError, type ZodSchema } from "zod";
+import { ZodError } from "zod";
 
 /**
  * Validates a request body against a Zod schema
@@ -7,7 +7,8 @@ import { ZodError, type ZodSchema } from "zod";
  */
 export async function validateRequestBody<T>(
   request: Request,
-  schema: ZodSchema<T>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  schema: { parse: (data: any) => T }
 ): Promise<{ data: T; error?: never } | { data?: never; error: NextResponse }> {
   try {
     const body = await request.json();

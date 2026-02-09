@@ -10,8 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CompanyLogo } from "@/components/shared/company-logo";
-import type { AgentStatus, ReportFormat } from "@/lib/data/agents";
-import type { Agency } from "@/lib/data/agencies";
+import type { AgentStatus, ReportFormat } from "@/hooks/use-agents";
+import type { Agency } from "@/hooks/use-agencies";
 import { toast } from "sonner";
 
 export type AgentFormValues = {

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useTeamMembers, type TeamMember } from "@/hooks/use-team";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const timeOffRequests = [
   {

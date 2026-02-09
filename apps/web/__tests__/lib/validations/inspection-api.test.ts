@@ -3,7 +3,7 @@ import {
   createInspectionSchema,
   updateInspectionSchema,
   updateInspectionStatusSchema,
-} from "@/lib/validations/inspection-api";
+} from "@inspectos/shared/validations/inspection-api";
 
 describe("createInspectionSchema", () => {
     const validInspection = {

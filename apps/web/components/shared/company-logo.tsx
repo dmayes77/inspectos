@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
-import { logoDevUrl, type LogoFormat, type LogoTheme } from "@/lib/utils/logos";
+import { logoDevUrl, type LogoFormat, type LogoTheme } from "@inspectos/shared/utils/logos";
 
 const DEFAULT_FORMATS: LogoFormat[] = ["webp", "png", "jpg"];
 type LogoSource = { format: LogoFormat | "custom"; url: string };

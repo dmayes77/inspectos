@@ -24,7 +24,7 @@ import { Unlock } from "lucide-react";
 import { Save } from "lucide-react";
 import { Lock } from "lucide-react";
 import { permissionCategories } from "@/lib/permissions";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 function formatShortMemberId(id?: string | null) {
   if (!id) return "TM-0000";

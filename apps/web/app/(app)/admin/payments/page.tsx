@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreditCard } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
+import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { usePayments, useRecordPayment } from "@/hooks/use-payments";
 import { useInvoices } from "@/hooks/use-invoices";
 import { useOrders } from "@/hooks/use-orders";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
-import { formatInvoiceNumber } from "@/lib/utils/invoices";
+import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
 import { toast } from "sonner";
 
 export default function PaymentsPage() {

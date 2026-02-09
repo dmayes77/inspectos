@@ -10,7 +10,7 @@ import {
 } from '@/lib/supabase';
 import { resolveTenant } from '@/lib/tenants';
 import { validateRequestBody } from '@/lib/api/validate';
-import { createOrderSchema } from '@/lib/validations/order';
+import { createOrderSchema } from '@inspectos/shared/validations/order';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildOrderCreatedPayload, buildSchedulePayload } from '@/lib/webhooks/payloads';
@@ -305,7 +305,7 @@ export async function POST(request: Request) {
     }
 
     // Create inspection services
-    const inspectionServices = payload.services.map((service: any, index: number) => ({
+    const inspectionServices = payload.services.map((service: { service_id: string; template_id?: string | null; name: string; price: number; duration_minutes?: number | null; inspector_id?: string | null }, index: number) => ({
       inspection_id: inspection.id,
       service_id: service.service_id,
       template_id: service.template_id ?? null,
