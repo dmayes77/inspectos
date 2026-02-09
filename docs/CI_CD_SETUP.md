@@ -27,10 +27,16 @@ Local Development → dev branch (testing) → main branch (production)
 ## CI Pipeline
 
 The CI pipeline runs automatically:
-- **On every push to `dev`** - Validates changes during development
-- **On pull requests to `main`** - Gates production deployments
+- **On every push to `dev`** - Validates all changes during development
 
-This prevents redundant checks - if CI passes on dev and the PR, it doesn't need to run again on main.
+That's it! No redundant checks on PRs or main since it's the same code that already passed on dev.
+
+**How it works:**
+1. Push to dev → CI validates the code
+2. Create PR to main → No CI (code already validated)
+3. Merge PR → Direct deployment
+
+**Gate:** Branch protection on main requires the latest dev CI status to pass before allowing merge.
 
 ### Pipeline Stages
 
@@ -107,30 +113,39 @@ git push origin dev  # or feature branch
 
 ### 2. Testing on Dev Branch
 
-- Push to dev triggers:
-  - ✅ CI pipeline (lint, type-check, test, build)
-  - 🚀 Automatic Vercel preview deployment
-- Review deployment preview at Vercel URL
-- Test functionality in preview environment
-- Fix any issues and push again to dev
+Every push to dev triggers:
+- ✅ **CI pipeline** - Lint, type-check, test, build validation
+- 🚀 **Vercel preview** - Automatic deployment with unique URL
+
+**Workflow:**
+1. Push to dev
+2. Wait for CI to pass (watch GitHub Actions)
+3. Review Vercel preview deployment
+4. Test functionality in preview environment
+5. If issues found, fix and push again to dev (CI runs again)
+6. Once satisfied and CI green, ready to create PR to main
 
 ### 3. Merging to Main
 
 ```bash
+# Ensure latest dev push passed CI
+git log dev --oneline -1  # Check latest commit
+gh run list --branch dev --limit 1  # Verify CI passed
+
 # Create pull request from dev to main
 gh pr create --base main --head dev --title "Release: [description]"
 
-# CI runs on the PR (final validation gate)
-# After PR approval and CI passes, merge
+# After PR approval, merge (CI already passed on dev)
 gh pr merge --squash
 
 # Or merge via GitHub UI
 ```
 
 **What happens:**
-- Creating the PR triggers CI one final time as a gate
-- Merging the PR deploys to production (no redundant CI run)
-- Vercel automatically deploys main branch to production
+- No CI runs on PR creation (already validated on dev)
+- Branch protection ensures latest dev CI passed before allowing merge
+- PR is for code review and approval only
+- Merge triggers production deployment on Vercel
 
 ## GitHub Actions Configuration
 
@@ -146,7 +161,7 @@ Set these in your GitHub repository settings:
 
 ### Branch Protection Rules
 
-#### For `main` branch:
+#### For `main` branch (Required):
 
 1. Go to `Settings → Branches → Add rule`
 2. Branch name pattern: `main`
@@ -154,9 +169,11 @@ Set these in your GitHub repository settings:
    - ✅ Require a pull request before merging
    - ✅ Require approvals (1)
    - ✅ Require status checks to pass before merging
-     - `CI Status Check`
+     - Select `CI Status Check` (this checks the dev branch CI status)
    - ✅ Require branches to be up to date before merging
    - ✅ Do not allow bypassing the above settings
+
+**Important:** This ensures dev CI must pass before you can merge to main, even though CI doesn't run on the PR itself.
 
 #### For `dev` branch (optional):
 
