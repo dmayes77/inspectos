@@ -22,21 +22,21 @@ interface VendorFormData {
 
 interface VendorFormProps {
   mode: "new" | "edit";
-  initialData?: Partial<VendorFormData>;
+  initialData?: Partial<VendorFormData> | Record<string, string | undefined>;
   onSubmit: (data: VendorFormData) => void | Promise<void>;
   onCancel: () => void;
 }
 
 export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorFormProps) {
-  const [form, setForm] = useState(
-    initialData || {
-      name: "",
-      type: "Pest",
-      contact: "",
-      specialties: "",
-      status: "active",
-      notes: "",
-    },
+  const [form, setForm] = useState<VendorFormData>(
+    {
+      name: (initialData?.name as string) || "",
+      type: (initialData?.type as string) || "Pest",
+      contact: (initialData?.contact as string) || "",
+      specialties: (initialData?.specialties as string) || "",
+      status: (initialData?.status as string) || "active",
+      notes: (initialData?.notes as string) || "",
+    }
   );
   const [isSaving, setIsSaving] = useState(false);
 

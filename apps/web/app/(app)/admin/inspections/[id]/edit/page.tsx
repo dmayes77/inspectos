@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -126,15 +126,6 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     const packages = services.filter((service) => service.isPackage);
     return { coreServices: core, addonServices: addons, packageServices: packages };
   }, [services]);
-
-  // Memoize client and inspector lookups
-  const clientObj = useMemo(() => {
-    return clients.find((c) => c.clientId === resolvedClientId);
-  }, [clients, resolvedClientId]);
-
-  const inspectorObj = useMemo(() => {
-    return inspectors.find((i) => i.teamMemberId === resolvedInspectorId);
-  }, [inspectors, resolvedInspectorId]);
 
   // Memoized form submission handler
   const handleSubmit = useCallback(
