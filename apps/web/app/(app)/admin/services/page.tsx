@@ -12,7 +12,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { useServices, useDeleteService } from "@/hooks/use-services";
+import { useServices, useDeleteService, type Service } from "@/hooks/use-services";
 import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
@@ -34,7 +34,7 @@ const formatDuration = (minutes?: number) => {
   return `${label}h`;
 };
 
-const createServicesColumns = (userRole: string, handleArchive: (id: string) => void): ColumnDef<any>[] => [
+const createServicesColumns = (userRole: string, handleArchive: (id: string) => void): ColumnDef<Service>[] => [
   {
     accessorKey: "name",
     header: "Name",

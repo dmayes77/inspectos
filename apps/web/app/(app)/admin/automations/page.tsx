@@ -53,8 +53,6 @@ export default function AutomationsPage() {
     return map;
   }, [webhooks]);
 
-  const activeCount = workflows.filter((workflow) => workflow.isActive).length;
-
   const updateState = (workflowId: string, isActive: boolean) => {
     setIsUpdating(true);
     updateWorkflow.mutate({ id: workflowId, isActive }, {

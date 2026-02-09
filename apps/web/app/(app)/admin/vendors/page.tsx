@@ -1,17 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Building2, Plus } from "lucide-react";
 import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { useVendors, type Vendor } from "@/hooks/use-vendors";
 
 export default function VendorsPage() {
-  // Import vendor logic
-  const { data: vendors = [], isLoading } = require("@/hooks/use-vendors").useVendors();
-  console.log("Vendors from useVendors:", vendors);
-  const router = require("next/navigation").useRouter();
+  const { data: vendors = [], isLoading } = useVendors();
+  const router = useRouter();
 
   return (
     <AdminShell user={mockAdminUser}>
@@ -50,17 +50,16 @@ export default function VendorsPage() {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {vendors.map((vendor: any) => (
+                {vendors.map((vendor: Vendor) => (
                   <Card key={vendor.id} className="border">
                     <CardHeader>
                       <CardTitle>{vendor.name}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <div>Type: {vendor.vendor_type}</div>
-                      {vendor.contact && <div>Contact: {vendor.contact}</div>}
-                      {vendor.specialties && <div>Specialties: {vendor.specialties}</div>}
+                      {vendor.vendorType && <div>Type: {vendor.vendorType}</div>}
+                      {vendor.email && <div>Email: {vendor.email}</div>}
+                      {vendor.phone && <div>Phone: {vendor.phone}</div>}
                       {vendor.status && <div>Status: {vendor.status}</div>}
-                      {vendor.notes && <div>Notes: {vendor.notes}</div>}
                       <Button variant="outline" size="sm" onClick={() => router.push(`/admin/vendors/${vendor.id}`)}>
                         View
                       </Button>

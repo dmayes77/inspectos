@@ -48,6 +48,7 @@ export default function InvoiceDetailPage() {
   const invoiceId = params.id as string;
 
   const { data: invoice, isLoading, isError } = useInvoice(invoiceId);
+  const { data: order } = useOrderById(invoice?.orderId ?? "");
   const deleteInvoice = useDeleteInvoice();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -99,7 +100,6 @@ export default function InvoiceDetailPage() {
   }
 
   const invoiceNumber = invoice.invoiceNumber || formatInvoiceNumber(invoice.invoiceId);
-  const { data: order } = useOrderById(invoice.orderId ?? "");
   const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
   const services: InspectionService[] = inspection?.services ?? [];
 

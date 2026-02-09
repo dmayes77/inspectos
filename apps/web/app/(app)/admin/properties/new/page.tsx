@@ -58,7 +58,7 @@ export default function NewPropertyPage() {
         city: form.city.trim(),
         state: form.state.trim(),
         zip_code: form.zipCode.trim(),
-        property_type: form.propertyType as any,
+        property_type: form.propertyType as "residential" | "commercial",
         year_built: form.yearBuilt ? parseInt(form.yearBuilt, 10) : null,
         square_feet: form.squareFeet ? parseInt(form.squareFeet, 10) : null,
         notes: form.notes.trim() || null,
