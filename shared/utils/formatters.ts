@@ -61,22 +61,14 @@ export function toNumber(value: string | number | undefined): number | undefined
  * @returns Formatted date/time string
  */
 export function formatInspectionDateTime(date: string, time: string): string {
-  // Use dynamic import to avoid circular dependencies
-  // In production, migrate to: import { formatDateTime } from "@/lib/utils/dates";
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { formatDateTime } = require("@/lib/utils/dates");
-    return formatDateTime(date, time);
-  } catch {
-    // Fallback to original implementation if dates utility not available
-    if (!date) return "";
-    const dateObj = new Date(`${date}T${time || "00:00"}`);
-    const dateStr = dateObj.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+  if (!date) return "";
+  const dateObj = new Date(`${date}T${time || "00:00"}`);
+  const dateStr = dateObj.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
     if (!time) return dateStr;
     const timeStr = dateObj.toLocaleTimeString("en-US", {
       hour: "numeric",
