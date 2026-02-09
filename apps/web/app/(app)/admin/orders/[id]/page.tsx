@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Calendar, Check, Clock, DollarSign, Edit, Mail, MapPin, Phone, Send, Tag, Trash2, User, ClipboardList } from "lucide-react";
+import { Building2, Calendar, Check, Clock, DollarSign, Edit, Mail, MapPin, Phone, Send, Tag, Trash2, User } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
 import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
 import { mockAdminUser } from "@inspectos/shared/constants/mock-users";

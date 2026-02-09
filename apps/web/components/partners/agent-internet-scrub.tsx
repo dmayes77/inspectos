@@ -30,6 +30,7 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
   const [photoIndex, setPhotoIndex] = useState(0);
   const isAgencyVariant = variant === "agency";
   const logoDevCandidate = useMemo(() => logoDevUrl(result?.domain ?? result?.url ?? null, { size: 96 }) ?? null, [result?.domain, result?.url]);
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const imageCandidates = useMemo(() => {
     const base = isAgencyVariant
       ? [...(logoDevCandidate ? [logoDevCandidate] : []), ...(result?.logoUrl ? [result.logoUrl] : []), ...(result?.photoCandidates ?? [])]

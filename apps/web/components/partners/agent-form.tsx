@@ -290,7 +290,7 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
                 </p>
               </div>
             </div>
-            {!form.brandLogoUrl && <p className="text-sm text-muted-foreground">We'll fetch the brokerage logo as soon as the profile is scrubbed.</p>}
+            {!form.brandLogoUrl && <p className="text-sm text-muted-foreground">We&apos;ll fetch the brokerage logo as soon as the profile is scrubbed.</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="agent-agency-address-line1">Agency address line 1</Label>

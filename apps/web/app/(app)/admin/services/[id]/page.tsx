@@ -49,6 +49,7 @@ export default function ServiceDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const individualTotal = useMemo(() => {
     if (!service?.includedServiceIds?.length) return 0;
     return service.includedServiceIds.reduce((sum, id) => {
@@ -225,7 +226,7 @@ export default function ServiceDetailPage() {
           {service.includes && service.includes.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>What's Included</CardTitle>
+                <CardTitle>What&apos;s Included</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="grid gap-2">

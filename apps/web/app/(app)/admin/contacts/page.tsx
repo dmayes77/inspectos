@@ -61,12 +61,13 @@ function ClientsPageContent() {
   );
 
   // Calculate stats
+  const [ninetyDaysAgo] = useState(() => Date.now() - 90 * 24 * 60 * 60 * 1000);
   const stats = useMemo(() => {
     const totalClients = contactClients.length;
     const totalInspections = contactClients.reduce((acc: number, c: Client) => acc + (c.inspections || 0), 0);
     const totalRevenue = contactClients.reduce((acc: number, c: Client) => acc + (c.totalSpent || 0), 0);
     const activeClients = contactClients.filter(
-      (c: Client) => c.lastInspection && new Date(c.lastInspection) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+      (c: Client) => c.lastInspection && new Date(c.lastInspection).getTime() > ninetyDaysAgo
     ).length;
 
     return {
@@ -76,7 +77,7 @@ function ClientsPageContent() {
       activeClients,
       avgRevenuePerClient: totalClients > 0 ? Math.round(totalRevenue / totalClients) : 0,
     };
-  }, [contactClients]);
+  }, [contactClients, ninetyDaysAgo]);
 
   // Filter and sort clients
   const filteredClients = useMemo(() => {

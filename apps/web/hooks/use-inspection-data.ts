@@ -125,7 +125,12 @@ export interface InspectionWithData {
     avatar_url: string | null;
   };
   vendorIds?: string[];
-  vendors?: any[];
+  vendors?: {
+    id: string;
+    name: string;
+    vendorType: string;
+    contact: string;
+  }[];
 }
 
 export interface InspectionDataResponse {

@@ -21,5 +21,5 @@ export const supabase = createSupabaseClient({
   anonKey: supabaseAnonKey,
   // Browser environment - use localStorage for session persistence
   // During SSR (server-side), storage will be undefined which is fine
-  storage: typeof window !== 'undefined' ? window.localStorage : undefined as any,
+  storage: typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage),
 });

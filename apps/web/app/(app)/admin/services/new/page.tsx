@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { Service } from "@/hooks/use-services";

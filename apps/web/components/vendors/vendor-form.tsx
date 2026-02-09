@@ -11,10 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const vendorTypes = ["Pest", "HVAC", "Roof", "Plumbing", "Electrical", "Other"];
 const statusOptions = ["active", "inactive", "pending"];
 
+interface VendorFormData {
+  name: string;
+  type: string;
+  contact: string;
+  specialties: string;
+  status: string;
+  notes: string;
+}
+
 interface VendorFormProps {
   mode: "new" | "edit";
-  initialData?: any;
-  onSubmit: (data: any) => void | Promise<void>;
+  initialData?: VendorFormData;
+  onSubmit: (data: VendorFormData) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -31,7 +40,7 @@ export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorForm
   );
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleChange = (field: string, value: string) => setForm((prev: any) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof VendorFormData, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
 
   return (
     <form

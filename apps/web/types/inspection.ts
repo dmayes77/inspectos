@@ -51,7 +51,12 @@ export interface Inspection {
     email: string;
     avatar_url: string | null;
   };
-  vendors?: any[];
+  vendors?: {
+    id: string;
+    name: string;
+    vendorType: string;
+    contact: string;
+  }[];
   vendorIds?: string[];
 }
 

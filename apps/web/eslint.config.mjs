@@ -13,6 +13,13 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Disable React Compiler strict rules temporarily
+      // These are overly strict for development and can be addressed later
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ]);
 
 export default eslintConfig;

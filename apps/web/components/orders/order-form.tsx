@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle2, ClipboardList, Clock, DollarSign, FileText, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
+import { Calendar, CheckCircle2, ClipboardList, Clock, DollarSign, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateOrder, useUpdateOrder, type Order } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
@@ -355,7 +355,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         city: propertyForm.city.trim(),
         state: propertyForm.state.trim(),
         zip_code: propertyForm.zipCode.trim(),
-        property_type: propertyForm.propertyType as any,
+        property_type: propertyForm.propertyType as "residential" | "commercial",
         year_built: propertyForm.yearBuilt ? parseInt(propertyForm.yearBuilt, 10) : null,
         square_feet: propertyForm.squareFeet ? parseInt(propertyForm.squareFeet, 10) : null,
         notes: propertyForm.notes.trim() || null,
