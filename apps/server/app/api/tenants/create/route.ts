@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const { data: userData, error: userErr } = await supabaseUser.auth.getUser();
   if (userErr || !userData.user) return Response.json({ error: "Invalid token" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({} as any));
+  const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const name = String(body?.name ?? "").trim();
   const slug = String(body?.slug ?? "").trim().toLowerCase();
 

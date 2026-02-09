@@ -15,6 +15,17 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+interface OrderWithJoins {
+  id: string;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
+  duration_minutes: number | null;
+  status: string;
+  properties?: { id: string; address_line1: string; address_line2: string | null; city: string; state: string; zip_code: string } | null;
+  clients?: { id: string; name: string; email: string | null; phone: string | null; company: string | null } | null;
+  profiles?: { id: string; full_name: string | null; email: string; avatar_url: string | null } | null;
+}
+
 /**
  * GET /api/admin/inspections/[id]
  */
@@ -83,17 +94,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Transform the inspection data to match UI expectations
+    const orderWithJoins = inspection.order as OrderWithJoins | null;
     const transformedInspection = {
       ...inspection,
       // Rename order.clients/properties/profiles to singular for UI compatibility
-      order: inspection.order ? {
-        ...inspection.order,
-        property: (inspection.order as any).properties || null,
-        client: (inspection.order as any).clients || null,
-        inspector: (inspection.order as any).profiles || null,
+      order: orderWithJoins ? {
+        ...orderWithJoins,
+        property: orderWithJoins.properties || null,
+        client: orderWithJoins.clients || null,
+        inspector: orderWithJoins.profiles || null,
       } : null,
       // Add inspector at top level for backward compatibility
-      inspector: inspection.order ? (inspection.order as any).profiles : null,
+      inspector: orderWithJoins ? orderWithJoins.profiles : null,
     };
 
     return success(transformedInspection);
