@@ -26,7 +26,11 @@ Local Development → dev branch (testing) → main branch (production)
 
 ## CI Pipeline
 
-The CI pipeline runs automatically on every push to `dev` or `main` branches and on all pull requests.
+The CI pipeline runs automatically:
+- **On every push to `dev`** - Validates changes during development
+- **On pull requests to `main`** - Gates production deployments
+
+This prevents redundant checks - if CI passes on dev and the PR, it doesn't need to run again on main.
 
 ### Pipeline Stages
 
@@ -103,22 +107,30 @@ git push origin dev  # or feature branch
 
 ### 2. Testing on Dev Branch
 
-- Push triggers automatic Vercel preview deployment
-- CI pipeline runs all checks
+- Push to dev triggers:
+  - ✅ CI pipeline (lint, type-check, test, build)
+  - 🚀 Automatic Vercel preview deployment
 - Review deployment preview at Vercel URL
 - Test functionality in preview environment
+- Fix any issues and push again to dev
 
 ### 3. Merging to Main
 
 ```bash
 # Create pull request from dev to main
-gh pr create --base main --head dev
+gh pr create --base main --head dev --title "Release: [description]"
 
-# After PR approval and CI passes
+# CI runs on the PR (final validation gate)
+# After PR approval and CI passes, merge
 gh pr merge --squash
 
 # Or merge via GitHub UI
 ```
+
+**What happens:**
+- Creating the PR triggers CI one final time as a gate
+- Merging the PR deploys to production (no redundant CI run)
+- Vercel automatically deploys main branch to production
 
 ## GitHub Actions Configuration
 
