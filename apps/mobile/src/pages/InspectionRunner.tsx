@@ -22,9 +22,8 @@ import {
   IonTextarea,
 } from "@ionic/react";
 import { addOutline, alertCircleOutline, cameraOutline, checkmarkCircleOutline, chevronBackOutline, chevronForwardOutline } from "ionicons/icons";
-import { useAuth } from "../contexts/AuthContext";
 import { inspectionsRepository, Inspection, Answer, Finding } from "../db/repositories/inspections";
-import { templatesRepository, TemplateWithSections, TemplateSection, TemplateItem } from "../db/repositories/templates";
+import { templatesRepository, TemplateWithSections, TemplateItem } from "../db/repositories/templates";
 import { SyncStatusBar } from "../components/SyncStatusBar";
 import { capturePhoto } from "../services/camera";
 import { saveInspectionPhoto } from "../services/storage";
@@ -46,7 +45,6 @@ const RATINGS: RatingValue[] = [
 
 export default function InspectionRunner() {
   const { tenantSlug, inspectionId } = useParams<{ tenantSlug: string; inspectionId: string }>();
-  const { tenant } = useAuth();
   const history = useHistory();
 
   const [inspection, setInspection] = useState<Inspection | null>(null);

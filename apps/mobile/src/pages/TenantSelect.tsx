@@ -27,11 +27,23 @@ interface TenantInfo {
 }
 
 export default function TenantSelect() {
-  const { user, selectTenant, refreshTenants, isLoading, error } = useAuth();
+  const { user, selectTenant, refreshTenants, error } = useAuth();
   const [tenants, setTenants] = useState<TenantInfo[]>([]);
   const [loadingTenants, setLoadingTenants] = useState(true);
   const [selecting, setSelecting] = useState<string | null>(null);
   const history = useHistory();
+
+  const handleSelect = async (slug: string) => {
+    setSelecting(slug);
+    try {
+      await selectTenant(slug);
+      history.replace('/t/' + slug + '/dashboard');
+    } catch (err) {
+      console.error('Failed to select tenant:', err);
+    } finally {
+      setSelecting(null);
+    }
+  };
 
   useEffect(() => {
     const loadTenants = async () => {
@@ -49,19 +61,8 @@ export default function TenantSelect() {
     if (user) {
       loadTenants();
     }
-  }, [user]);
-
-  const handleSelect = async (slug: string) => {
-    setSelecting(slug);
-    try {
-      await selectTenant(slug);
-      history.replace('/t/' + slug + '/dashboard');
-    } catch (err) {
-      console.error('Failed to select tenant:', err);
-    } finally {
-      setSelecting(null);
-    }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, refreshTenants]);
 
   const handleCreateNew = () => {
     history.push('/tenant/create');

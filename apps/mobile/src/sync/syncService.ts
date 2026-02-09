@@ -1,7 +1,7 @@
 import { Network } from "@capacitor/network";
 import { database } from "../db/database";
 import { readBase64File, Directory } from "../services/storage";
-import { outboxRepository, OutboxItem } from "../db/repositories/outbox";
+import { outboxRepository } from "../db/repositories/outbox";
 import { jobsRepository } from "../db/repositories/jobs";
 import { templatesRepository } from "../db/repositories/templates";
 import { mediaRepository } from "../db/repositories/media";

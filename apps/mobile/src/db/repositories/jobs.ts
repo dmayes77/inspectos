@@ -1,4 +1,4 @@
-import { database, generateId, nowISO } from '../database';
+import { database, nowISO } from '../database';
 
 export type JobStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 

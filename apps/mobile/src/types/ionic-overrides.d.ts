@@ -9,6 +9,7 @@ import type { JSX as IonicJSX } from "@ionic/react";
 
 declare global {
   namespace JSX {
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface IntrinsicElements extends IonicJSX.IntrinsicElements {}
   }
 }
@@ -102,7 +103,7 @@ declare module "@ionic/react" {
 }
 
 declare module "@ionic/react-router" {
-  import { RouteProps, RouterProps } from "react-router";
+  import { RouterProps } from "react-router";
 
   export const IonReactRouter: React.FC<React.PropsWithChildren<RouterProps>>;
   export const IonRouterOutlet: React.FC<React.PropsWithChildren<Record<string, unknown>>>;
