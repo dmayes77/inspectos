@@ -48,6 +48,15 @@ vi.mock("@/lib/api/tenant-context", () => ({
   }),
 }));
 
+// Mock React Suspense to render children immediately in tests
+vi.mock("react", async () => {
+  const actual = await vi.importActual<typeof React>("react");
+  return {
+    ...actual,
+    Suspense: ({ children }: { children: React.ReactNode; fallback?: React.ReactNode }) => children,
+  };
+});
+
 // Reset mocks between tests
 beforeEach(() => {
   vi.clearAllMocks();

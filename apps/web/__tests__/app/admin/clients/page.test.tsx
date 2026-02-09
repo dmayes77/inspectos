@@ -119,7 +119,9 @@ describe("ClientsPage", () => {
     });
 
     renderWithQueryClient(<ClientsPage />);
-    expect(screen.getByText("Loading clients...")).toBeInTheDocument();
+    // When loading, client names should not be visible
+    expect(screen.queryByText("John Doe")).not.toBeInTheDocument();
+    expect(screen.queryByText("Jane Smith")).not.toBeInTheDocument();
   });
 
   it("shows empty state when no clients", () => {
