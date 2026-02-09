@@ -162,24 +162,6 @@ export default function AgentDetailPage() {
     },
   ];
 
-  const breadcrumb = (
-    <>
-      <Link href="/admin/overview" className="hover:text-foreground">
-        Overview
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <Link href="/admin/agents" className="hover:text-foreground">
-        Agents
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
-        Agents
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <span>{agent.name}</span>
-    </>
-  );
-
   const hasPortalAccess = Boolean(agent.magic_link_token && agent.magic_link_expires_at && new Date(agent.magic_link_expires_at) > new Date());
   const agentCode = formatAgentCode(agent.id);
   const partnerSince = agent.created_at ? formatTimestamp(agent.created_at) : null;

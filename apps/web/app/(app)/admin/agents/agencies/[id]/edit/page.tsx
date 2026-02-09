@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminShell } from "@/components/layout/admin-shell";
@@ -220,7 +220,7 @@ export default function EditAgencyPage() {
   const updateAgent = useUpdateAgent();
   const queryClient = useQueryClient();
   const agentsQuery = useAgents();
-  const agents = agentsQuery.data ?? [];
+  const agents = useMemo(() => agentsQuery.data ?? [], [agentsQuery.data]);
   const isLoadingAgents = agentsQuery.isLoading;
   const [form, setForm] = useState<AgencyFormValues>(toFormValues(null));
   const [hasInitialized, setHasInitialized] = useState(false);

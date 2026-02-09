@@ -43,7 +43,7 @@ describe("createInspectionSchema", () => {
   });
 
   it("should require address", () => {
-    const { address: _, ...withoutAddress } = validInspection;
+    const { address: __, ...withoutAddress } = validInspection;
 
     const result = createInspectionSchema.safeParse(withoutAddress);
     expect(result.success).toBe(false);
@@ -53,7 +53,7 @@ describe("createInspectionSchema", () => {
   });
 
   it("should require clientId", () => {
-    const { clientId: _, ...withoutClient } = validInspection;
+    const { clientId: __, ...withoutClient } = validInspection;
 
     const result = createInspectionSchema.safeParse(withoutClient);
     expect(result.success).toBe(false);

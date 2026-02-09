@@ -91,24 +91,6 @@ export default function AgencyDetailPage() {
   const websiteDisplay = agency.website?.replace(/^https?:\/\//, "").replace(/\/$/, "") ?? null;
   const locationDisplay = [agency.city, agency.state].filter(Boolean).join(", ");
 
-  const breadcrumb = (
-    <>
-      <Link href="/admin/overview" className="hover:text-foreground">
-        Overview
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <Link href="/admin/agents" className="hover:text-foreground">
-        Agents
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
-        Agencies
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <span>{agency.name}</span>
-    </>
-  );
-
   const handleDelete = () => {
     deleteAgency.mutate(agency.id, {
       onSuccess: () => {

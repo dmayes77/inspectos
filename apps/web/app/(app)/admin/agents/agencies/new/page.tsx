@@ -16,7 +16,6 @@ import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 
-const DEFAULT_TENANT_SLUG = "demo";
 const AGENCY_TIPS = [
   "Capture the main office contact so your team always knows how to reach them.",
   "Status helps SDRs know whether to keep nurturing the relationship.",

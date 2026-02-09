@@ -9,7 +9,6 @@ import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,12 +19,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Archive, FileText, User, Calendar, ClipboardList, AlertTriangle, CheckCircle2, XCircle, PenTool, Image as ImageIcon, Mail } from "lucide-react";
+import { Edit, Archive, FileText, User, Calendar, ClipboardList, CheckCircle2, XCircle, PenTool, Image as ImageIcon, Mail } from "lucide-react";
 import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { formatInspectionDateTime } from "@inspectos/shared/utils/formatters";
 import { inspectionStatusBadge } from "@/lib/admin/badges";
-import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import {
   useInspectionData,
   getSeverityColor,
@@ -60,7 +58,6 @@ export default function InspectionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
   const { id } = params as { id: string };
 
   // New inspection data fetch (answers, findings, signatures)
