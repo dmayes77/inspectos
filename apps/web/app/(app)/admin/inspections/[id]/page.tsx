@@ -47,7 +47,7 @@ function VendorList({ vendorIds }: { vendorIds: string[] }) {
       {assignedVendors.map((vendor) => (
         <li key={vendor.id} className="border rounded px-3 py-2">
           <div className="font-medium">{vendor.name}</div>
-          {vendor.vendor_type && <div className="text-xs text-muted-foreground">Type: {vendor.vendor_type}</div>}
+          {vendor.vendorType && <div className="text-xs text-muted-foreground">Type: {vendor.vendorType}</div>}
           {vendor.phone && <div className="text-xs text-muted-foreground">Phone: {vendor.phone}</div>}
           {vendor.email && <div className="text-xs text-muted-foreground">Email: {vendor.email}</div>}
           {vendor.status && <div className="text-xs text-muted-foreground">Status: {vendor.status}</div>}

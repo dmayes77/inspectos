@@ -1,45 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "@/lib/api/tenant-context";
 import type { CreateWebhookInput, UpdateWebhookInput } from "@inspectos/shared/validations/webhook";
-
-export type Webhook = {
-  id: string;
-  tenant_id: string;
-  name: string;
-  url: string;
-  description?: string | null;
-  events: string[];
-  secret?: string | null;
-  headers?: Record<string, string>;
-  status: string;
-  retry_strategy?: {
-    max_attempts: number;
-    backoff: string;
-    timeout: number;
-  };
-  failure_count?: number;
-  last_triggered_at?: string | null;
-  last_success_at?: string | null;
-  last_error?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  created_by?: string | null;
-};
+import type { Webhook, WebhookDelivery } from "@inspectos/shared/types/webhook";
 
 export type WebhookWithDeliveries = Webhook & {
-  recent_deliveries: Array<{
-    id: string;
-    webhook_id: string;
-    event_type: string;
-    payload: Record<string, unknown>;
-    response_status?: number;
-    response_body?: string;
-    response_time_ms?: number;
-    error?: string;
-    attempt_number: number;
-    delivered_at: string;
-  }>;
+  recent_deliveries: WebhookDelivery[];
 };
+
+export type { Webhook };
 
 export function useWebhooks() {
   const apiClient = useApiClient();

@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useServices } from "@/hooks/use-services";
 import { useGet } from "@/hooks/crud";
-import type { Inspection } from "@/types/inspection";
+import type { Inspection, InspectionStatusValue } from "@/types/inspection";
 import { useClients } from "@/hooks/use-clients";
 import { useInspectors } from "@/hooks/use-team";
 import { useUpdateInspection, useCreateInspection } from "@/hooks/use-inspections";
@@ -27,7 +27,6 @@ import { FOUNDATION_OPTIONS, GARAGE_OPTIONS, STORY_OPTIONS } from "@inspectos/sh
 import { calculateServiceTotal } from "@inspectos/shared/utils/pricing";
 import { toast } from "sonner";
 import type { ServiceType } from "@/types/service";
-import type { Inspection, InspectionStatusValue } from "@/types/inspection";
 import { Loader2, Save } from "lucide-react";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";

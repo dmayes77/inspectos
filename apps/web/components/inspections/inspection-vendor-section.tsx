@@ -46,7 +46,7 @@ export function InspectionVendorSection({ selectedVendorIds, onChange }: { selec
               .filter((v) => !selectedVendorIds.includes(v.id))
               .map((vendor) => (
                 <SelectItem key={vendor.id} value={vendor.id}>
-                  {vendor.name} ({vendor.vendor_type})
+                  {vendor.name} ({vendor.vendorType})
                 </SelectItem>
               ))}
             <SelectItem value="__add_new_vendor__" className="text-blue-600 font-semibold">

@@ -18,7 +18,7 @@ export default function EditVendorPage() {
       mode="edit"
       initialData={vendor}
       onSubmit={async (data) => {
-        await updateVendor.mutateAsync({ id, data });
+        await updateVendor.mutateAsync({ id, ...data });
         router.push(`/admin/vendors/${id}`);
       }}
       onCancel={() => router.push(`/admin/vendors/${id}`)}

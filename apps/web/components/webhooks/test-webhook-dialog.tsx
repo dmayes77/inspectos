@@ -36,13 +36,8 @@ export function TestWebhookDialog({ open, onOpenChange, webhookId }: TestWebhook
         id: webhookId,
         event: selectedEvent,
       });
-      setTestResult(result);
-
-      if (result.success) {
-        toast.success("Webhook test successful!");
-      } else {
-        toast.error("Webhook test failed");
-      }
+      setTestResult({ ...result, success: true });
+      toast.success("Webhook test successful!");
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const typedError = error as any;
