@@ -2,11 +2,10 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Check, Clock, DollarSign, Edit, Mail, MapPin, Phone, Send, Tag, Trash2, User } from "lucide-react";
@@ -71,8 +70,6 @@ function formatMoney(value?: number | null) {
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") ?? "overview";
 
   const { data: order, isLoading, isError } = useOrderById(id);
   const updateOrder = useUpdateOrder();
@@ -568,20 +565,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   );
 
   const mainContent = (
-    <Tabs defaultValue={activeTab} className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="inspection">Inspection</TabsTrigger>
-        <TabsTrigger value="financials">Financials</TabsTrigger>
-        <TabsTrigger value="notes">Notes</TabsTrigger>
-      </TabsList>
-      <TabsContent value="overview">{overviewTab}</TabsContent>
-      <TabsContent value="inspection">
-        <OrderInspectionTab orderId={order.id} />
-      </TabsContent>
-      <TabsContent value="financials">{financialsTab}</TabsContent>
-      <TabsContent value="notes">{notesTab}</TabsContent>
-    </Tabs>
+    <div className="space-y-4">
+      {overviewTab}
+      <OrderInspectionTab orderId={order.id} />
+      {financialsTab}
+      {notesTab}
+    </div>
   );
 
   return (
