@@ -2,7 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Transpile workspace packages for Turbopack
-  transpilePackages: ['@inspectos/auth', '@inspectos/database', '@inspectos/shared'],
+  transpilePackages: [
+    '@inspectos/auth',
+    '@inspectos/database',
+    '@inspectos/shared',
+    '@fullcalendar/core',
+    '@fullcalendar/react',
+    '@fullcalendar/daygrid',
+    '@fullcalendar/timegrid',
+    '@fullcalendar/interaction',
+  ],
   images: {
     remotePatterns: [
       {
