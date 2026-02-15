@@ -166,10 +166,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     </Button>
   );
 
-  const overviewTab = (
-    <div className="space-y-4">
-      {/* Order status + quick actions */}
-      <Card>
+  const statusCard = (
+    <Card>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -231,9 +229,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+  );
 
-      {/* Property */}
-      <Card>
+  const propertyCard = (
+    <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -329,9 +328,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+  );
 
-      {/* People */}
-      <Card>
+  const peopleCard = (
+    <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <User className="h-4 w-4 text-muted-foreground" />
@@ -383,9 +383,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </CardContent>
       </Card>
+  );
 
-      {/* Schedule */}
-      <Card>
+  const scheduleCard = (
+    <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -410,9 +411,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+  );
 
-      {/* Activity timeline */}
-      <Card>
+  const activityCard = (
+    <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Activity</CardTitle>
           <CardDescription>Timeline of order events.</CardDescription>
@@ -445,22 +447,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+  );
 
-      {/* Danger zone */}
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium">Delete order</p>
-          <p className="text-xs text-muted-foreground">Permanently remove this order and all associated data.</p>
-        </div>
-        <Button variant="destructive" size="sm" onClick={handleDelete}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </Button>
+  const dangerZone = (
+    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div>
+        <p className="text-sm font-medium">Delete order</p>
+        <p className="text-xs text-muted-foreground">Permanently remove this order and all associated data.</p>
       </div>
+      <Button variant="destructive" size="sm" onClick={handleDelete}>
+        <Trash2 className="mr-2 h-4 w-4" />
+        Delete
+      </Button>
     </div>
   );
 
-  const financialsTab = (
+  const financialsCard = (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
@@ -522,7 +524,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     </Card>
   );
 
-  const notesTab = (
+  const notesCard = (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Notes</CardTitle>
@@ -566,10 +568,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   const mainContent = (
     <div className="space-y-4">
-      {overviewTab}
+      {statusCard}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
+          {propertyCard}
+          {peopleCard}
+        </div>
+        <div className="space-y-4">
+          {scheduleCard}
+          {financialsCard}
+          {notesCard}
+        </div>
+      </div>
       <OrderInspectionTab orderId={order.id} />
-      {financialsTab}
-      {notesTab}
+      {activityCard}
+      {dangerZone}
     </div>
   );
 
