@@ -78,8 +78,7 @@ export default function InvoiceDetailPage() {
   }
 
   const invoiceNumber = invoice.invoiceNumber || formatInvoiceNumber(invoice.invoiceId);
-  const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
-  const services: InspectionService[] = inspection?.services ?? [];
+  const services: InspectionService[] = order?.services ?? [];
 
   return (
     <>
