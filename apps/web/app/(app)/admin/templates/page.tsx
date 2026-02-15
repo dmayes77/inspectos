@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -106,197 +105,176 @@ export default function TemplatesPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Inspection Templates"
-          description="Manage inspection checklists, agreements, and report templates"
-          actions={
-            can(userRole, "create_templates") ? (
-              <Button className="sm:w-auto" onClick={() => setShowNewDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Template
-              </Button>
-            ) : null
-          }
-        />
+    <>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Inspection Templates"
+        description="Manage inspection checklists, agreements, and report templates"
+        actions={
+          can(userRole, "create_templates") ? (
+            <Button className="sm:w-auto" onClick={() => setShowNewDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Template
+            </Button>
+          ) : null
+        }
+      />
 
-        {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <CheckSquare className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{templates.filter((t) => t.type === "inspection").length}</div>
-                  <p className="text-sm text-muted-foreground">Inspection Templates</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                  <FileText className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{templates.filter((t) => t.type === "agreement").length}</div>
-                  <p className="text-sm text-muted-foreground">Agreement Templates</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10">
-                  <FileText className="h-5 w-5 text-green-500" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{templates.filter((t) => t.type === "report").length}</div>
-                  <p className="text-sm text-muted-foreground">Report Templates</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Templates Grid */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {templates.map((template) => (
-            <Card key={template.id}>
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-base">{template.name}</CardTitle>
-                      {template.isDefault && (
-                        <Badge variant="outline" className="text-xs">
-                          Default
-                        </Badge>
-                      )}
-                    </div>
-                    <CardDescription>{template.description}</CardDescription>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/admin/templates/${template.id}`}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDuplicate(template.id, template.name)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Duplicate
-                      </DropdownMenuItem>
-                      {!template.isDefault && (
-                        <DropdownMenuItem onClick={() => handleSetDefault(template.id, template.name)}>
-                          <Star className="mr-2 h-4 w-4" />
-                          Set as Default
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleArchive(template.id, template.name)}
-                      >
-                        <Trash className="mr-2 h-4 w-4" />
-                        Archive
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap items-center gap-2">
-                  {getTypeBadge(template.type)}
-                  {template.standard && <Badge variant="outline">{template.standard}</Badge>}
-                  {template.isAddon ? <Badge variant="outline">Add-on</Badge> : null}
-                </div>
-
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  <div className="space-x-4 text-muted-foreground">
-                    <span>{template.sections.length} sections</span>
-                    <span>
-                      {template.sections.reduce((sum, section) => sum + section.items.length, 0)} items
-                    </span>
-                  </div>
-                  <span className="text-muted-foreground">Used {template.usageCount ?? 0} times</span>
-                </div>
-
-                <div className="mt-4 border-t pt-4">
-                  <p className="text-xs text-muted-foreground">Last modified: {template.lastModified ?? "—"}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {templates.length === 0 && (
-          <Card>
-            <CardContent className="py-10 text-center">
-              <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No templates yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Create your first inspection template to get started.
-              </p>
-              <Button className="mt-4" onClick={() => setShowNewDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Template
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Inspection Templates</CardDescription>
+            <CardTitle className="text-2xl">{templates.filter((t) => t.type === "inspection").length}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Agreement Templates</CardDescription>
+            <CardTitle className="text-2xl">{templates.filter((t) => t.type === "agreement").length}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Report Templates</CardDescription>
+            <CardTitle className="text-2xl">{templates.filter((t) => t.type === "report").length}</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
 
-      {/* New Template Dialog */}
-      <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Template</DialogTitle>
-            <DialogDescription>
-              Create a new inspection template. You can add sections and items after creation.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Template Name</Label>
-              <Input
-                id="name"
-                placeholder="e.g., Standard Home Inspection"
-                value={newTemplateName}
-                onChange={(e) => setNewTemplateName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
-              <Input
-                id="description"
-                placeholder="Brief description of this template"
-                value={newTemplateDescription}
-                onChange={(e) => setNewTemplateDescription(e.target.value)}
-              />
-            </div>
+      {/* Templates Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {templates.map((template) => (
+          <Card key={template.id}>
+            <CardHeader className="pb-4">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">{template.name}</CardTitle>
+                    {template.isDefault && (
+                      <Badge variant="outline" className="text-xs">
+                        Default
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription>{template.description}</CardDescription>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/admin/templates/${template.id}`}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDuplicate(template.id, template.name)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Duplicate
+                    </DropdownMenuItem>
+                    {!template.isDefault && (
+                      <DropdownMenuItem onClick={() => handleSetDefault(template.id, template.name)}>
+                        <Star className="mr-2 h-4 w-4" />
+                        Set as Default
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => handleArchive(template.id, template.name)}
+                    >
+                      <Trash className="mr-2 h-4 w-4" />
+                      Archive
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-2">
+                {getTypeBadge(template.type)}
+                {template.standard && <Badge variant="outline">{template.standard}</Badge>}
+                {template.isAddon ? <Badge variant="outline">Add-on</Badge> : null}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <div className="space-x-4 text-muted-foreground">
+                  <span>{template.sections.length} sections</span>
+                  <span>
+                    {template.sections.reduce((sum, section) => sum + section.items.length, 0)} items
+                  </span>
+                </div>
+                <span className="text-muted-foreground">Used {template.usageCount ?? 0} times</span>
+              </div>
+
+              <div className="mt-4 border-t pt-4">
+                <p className="text-xs text-muted-foreground">Last modified: {template.lastModified ?? "—"}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {templates.length === 0 && (
+        <Card>
+          <CardContent className="py-10 text-center">
+            <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">No templates yet</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Create your first inspection template to get started.
+            </p>
+            <Button className="mt-4" onClick={() => setShowNewDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New Template
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+
+    {/* New Template Dialog */}
+    <Dialog open={showNewDialog} onOpenChange={setShowNewDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Template</DialogTitle>
+          <DialogDescription>
+            Create a new inspection template. You can add sections and items after creation.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Template Name</Label>
+            <Input
+              id="name"
+              placeholder="e.g., Standard Home Inspection"
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
+            />
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateTemplate} disabled={createStubMutation.isPending}>
-              {createStubMutation.isPending ? "Creating..." : "Create Template"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AdminShell>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description (optional)</Label>
+            <Input
+              id="description"
+              placeholder="Brief description of this template"
+              value={newTemplateDescription}
+              onChange={(e) => setNewTemplateDescription(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowNewDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleCreateTemplate} disabled={createStubMutation.isPending}>
+            {createStubMutation.isPending ? "Creating..." : "Create Template"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

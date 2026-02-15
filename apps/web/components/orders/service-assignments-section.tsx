@@ -3,9 +3,9 @@
 import { useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Service } from "@/hooks/use-services";
 import { Clock, Search, User, Building2 } from "lucide-react";
 
@@ -25,8 +25,8 @@ export type VendorOption = {
 export type ServiceAssignment = {
   serviceId: string;
   selected: boolean;
-  inspectorId: string | null;
-  vendorId: string | null;
+  inspectorIds: string[];
+  vendorIds: string[];
 };
 
 type ServiceGroup = {
@@ -41,8 +41,8 @@ type ServiceAssignmentsSectionProps = {
   services: Service[];
   serviceAssignments: ServiceAssignment[];
   onServiceToggle: (serviceId: string, checked: boolean) => void;
-  onServiceInspectorChange: (serviceId: string, inspectorId: string | null) => void;
-  onServiceVendorChange: (serviceId: string, vendorId: string | null) => void;
+  onServiceInspectorsChange: (serviceId: string, inspectorIds: string[]) => void;
+  onServiceVendorsChange: (serviceId: string, vendorIds: string[]) => void;
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   helperText?: string;
@@ -54,8 +54,8 @@ export function ServiceAssignmentsSection({
   services,
   serviceAssignments,
   onServiceToggle,
-  onServiceInspectorChange,
-  onServiceVendorChange,
+  onServiceInspectorsChange,
+  onServiceVendorsChange,
   searchValue,
   onSearchChange,
   helperText,
@@ -69,6 +69,16 @@ export function ServiceAssignmentsSection({
     });
     return map;
   }, [serviceAssignments]);
+
+  const inspectorOptions = useMemo(
+    () => inspectors.map((i) => ({ value: i.teamMemberId, label: i.name })),
+    [inspectors],
+  );
+
+  const vendorOptions = useMemo(
+    () => vendors.map((v) => ({ value: v.id, label: v.name, meta: v.vendor_type ?? undefined })),
+    [vendors],
+  );
 
   const { coreServices, addonServices, packageServices } = useMemo(() => {
     const filtered = normalizedSearch ? services.filter((service) => service.name.toLowerCase().includes(normalizedSearch)) : services;
@@ -111,8 +121,8 @@ export function ServiceAssignmentsSection({
                 group.services.map((service) => {
                   const assignment = assignmentMap.get(service.serviceId);
                   const checked = assignment?.selected ?? false;
-                  const inspectorId = assignment?.inspectorId ?? null;
-                  const vendorId = assignment?.vendorId ?? null;
+                  const inspectorIds = assignment?.inspectorIds ?? [];
+                  const vendorIds = assignment?.vendorIds ?? [];
 
                   return (
                     <div key={service.serviceId} className="rounded-md border">
@@ -134,52 +144,39 @@ export function ServiceAssignmentsSection({
                           </div>
 
                           {checked && (
-                            <div className="grid gap-2 pt-2 md:grid-cols-2">
+                            <div className="grid gap-2 pt-2 md:grid-cols-2" onClick={(e) => e.preventDefault()}>
                               <div className="space-y-1">
-                                <Label htmlFor={`inspector-${service.serviceId}`} className="text-xs flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  Inspector
-                                </Label>
-                                <Select
-                                  value={inspectorId ?? "__none__"}
-                                  onValueChange={(value) => onServiceInspectorChange(service.serviceId, value === "__none__" ? null : value)}
+                                <Label
+                                  htmlFor={`inspector-${service.serviceId}`}
+                                  className="text-xs flex items-center gap-1"
                                 >
-                                  <SelectTrigger id={`inspector-${service.serviceId}`} className="h-8 text-xs">
-                                    <SelectValue placeholder="Assign inspector" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="__none__">Unassigned</SelectItem>
-                                    {inspectors.map((inspector) => (
-                                      <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
-                                        {inspector.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                  <User className="h-3 w-3" />
+                                  Inspectors
+                                </Label>
+                                <MultiSelect
+                                  id={`inspector-${service.serviceId}`}
+                                  options={inspectorOptions}
+                                  value={inspectorIds}
+                                  onChange={(ids) => onServiceInspectorsChange(service.serviceId, ids)}
+                                  placeholder="Assign inspectors..."
+                                />
                               </div>
 
                               <div className="space-y-1">
-                                <Label htmlFor={`vendor-${service.serviceId}`} className="text-xs flex items-center gap-1">
-                                  <Building2 className="h-3 w-3" />
-                                  Vendor
-                                </Label>
-                                <Select
-                                  value={vendorId ?? "__none__"}
-                                  onValueChange={(value) => onServiceVendorChange(service.serviceId, value === "__none__" ? null : value)}
+                                <Label
+                                  htmlFor={`vendor-${service.serviceId}`}
+                                  className="text-xs flex items-center gap-1"
                                 >
-                                  <SelectTrigger id={`vendor-${service.serviceId}`} className="h-8 text-xs">
-                                    <SelectValue placeholder="Assign vendor" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="__none__">Unassigned</SelectItem>
-                                    {vendors.map((vendor) => (
-                                      <SelectItem key={vendor.id} value={vendor.id}>
-                                        {vendor.name}
-                                        {vendor.vendor_type ? ` (${vendor.vendor_type})` : ""}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                  <Building2 className="h-3 w-3" />
+                                  Vendors
+                                </Label>
+                                <MultiSelect
+                                  id={`vendor-${service.serviceId}`}
+                                  options={vendorOptions}
+                                  value={vendorIds}
+                                  onChange={(ids) => onServiceVendorsChange(service.serviceId, ids)}
+                                  placeholder="Assign vendors..."
+                                />
                               </div>
                             </div>
                           )}

@@ -2,11 +2,9 @@
 import { useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +20,6 @@ import { useInspectors } from "@/hooks/use-team";
 import { useUpdateInspection, useCreateInspection } from "@/hooks/use-inspections";
 import { useApiClient } from "@/lib/api/tenant-context";
 import { useOrderById } from "@/hooks/use-orders";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { FOUNDATION_OPTIONS, GARAGE_OPTIONS, STORY_OPTIONS } from "@inspectos/shared/constants/property-options";
 import { calculateServiceTotal } from "@inspectos/shared/utils/pricing";
 import { toast } from "sonner";
@@ -248,352 +245,347 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
   );
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-4 w-full">
-        <BackButton
-          href={inspection ? `/admin/inspections/${inspection.id}` : "/admin/inspections"}
-          label={inspection ? "Back to Inspection" : "Back to Inspections"}
-          variant="ghost"
-        />
+    <>
+    <div className="space-y-4 w-full">
 
-        <AdminPageHeader
-          title={inspection ? "Edit Inspection" : "New Inspection"}
-          description={inspection ? `Update inspection ${inspection.id}` : "Create a new inspection appointment"}
-        />
+      <AdminPageHeader
+        title={inspection ? "Edit Inspection" : "New Inspection"}
+        description={inspection ? `Update inspection ${inspection.id}` : "Create a new inspection appointment"}
+      />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Property Information</CardTitle>
-                    <CardDescription>Enter the property address and details</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+      {/* Form */}
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Property Information</CardTitle>
+                  <CardDescription>Enter the property address and details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="street">Street Address</Label>
+                    <Input id="street" name="street" placeholder="123 Main Street" defaultValue={street} required />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
-                      <Label htmlFor="street">Street Address</Label>
-                      <Input id="street" name="street" placeholder="123 Main Street" defaultValue={street} required />
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <Input id="city" name="city" placeholder="Austin" defaultValue={city} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="state">State</Label>
-                        <Input id="state" name="state" placeholder="TX" maxLength={2} defaultValue={state} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="zip">ZIP Code</Label>
-                        <Input id="zip" name="zip" placeholder="78701" maxLength={5} defaultValue={zip} required />
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="sqft">Square Footage (optional)</Label>
-                        <Input
-                          id="sqft"
-                          name="sqft"
-                          type="number"
-                          placeholder="2400"
-                          defaultValue={inspection?.order?.property?.square_feet || orderProperty?.square_feet || ""}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="yearBuilt">Year Built (optional)</Label>
-                        <Input
-                          id="yearBuilt"
-                          name="yearBuilt"
-                          type="number"
-                          placeholder="1985"
-                          min="1800"
-                          max={new Date().getFullYear()}
-                          defaultValue={inspection?.order?.property?.year_built || orderProperty?.year_built || ""}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="propertyType">Property Type</Label>
-                        <Input
-                          id="propertyType"
-                          name="propertyType"
-                          placeholder="Single Family"
-                          defaultValue={inspection?.order?.property?.property_type || orderProperty?.property_type || ""}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="bedrooms">Bedrooms (optional)</Label>
-                        <Input
-                          id="bedrooms"
-                          name="bedrooms"
-                          type="number"
-                          min="1"
-                          step="1"
-                          placeholder="4"
-                          defaultValue=""
-                          onFocus={(event) => {
-                            if (!event.currentTarget.value) {
-                              event.currentTarget.value = "1";
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="bathrooms">Bathrooms (optional)</Label>
-                        <Input
-                          id="bathrooms"
-                          name="bathrooms"
-                          type="number"
-                          min="1"
-                          step="0.5"
-                          placeholder="2.5"
-                          defaultValue=""
-                          onChange={(event) => {
-                            const numeric = Number(event.currentTarget.value);
-                            if (!Number.isNaN(numeric) && numeric > 4) {
-                              event.currentTarget.value = String(Math.round(numeric));
-                            }
-                          }}
-                          onFocus={(event) => {
-                            if (!event.currentTarget.value) {
-                              event.currentTarget.value = "1";
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="stories">Stories</Label>
-                        <Select name="stories" defaultValue={storiesDefaultValue}>
-                          <SelectTrigger id="stories">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STORY_OPTIONS.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="foundation">Foundation</Label>
-                        <Select name="foundation" defaultValue={foundationDefaultValue}>
-                          <SelectTrigger id="foundation">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FOUNDATION_OPTIONS.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="garage">Garage</Label>
-                        <Select name="garage" defaultValue={garageDefaultValue}>
-                          <SelectTrigger id="garage">
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {GARAGE_OPTIONS.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Label htmlFor="city">City</Label>
+                      <Input id="city" name="city" placeholder="Austin" defaultValue={city} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="pool">Pool</Label>
-                      <Select name="pool" defaultValue={poolDefaultValue}>
-                        <SelectTrigger className="w-full">
+                      <Label htmlFor="state">State</Label>
+                      <Input id="state" name="state" placeholder="TX" maxLength={2} defaultValue={state} required />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="zip">ZIP Code</Label>
+                      <Input id="zip" name="zip" placeholder="78701" maxLength={5} defaultValue={zip} required />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="sqft">Square Footage (optional)</Label>
+                      <Input
+                        id="sqft"
+                        name="sqft"
+                        type="number"
+                        placeholder="2400"
+                        defaultValue={inspection?.order?.property?.square_feet || orderProperty?.square_feet || ""}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="yearBuilt">Year Built (optional)</Label>
+                      <Input
+                        id="yearBuilt"
+                        name="yearBuilt"
+                        type="number"
+                        placeholder="1985"
+                        min="1800"
+                        max={new Date().getFullYear()}
+                        defaultValue={inspection?.order?.property?.year_built || orderProperty?.year_built || ""}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="propertyType">Property Type</Label>
+                      <Input
+                        id="propertyType"
+                        name="propertyType"
+                        placeholder="Single Family"
+                        defaultValue={inspection?.order?.property?.property_type || orderProperty?.property_type || ""}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bedrooms">Bedrooms (optional)</Label>
+                      <Input
+                        id="bedrooms"
+                        name="bedrooms"
+                        type="number"
+                        min="1"
+                        step="1"
+                        placeholder="4"
+                        defaultValue=""
+                        onFocus={(event) => {
+                          if (!event.currentTarget.value) {
+                            event.currentTarget.value = "1";
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="bathrooms">Bathrooms (optional)</Label>
+                      <Input
+                        id="bathrooms"
+                        name="bathrooms"
+                        type="number"
+                        min="1"
+                        step="0.5"
+                        placeholder="2.5"
+                        defaultValue=""
+                        onChange={(event) => {
+                          const numeric = Number(event.currentTarget.value);
+                          if (!Number.isNaN(numeric) && numeric > 4) {
+                            event.currentTarget.value = String(Math.round(numeric));
+                          }
+                        }}
+                        onFocus={(event) => {
+                          if (!event.currentTarget.value) {
+                            event.currentTarget.value = "1";
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="stories">Stories</Label>
+                      <Select name="stories" defaultValue={storiesDefaultValue}>
+                        <SelectTrigger id="stories">
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Client</CardTitle>
-                    <CardDescription>Choose who ordered this inspection</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="client">Client</Label>
-                      {showClientForm ? (
-                        <ClientInlineForm onCreate={handleClientCreate} onCancel={handleClientCancel} />
-                      ) : (
-                        <Select name="client" value={resolvedClientId} required onValueChange={handleClientSelect}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a client" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={client.clientId} value={client.clientId}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="__add_new_client__" className="text-blue-600 font-semibold">
-                              + Add New Client
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Inspection Details</CardTitle>
-                    <div className="text-muted-foreground text-sm mb-2">Assign the inspector, services, date, and time</div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="inspector">Inspector</Label>
-                      <Select name="inspector" value={resolvedInspectorId} required onValueChange={handleInspectorSelect}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select an inspector" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {inspectors.map((inspector) => (
-                            <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
-                              {inspector.name}
+                          {STORY_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    {/* Vendor Assignment Section */}
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <InspectionVendorSection selectedVendorIds={selectedVendorIds} onChange={setSelectedVendorIds} />
-                    </div>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label>Core Services</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {coreServices.map((service) => {
-                            const checked = resolvedTypeIds.includes(service.serviceId);
-                            return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
-                          })}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Add-ons</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {addonServices.map((service) => {
-                            const checked = resolvedTypeIds.includes(service.serviceId);
-                            return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
-                          })}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Packages</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {packageServices.map((service) => {
-                            const checked = resolvedTypeIds.includes(service.serviceId);
-                            return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="date">Date (optional)</Label>
-                        <Input
-                          id="date"
-                          name="date"
-                          type="date"
-                          defaultValue={inspection?.order?.scheduled_date || linkedOrder?.scheduled_date || ""}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="time">Time (optional)</Label>
-                        <Input id="time" name="time" type="time" defaultValue="" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select name="status" defaultValue={inspection?.status || "draft"}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
+                      <Label htmlFor="foundation">Foundation</Label>
+                      <Select name="foundation" defaultValue={foundationDefaultValue}>
+                        <SelectTrigger id="foundation">
+                          <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="submitted">Submitted</SelectItem>
+                          {FOUNDATION_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="price">Price ($)</Label>
-                      <Input id="price" name="price" type="number" step="0.01" value={calculatedPrice} readOnly required />
+                      <Label htmlFor="garage">Garage</Label>
+                      <Select name="garage" defaultValue={garageDefaultValue}>
+                        <SelectTrigger id="garage">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GARAGE_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pool">Pool</Label>
+                    <Select name="pool" defaultValue={poolDefaultValue}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client</CardTitle>
+                  <CardDescription>Choose who ordered this inspection</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="client">Client</Label>
+                    {showClientForm ? (
+                      <ClientInlineForm onCreate={handleClientCreate} onCancel={handleClientCancel} />
+                    ) : (
+                      <Select name="client" value={resolvedClientId} required onValueChange={handleClientSelect}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients.map((client) => (
+                            <SelectItem key={client.clientId} value={client.clientId}>
+                              {client.name}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__add_new_client__" className="text-blue-600 font-semibold">
+                            + Add New Client
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inspection Details</CardTitle>
+                  <div className="text-muted-foreground text-sm mb-2">Assign the inspector, services, date, and time</div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="inspector">Inspector</Label>
+                    <Select name="inspector" value={resolvedInspectorId} required onValueChange={handleInspectorSelect}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select an inspector" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inspectors.map((inspector) => (
+                          <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
+                            {inspector.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {/* Vendor Assignment Section */}
+                  <div className="space-y-2">
+                    <InspectionVendorSection selectedVendorIds={selectedVendorIds} onChange={setSelectedVendorIds} />
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Core Services</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {coreServices.map((service) => {
+                          const checked = resolvedTypeIds.includes(service.serviceId);
+                          return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
+                        })}
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="notes">Notes (optional)</Label>
-                      <Textarea
-                        id="notes"
-                        name="notes"
-                        placeholder="Add any special instructions or notes..."
-                        rows={4}
-                        defaultValue={inspection?.notes || ""}
+                      <Label>Add-ons</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {addonServices.map((service) => {
+                          const checked = resolvedTypeIds.includes(service.serviceId);
+                          return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
+                        })}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Packages</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {packageServices.map((service) => {
+                          const checked = resolvedTypeIds.includes(service.serviceId);
+                          return <ServiceCheckbox key={service.serviceId} service={service} checked={checked} onToggle={handleServiceToggle} />;
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="date">Date (optional)</Label>
+                      <Input
+                        id="date"
+                        name="date"
+                        type="date"
+                        defaultValue={inspection?.order?.scheduled_date || linkedOrder?.scheduled_date || ""}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          {inspection ? "Save Changes" : "Create Inspection"}
-                        </>
-                      )}
-                    </Button>
-                    <Button type="button" variant="outline" asChild>
-                      <Link href={inspection ? `/admin/inspections/${inspection.id}` : "/admin/inspections"}>Cancel</Link>
-                    </Button>
-                  </>
-                }
-                tips={[
-                  "Pick at least one service to auto-calculate the inspection price.",
-                  "Choose an inspector before setting a final status.",
-                  "Use the notes field for access instructions or hazards.",
-                ]}
-                tipTitle="Quick Tips"
-              />
-            }
-          />
-        </form>
-      </div>
-    </AdminShell>
+                    <div className="space-y-2">
+                      <Label htmlFor="time">Time (optional)</Label>
+                      <Input id="time" name="time" type="time" defaultValue="" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Status</Label>
+                    <Select name="status" defaultValue={inspection?.status || "draft"}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="submitted">Submitted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input id="price" name="price" type="number" step="0.01" value={calculatedPrice} readOnly required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes (optional)</Label>
+                    <Textarea
+                      id="notes"
+                      name="notes"
+                      placeholder="Add any special instructions or notes..."
+                      rows={4}
+                      defaultValue={inspection?.notes || ""}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          }
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        {inspection ? "Save Changes" : "Create Inspection"}
+                      </>
+                    )}
+                  </Button>
+                  <Button type="button" variant="outline" asChild>
+                    <Link href={inspection ? `/admin/inspections/${inspection.id}` : "/admin/inspections"}>Cancel</Link>
+                  </Button>
+                </>
+              }
+              tips={[
+                "Pick at least one service to auto-calculate the inspection price.",
+                "Choose an inspector before setting a final status.",
+                "Use the notes field for access instructions or hazards.",
+              ]}
+              tipTitle="Quick Tips"
+            />
+          }
+        />
+      </form>
+    </div>
+    </>
   );
 }

@@ -1,11 +1,10 @@
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OverviewLoading() {
   return (
-    <AdminShell>
+    <>
       <AdminPageHeader
         title="Overview"
         description="Your inspection business at a glance"
@@ -95,6 +94,6 @@ export default function OverviewLoading() {
           </Card>
         </div>
       </div>
-    </AdminShell>
+    </>
   );
 }

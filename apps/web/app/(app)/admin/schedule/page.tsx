@@ -1,12 +1,10 @@
 "use client";
 
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CalendarDays, Plus } from "lucide-react";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useSchedule } from "@/hooks/use-schedule";
 import { Badge } from "@/components/ui/badge";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
@@ -129,135 +127,208 @@ export default function SchedulePage() {
   }
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Schedule"
-          description="Plan inspection routes, assign inspectors, and manage availability"
-          actions={
-            <Button className="sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              New Booking
-            </Button>
-          }
-        />
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Schedule"
+        description="Plan inspection routes, assign inspectors, and manage availability"
+        actions={
+          <Button className="sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
+            New Booking
+          </Button>
+        }
+      />
 
-        <Card>
-          <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle>Calendar</CardTitle>
-              <CardDescription>Google-style calendar with month, week, and day views.</CardDescription>
+      <Card>
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle>Calendar</CardTitle>
+            <CardDescription>Google-style calendar with month, week, and day views.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => advance("prev")}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-[160px] text-center text-sm font-medium">{headerLabel()}</div>
+            <Button variant="outline" size="icon" onClick={() => advance("next")}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {scheduleItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+              <CalendarDays className="h-10 w-10 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium">Calendar view coming next</p>
+                <p className="text-xs text-muted-foreground">
+                  This will show routes, travel time, and inspector availability.
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => advance("prev")}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="min-w-[160px] text-center text-sm font-medium">{headerLabel()}</div>
-              <Button variant="outline" size="icon" onClick={() => advance("next")}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {scheduleItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
-                <CalendarDays className="h-10 w-10 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Calendar view coming next</p>
-                  <p className="text-xs text-muted-foreground">
-                    This will show routes, travel time, and inspector availability.
-                  </p>
+          ) : (
+            <Tabs value={activeView} onValueChange={(value) => setActiveView(value as typeof activeView)} className="space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <TabsList className="grid w-full grid-cols-3 md:w-[280px]">
+                  <TabsTrigger value="month">Month</TabsTrigger>
+                  <TabsTrigger value="week">Week</TabsTrigger>
+                  <TabsTrigger value="day">Day</TabsTrigger>
+                </TabsList>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                   
+                    variant={activeInspector === "all" ? "default" : "outline"}
+                    onClick={() => setActiveInspector("all")}
+                  >
+                    All inspectors
+                  </Button>
+                  {inspectors.map((inspector) => (
+                    <Button
+                      key={inspector.inspectorId}
+                     
+                      variant={activeInspector === inspector.inspectorId ? "default" : "outline"}
+                      onClick={() => setActiveInspector(inspector.inspectorId)}
+                    >
+                      {inspector.inspector}
+                    </Button>
+                  ))}
                 </div>
               </div>
-            ) : (
-              <Tabs value={activeView} onValueChange={(value) => setActiveView(value as typeof activeView)} className="space-y-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <TabsList className="grid w-full grid-cols-3 md:w-[280px]">
-                    <TabsTrigger value="month">Month</TabsTrigger>
-                    <TabsTrigger value="week">Week</TabsTrigger>
-                    <TabsTrigger value="day">Day</TabsTrigger>
-                  </TabsList>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant={activeInspector === "all" ? "default" : "outline"}
-                      onClick={() => setActiveInspector("all")}
-                    >
-                      All inspectors
-                    </Button>
-                    {inspectors.map((inspector) => (
-                      <Button
-                        key={inspector.inspectorId}
-                        size="sm"
-                        variant={activeInspector === inspector.inspectorId ? "default" : "outline"}
-                        onClick={() => setActiveInspector(inspector.inspectorId)}
-                      >
-                        {inspector.inspector}
-                      </Button>
-                    ))}
+
+              <TabsContent value="month">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[900px]">
+                    <div className="grid grid-cols-7 gap-2">
+                      {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
+                        <div key={label} className="text-xs font-semibold text-muted-foreground px-2">
+                          {label}
+                        </div>
+                      ))}
+                      {monthDays.map((day) => (
+                        <div
+                          key={day.dateKey}
+                          className={`min-h-[110px] rounded-lg border p-2 text-xs ${
+                            day.isCurrentMonth ? "bg-background" : "bg-muted/30 text-muted-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold">{day.display}</span>
+                            {day.items.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                {day.items.length}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            {day.items
+                              .filter((item) => activeInspector === "all" || item.inspectorId === activeInspector)
+                              .slice(0, 3)
+                              .map((item) => (
+                                <div key={item.id} className="flex items-center gap-2 truncate rounded bg-muted px-2 py-1">
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${inspectorMap.get(item.inspectorId) ?? "bg-slate-400"}`}
+                                  />
+                                  <span className="truncate">{formatTime12(item.time)} · {item.type}</span>
+                                </div>
+                              ))}
+                            {day.items.length > 3 && (
+                              <div className="text-[10px] text-muted-foreground">
+                                +{day.items.length - 3} more
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
+              </TabsContent>
 
-                <TabsContent value="month">
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[900px]">
-                      <div className="grid grid-cols-7 gap-2">
-                        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
-                          <div key={label} className="text-xs font-semibold text-muted-foreground px-2">
-                            {label}
-                          </div>
-                        ))}
-                        {monthDays.map((day) => (
-                          <div
-                            key={day.dateKey}
-                            className={`min-h-[110px] rounded-lg border p-2 text-xs ${
-                              day.isCurrentMonth ? "bg-background" : "bg-muted/30 text-muted-foreground"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold">{day.display}</span>
-                              {day.items.length > 0 && (
-                                <Badge variant="secondary" className="text-[10px]">
-                                  {day.items.length}
-                                </Badge>
-                              )}
+              <TabsContent value="week">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[1100px]">
+                    <div className={`grid grid-cols-[80px_repeat(7,1fr)] rounded-lg border overflow-hidden`}>
+                      <div className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground" />
+                      {weekDays.map((day) => (
+                        <div key={day.dateKey} className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground">
+                          {day.label} · {day.display}
+                        </div>
+                      ))}
+                      <div className="border-t">
+                        <div className="relative" style={{ height: hourSlots.length * slotHeight }}>
+                          {hourSlots.map((hour, idx) => (
+                            <div
+                              key={hour}
+                              className="absolute left-0 right-0 border-t px-2 text-[11px] text-muted-foreground"
+                              style={{ top: idx * slotHeight }}
+                            >
+                              <span className="relative -top-2 bg-background pr-2">
+                                {getHourLabel(hour)}
+                              </span>
                             </div>
-                            <div className="mt-2 space-y-1">
-                              {day.items
-                                .filter((item) => activeInspector === "all" || item.inspectorId === activeInspector)
-                                .slice(0, 3)
-                                .map((item) => (
-                                  <div key={item.id} className="flex items-center gap-2 truncate rounded bg-muted px-2 py-1">
-                                    <span
-                                      className={`h-2 w-2 rounded-full ${inspectorMap.get(item.inspectorId) ?? "bg-slate-400"}`}
-                                    />
-                                    <span className="truncate">{formatTime12(item.time)} · {item.type}</span>
+                          ))}
+                        </div>
+                      </div>
+                      {weekDays.map((day) => (
+                        <div key={day.dateKey} className="border-t border-l bg-background">
+                          <div className="relative" style={{ height: hourSlots.length * slotHeight }}>
+                            {hourSlots.map((_, idx) => (
+                              <div
+                                key={`${day.dateKey}-grid-${idx}`}
+                                className="absolute left-0 right-0 border-t"
+                                style={{ top: idx * slotHeight }}
+                              />
+                            ))}
+                            {getItemsForDay(day.dateKey)
+                              .filter((item) => activeInspector === "all" || item.inspectorId === activeInspector)
+                              .map((item) => {
+                              const start = toMinutes(item.time);
+                              const top = ((start - dayStartMinutes) / slotMinutes) * slotHeight;
+                              const height = ((item.durationMinutes || defaultDurationMinutes) / slotMinutes) * slotHeight;
+                              const color = inspectorMap.get(item.inspectorId) ?? "bg-slate-400";
+                              return (
+                                <Link
+                                  key={item.id}
+                                  href={`/admin/inspections/${item.id}`}
+                                  className="absolute left-2 right-2 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] shadow-sm transition hover:bg-primary/15"
+                                  style={{ top, height }}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className={`h-2 w-2 rounded-full ${color}`} />
+                                  <p className="font-semibold text-primary">{formatTime12(item.time)}</p>
                                   </div>
-                                ))}
-                              {day.items.length > 3 && (
-                                <div className="text-[10px] text-muted-foreground">
-                                  +{day.items.length - 3} more
-                                </div>
-                              )}
-                            </div>
+                                  <p className="text-muted-foreground">{item.type}</p>
+                                  <p className="truncate text-muted-foreground">{item.address}</p>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="day">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[900px]">
+                    <div className="rounded-lg border overflow-hidden">
+                      <div className="grid" style={{ gridTemplateColumns: dayGridTemplate }}>
+                        <div className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground">
+                          Time
+                        </div>
+                        {visibleInspectors.map((inspector) => (
+                          <div
+                            key={inspector.inspectorId}
+                            className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground"
+                          >
+                            {inspector.inspector}
                           </div>
                         ))}
                       </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="week">
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[1100px]">
-                      <div className={`grid grid-cols-[80px_repeat(7,1fr)] rounded-lg border overflow-hidden`}>
-                        <div className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground" />
-                        {weekDays.map((day) => (
-                          <div key={day.dateKey} className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground">
-                            {day.label} · {day.display}
-                          </div>
-                        ))}
-                        <div className="border-t">
+                      <div className="grid border-t" style={{ gridTemplateColumns: dayGridTemplate }}>
+                        <div className="border-r">
                           <div className="relative" style={{ height: hourSlots.length * slotHeight }}>
                             {hourSlots.map((hour, idx) => (
                               <div
@@ -272,130 +343,55 @@ export default function SchedulePage() {
                             ))}
                           </div>
                         </div>
-                        {weekDays.map((day) => (
-                          <div key={day.dateKey} className="border-t border-l bg-background">
+                        {visibleInspectors.map((inspector) => (
+                          <div key={inspector.inspectorId} className="border-l bg-background">
                             <div className="relative" style={{ height: hourSlots.length * slotHeight }}>
                               {hourSlots.map((_, idx) => (
                                 <div
-                                  key={`${day.dateKey}-grid-${idx}`}
+                                  key={`${inspector.inspectorId}-grid-${idx}`}
                                   className="absolute left-0 right-0 border-t"
                                   style={{ top: idx * slotHeight }}
                                 />
                               ))}
-                              {getItemsForDay(day.dateKey)
-                                .filter((item) => activeInspector === "all" || item.inspectorId === activeInspector)
+                              {dayItems
+                                .filter((item) => item.inspectorId === inspector.inspectorId)
                                 .map((item) => {
-                                const start = toMinutes(item.time);
-                                const top = ((start - dayStartMinutes) / slotMinutes) * slotHeight;
-                                const height = ((item.durationMinutes || defaultDurationMinutes) / slotMinutes) * slotHeight;
-                                const color = inspectorMap.get(item.inspectorId) ?? "bg-slate-400";
-                                return (
-                                  <Link
-                                    key={item.id}
-                                    href={`/admin/inspections/${item.id}`}
-                                    className="absolute left-2 right-2 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] shadow-sm transition hover:bg-primary/15"
-                                    style={{ top, height }}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span className={`h-2 w-2 rounded-full ${color}`} />
-                                    <p className="font-semibold text-primary">{formatTime12(item.time)}</p>
-                                    </div>
-                                    <p className="text-muted-foreground">{item.type}</p>
-                                    <p className="truncate text-muted-foreground">{item.address}</p>
-                                  </Link>
-                                );
-                              })}
+                                  const start = toMinutes(item.time);
+                                  const rawTop = ((start - dayStartMinutes) / slotMinutes) * slotHeight;
+                                  const top = Math.max(0, Math.min(rawTop, totalDayHeight - slotHeight));
+                                  const height = Math.min(
+                                    ((item.durationMinutes || defaultDurationMinutes) / slotMinutes) * slotHeight,
+                                    totalDayHeight - top
+                                  );
+                                  const color = inspectorMap.get(item.inspectorId) ?? "bg-slate-400";
+                                  return (
+                                    <Link
+                                      key={item.id}
+                                      href={`/admin/inspections/${item.id}`}
+                                      className="absolute left-2 right-2 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] shadow-sm transition hover:bg-primary/15"
+                                      style={{ top, height }}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span className={`h-2 w-2 rounded-full ${color}`} />
+                                        <p className="font-semibold text-primary">{formatTime12(item.time)}</p>
+                                      </div>
+                                      <p className="text-muted-foreground">{item.type}</p>
+                                      <p className="truncate text-muted-foreground">{item.address}</p>
+                                    </Link>
+                                  );
+                                })}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="day">
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[900px]">
-                      <div className="rounded-lg border overflow-hidden">
-                        <div className="grid" style={{ gridTemplateColumns: dayGridTemplate }}>
-                          <div className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground">
-                            Time
-                          </div>
-                          {visibleInspectors.map((inspector) => (
-                            <div
-                              key={inspector.inspectorId}
-                              className="bg-muted/30 p-2 text-xs font-semibold text-muted-foreground"
-                            >
-                              {inspector.inspector}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="grid border-t" style={{ gridTemplateColumns: dayGridTemplate }}>
-                          <div className="border-r">
-                            <div className="relative" style={{ height: hourSlots.length * slotHeight }}>
-                              {hourSlots.map((hour, idx) => (
-                                <div
-                                  key={hour}
-                                  className="absolute left-0 right-0 border-t px-2 text-[11px] text-muted-foreground"
-                                  style={{ top: idx * slotHeight }}
-                                >
-                                  <span className="relative -top-2 bg-background pr-2">
-                                    {getHourLabel(hour)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                          {visibleInspectors.map((inspector) => (
-                            <div key={inspector.inspectorId} className="border-l bg-background">
-                              <div className="relative" style={{ height: hourSlots.length * slotHeight }}>
-                                {hourSlots.map((_, idx) => (
-                                  <div
-                                    key={`${inspector.inspectorId}-grid-${idx}`}
-                                    className="absolute left-0 right-0 border-t"
-                                    style={{ top: idx * slotHeight }}
-                                  />
-                                ))}
-                                {dayItems
-                                  .filter((item) => item.inspectorId === inspector.inspectorId)
-                                  .map((item) => {
-                                    const start = toMinutes(item.time);
-                                    const rawTop = ((start - dayStartMinutes) / slotMinutes) * slotHeight;
-                                    const top = Math.max(0, Math.min(rawTop, totalDayHeight - slotHeight));
-                                    const height = Math.min(
-                                      ((item.durationMinutes || defaultDurationMinutes) / slotMinutes) * slotHeight,
-                                      totalDayHeight - top
-                                    );
-                                    const color = inspectorMap.get(item.inspectorId) ?? "bg-slate-400";
-                                    return (
-                                      <Link
-                                        key={item.id}
-                                        href={`/admin/inspections/${item.id}`}
-                                        className="absolute left-2 right-2 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] shadow-sm transition hover:bg-primary/15"
-                                        style={{ top, height }}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <span className={`h-2 w-2 rounded-full ${color}`} />
-                                          <p className="font-semibold text-primary">{formatTime12(item.time)}</p>
-                                        </div>
-                                        <p className="text-muted-foreground">{item.type}</p>
-                                        <p className="truncate text-muted-foreground">{item.address}</p>
-                                      </Link>
-                                    );
-                                  })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </AdminShell>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

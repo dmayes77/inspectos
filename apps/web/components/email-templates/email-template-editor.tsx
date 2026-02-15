@@ -2,17 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateEmailTemplate, useEmailTemplates, useUpdateEmailTemplate } from "@/hooks/use-email-templates";
 import type { EmailTemplate } from "@/types/email-template";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 export function EmailTemplateEditor() {
@@ -70,13 +67,7 @@ export function EmailTemplateEditor() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <BackButton
-          href="/admin/email-templates"
-          label="Back to Email Templates"
-          variant="ghost"
-        />
+    <div className="space-y-6">
 
         <AdminPageHeader
           title={isNew ? "New Email Template" : "Edit Email Template"}
@@ -124,7 +115,6 @@ export function EmailTemplateEditor() {
             </form>
           </CardContent>
         </Card>
-      </div>
-    </AdminShell>
+    </div>
   );
 }

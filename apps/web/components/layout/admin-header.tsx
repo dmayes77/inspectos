@@ -1,7 +1,8 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
-import { Bell, ChevronLeft, Menu, Search } from "lucide-react";
+import { ReactNode } from "react";
+import { Bell, ChevronLeft, ChevronRight, Menu, Search } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminUserMenu } from "@/components/layout/admin-user-menu";
 
@@ -18,6 +19,7 @@ interface AdminHeaderProps {
   contextLabel?: string;
   settingsHref: string;
   timeZone: string;
+  breadcrumbs?: { label: string; href: string }[];
   onOpenMobileNav: () => void;
   onOpenCommand: () => void;
   onOpenNotifications: () => void;
@@ -30,67 +32,72 @@ export function AdminHeader({
   user,
   contextLabel,
   settingsHref,
-  timeZone,
+  breadcrumbs = [],
   onOpenMobileNav,
   onOpenCommand,
   onOpenNotifications,
 }: AdminHeaderProps) {
-  const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const timeLabel = useMemo(() => {
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      weekday: "short",
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const parts = formatter.formatToParts(now);
-    const byType = new Map(parts.map((part) => [part.type, part.value]));
-    const date = `${byType.get("weekday")} ${byType.get("month")} ${byType.get("day")} ${byType.get("year")}`;
-    const time = `${byType.get("hour")}:${byType.get("minute")} ${byType.get("dayPeriod")}`;
-    return `${date} ${time}`;
-  }, [now, timeZone]);
-
   return (
-    <header className="flex h-12 items-center justify-between border-b bg-card px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onOpenMobileNav}>
-          <Menu className="h-5 w-5" />
+    <header className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-4 md:px-5 gap-4">
+      <div className="flex items-center gap-2 min-w-0">
+        <Button variant="ghost" size="icon" className="md:hidden h-8 w-8 shrink-0" onClick={onOpenMobileNav}>
+          <Menu className="h-4 w-4" />
         </Button>
         {showBackButton && (
-          <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 -ml-2 h-9 w-9">
-            <ChevronLeft className="h-5 w-5" />
+          <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 h-8 w-8">
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         )}
-        <h1 className="text-sm font-medium text-muted-foreground tabular-nums" suppressHydrationWarning>
-          {mounted ? timeLabel : "Loading time..."}
-        </h1>
+        {breadcrumbs.length > 0 && (
+          <nav className="hidden md:flex items-center gap-1 min-w-0">
+            {breadcrumbs.map((crumb, i) => {
+              const isLast = i === breadcrumbs.length - 1;
+              return (
+                <span key={crumb.href} className="flex items-center gap-1 min-w-0">
+                  {i > 0 && <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
+                  {isLast ? (
+                    <span className="text-xs font-medium text-foreground truncate">{crumb.label}</span>
+                  ) : (
+                    <Link
+                      href={crumb.href}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors truncate"
+                    >
+                      {crumb.label}
+                    </Link>
+                  )}
+                </span>
+              );
+            })}
+          </nav>
+        )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {headerActions}
-        <Button variant="outline" className="hidden w-64 justify-start gap-2 text-muted-foreground md:flex" onClick={onOpenCommand}>
-          <Search className="h-4 w-4" />
-          <span>Search...</span>
-          <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-            <span className="text-xs">⌘</span>K
+
+        {/* Search trigger */}
+        <button
+          type="button"
+          onClick={onOpenCommand}
+          className="hidden md:flex h-8 w-56 items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-3 text-xs text-muted-foreground hover:bg-muted hover:border-border transition-colors"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="pointer-events-none inline-flex h-4 select-none items-center gap-0.5 rounded border bg-background px-1 font-mono text-[10px] text-muted-foreground/60">
+            ⌘K
           </kbd>
-        </Button>
-        <Button variant="ghost" size="icon" className="relative" onClick={onOpenNotifications}>
+        </button>
+
+        {/* Notifications */}
+        <button
+          type="button"
+          onClick={onOpenNotifications}
+          className="relative h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
           <Bell className="h-4 w-4" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
-        </Button>
+          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+        </button>
+
         <AdminUserMenu user={user} contextLabel={contextLabel} settingsHref={settingsHref} />
       </div>
     </header>

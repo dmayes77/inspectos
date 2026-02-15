@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
@@ -12,7 +11,6 @@ import { AgentForm, type AgentFormValues } from "@/components/partners/agent-for
 import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgentById, useUpdateAgent } from "@/hooks/use-agents";
 import { useAgencies } from "@/hooks/use-agencies";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import type { Agent } from "@/hooks/use-agents";
 import type { AgentScrubResult } from "@/types/agent-scrub";
@@ -279,36 +277,16 @@ export default function EditAgentPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading agent...</div>
-      </AdminShell>
+      <div className="py-12 text-center text-muted-foreground">Loading agent...</div>
     );
   }
 
   if (!agent) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents" className="hover:text-foreground">
-                Agents
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
-                Agents
-              </Link>
-            </>
-          }
-          title="Agent Not Found"
-          description="We couldn't locate that agent record."
-          backHref="/admin/agents?tab=agents"
-        />
-      </AdminShell>
+      <PageHeader
+        title="Agent Not Found"
+        description="We couldn't locate that agent record."
+      />
     );
   }
 
@@ -353,59 +331,39 @@ export default function EditAgentPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents" className="hover:text-foreground">
-                Agents
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents?tab=agents" className="hover:text-foreground">
-                Agents
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/agents/${agent.id}`} className="hover:text-foreground">
-                {agent.name}
-              </Link>
-            </>
-          }
-          title="Edit Agent"
-          description="Adjust relationship details and portal settings"
-          backHref={`/admin/agents/${agent.id}`}
-        />
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title="Edit Agent"
+        description="Adjust relationship details and portal settings"
+      />
 
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <div className="space-y-6">
-                <AgentInternetScrub onApply={applyScrubResult} urlRequired={false} />
-                <AgentForm form={form} setForm={setForm} agencies={agencies} agentId={agent.id} />
-              </div>
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" className="w-full" disabled={updateAgent.isPending}>
-                      {updateAgent.isPending ? "Saving..." : "Save Changes"}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href={`/admin/agents/${agent.id}`}>Cancel</Link>
-                    </Button>
-                  </>
-                }
-                tips={AGENT_TIPS}
-              />
-            }
-          />
-        </form>
-      </div>
-    </AdminShell>
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <div className="space-y-6">
+              <AgentInternetScrub onApply={applyScrubResult} urlRequired={false} />
+              <AgentForm form={form} setForm={setForm} agencies={agencies} agentId={agent.id} />
+            </div>
+          }
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={updateAgent.isPending}>
+                    {updateAgent.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" asChild>
+                    <Link href={`/admin/agents/${agent.id}`}>Cancel</Link>
+                  </Button>
+                </>
+              }
+              tips={AGENT_TIPS}
+            />
+          }
+        />
+      </form>
+    </div>
+    </>
   );
 }

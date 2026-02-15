@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ import {
 import { Edit, Trash2, Mail, Phone, ClipboardList } from "lucide-react";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import { useDeleteLead, useLeadById, useUpdateLead } from "@/hooks/use-leads";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import {
@@ -62,36 +60,16 @@ function LeadDetailPageContent() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading lead...</div>
-      </AdminShell>
+      <div className="py-12 text-center text-muted-foreground">Loading lead...</div>
     );
   }
 
   if (!lead) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/contacts" className="hover:text-foreground">
-                Contacts
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/leads" className="hover:text-foreground">
-                Leads
-              </Link>
-            </>
-          }
-          title="Lead Not Found"
-          description="The lead you're looking for doesn't exist or you don't have access."
-          backHref={returnTo}
-        />
-      </AdminShell>
+      <PageHeader
+        title="Lead Not Found"
+        description="The lead you're looking for doesn't exist or you don't have access."
+      />
     );
   }
 
@@ -133,149 +111,131 @@ function LeadDetailPageContent() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/contacts" className="hover:text-foreground">
-                Contacts
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/leads" className="hover:text-foreground">
-                Leads
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <span>{lead.name}</span>
-            </>
-          }
-          title={lead.name}
-          description="Lead details and status"
-          backHref={returnTo}
-          actions={
-            <>
-              <Button variant="outline" onClick={() => setEditing((prev) => !prev)}>
-                <Edit className="mr-2 h-4 w-4" />
-                {editing ? "Cancel" : "Edit"}
-              </Button>
-              <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </>
-          }
-        />
+    <div className="space-y-6">
+      <PageHeader
+        title={lead.name}
+        description="Lead details and status"
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setEditing((prev) => !prev)}>
+              <Edit className="mr-2 h-4 w-4" />
+              {editing ? "Cancel" : "Edit"}
+            </Button>
+            <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
+          </>
+        }
+      />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Lead Overview</CardTitle>
-            <CardDescription>Contact and opportunity details.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{lead.email || "No email"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{lead.phone || "No phone"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">{lead.serviceName || "No service selected"}</span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Estimated value: ${lead.estimatedValue?.toLocaleString() || 0}
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Lead Overview</CardTitle>
+          <CardDescription>Contact and opportunity details.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{lead.email || "No email"}</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{lead.phone || "No phone"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">{lead.serviceName || "No service selected"}</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Estimated value: ${lead.estimatedValue?.toLocaleString() || 0}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <ResourceFormLayout
-          left={
-            <LeadFormSections
-              form={form}
-              setForm={setForm}
-              errors={errors}
-              setErrors={setErrors}
-              disabled={!editing}
-              title="Lead Details"
-              description="Update lead details and stage."
-            />
-          }
-          right={
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button className="w-full" onClick={handleSave} disabled={!editing}>
-                    Save Changes
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setEditing(false)}
-                    disabled={!editing}
-                  >
-                    Cancel
-                  </Button>
-                </CardContent>
-              </Card>
+      <ResourceFormLayout
+        left={
+          <LeadFormSections
+            form={form}
+            setForm={setForm}
+            errors={errors}
+            setErrors={setErrors}
+            disabled={!editing}
+            title="Lead Details"
+            description="Update lead details and stage."
+          />
+        }
+        right={
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full" onClick={handleSave} disabled={!editing}>
+                  Save Changes
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setEditing(false)}
+                  disabled={!editing}
+                >
+                  Cancel
+                </Button>
+              </CardContent>
+            </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Tips</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-2">
-                  <p>• Update the stage as the lead progresses</p>
-                  <p>• Record service details for faster scheduling</p>
-                  <p>• Capture sources to track lead quality</p>
-                </CardContent>
-              </Card>
-            </>
-          }
-        />
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Tips</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground space-y-2">
+                <p>• Update the stage as the lead progresses</p>
+                <p>• Record service details for faster scheduling</p>
+                <p>• Capture sources to track lead quality</p>
+              </CardContent>
+            </Card>
+          </>
+        }
+      />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Tags</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TagAssignmentEditor scope="lead" entityId={lead.leadId} />
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Tags</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TagAssignmentEditor scope="lead" entityId={lead.leadId} />
+        </CardContent>
+      </Card>
 
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Lead</AlertDialogTitle>
-              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </AdminShell>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 
 export default function LeadDetailPage() {
   return (
+    <>
     <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading...</div>}>
       <LeadDetailPageContent />
     </Suspense>
+    </>
   );
 }

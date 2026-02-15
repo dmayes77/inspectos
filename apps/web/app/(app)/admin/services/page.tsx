@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,7 +79,7 @@ const createServicesColumns = (userRole: string, handleArchive: (id: string) => 
       can(userRole, "manage_billing") ? (
         <Button
           variant="destructive"
-          size="sm"
+         
           onClick={() => handleArchive(row.original.serviceId)}
           className="h-7 text-xs"
         >
@@ -142,7 +141,7 @@ export default function ServicesAdminPage() {
     <Button
       key={option.value}
       type="button"
-      size="sm"
+     
       variant={typeFilter === option.value ? "default" : "outline"}
       onClick={() => setTypeFilter(option.value)}
     >
@@ -151,99 +150,97 @@ export default function ServicesAdminPage() {
   ));
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <ResourceListLayout
-        header={
-          <AdminPageHeader
-            title="Services & Packages"
-            description="Define individual services and bundle them into packages."
-            actions={
-              can(userRole, "manage_billing") ? (
-                <div className="flex flex-wrap gap-2 sm:flex-nowrap">
-                  <Button asChild>
-                    <Link href="/admin/services/new?mode=service">
-                      <Plus className="mr-2 h-4 w-4" /> Create Service
-                    </Link>
+    <ResourceListLayout
+      header={
+        <AdminPageHeader
+          title="Services & Packages"
+          description="Define individual services and bundle them into packages."
+          actions={
+            can(userRole, "manage_billing") ? (
+              <div className="flex flex-wrap gap-2 sm:flex-nowrap">
+                <Button asChild>
+                  <Link href="/admin/services/new?mode=service">
+                    <Plus className="mr-2 h-4 w-4" /> Create Service
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/admin/services/new?mode=package">
+                    <Plus className="mr-2 h-4 w-4" /> Create Package
+                  </Link>
+                </Button>
+              </div>
+            ) : null
+          }
+        />
+      }
+      stats={
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Total</CardDescription>
+              <CardTitle className="text-2xl">{stats.total}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Services</CardDescription>
+              <CardTitle className="text-2xl">{stats.services}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Add-ons</CardDescription>
+              <CardTitle className="text-2xl">{stats.addOns}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription>Packages</CardDescription>
+              <CardTitle className="text-2xl">{stats.packages}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+      }
+      table={
+        <ModernDataTable
+          columns={createServicesColumns(userRole, handleArchive)}
+          data={filteredByType}
+          title="All Services & Packages"
+          description={`${stats.total} total (${stats.services} services, ${stats.packages} packages)`}
+          filterControls={
+            <div className="flex flex-wrap items-center gap-2">{typeButtons}</div>
+          }
+          emptyState={
+            isError ? (
+              <div className="rounded-lg border border-dashed p-10 text-center text-red-500">
+                Failed to load services.
+                {error instanceof Error && (
+                  <span className="ml-2 text-xs text-muted-foreground">{error.message}</span>
+                )}
+              </div>
+            ) : hasNoServices ? (
+              <div className="rounded-lg border border-dashed p-10 text-center">
+                <h3 className="text-lg font-semibold">No services yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Create your first service or package to get started.
+                </p>
+                {can(userRole, "manage_billing") && (
+                  <Button className="mt-4" asChild>
+                    <Link href="/admin/services/new?mode=service">Create service</Link>
                   </Button>
-                  <Button asChild variant="outline">
-                    <Link href="/admin/services/new?mode=package">
-                      <Plus className="mr-2 h-4 w-4" /> Create Package
-                    </Link>
-                  </Button>
-                </div>
-              ) : null
-            }
-          />
-        }
-        stats={
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Total</CardDescription>
-                <CardTitle className="text-2xl">{stats.total}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Services</CardDescription>
-                <CardTitle className="text-2xl">{stats.services}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Add-ons</CardDescription>
-                <CardTitle className="text-2xl">{stats.addOns}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Packages</CardDescription>
-                <CardTitle className="text-2xl">{stats.packages}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-        }
-        table={
-          <ModernDataTable
-            columns={createServicesColumns(userRole, handleArchive)}
-            data={filteredByType}
-            title="All Services & Packages"
-            description={`${stats.total} total (${stats.services} services, ${stats.packages} packages)`}
-            filterControls={
-              <div className="flex flex-wrap items-center gap-2">{typeButtons}</div>
-            }
-            emptyState={
-              isError ? (
-                <div className="rounded-lg border border-dashed p-10 text-center text-red-500">
-                  Failed to load services.
-                  {error instanceof Error && (
-                    <span className="ml-2 text-xs text-muted-foreground">{error.message}</span>
-                  )}
-                </div>
-              ) : hasNoServices ? (
-                <div className="rounded-lg border border-dashed p-10 text-center">
-                  <h3 className="text-lg font-semibold">No services yet</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Create your first service or package to get started.
-                  </p>
-                  {can(userRole, "manage_billing") && (
-                    <Button className="mt-4" asChild>
-                      <Link href="/admin/services/new?mode=service">Create service</Link>
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed p-10 text-center">
-                  <h3 className="text-lg font-semibold">No services match your filters</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Adjust your search or type filter to find the service you need.
-                  </p>
-                </div>
-              )
-            }
-          />
-        }
-      />
-    </AdminShell>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed p-10 text-center">
+                <h3 className="text-lg font-semibold">No services match your filters</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Adjust your search or type filter to find the service you need.
+                </p>
+              </div>
+            )
+          }
+        />
+      }
+    />
   );
 }

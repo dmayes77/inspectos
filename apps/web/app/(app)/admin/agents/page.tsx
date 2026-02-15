@@ -3,9 +3,8 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,6 @@ import { ModernDataTable } from "@/components/ui/modern-data-table";
 import { Building2, DollarSign, Mail, Phone, Plus, Search, Users } from "lucide-react";
 import { useAgencies, type Agency } from "@/hooks/use-agencies";
 import { useAgents, type Agent } from "@/hooks/use-agents";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CompanyLogo } from "@/components/shared/company-logo";
 import { AdminPageSkeleton } from "@/components/layout/admin-page-skeleton";
@@ -236,180 +234,180 @@ function AgentsPageContent() {
   }
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Agents"
-          description="Track agencies and agents alongside their referral performance"
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              {activeTab === "agencies" ? (
-                <Button asChild>
-                  <Link href="/admin/agents/agencies/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Agency
-                  </Link>
-                </Button>
-              ) : (
-                <Button asChild>
-                  <Link href="/admin/agents/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Agent
-                  </Link>
-                </Button>
-              )}
-              {activeTab === "agencies" ? (
-                <Button variant="outline" asChild>
-                  <Link href="/admin/agents/new">Add Agent</Link>
-                </Button>
-              ) : (
-                <Button variant="outline" asChild>
-                  <Link href="/admin/agents/agencies/new">Add Agency</Link>
-                </Button>
-              )}
-            </div>
-          }
-        />
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Agents"
+        description="Track agencies and agents alongside their referral performance"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTab === "agencies" ? (
+              <Button asChild>
+                <Link href="/admin/agents/agencies/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Agency
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/admin/agents/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Agent
+                </Link>
+              </Button>
+            )}
+            {activeTab === "agencies" ? (
+              <Button variant="outline" asChild>
+                <Link href="/admin/agents/new">Add Agent</Link>
+              </Button>
+            ) : (
+              <Button variant="outline" asChild>
+                <Link href="/admin/agents/agencies/new">Add Agency</Link>
+              </Button>
+            )}
+          </div>
+        }
+      />
 
-        <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/agents?tab=${value}`)} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 bg-accent md:w-70">
-            <TabsTrigger value="agents">Agents</TabsTrigger>
-            <TabsTrigger value="agencies">Agencies</TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/agents?tab=${value}`)} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 bg-accent md:w-70">
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="agencies">Agencies</TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="agents" className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agents.length}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Total Agents</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agentStats.active}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Active Agents</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agentStats.inactive}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Inactive Agents</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agentStats.totalReferrals}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Total Referrals</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">${agentStats.totalRevenue.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Total Revenue</p>
-                </CardContent>
-              </Card>
-            </div>
+        <TabsContent value="agents" className="space-y-6">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Agents</CardDescription>
+                <CardTitle className="text-2xl">{agents.length}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Active Agents</CardDescription>
+                <CardTitle className="text-2xl">{agentStats.active}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Inactive Agents</CardDescription>
+                <CardTitle className="text-2xl">{agentStats.inactive}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Referrals</CardDescription>
+                <CardTitle className="text-2xl">{agentStats.totalReferrals}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Revenue</CardDescription>
+                <CardTitle className="text-2xl">${agentStats.totalRevenue.toLocaleString()}</CardTitle>
+                </CardHeader>
+            </Card>
+          </div>
 
-            <ModernDataTable
-              columns={agentColumns}
-              data={filteredAgents}
-              title="All Agents"
-              description={`${filteredAgents.length} total agents`}
-              filterControls={
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {["all", "active", "inactive"].map((status) => (
-                      <Button
-                        key={status}
-                        variant={agentStatusFilter === status ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setAgentStatusFilter(status as typeof agentStatusFilter)}
-                      >
-                        {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input value={agentQuery} onChange={(event) => setAgentQuery(event.target.value)} placeholder="Search agents..." className="pl-9" />
-                  </div>
-                </>
-              }
-            />
-          </TabsContent>
+          <ModernDataTable
+            columns={agentColumns}
+            data={filteredAgents}
+            title="All Agents"
+            description={`${filteredAgents.length} total agents`}
+            filterControls={
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  {["all", "active", "inactive"].map((status) => (
+                    <Button
+                      key={status}
+                      variant={agentStatusFilter === status ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAgentStatusFilter(status as typeof agentStatusFilter)}
+                    >
+                      {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+                    </Button>
+                  ))}
+                </div>
+                <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={agentQuery} onChange={(event) => setAgentQuery(event.target.value)} placeholder="Search agents..." className="!pl-9" />
+                </div>
+              </>
+            }
+          />
+        </TabsContent>
 
-          <TabsContent value="agencies" className="space-y-6">
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agencies.length}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Total Agencies</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agencyStats.active}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Active Agencies</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agencyStats.inactive}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Inactive Agencies</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">{agencyStats.totalAgents}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Total Agents</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <div className="text-xl font-bold sm:text-2xl">${agencyStats.totalRevenue.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground sm:text-sm">Total Revenue</p>
-                </CardContent>
-              </Card>
-            </div>
+        <TabsContent value="agencies" className="space-y-6">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Agencies</CardDescription>
+                <CardTitle className="text-2xl">{agencies.length}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Active Agencies</CardDescription>
+                <CardTitle className="text-2xl">{agencyStats.active}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Inactive Agencies</CardDescription>
+                <CardTitle className="text-2xl">{agencyStats.inactive}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Agents</CardDescription>
+                <CardTitle className="text-2xl">{agencyStats.totalAgents}</CardTitle>
+                </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Total Revenue</CardDescription>
+                <CardTitle className="text-2xl">${agencyStats.totalRevenue.toLocaleString()}</CardTitle>
+                </CardHeader>
+            </Card>
+          </div>
 
-            <ModernDataTable
-              columns={agencyColumns}
-              data={filteredAgencies}
-              title="All Agencies"
-              description={`${filteredAgencies.length} total agencies`}
-              filterControls={
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {["all", "active", "inactive"].map((status) => (
-                      <Button
-                        key={status}
-                        variant={agencyStatusFilter === status ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setAgencyStatusFilter(status as typeof agencyStatusFilter)}
-                      >
-                        {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input value={agencyQuery} onChange={(event) => setAgencyQuery(event.target.value)} placeholder="Search agencies..." className="pl-9" />
-                  </div>
-                </>
-              }
-            />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AdminShell>
+          <ModernDataTable
+            columns={agencyColumns}
+            data={filteredAgencies}
+            title="All Agencies"
+            description={`${filteredAgencies.length} total agencies`}
+            filterControls={
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  {["all", "active", "inactive"].map((status) => (
+                    <Button
+                      key={status}
+                      variant={agencyStatusFilter === status ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setAgencyStatusFilter(status as typeof agencyStatusFilter)}
+                    >
+                      {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
+                    </Button>
+                  ))}
+                </div>
+                <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input value={agencyQuery} onChange={(event) => setAgencyQuery(event.target.value)} placeholder="Search agencies..." className="!pl-9" />
+                </div>
+              </>
+            }
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
 export default function AgentsPage() {
   return (
+    <>
     <Suspense fallback={null}>
       <AgentsPageContent />
     </Suspense>
+    </>
   );
 }

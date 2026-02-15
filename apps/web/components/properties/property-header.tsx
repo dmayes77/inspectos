@@ -2,7 +2,6 @@
 
 import { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
-import { BackButton } from "@/components/ui/back-button";
 import { cn } from "@/lib/utils";
 
 type PropertyHeaderProps = {
@@ -13,7 +12,7 @@ type PropertyHeaderProps = {
   propertyTypeIcon?: ReactNode;
   createdAtLabel?: string;
   description?: string;
-  backHref: string;
+  backHref?: string; // kept for backwards compat, no longer rendered
   actions?: ReactNode;
 };
 
@@ -25,13 +24,11 @@ export function PropertyHeader({
   propertyTypeIcon,
   createdAtLabel,
   description,
-  backHref,
   actions,
 }: PropertyHeaderProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-        <BackButton href={backHref} variant="ghost" />
         {breadcrumb ? <div className="flex items-center gap-2">{breadcrumb}</div> : null}
       </div>
 

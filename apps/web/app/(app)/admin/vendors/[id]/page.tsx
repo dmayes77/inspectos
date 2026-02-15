@@ -15,6 +15,7 @@ export default function VendorDetailPage() {
   if (!vendor) return <div>Vendor not found.</div>;
 
   return (
+    <>
     <div className="space-y-6 max-w-2xl mx-auto">
       <Card>
         <CardHeader>
@@ -46,5 +47,6 @@ export default function VendorDetailPage() {
         </Button>
       </div>
     </div>
+    </>
   );
 }

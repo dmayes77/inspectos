@@ -1,16 +1,5 @@
-import { NextRequest } from 'next/server';
-import {
-  createUserClient,
-  getAccessToken,
-  getUserFromToken,
-  unauthorized,
-  badRequest,
-  serverError,
-  success,
-  validationError,
-  notFound
-} from '@/lib/supabase';
-import { resolveTenant } from '@/lib/tenants';
+import { serverError, success, validationError, notFound } from '@/lib/supabase';
+import { withAuth } from '@/lib/api/with-auth';
 import { updateLeadSchema } from '@inspectos/shared/validations/lead';
 
 const normalizeStage = (stage?: string | null) => {
@@ -45,150 +34,81 @@ const mapLead = (lead: {
 /**
  * GET /api/admin/leads/[id]
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const accessToken = getAccessToken(request);
-    if (!accessToken) {
-      return unauthorized('Missing access token');
-    }
+export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
+  const { id } = params;
 
-    const user = getUserFromToken(accessToken);
-    if (!user) {
-      return unauthorized('Invalid access token');
-    }
+  const { data: lead, error } = await supabase
+    .from('leads')
+    .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
+    .eq('tenant_id', tenant.id)
+    .eq('id', id)
+    .single();
 
-    const { id } = await params;
-    const tenantSlug = request.nextUrl.searchParams.get('tenant');
-    const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
-    if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
-    }
-
-    const { data: lead, error } = await supabase
-      .from('leads')
-      .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
-      .eq('tenant_id', tenant.id)
-      .eq('id', id)
-      .single();
-
-    if (error || !lead) {
-      return notFound('Lead not found');
-    }
-
-    return success(mapLead(lead));
-  } catch (error) {
-    return serverError('Failed to fetch lead', error);
+  if (error || !lead) {
+    return notFound('Lead not found');
   }
-}
+
+  return success(mapLead(lead));
+});
 
 /**
  * PUT /api/admin/leads/[id]
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const accessToken = getAccessToken(request);
-    if (!accessToken) {
-      return unauthorized('Missing access token');
-    }
+export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
+  const { id } = params;
 
-    const user = getUserFromToken(accessToken);
-    if (!user) {
-      return unauthorized('Invalid access token');
-    }
+  const body = await request.json();
 
-    const { id } = await params;
-    const body = await request.json();
+  // Validate request body
+  const validation = updateLeadSchema.safeParse(body);
+  if (!validation.success) {
+    return validationError(validation.error.issues[0]?.message || 'Validation failed');
+  }
+  const payload = validation.data;
 
-    // Validate request body
-    const validation = updateLeadSchema.safeParse(body);
-    if (!validation.success) {
-      return validationError(validation.error.issues[0]?.message || 'Validation failed');
-    }
-    const payload = validation.data;
+  // TODO: Add workflow trigger on status change (like web version)
+  // const { data: existing } = await supabase.from('leads').select('stage').eq('tenant_id', tenant.id).eq('id', id).maybeSingle();
 
-    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
-    const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
-    if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
-    }
+  const { data: lead, error } = await supabase
+    .from('leads')
+    .update({
+      name: payload.name,
+      email: payload.email ?? null,
+      phone: payload.phone ?? null,
+      stage: normalizeStage(payload.stage),
+      source: payload.source ?? null,
+      notes: payload.notes ?? null,
+      service_name: payload.serviceName ?? null,
+      requested_date: payload.requestedDate || null,
+      estimated_value: payload.estimatedValue ?? null,
+    })
+    .eq('tenant_id', tenant.id)
+    .eq('id', id)
+    .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
+    .single();
 
-    // TODO: Add workflow trigger on status change (like web version)
-    // const { data: existing } = await supabase.from('leads').select('stage').eq('tenant_id', tenant.id).eq('id', id).maybeSingle();
-
-    const { data: lead, error } = await supabase
-      .from('leads')
-      .update({
-        name: payload.name,
-        email: payload.email ?? null,
-        phone: payload.phone ?? null,
-        stage: normalizeStage(payload.stage),
-        source: payload.source ?? null,
-        notes: payload.notes ?? null,
-        service_name: payload.serviceName ?? null,
-        requested_date: payload.requestedDate || null,
-        estimated_value: payload.estimatedValue ?? null,
-      })
-      .eq('tenant_id', tenant.id)
-      .eq('id', id)
-      .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
-      .single();
-
-    if (error || !lead) {
-      return serverError('Failed to update lead', error);
-    }
-
-    return success(mapLead(lead));
-  } catch (error) {
+  if (error || !lead) {
     return serverError('Failed to update lead', error);
   }
-}
+
+  return success(mapLead(lead));
+});
 
 /**
  * DELETE /api/admin/leads/[id]
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const accessToken = getAccessToken(request);
-    if (!accessToken) {
-      return unauthorized('Missing access token');
-    }
+export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
+  const { id } = params;
 
-    const user = getUserFromToken(accessToken);
-    if (!user) {
-      return unauthorized('Invalid access token');
-    }
+  const { error } = await supabase
+    .from('leads')
+    .delete()
+    .eq('tenant_id', tenant.id)
+    .eq('id', id);
 
-    const { id } = await params;
-    const tenantSlug = request.nextUrl.searchParams.get('tenant');
-    const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
-    if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
-    }
-
-    const { error } = await supabase
-      .from('leads')
-      .delete()
-      .eq('tenant_id', tenant.id)
-      .eq('id', id);
-
-    if (error) {
-      return serverError('Failed to delete lead', error);
-    }
-
-    return success({ deleted: true });
-  } catch (error) {
+  if (error) {
     return serverError('Failed to delete lead', error);
   }
-}
+
+  return success({ deleted: true });
+});

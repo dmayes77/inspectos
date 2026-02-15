@@ -3,11 +3,9 @@
  * React Query hooks for property management
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useGet, usePost, usePatch, useDelete } from '@/hooks/crud';
 import { useApiClient } from '@/lib/api/tenant-context';
-
-const PROPERTIES_KEY = 'properties';
 
 export interface Property {
   id: string;
@@ -151,73 +149,55 @@ export function formatPropertyAddress(property: Property): string {
 
 export function useProperties(filters?: PropertyFilters) {
   const apiClient = useApiClient();
-  return useQuery({
-    queryKey: [PROPERTIES_KEY, filters],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filters?.client_id) params.append('client_id', filters.client_id);
-      const endpoint = params.toString() ? `/admin/properties?${params}` : '/admin/properties';
-      return await apiClient.get<Property[]>(endpoint);
-    },
+  return useGet<Property[]>(['properties', filters], async () => {
+    const params = new URLSearchParams();
+    if (filters?.client_id) params.append('client_id', filters.client_id);
+    const endpoint = params.toString() ? `/admin/properties?${params}` : '/admin/properties';
+    return await apiClient.get<Property[]>(endpoint);
   });
 }
 
 export function useProperty(propertyId: string) {
   const apiClient = useApiClient();
-  return useQuery({
-    queryKey: [PROPERTIES_KEY, propertyId],
-    queryFn: () => apiClient.get<Property>(`/admin/properties/${propertyId}`),
-    enabled: !!propertyId,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-  });
+  return useGet<Property>(
+    ['properties', propertyId],
+    () => apiClient.get<Property>(`/admin/properties/${propertyId}`),
+    { enabled: !!propertyId, refetchOnMount: 'always', refetchOnWindowFocus: true },
+  );
 }
 
 export function useCreateProperty() {
-  const queryClient = useQueryClient();
   const apiClient = useApiClient();
-
-  return useMutation({
-    mutationFn: (input: CreatePropertyInput) => apiClient.post<Property>('/admin/properties', input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PROPERTIES_KEY] });
-      toast.success('Property created successfully');
+  return usePost<Property, CreatePropertyInput>(
+    'properties',
+    (input) => apiClient.post<Property>('/admin/properties', input),
+    {
+      onSuccess: () => toast.success('Property created successfully'),
+      onError: (error: unknown) => toast.error(error instanceof Error ? error.message : 'Failed to create property'),
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create property');
-    },
-  });
+  );
 }
 
 export function useUpdateProperty(propertyId: string) {
-  const queryClient = useQueryClient();
   const apiClient = useApiClient();
-
-  return useMutation({
-    mutationFn: (input: UpdatePropertyInput) => apiClient.patch<Property>(`/admin/properties/${propertyId}`, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PROPERTIES_KEY] });
-      queryClient.invalidateQueries({ queryKey: [PROPERTIES_KEY, propertyId] });
-      toast.success('Property updated successfully');
+  return usePatch<Property, UpdatePropertyInput>(
+    'properties',
+    (input) => apiClient.patch<Property>(`/admin/properties/${propertyId}`, input),
+    {
+      onSuccess: () => toast.success('Property updated successfully'),
+      onError: (error: unknown) => toast.error(error instanceof Error ? error.message : 'Failed to update property'),
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update property');
-    },
-  });
+  );
 }
 
 export function useDeleteProperty() {
-  const queryClient = useQueryClient();
   const apiClient = useApiClient();
-
-  return useMutation({
-    mutationFn: (propertyId: string) => apiClient.delete<{ deleted: boolean }>(`/admin/properties/${propertyId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [PROPERTIES_KEY] });
-      toast.success('Property deleted successfully');
+  return useDelete<{ deleted: boolean }>(
+    'properties',
+    (propertyId) => apiClient.delete<{ deleted: boolean }>(`/admin/properties/${propertyId}`),
+    {
+      onSuccess: () => toast.success('Property deleted successfully'),
+      onError: (error: unknown) => toast.error(error instanceof Error ? error.message : 'Failed to delete property'),
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete property');
-    },
-  });
+  );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, CreditCard, FileText, Users, Calendar, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { useIntegrations, useConnectIntegration, useDisconnectIntegration, type IntegrationType } from "@/hooks/use-integrations";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
@@ -178,141 +176,139 @@ export default function IntegrationsPage() {
   const connectedCount = integrations.filter((i) => i.status === "connected").length;
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Integrations"
-          description="Connect calendars, accounting, and messaging services"
-        />
+    <>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Integrations"
+        description="Connect calendars, accounting, and messaging services"
+      />
 
-        {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Connected</p>
-              <p className="mt-2 text-2xl font-semibold">{connectedCount}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Available</p>
-              <p className="mt-2 text-2xl font-semibold">{INTEGRATION_DEFINITIONS.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
-              <p className="mt-2 text-2xl font-semibold">
-                {connectedCount > 0 ? "Active" : "Setup needed"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Integration Cards */}
-        {isLoading ? (
-          <div className="text-center py-10 text-muted-foreground">Loading integrations...</div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {INTEGRATION_DEFINITIONS.map((definition) => {
-              const integration = getIntegrationByType(definition.type);
-              const isConnected = integration?.status === "connected";
-              const Icon = definition.icon;
-
-              return (
-                <Card key={definition.type}>
-                  <CardHeader className="flex flex-row items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Icon className="h-4 w-4" />
-                        {definition.title}
-                      </CardTitle>
-                      <CardDescription>{definition.description}</CardDescription>
-                    </div>
-                    {isConnected ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDisconnect(integration.id, definition.title)}
-                        disabled={disconnectMutation.isPending}
-                      >
-                        Disconnect
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleConnect(definition.type)}
-                      >
-                        Connect
-                      </Button>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between">
-                      {getStatusBadge(integration?.status)}
-                      {integration?.provider && (
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {integration.provider}
-                        </span>
-                      )}
-                    </div>
-                    {integration?.connected_at && (
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Connected {new Date(integration.connected_at).toLocaleDateString()}
-                      </p>
-                    )}
-                    {integration?.error_message && (
-                      <p className="mt-2 text-xs text-red-600">{integration.error_message}</p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Connected</CardDescription>
+            <CardTitle className="text-2xl">{connectedCount}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Available</CardDescription>
+            <CardTitle className="text-2xl">{INTEGRATION_DEFINITIONS.length}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Status</CardDescription>
+            <CardTitle className="text-2xl">{connectedCount > 0 ? "Active" : "Setup needed"}</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
 
-      {/* Connect Dialog */}
-      <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Connect {selectedDefinition?.title}</DialogTitle>
-            <DialogDescription>
-              Select a provider to connect your {selectedDefinition?.title.toLowerCase()} integration.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Provider</Label>
-              <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  {selectedDefinition?.providers.map((provider) => (
-                    <SelectItem key={provider.value} value={provider.value}>
-                      {provider.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Note: Full OAuth configuration would be implemented here in production.
-              For now, this marks the integration as connected.
-            </p>
+      {/* Integration Cards */}
+      {isLoading ? (
+        <div className="text-center py-10 text-muted-foreground">Loading integrations...</div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {INTEGRATION_DEFINITIONS.map((definition) => {
+            const integration = getIntegrationByType(definition.type);
+            const isConnected = integration?.status === "connected";
+            const Icon = definition.icon;
+
+            return (
+              <Card key={definition.type}>
+                <CardHeader className="flex flex-row items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      {definition.title}
+                    </CardTitle>
+                    <CardDescription>{definition.description}</CardDescription>
+                  </div>
+                  {isConnected ? (
+                    <Button
+                      variant="outline"
+                     
+                      onClick={() => handleDisconnect(integration.id, definition.title)}
+                      disabled={disconnectMutation.isPending}
+                    >
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                     
+                      onClick={() => handleConnect(definition.type)}
+                    >
+                      Connect
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    {getStatusBadge(integration?.status)}
+                    {integration?.provider && (
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {integration.provider}
+                      </span>
+                    )}
+                  </div>
+                  {integration?.connected_at && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Connected {new Date(integration.connected_at).toLocaleDateString()}
+                    </p>
+                  )}
+                  {integration?.error_message && (
+                    <p className="mt-2 text-xs text-red-600">{integration.error_message}</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+
+    {/* Connect Dialog */}
+    <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Connect {selectedDefinition?.title}</DialogTitle>
+          <DialogDescription>
+            Select a provider to connect your {selectedDefinition?.title.toLowerCase()} integration.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Provider</Label>
+            <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectedDefinition?.providers.map((provider) => (
+                  <SelectItem key={provider.value} value={provider.value}>
+                    {provider.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConnectDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmConnect} disabled={connectMutation.isPending || !selectedProvider}>
-              {connectMutation.isPending ? "Connecting..." : "Connect"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AdminShell>
+          <p className="text-xs text-muted-foreground">
+            Note: Full OAuth configuration would be implemented here in production.
+            For now, this marks the integration as connected.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowConnectDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmConnect} disabled={connectMutation.isPending || !selectedProvider}>
+            {connectMutation.isPending ? "Connecting..." : "Connect"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

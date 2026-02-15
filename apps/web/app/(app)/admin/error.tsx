@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
@@ -21,6 +20,7 @@ export default function AdminError({
   }, [error]);
 
   return (
+    <>
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <Card className="mx-auto max-w-lg">
         <CardHeader className="text-center">
@@ -44,10 +44,10 @@ export default function AdminError({
               <RefreshCw className="mr-2 h-4 w-4" />
               Try again
             </Button>
-            <BackButton href="/admin" label="Back to Dashboard" variant="outline" />
           </div>
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

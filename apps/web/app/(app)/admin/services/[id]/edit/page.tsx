@@ -4,7 +4,6 @@ import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +11,6 @@ import { toast } from "sonner";
 import { useServices, useUpdateService, type Service } from "@/hooks/use-services";
 import { useTemplates, useCreateTemplateStub } from "@/hooks/use-templates";
 import { ServiceForm } from "@/components/shared/service-form";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const SERVICE_TIPS = [
   "Use durations and price together to keep scheduling accurate.",
@@ -67,11 +65,9 @@ export default function EditServicePage() {
 
   if (!service) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="flex items-center justify-center min-h-100">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </AdminShell>
+      <div className="flex items-center justify-center min-h-100">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
@@ -128,55 +124,41 @@ export default function EditServicePage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/services" className="hover:text-foreground">
-                Services
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <span>{service.name}</span>
-            </>
-          }
-          title={isPackage ? "Edit Package" : "Edit Service"}
-          description={isPackage ? "Adjust the included services and pricing." : "Update the service details."}
-          backHref={`/admin/services/${service.serviceId}`}
-        />
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title={isPackage ? "Edit Package" : "Edit Service"}
+        description={isPackage ? "Adjust the included services and pricing." : "Update the service details."}
+      />
 
-        <ServiceForm
-          title={isPackage ? "Edit Package" : "Edit Service"}
-          description={isPackage ? "Update the services included and pack details." : "Adjust the service information."}
-          form={form}
-          setForm={setForm}
-          services={individualServices}
-          selectedServiceIds={selectedServiceIds}
-          setSelectedServiceIds={setSelectedServiceIds}
-          discountPercent={discountPercent}
-          setDiscountPercent={setDiscountPercent}
-          isPackage={isPackage}
-          showTemplate={!isPackage}
-          templates={templates}
-          templateMode={templateMode}
-          setTemplateMode={setTemplateMode}
-          templateSelection={templateSelection}
-          setTemplateSelection={setTemplateSelection}
-          templateName={templateName}
-          setTemplateName={setTemplateName}
-          onSubmit={handleSubmit}
-          onCancel={() => router.push(`/admin/services/${service.serviceId}`)}
-          primaryLabel={isPackage ? "Save Package" : "Save Service"}
-          pendingLabel={isPackage ? "Saving package..." : "Saving..."}
-          cancelLabel="Cancel"
-          tips={isPackage ? PACKAGE_TIPS : SERVICE_TIPS}
-          isPending={updateService.isPending}
-        />
-      </div>
-    </AdminShell>
+      <ServiceForm
+        title={isPackage ? "Edit Package" : "Edit Service"}
+        description={isPackage ? "Update the services included and pack details." : "Adjust the service information."}
+        form={form}
+        setForm={setForm}
+        services={individualServices}
+        selectedServiceIds={selectedServiceIds}
+        setSelectedServiceIds={setSelectedServiceIds}
+        discountPercent={discountPercent}
+        setDiscountPercent={setDiscountPercent}
+        isPackage={isPackage}
+        showTemplate={!isPackage}
+        templates={templates}
+        templateMode={templateMode}
+        setTemplateMode={setTemplateMode}
+        templateSelection={templateSelection}
+        setTemplateSelection={setTemplateSelection}
+        templateName={templateName}
+        setTemplateName={setTemplateName}
+        onSubmit={handleSubmit}
+        onCancel={() => router.push(`/admin/services/${service.serviceId}`)}
+        primaryLabel={isPackage ? "Save Package" : "Save Service"}
+        pendingLabel={isPackage ? "Saving package..." : "Saving..."}
+        cancelLabel="Cancel"
+        tips={isPackage ? PACKAGE_TIPS : SERVICE_TIPS}
+        isPending={updateService.isPending}
+      />
+    </div>
+    </>
   );
 }

@@ -1,24 +1,17 @@
 import type { ReactNode } from "react";
-import { BackButton } from "@/components/ui/back-button";
 
 type AdminPageHeaderProps = {
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
-  breadcrumb?: ReactNode;
+  breadcrumb?: ReactNode; // kept for backwards compat, no longer rendered
   meta?: ReactNode;
   backHref?: string;
 };
 
-export function AdminPageHeader({ title, description, actions, breadcrumb, meta, backHref }: AdminPageHeaderProps) {
+export function AdminPageHeader({ title, description, actions, meta }: AdminPageHeaderProps) {
   return (
     <div className="admin-page-header flex flex-col gap-3">
-      {(backHref || breadcrumb) && (
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          {backHref ? <BackButton href={backHref} variant="ghost" size="icon" /> : null}
-          {breadcrumb ? <div className="flex items-center gap-2">{breadcrumb}</div> : null}
-        </div>
-      )}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>

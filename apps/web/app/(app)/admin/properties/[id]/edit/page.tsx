@@ -3,14 +3,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { useProperty, useUpdateProperty } from "@/hooks/use-properties";
 import { useClients } from "@/hooks/use-clients";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { COOLING_OPTIONS, FOUNDATION_OPTIONS, GARAGE_OPTIONS, HEATING_OPTIONS, ROOF_OPTIONS } from "@inspectos/shared/constants/property-options";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
@@ -149,125 +147,91 @@ export default function EditPropertyPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="flex items-center justify-center min-h-100">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </AdminShell>
+      <div className="flex items-center justify-center min-h-100">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (!property) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <PageHeader
-            breadcrumb={
-              <>
-                <Link href="/admin/overview" className="hover:text-foreground">
-                  Overview
-                </Link>
-                <span className="text-muted-foreground">/</span>
-                <Link href="/admin/properties" className="hover:text-foreground">
-                  Properties
-                </Link>
-              </>
-            }
-            title="Property Not Found"
-            description="The property you're looking for doesn't exist or you don't have access."
-            backHref="/admin/properties"
-          />
-        </div>
-      </AdminShell>
+      <div className="space-y-6">
+        <PageHeader
+          title="Property Not Found"
+          description="The property you're looking for doesn't exist or you don't have access."
+        />
+      </div>
     );
   }
 
   if (!formInitialized) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="flex items-center justify-center min-h-100">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </AdminShell>
+      <div className="flex items-center justify-center min-h-100">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/properties" className="hover:text-foreground">
-                Properties
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/properties/${propertyId}`} className="hover:text-foreground">
-                {property.address_line1}
-              </Link>
-            </>
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title="Edit Property"
+        description="Update the property details to keep inspections accurate."
+      />
+
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <PropertyFormSections
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              setErrors={setErrors}
+              clients={clients}
+              onOpenClientDialog={() => setShowClientDialog(true)}
+            />
           }
-          title="Edit Property"
-          description="Update the property details to keep inspections accurate."
-          backHref={`/admin/properties/${propertyId}`}
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={updateProperty.isPending}>
+                    {updateProperty.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push(`/admin/properties/${propertyId}`)}
+                    disabled={updateProperty.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              }
+              tips={[
+                "• Required fields are marked with an asterisk (*)",
+                "• Changes will be saved immediately",
+                "• You can change the owner/contact anytime",
+              ]}
+            />
+          }
         />
+      </form>
 
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <PropertyFormSections
-                form={form}
-                setForm={setForm}
-                errors={errors}
-                setErrors={setErrors}
-                clients={clients}
-                onOpenClientDialog={() => setShowClientDialog(true)}
-              />
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" className="w-full" disabled={updateProperty.isPending}>
-                      {updateProperty.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Changes
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => router.push(`/admin/properties/${propertyId}`)}
-                      disabled={updateProperty.isPending}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                }
-                tips={[
-                  "• Required fields are marked with an asterisk (*)",
-                  "• Changes will be saved immediately",
-                  "• You can change the owner/contact anytime",
-                ]}
-              />
-            }
-          />
-        </form>
-
-        <InlineClientDialog open={showClientDialog} onOpenChange={setShowClientDialog} onClientCreated={handleClientCreated} />
-      </div>
-    </AdminShell>
+      <InlineClientDialog open={showClientDialog} onOpenChange={setShowClientDialog} onClientCreated={handleClientCreated} />
+    </div>
+    </>
   );
 }

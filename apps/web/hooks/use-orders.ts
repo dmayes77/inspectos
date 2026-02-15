@@ -11,7 +11,7 @@ export type OrderSchedule = InspectionSchedule;
 
 export interface InspectionAssignment {
   id: string;
-  inspection_id: string;
+  order_id: string;
   inspector_id: string;
   role: "lead" | "assistant" | "tech";
   assigned_at: string;
@@ -28,7 +28,7 @@ export interface InspectionAssignment {
 
 export interface InspectionService {
   id: string;
-  inspection_id: string;
+  order_id: string;
   service_id: string | null;
   template_id: string | null;
   inspector_id: string | null;
@@ -60,25 +60,6 @@ export interface InspectionService {
   } | null;
 }
 
-export interface OrderInspection {
-  id: string;
-  order_id: string;
-  template_id: string;
-  inspector_id: string;
-  status: "draft" | "in_progress" | "completed" | "submitted";
-  started_at: string | null;
-  completed_at: string | null;
-  weather_conditions: string | null;
-  temperature: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  order_schedule_id?: string | null;
-  order_schedule?: OrderSchedule | null;
-  services?: InspectionService[];
-  assignments?: InspectionAssignment[];
-}
-
 export interface Order {
   id: string;
   tenant_id: string;
@@ -101,6 +82,15 @@ export interface Order {
   source: string | null;
   internal_notes: string | null;
   client_notes: string | null;
+  // Inspection field data (merged from inspections table in migration 043)
+  template_id: string | null;
+  template_version: number | null;
+  started_at: string | null;
+  weather_conditions: string | null;
+  temperature: string | null;
+  present_parties: unknown[] | null;
+  field_notes: string | null;
+  selected_type_ids: string[] | null;
   created_at: string;
   updated_at: string;
   property?: {
@@ -158,7 +148,9 @@ export interface Order {
     email: string;
     avatar_url: string | null;
   } | null;
-  inspection?: OrderInspection | null;
+  // Services (line items) — direct on order after migration 043
+  services?: InspectionService[];
+  assignments?: InspectionAssignment[];
   schedules?: OrderSchedule[];
   invoices?: Array<{
     id: string;
@@ -182,7 +174,6 @@ export interface CreateOrderInput {
   client_id?: string | null;
   agent_id?: string | null;
   inspector_id?: string | null;
-  inspection_id?: string;
   property_id: string;
   scheduled_date?: string | null;
   scheduled_time?: string | null;
@@ -198,7 +189,6 @@ export interface UpdateOrderInput {
   client_id?: string | null;
   agent_id?: string | null;
   inspector_id?: string | null;
-  inspection_id?: string | null;
   property_id?: string;
   status?: OrderStatus;
   scheduled_date?: string | null;
@@ -267,7 +257,7 @@ export function useCreateOrder() {
     return await apiClient.post<Order>("/admin/orders", data);
   }, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
   });
 }
@@ -280,7 +270,7 @@ export function useUpdateOrder() {
     return await apiClient.put<Order>(`/admin/orders/${id}`, updateData);
   }, {
     onSuccess: (updatedOrder) => {
-      queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       if (updatedOrder?.id) {
         queryClient.invalidateQueries({ queryKey: [`order-${updatedOrder.id}`] });
       }

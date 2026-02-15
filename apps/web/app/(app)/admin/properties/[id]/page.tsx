@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
-import { PageHeader } from "@/components/layout/page-header";
 import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,10 +21,8 @@ import {
 import { Edit, Trash2, FileText, Loader2 } from "lucide-react";
 import { useProperty, useDeleteProperty, formatPropertyAddress } from "@/hooks/use-properties";
 import { useClientById } from "@/hooks/use-clients";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
 import { ClientInfoCard } from "@/components/shared/client-info-card";
-import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { RESIDENTIAL_PROPERTY_TYPES } from "@inspectos/shared/constants/property-options";
 import { getContactTypeBadge } from "@/components/contacts/contacts-table-columns";
 import type { PropertyOwner } from "@/hooks/use-properties";
@@ -69,36 +65,18 @@ export default function PropertyDetailPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="flex items-center justify-center min-h-100">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </AdminShell>
+      <div className="flex items-center justify-center min-h-100">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   if (isError || !property) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <PageHeader
-            breadcrumb={
-              <>
-                <Link href="/admin/overview" className="hover:text-foreground">
-                  Overview
-                </Link>
-                <span className="text-muted-foreground">/</span>
-                <Link href="/admin/properties" className="hover:text-foreground">
-                  Properties
-                </Link>
-              </>
-            }
-            title="Property Not Found"
-            description="The property you're looking for doesn't exist or you don't have access."
-            backHref="/admin/properties"
-          />
-        </div>
-      </AdminShell>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold">Property Not Found</h1>
+        <p className="text-muted-foreground">The property you&apos;re looking for doesn&apos;t exist or you don&apos;t have access.</p>
+      </div>
     );
   }
 
@@ -123,20 +101,6 @@ export default function PropertyDetailPage() {
   const contactActionHref = ownerClient ? `/admin/contacts/${ownerClient.id}` : undefined;
   const typeBadge = ownerDetails?.type ? getContactTypeBadge(ownerDetails.type) : undefined;
 
-  const breadcrumb = (
-    <>
-      <Link href="/admin/overview" className="hover:text-foreground">
-        Overview
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <Link href="/admin/properties" className="hover:text-foreground">
-        Properties
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <span>{property.address_line1}</span>
-    </>
-  );
-
   const headerMeta = (
     <>
       <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
@@ -149,32 +113,13 @@ export default function PropertyDetailPage() {
     </>
   );
 
-  const quickActionsSidebar = (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Button asChild variant="outline" className="w-full justify-start">
-            <Link href={`/admin/properties/${propertyId}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Property
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            onClick={() => setShowDeleteDialog(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete Property
-          </Button>
-        </CardContent>
-      </Card>
-
-      <RecordInformationCard createdAt={property.created_at} updatedAt={property.updated_at} />
-    </div>
+  const headerActions = (
+    <Button asChild variant="outline">
+      <Link href={`/admin/properties/${propertyId}/edit`}>
+        <Edit className="mr-2 h-4 w-4" />
+        Edit Property
+      </Link>
+    </Button>
   );
 
   const mainContent = (
@@ -435,46 +380,55 @@ export default function PropertyDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium">Delete property</p>
+          <p className="text-xs text-muted-foreground">Permanently remove this property record.</p>
+        </div>
+        <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </Button>
+      </div>
     </div>
   );
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <ResourceDetailLayout
-        breadcrumb={breadcrumb}
-        title="Property Details"
-        description={formatPropertyAddress(property)}
-        meta={headerMeta}
-        backHref="/admin/properties"
-        main={mainContent}
-        sidebar={quickActionsSidebar}
-      />
+    <>
+    <ResourceDetailLayout
+      title="Property Details"
+      description={formatPropertyAddress(property)}
+      meta={headerMeta}
+      headerActions={headerActions}
+      main={mainContent}
+    />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Property</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this property? This action cannot be undone.
-              {property.client && <span className="block mt-2 text-destructive">Note: This will not delete the associated client.</span>}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                "Delete Property"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </AdminShell>
+    {/* Delete Confirmation Dialog */}
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Property</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete this property? This action cannot be undone.
+            {property.client && <span className="block mt-2 text-destructive">Note: This will not delete the associated client.</span>}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete Property"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

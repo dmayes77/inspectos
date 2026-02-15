@@ -75,62 +75,71 @@ export interface TemplateSection {
 
 export interface InspectionWithData {
   id: string;
-  order_id: string | null;
   tenant_id: string;
-  template_id: string;
-  template_version: number;
-  inspector_id: string;
-  status: 'draft' | 'in_progress' | 'completed' | 'submitted';
+  order_number: string;
+  status: string;
+  template_id: string | null;
+  template_version: number | null;
   started_at: string | null;
   completed_at: string | null;
   weather_conditions: string | null;
   temperature: string | null;
-  present_parties: string[] | null;
-  notes: string | null;
+  present_parties: unknown[] | null;
+  field_notes: string | null;
+  scheduled_date: string | null;
   created_at: string;
   updated_at: string;
-  order?: {
+  property?: {
     id: string;
-    scheduled_date: string | null;
-    status: string;
-    property?: {
+    address_line1: string;
+    address_line2: string | null;
+    city: string;
+    state: string;
+    zip_code: string;
+    property_type: string;
+    year_built: number | null;
+    square_feet: number | null;
+  };
+  client?: {
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    company: string | null;
+  } | null;
+  inspector?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+  } | null;
+  services?: Array<{
+    id: string;
+    name: string;
+    status: string | null;
+    price: number | null;
+    duration_minutes: number | null;
+    notes: string | null;
+    inspector?: {
       id: string;
-      address_line1: string;
-      address_line2: string | null;
-      city: string;
-      state: string;
-      zip_code: string;
-      property_type: string;
-      year_built: number | null;
-      square_feet: number | null;
-    };
-    client?: {
+      full_name: string | null;
+      email: string;
+      avatar_url: string | null;
+    } | null;
+    vendor?: {
       id: string;
       name: string;
+      vendor_type: string | null;
       email: string | null;
       phone: string | null;
-      company: string | null;
     } | null;
-  };
+  }>;
   template?: {
     id: string;
     name: string;
     description: string | null;
     template_sections: TemplateSection[];
   };
-  inspector?: {
-    id: string;
-    full_name: string | null;
-    email: string;
-    avatar_url: string | null;
-  };
-  vendorIds?: string[];
-  vendors?: {
-    id: string;
-    name: string;
-    vendorType: string;
-    contact: string;
-  }[];
 }
 
 export interface InspectionDataResponse {
@@ -141,15 +150,15 @@ export interface InspectionDataResponse {
   media: MediaAsset[];
 }
 
-export function useInspectionData(inspectionId: string) {
+export function useInspectionData(orderId: string) {
   const apiClient = useApiClient();
 
   return useQuery({
-    queryKey: [INSPECTION_DATA_KEY, inspectionId],
+    queryKey: [INSPECTION_DATA_KEY, orderId],
     queryFn: async () => {
-      return await apiClient.get<InspectionDataResponse>(`/admin/inspections/${inspectionId}/data`);
+      return await apiClient.get<InspectionDataResponse>(`/admin/orders/${orderId}/data`);
     },
-    enabled: !!inspectionId,
+    enabled: !!orderId,
   });
 }
 

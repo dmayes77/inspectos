@@ -175,8 +175,8 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       return {
         serviceId: serviceId ?? service.id,
         selected: true,
-        inspectorId: service.inspector_id ?? null,
-        vendorId: service.vendor_id ?? null,
+        inspectorIds: service.inspector_id ? [service.inspector_id] : [],
+        vendorIds: service.vendor_id ? [service.vendor_id] : [],
       };
     }).filter((assignment) => Boolean(assignment.serviceId));
 
@@ -204,16 +204,16 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       if (existing) {
         return prev.map((a) => (a.serviceId === serviceId ? { ...a, selected: checked } : a));
       }
-      return [...prev, { serviceId, selected: checked, inspectorId: null, vendorId: null }];
+      return [...prev, { serviceId, selected: checked, inspectorIds: [], vendorIds: [] }];
     });
   };
 
-  const handleServiceInspectorChange = (serviceId: string, inspectorId: string | null) => {
-    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, inspectorId } : a)));
+  const handleServiceInspectorsChange = (serviceId: string, inspectorIds: string[]) => {
+    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, inspectorIds } : a)));
   };
 
-  const handleServiceVendorChange = (serviceId: string, vendorId: string | null) => {
-    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, vendorId } : a)));
+  const handleServiceVendorsChange = (serviceId: string, vendorIds: string[]) => {
+    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, vendorIds } : a)));
   };
 
   const handleSubmit = () => {
@@ -239,14 +239,15 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       client_notes: form.client_notes || null,
       services: selectedServices.map((service) => {
         const assignment = serviceAssignments.find((a) => a.serviceId === service.serviceId);
+        // TODO: when DB supports multiple, send full arrays instead of first element
         return {
           service_id: service.serviceId,
           template_id: service.templateId ?? undefined,
           name: service.name,
           price: getServicePrice(service),
           duration_minutes: service.durationMinutes ?? undefined,
-          inspector_id: assignment?.inspectorId ?? null,
-          vendor_id: assignment?.vendorId ?? null,
+          inspector_id: assignment?.inspectorIds[0] ?? null,
+          vendor_id: assignment?.vendorIds[0] ?? null,
         };
       }),
     };
@@ -427,7 +428,6 @@ export function OrderForm({ mode, order }: OrderFormProps) {
           </>
         }
         description="Capture the core order details, then confirm services and schedule."
-        backHref="/admin/orders"
         actions={
           <>
             <Button variant="ghost" asChild>
@@ -598,8 +598,8 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 services={services}
                 serviceAssignments={serviceAssignments}
                 onServiceToggle={handleServiceToggle}
-                onServiceInspectorChange={handleServiceInspectorChange}
-                onServiceVendorChange={handleServiceVendorChange}
+                onServiceInspectorsChange={handleServiceInspectorsChange}
+                onServiceVendorsChange={handleServiceVendorsChange}
                 searchValue={serviceSearch}
                 onSearchChange={setServiceSearch}
                 helperText="For each service, you can optionally assign a specific inspector or vendor. Leave blank to use the order-level inspector."

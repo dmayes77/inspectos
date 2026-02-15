@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { useClientById, useUpdateClient, type Client } from "@/hooks/use-clients";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { ContactFormErrors, ContactFormSections, ContactFormValues, validateContactForm } from "@/components/contacts/contact-form-sections";
@@ -46,32 +44,16 @@ export default function EditContactPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading client...</div>
-      </AdminShell>
+      <div className="py-12 text-center text-muted-foreground">Loading client...</div>
     );
   }
 
   if (!client) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/contacts" className="hover:text-foreground">
-                Contacts
-              </Link>
-            </>
-          }
-          title="Client Not Found"
-          description="The client you're looking for doesn't exist or you don't have access."
-          backHref="/admin/contacts"
-        />
-      </AdminShell>
+      <PageHeader
+        title="Client Not Found"
+        description="The client you're looking for doesn't exist or you don't have access."
+      />
     );
   }
 
@@ -97,63 +79,47 @@ export default function EditContactPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/contacts" className="hover:text-foreground">
-                Contacts
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/contacts/${client.clientId}`} className="hover:text-foreground">
-                {client.name}
-              </Link>
-            </>
-          }
-          title="Edit Client"
-          description="Update client information"
-          backHref={`/admin/contacts/${client.clientId}`}
-        />
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title="Edit Client"
+        description="Update client information"
+      />
 
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <ContactFormSections
-                form={form}
-                setForm={setForm}
-                errors={errors}
-                setErrors={setErrors}
-                title="Client Information"
-                description="Update the client details below"
-              />
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" className="w-full" disabled={isSaving}>
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href={`/admin/contacts/${client.clientId}`}>Cancel</Link>
-                    </Button>
-                  </>
-                }
-                tips={[
-                  "• Required fields are marked with an asterisk (*)",
-                  "• Keep phone numbers formatted for easy calling",
-                  "• Contact types help with segmentation",
-                ]}
-              />
-            }
-          />
-        </form>
-      </div>
-    </AdminShell>
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <ContactFormSections
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              setErrors={setErrors}
+              title="Client Information"
+              description="Update the client details below"
+            />
+          }
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" asChild>
+                    <Link href={`/admin/contacts/${client.clientId}`}>Cancel</Link>
+                  </Button>
+                </>
+              }
+              tips={[
+                "• Required fields are marked with an asterisk (*)",
+                "• Keep phone numbers formatted for easy calling",
+                "• Contact types help with segmentation",
+              ]}
+            />
+          }
+        />
+      </form>
+    </div>
+    </>
   );
 }

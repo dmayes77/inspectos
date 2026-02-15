@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { AdminTabSwitch } from "@/components/layout/admin-tab-switch";
 import Link from "next/link";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { useWebhooks } from "@/hooks/use-webhooks";
 import { useWorkflows, useUpdateWorkflow } from "@/hooks/use-workflows";
@@ -111,7 +109,7 @@ export default function AutomationsPage() {
             <Badge variant="destructive" className="bg-red-100 text-red-800">
               {stats.failureCount} failures
             </Badge>
-            <Button variant="link" size="sm" asChild>
+            <Button variant="link" asChild>
               <Link href={`/admin/workflows/${workflow.id}`}>View definition</Link>
             </Button>
           </div>
@@ -146,7 +144,7 @@ export default function AutomationsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <Badge variant="outline">{workflow.delayMinutes ?? 0} min delay</Badge>
-          <Button variant="link" size="sm" asChild>
+          <Button variant="link" asChild>
             <Link href={`/admin/workflows/${workflow.id}`}>Edit workflow</Link>
           </Button>
         </div>
@@ -155,83 +153,83 @@ export default function AutomationsPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Automations"
-          description="Turn events and workflows into action with a single builder"
-          actions={
-            <Button variant="outline" asChild>
-              <Link href="/admin/workflows/new">
-                Create Automation
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          }
-        />
+    <>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Automations"
+        description="Turn events and workflows into action with a single builder"
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/admin/workflows/new">
+              Create Automation
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        }
+      />
 
-        <section aria-label="Automation builder" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  Automation Builder
-                </CardTitle>
-                <CardDescription className="max-w-lg">
-                  Toggle between event-driven automations and rule-based workflows, then publish actions with the builder.
-                </CardDescription>
-              </div>
-              <AdminTabSwitch
-                className="w-full sm:w-64 gap-2"
-                value={automationTab}
-                onValueChange={(value) => setAutomationTab(value as "event" | "rule")}
-                items={[
-                  { value: "event", label: "Event automations" },
-                  { value: "rule", label: "Rule automations" },
-                ]}
-              />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {workflowsLoading ? (
-                <div className="text-sm text-muted-foreground">Loading…</div>
-              ) : automationTab === "event" ? (
-                renderEventContent()
-              ) : (
-                renderRuleContent()
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
-        <section aria-label="Custom workflows" className="space-y-4">
-          <Card>
-            <CardHeader>
+      <section aria-label="Automation builder" className="space-y-4">
+        <Card>
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5" />
-                Custom Workflows
+                Automation Builder
               </CardTitle>
-              <CardDescription>
-                Build complex automations with multi-step actions and conditions.
+              <CardDescription className="max-w-lg">
+                Toggle between event-driven automations and rule-based workflows, then publish actions with the builder.
               </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
-              <Sparkles className="h-10 w-10 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Launch the workflow builder</p>
-                <p className="text-xs text-muted-foreground">
-                  Create multi-step automations with delays, tags, emails, and notifications.
-                </p>
-                <Button className="mt-4" asChild>
-                  <Link href="/admin/workflows/new">Open builder</Link>
-                </Button>
-              </div>
             </div>
-            </CardContent>
-          </Card>
-        </section>
-      </div>
-    </AdminShell>
+            <AdminTabSwitch
+              className="w-full sm:w-64 gap-2"
+              value={automationTab}
+              onValueChange={(value) => setAutomationTab(value as "event" | "rule")}
+              items={[
+                { value: "event", label: "Event automations" },
+                { value: "rule", label: "Rule automations" },
+              ]}
+            />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {workflowsLoading ? (
+              <div className="text-sm text-muted-foreground">Loading…</div>
+            ) : automationTab === "event" ? (
+              renderEventContent()
+            ) : (
+              renderRuleContent()
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-label="Custom workflows" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5" />
+              Custom Workflows
+            </CardTitle>
+            <CardDescription>
+              Build complex automations with multi-step actions and conditions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+            <Sparkles className="h-10 w-10 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">Launch the workflow builder</p>
+              <p className="text-xs text-muted-foreground">
+                Create multi-step automations with delays, tags, emails, and notifications.
+              </p>
+              <Button className="mt-4" asChild>
+                <Link href="/admin/workflows/new">Open builder</Link>
+              </Button>
+            </div>
+          </div>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+    </>
   );
 }

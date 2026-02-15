@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +14,6 @@ import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgencyById, useUpdateAgency } from "@/hooks/use-agencies";
 import { useAgents, useUpdateAgent } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
@@ -284,36 +282,16 @@ export default function EditAgencyPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading agency...</div>
-      </AdminShell>
+      <div className="py-12 text-center text-muted-foreground">Loading agency...</div>
     );
   }
 
   if (!agency) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents" className="hover:text-foreground">
-                Agents
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
-                Agencies
-              </Link>
-            </>
-          }
-          title="Agency Not Found"
-          description="We couldn't find that agency."
-          backHref="/admin/agents?tab=agencies"
-        />
-      </AdminShell>
+      <PageHeader
+        title="Agency Not Found"
+        description="We couldn't find that agency."
+      />
     );
   }
 
@@ -369,87 +347,65 @@ export default function EditAgencyPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents" className="hover:text-foreground">
-                Agents
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
-                Agencies
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href={`/admin/agents/agencies/${agency.id}`} className="hover:text-foreground">
-                {agency.name}
-              </Link>
-            </>
-          }
-          title="Edit Agency"
-          description="Update contact, address, or notes"
-          backHref={`/admin/agents/agencies/${agency.id}`}
-        />
+    <div className="space-y-6">
+      <PageHeader
+        title="Edit Agency"
+        description="Update contact, address, or notes"
+      />
 
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <div className="space-y-6">
-                <AgentInternetScrub variant="agency" onApply={applyScrubResult} urlRequired={false} />
-                <AgencyForm form={form} setForm={setForm} />
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Linked Agents</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Select which agents should be linked to this agency. Linked agents will be reassigned to {agency.name}.
-                    </p>
-                    {selectableAgents.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No agents found.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {selectableAgents.map((agent) => {
-                          const checked = linkedAgentIds.includes(agent.id);
-                          return (
-                            <label key={agent.id} className="flex items-start gap-3 rounded-lg border p-3">
-                              <Checkbox checked={checked} onCheckedChange={(value) => toggleAgentLink(agent.id, value === true)} />
-                              <div className="flex-1 space-y-1">
-                                <p className="text-sm font-medium">{agent.name}</p>
-                                <p className="text-xs text-muted-foreground">{agent.email ?? agent.phone ?? "No contact on file."}</p>
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" className="w-full" disabled={isSaving}>
-                      {isSaving ? "Saving..." : "Save Changes"}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href={`/admin/agents/agencies/${agency.id}`}>Cancel</Link>
-                    </Button>
-                  </>
-                }
-                tips={AGENCY_TIPS}
-              />
-            }
-          />
-        </form>
-      </div>
-    </AdminShell>
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <div className="space-y-6">
+              <AgentInternetScrub variant="agency" onApply={applyScrubResult} urlRequired={false} />
+              <AgencyForm form={form} setForm={setForm} />
+              <Card>
+                <CardHeader>
+                  <CardTitle>Linked Agents</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Select which agents should be linked to this agency. Linked agents will be reassigned to {agency.name}.
+                  </p>
+                  {selectableAgents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No agents found.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectableAgents.map((agent) => {
+                        const checked = linkedAgentIds.includes(agent.id);
+                        return (
+                          <label key={agent.id} className="flex items-start gap-3 rounded-lg border p-3">
+                            <Checkbox checked={checked} onCheckedChange={(value) => toggleAgentLink(agent.id, value === true)} />
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium">{agent.name}</p>
+                              <p className="text-xs text-muted-foreground">{agent.email ?? agent.phone ?? "No contact on file."}</p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          }
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" asChild>
+                    <Link href={`/admin/agents/agencies/${agency.id}`}>Cancel</Link>
+                  </Button>
+                </>
+              }
+              tips={AGENCY_TIPS}
+            />
+          }
+        />
+      </form>
+    </div>
   );
 }

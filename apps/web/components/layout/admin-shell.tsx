@@ -26,7 +26,17 @@ interface AdminShellProps {
 
 export function AdminShell({ children, title, showBackButton = false, onBack, headerActions, user }: AdminShellProps) {
   const pathname = usePathname();
-  const [collapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("admin_sidebar_collapsed", String(next));
+      }
+      return next;
+    });
+  };
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -39,6 +49,11 @@ export function AdminShell({ children, title, showBackButton = false, onBack, he
   useEffect(() => {
     setClientTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
     setMounted(true);
+    // Apply admin-dense to body so portal elements (dialogs, sheets, dropdowns) inherit density
+    document.body.classList.add("admin-dense");
+    return () => {
+      document.body.classList.remove("admin-dense");
+    };
   }, []);
 
   // Once settings are loaded, wait a tick before showing UI to let branding apply
@@ -102,6 +117,27 @@ export function AdminShell({ children, title, showBackButton = false, onBack, he
     return isPlatformAdmin ? "Platform" : "Overview";
   }, [title, allNavItems, pathname, isPlatformAdmin]);
 
+  const breadcrumbs = useMemo(() => {
+    const knownSubs: Record<string, string> = {
+      new: "New", edit: "Edit", agencies: "Agencies", leads: "Leads",
+      webhooks: "Webhooks", notes: "Notes",
+    };
+    const segments = pathname.split("/").filter(Boolean); // ['admin', 'agents', '123', 'edit']
+    const crumbs: { label: string; href: string }[] = [];
+    let builtPath = "";
+    for (const seg of segments) {
+      builtPath += `/${seg}`;
+      const navItem = allNavItems.find((item) => item.href === builtPath);
+      if (navItem) {
+        crumbs.push({ label: navItem.label, href: builtPath });
+      } else if (knownSubs[seg]) {
+        crumbs.push({ label: knownSubs[seg], href: builtPath });
+      }
+      // Skip dynamic ID segments silently
+    }
+    return crumbs;
+  }, [pathname, allNavItems]);
+
   const showLoading = !ready;
 
   return (
@@ -114,6 +150,7 @@ export function AdminShell({ children, title, showBackButton = false, onBack, he
       <div className="admin-shell admin-dense flex h-dvh overflow-hidden bg-background safe-area-inset-left safe-area-inset-right">
         <AdminSidebar
           collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
           homeHref={homeHref}
           mainNav={mainNav}
           pinnedNav={pinnedNav}
@@ -135,12 +172,13 @@ export function AdminShell({ children, title, showBackButton = false, onBack, he
             contextLabel={contextLabel}
             settingsHref={settingsHref}
             timeZone={timeZone}
+            breadcrumbs={breadcrumbs}
             onOpenMobileNav={() => setMobileNavOpen(true)}
             onOpenCommand={() => setCommandOpen(true)}
             onOpenNotifications={() => setNotificationsOpen(true)}
           />
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none bg-[#f4f5f6] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none bg-(--content-bg) [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="admin-content mx-auto w-full max-w-none px-4 py-4 md:px-6 overflow-x-hidden">{children}</div>
           </main>
         </div>

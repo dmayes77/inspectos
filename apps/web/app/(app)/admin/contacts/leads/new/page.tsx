@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useCreateLead } from "@/hooks/use-leads";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import {
@@ -58,70 +56,54 @@ export default function NewLeadPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title="New Lead"
+        description="Capture a new inquiry or sales opportunity."
+      />
+
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <LeadFormSections
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              setErrors={setErrors}
+            />
+          }
+          right={
             <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/contacts" className="hover:text-foreground">
-                Contacts
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/leads" className="hover:text-foreground">
-                Leads
-              </Link>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Create Lead"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" asChild>
+                    <Link href="/admin/leads">Cancel</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Tips</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-2">
+                  <p>• Required fields are marked with an asterisk (*)</p>
+                  <p>• Add service info to help route the lead</p>
+                  <p>• Update the stage as the lead progresses</p>
+                </CardContent>
+              </Card>
             </>
           }
-          title="New Lead"
-          description="Capture a new inquiry or sales opportunity."
-          backHref="/admin/leads"
         />
-
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <LeadFormSections
-                form={form}
-                setForm={setForm}
-                errors={errors}
-                setErrors={setErrors}
-              />
-            }
-            right={
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button type="submit" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? "Saving..." : "Create Lead"}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href="/admin/leads">Cancel</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Tips</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground space-y-2">
-                    <p>• Required fields are marked with an asterisk (*)</p>
-                    <p>• Add service info to help route the lead</p>
-                    <p>• Update the stage as the lead progresses</p>
-                  </CardContent>
-                </Card>
-              </>
-            }
-          />
-        </form>
-      </div>
-    </AdminShell>
+      </form>
+    </div>
+    </>
   );
 }

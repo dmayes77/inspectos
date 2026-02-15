@@ -3,8 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -17,15 +16,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { BackButton } from "@/components/ui/back-button";
-import { Edit, Trash2, Mail, Phone, User, DollarSign, ClipboardList, Calendar } from "lucide-react";
+import { Edit, Trash2, DollarSign, ClipboardList, Calendar, Mail, Phone } from "lucide-react";
 import { useClientById, useDeleteClient } from "@/hooks/use-clients";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
-import { RecordInformationCard } from "@/components/shared/record-information-card";
 import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
-import { getContactTypeBadge } from "@/components/contacts/contacts-table-columns";
-import { toast } from "sonner";
 
 const formatPropertyAddress = (property: { addressLine1: string; addressLine2?: string | null; city: string; state: string; zipCode: string }) => {
   const parts = [property.addressLine1];
@@ -51,23 +45,18 @@ export default function ContactDetailPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="py-12 text-center text-muted-foreground">Loading client...</div>
-      </AdminShell>
+      <div className="py-12 text-center text-muted-foreground">Loading client...</div>
     );
   }
 
   if (!client) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <BackButton href="/admin/contacts" label="Back to Contacts" variant="ghost" />
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-semibold mb-2">Client Not Found</h1>
-            <p className="text-muted-foreground">The client you are looking for does not exist.</p>
-          </div>
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-semibold mb-2">Client Not Found</h1>
+          <p className="text-muted-foreground">The client you are looking for does not exist.</p>
         </div>
-      </AdminShell>
+      </div>
     );
   }
 
@@ -80,33 +69,11 @@ export default function ContactDetailPage() {
     });
   };
 
-  const breadcrumb = (
-    <>
-      <Link href="/admin/overview" className="hover:text-foreground">
-        Overview
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <Link href="/admin/contacts" className="hover:text-foreground">
-        Contacts
-      </Link>
-      <span className="text-muted-foreground">/</span>
-      <span>{client.name}</span>
-    </>
-  );
-
   const mainContent = (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <User className="h-6 w-6 text-muted-foreground" />
-                <h2 className="text-2xl font-semibold">{client.name}</h2>
-              </div>
-              <div className="flex items-center gap-2">{getContactTypeBadge(client.type)}</div>
-            </div>
-          </div>
+          <CardTitle>Contact Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -138,24 +105,24 @@ export default function ContactDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-3 gap-3">
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{client.inspections}</div>
-            <p className="text-sm text-muted-foreground">Total Inspections</p>
-          </CardContent>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Inspections</CardDescription>
+            <CardTitle className="text-2xl">{client.inspections}</CardTitle>
+          </CardHeader>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">${client.totalSpent.toLocaleString()}</div>
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-          </CardContent>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Revenue</CardDescription>
+            <CardTitle className="text-2xl">${client.totalSpent.toLocaleString()}</CardTitle>
+          </CardHeader>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">${client.inspections > 0 ? Math.round(client.totalSpent / client.inspections).toLocaleString() : 0}</div>
-            <p className="text-sm text-muted-foreground">Avg per Inspection</p>
-          </CardContent>
+          <CardHeader className="pb-2">
+            <CardDescription>Avg per Inspection</CardDescription>
+            <CardTitle className="text-2xl">${client.inspections > 0 ? Math.round(client.totalSpent / client.inspections).toLocaleString() : 0}</CardTitle>
+          </CardHeader>
         </Card>
       </div>
 
@@ -203,72 +170,52 @@ export default function ContactDetailPage() {
           <div className="text-sm text-muted-foreground py-8 text-center">Inspection history will be displayed here when integrated with inspections data.</div>
         </CardContent>
       </Card>
+
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium">Delete contact</p>
+          <p className="text-xs text-muted-foreground">Permanently remove this contact and all associated data.</p>
+        </div>
+        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </Button>
+      </div>
     </div>
   );
 
-  const sidebarContent = (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="space-y-2">
-            <Button variant="outline" asChild className="w-full justify-start">
-              <Link href={`/admin/contacts/${client.clientId}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
-          </div>
-          <Button variant="outline" className="w-full justify-start" onClick={() => toast("Send email is coming soon.")}>
-            <Mail className="mr-2 h-4 w-4" />
-            Send Email
-          </Button>
-          <Button variant="outline" className="w-full justify-start" onClick={() => toast("Call log is coming soon.")}>
-            <Phone className="mr-2 h-4 w-4" />
-            Log Phone Call
-          </Button>
-          <Button variant="outline" className="w-full justify-start" onClick={() => toast("Schedule inspection is coming soon.")}>
-            <Calendar className="mr-2 h-4 w-4" />
-            Schedule Inspection
-          </Button>
-          <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)} className="w-full justify-start">
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
-        </CardContent>
-      </Card>
-
-      <RecordInformationCard createdAt={client.createdAt} updatedAt={client.updatedAt} />
-    </div>
+  const headerActions = (
+    <Button variant="outline" asChild>
+      <Link href={`/admin/contacts/${client.clientId}/edit`}>
+        <Edit className="mr-2 h-4 w-4" />
+        Edit Contact
+      </Link>
+    </Button>
   );
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <ResourceDetailLayout
-        breadcrumb={breadcrumb}
-        title={client.name}
-        description={`Client • ${client.type}`}
-        backHref="/admin/contacts"
-        main={mainContent}
-        sidebar={sidebarContent}
-      />
+    <>
+    <ResourceDetailLayout
+      title={client.name}
+      description={`Client • ${client.type}`}
+      main={mainContent}
+      headerActions={headerActions}
+    />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Client</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to delete {client.name}? This action cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </AdminShell>
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Client</AlertDialogTitle>
+          <AlertDialogDescription>Are you sure you want to delete {client.name}? This action cannot be undone.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

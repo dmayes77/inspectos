@@ -2,22 +2,36 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import {
   ClipboardList,
   DollarSign,
   Users,
   TrendingUp,
   Calendar,
-  Clock,
-  MapPin,
   ArrowRight,
   Plus,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  AreaChart,
+  Area,
+} from "recharts";
 
 import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
@@ -25,6 +39,14 @@ import { formatTime12 } from "@inspectos/shared/utils/dates";
 import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const revenueChartConfig = {
+  revenue: { label: "Revenue", color: "hsl(var(--primary))" },
+} satisfies ChartConfig;
+
+const volumeChartConfig = {
+  orders: { label: "Inspections", color: "hsl(var(--primary))" },
+} satisfies ChartConfig;
 
 const formatStatusLabel = (status?: string | null) => {
   if (!status) return "—";
@@ -45,13 +67,9 @@ const getOrderAddress = (order: {
 }) => {
   const property = order.property;
   if (!property) return "Property unavailable";
-  return [
-    property.address_line1,
-    property.address_line2,
-    `${property.city}, ${property.state} ${property.zip_code}`,
-  ]
+  return [property.address_line1, `${property.city}, ${property.state}`]
     .filter(Boolean)
-    .join(", ");
+    .join(" · ");
 };
 
 const getServiceSummary = (order: { inspection?: { services?: Array<{ name: string }> } | Array<{ services?: Array<{ name: string }> }> | null }) => {
@@ -60,6 +78,18 @@ const getServiceSummary = (order: { inspection?: { services?: Array<{ name: stri
   if (services.length === 0) return "No services";
   if (services.length === 1) return services[0].name;
   return `${services[0].name} +${services.length - 1}`;
+};
+
+type BadgeVariant = "muted" | "info" | "warning" | "success" | "destructive" | "outline";
+
+const STATUS_VARIANT: Record<string, BadgeVariant> = {
+  pending: "muted",
+  scheduled: "info",
+  in_progress: "warning",
+  pending_report: "outline",
+  delivered: "success",
+  completed: "success",
+  cancelled: "destructive",
 };
 
 export default function OverviewPage() {
@@ -72,358 +102,352 @@ export default function OverviewPage() {
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = orders.filter((order) => order.scheduled_date === today);
 
+  // Build last-7-days chart data
+  const weeklyData = useMemo(() => {
+    const days: { label: string; date: string; orders: number; revenue: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().slice(0, 10);
+      const label = d.toLocaleDateString("en-US", { weekday: "short" });
+      const dayOrders = orders.filter((o) => o.scheduled_date === dateStr);
+      days.push({
+        label,
+        date: dateStr,
+        orders: dayOrders.length,
+        revenue: dayOrders.reduce((s, o) => s + (o.total ?? 0), 0),
+      });
+    }
+    return days;
+  }, [orders]);
+
   const stats = useMemo(() => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-    const inspectionsThisWeek = orders.filter((order) => {
-      if (!order.scheduled_date) return false;
-      const date = new Date(order.scheduled_date);
-      return date >= weekAgo;
-    }).length;
+    const thisWeek = orders.filter((o) => o.scheduled_date && new Date(o.scheduled_date) >= weekAgo);
+    const lastWeek = orders.filter((o) => {
+      if (!o.scheduled_date) return false;
+      const d = new Date(o.scheduled_date);
+      return d >= twoWeeksAgo && d < weekAgo;
+    });
 
-    const revenueThisWeek = orders
-      .filter((order) => order.scheduled_date && new Date(order.scheduled_date) >= weekAgo)
-      .reduce((sum, order) => sum + order.total, 0);
+    const revenueThis = thisWeek.reduce((s, o) => s + (o.total ?? 0), 0);
+    const revenueLast = lastWeek.reduce((s, o) => s + (o.total ?? 0), 0);
+    const revDelta = revenueLast > 0 ? Math.round(((revenueThis - revenueLast) / revenueLast) * 100) : null;
 
-    const outstandingOrders = orders.filter((order) => order.payment_status === "unpaid");
-    const outstandingTotal = outstandingOrders.reduce((sum, order) => sum + order.total, 0);
-    const outstandingCount = outstandingOrders.length;
+    const countDelta = lastWeek.length > 0 ? thisWeek.length - lastWeek.length : null;
+
+    const outstandingOrders = orders.filter((o) => o.payment_status === "unpaid");
+    const outstandingTotal = outstandingOrders.reduce((s, o) => s + (o.total ?? 0), 0);
 
     return [
       {
         title: "Inspections This Week",
-        value: inspectionsThisWeek.toString(),
-        change: ordersLoading ? "—" : "Updated",
-        changeType: "positive" as const,
+        value: thisWeek.length.toString(),
+        delta: countDelta,
+        deltaLabel: "vs last week",
         icon: ClipboardList,
       },
       {
         title: "Revenue This Week",
-        value: `$${revenueThisWeek.toLocaleString()}`,
-        change: ordersLoading ? "—" : "Updated",
-        changeType: "positive" as const,
+        value: `$${revenueThis.toLocaleString()}`,
+        delta: revDelta,
+        deltaLabel: "vs last week",
         icon: DollarSign,
       },
       {
         title: "Active Clients",
         value: clients.length.toString(),
-        change: ordersLoading ? "—" : "Updated",
-        changeType: "positive" as const,
+        delta: null,
+        deltaLabel: "total clients",
         icon: Users,
       },
       {
-        title: "Outstanding Invoices",
+        title: "Outstanding",
         value: `$${outstandingTotal.toLocaleString()}`,
-        change: outstandingCount ? `${outstandingCount} unpaid` : "All caught up",
-        changeType: "positive" as const,
+        delta: null,
+        deltaLabel: `${outstandingOrders.length} unpaid`,
         icon: TrendingUp,
       },
     ];
-  }, [clients, orders, ordersLoading]);
+  }, [clients, orders]);
 
   const recentActivity = useMemo(() => {
     return orders
       .slice()
       .sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1))
-      .slice(0, 4)
+      .slice(0, 5)
       .map((order) => ({
         id: order.id,
-        action: `Order ${formatStatusLabel(order.status)}`,
-        details: `${getOrderAddress(order)} • ${order.client?.name ?? "No client"}`,
-        time: new Date(order.updated_at).toLocaleString(),
+        action: formatStatusLabel(order.status),
+        address: getOrderAddress(order),
+        client: order.client?.name ?? "No client",
+        time: new Date(order.updated_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+        status: order.status,
       }));
   }, [orders]);
 
-  // Show loading skeleton while data is being fetched
   if (ordersLoading || clientsLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i}>
-                <CardHeader className="pb-2">
-                  <Skeleton className="h-4 w-32" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-8 w-24 mb-2" />
-                  <Skeleton className="h-3 w-20" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Skeleton className="h-6 w-40 mb-2" />
-                    <Skeleton className="h-4 w-64" />
-                  </div>
-                  <Skeleton className="h-10 w-32" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-4 rounded-lg border p-4">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-5 w-32" />
-                        <Skeleton className="h-4 w-64" />
-                        <Skeleton className="h-4 w-48" />
-                      </div>
-                      <Skeleton className="h-8 w-8" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32 mb-2" />
-                <Skeleton className="h-4 w-48" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="flex items-start gap-3 border-b pb-4 last:border-0">
-                      <Skeleton className="h-2 w-2 rounded-full mt-2" />
-                      <div className="space-y-2 flex-1">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader className="pb-2">
-                  <Skeleton className="h-4 w-32" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-8 w-24 mb-2" />
-                  <Skeleton className="h-3 w-40 mb-2" />
-                  <Skeleton className="h-4 w-32" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}><CardContent className="pt-5"><Skeleton className="h-16 w-full" /></CardContent></Card>
+          ))}
         </div>
-      </AdminShell>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2"><CardContent className="pt-5"><Skeleton className="h-48 w-full" /></CardContent></Card>
+          <Card><CardContent className="pt-5"><Skeleton className="h-48 w-full" /></CardContent></Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Dashboard"
-          description={`Welcome back, ${mockAdminUser.name.split(" ")[0]}. Here's what's happening today.`}
-          actions={
-            can(mockAdminUser.role, "create_inspections") ? (
-              <Button asChild className="sm:w-auto">
-                <Link href="/admin/orders/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Order
-                </Link>
-              </Button>
-            ) : null
-          }
-        />
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Dashboard"
+        description={`Welcome back, ${mockAdminUser.name.split(" ")[0]}.`}
+        actions={
+          can(mockAdminUser.role, "create_inspections") ? (
+            <Button asChild>
+              <Link href="/admin/orders/new">
+                <Plus className="mr-1.5 h-4 w-4" />
+                New Order
+              </Link>
+            </Button>
+          ) : null
+        }
+      />
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="h-full">
-              <CardHeader className="min-h-[3.5rem] pb-2">
-                <CardTitle className="text-sm font-medium leading-snug text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-1">
-                <div className="text-xl font-bold tabular-nums sm:text-2xl">{stat.value}</div>
-                <p className="text-xs text-muted-foreground sm:text-sm">
-                  <span className={stat.changeType === "positive" ? "text-green-600" : "text-red-600"}>
-                    {stat.change}
-                  </span>{" "}
-                  from last week
-                </p>
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          const isPositive = stat.delta !== null && stat.delta >= 0;
+          const isNegative = stat.delta !== null && stat.delta < 0;
+          return (
+            <Card key={stat.title}>
+              <CardContent className="pt-5 pb-4">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs font-medium text-muted-foreground leading-none">{stat.title}</p>
+                  <Icon className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                </div>
+                <div className="mt-2 text-2xl font-bold tabular-nums">{stat.value}</div>
+                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  {isPositive && <ArrowUpRight className="h-3 w-3 text-emerald-600" />}
+                  {isNegative && <ArrowDownRight className="h-3 w-3 text-red-500" />}
+                  {stat.delta !== null ? (
+                    <span className={isPositive ? "text-emerald-600 font-medium" : "text-red-500 font-medium"}>
+                      {isPositive ? "+" : ""}{stat.delta}{typeof stat.delta === "number" && stat.title.includes("Revenue") ? "%" : ""}
+                    </span>
+                  ) : null}
+                  <span>{stat.deltaLabel}</span>
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Today&apos;s Orders
-                </CardTitle>
-                <CardDescription>{todayOrders.length} orders scheduled for today</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/admin/orders">
-                  View All
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {todayOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex flex-col gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex min-w-0 items-start gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <Clock className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {formatTime12(order.scheduled_time ?? "09:00")}
-                          </span>
-                          <Badge variant="outline">{formatStatusLabel(order.status)}</Badge>
-                        </div>
-                        <div className="mt-1 flex items-center gap-1 text-sm text-muted-foreground break-words">
-                          <MapPin className="h-3 w-3" />
-                          {getOrderAddress(order)}
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                          <span className="text-muted-foreground">
-                            {order.inspector?.full_name ?? "Unassigned"}
-                          </span>
-                          <Badge variant="outline" className="text-xs">
-                            {getServiceSummary(order)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/admin/orders/${order.id}`}>
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </div>
-                ))}
-                {todayOrders.length === 0 && (
-                  <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                    No orders scheduled today.
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest updates from your team</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 border-b pb-4 last:border-0 last:pb-0">
-                    <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium break-words">{activity.action}</p>
-                      <p className="text-sm text-muted-foreground break-all">{activity.details}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-                {recentActivity.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No recent activity yet.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Pending Reports</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {orders.filter((order) => order.status === "pending_report").length}
-              </div>
-              <p className="text-xs text-muted-foreground">Awaiting review and delivery</p>
-              <Button variant="link" className="mt-2 h-auto p-0" asChild>
-                <Link href="/admin/orders?status=pending_report">View pending →</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Outstanding Invoices</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                ${orders.filter((order) => order.payment_status === "unpaid").reduce((sum, order) => sum + order.total, 0).toLocaleString()}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {orders.filter((order) => order.payment_status === "unpaid").length} invoices unpaid
-              </p>
-              <Button variant="link" className="mt-2 h-auto p-0" asChild>
-                <Link href="/admin/invoices">View invoices →</Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Today&apos;s Schedule</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{todayOrders.length}</div>
-              <p className="text-xs text-muted-foreground">
-                {(() => {
-                  const assignedInspectors = new Set(
-                    todayOrders
-                      .filter((o) => o.inspector?.id)
-                      .map((o) => o.inspector?.id)
-                  );
-                  const unassigned = todayOrders.filter((o) => !o.inspector?.id).length;
-                  if (assignedInspectors.size === 0 && unassigned === 0) {
-                    return "No orders scheduled";
-                  }
-                  const parts = [];
-                  if (assignedInspectors.size > 0) {
-                    parts.push(`${assignedInspectors.size} inspector${assignedInspectors.size > 1 ? "s" : ""} working`);
-                  }
-                  if (unassigned > 0) {
-                    parts.push(`${unassigned} unassigned`);
-                  }
-                  return parts.join(" • ");
-                })()}
-              </p>
-              <Button variant="link" className="mt-2 h-auto p-0" asChild>
-                <Link href="/admin/schedule">View schedule →</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+          );
+        })}
       </div>
-    </AdminShell>
+
+      {/* Charts row */}
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between">
+              <div>
+                <CardDescription>Weekly Revenue</CardDescription>
+                <CardTitle className="mt-1 text-2xl tabular-nums">
+                  ${weeklyData.reduce((s, d) => s + d.revenue, 0).toLocaleString()}
+                </CardTitle>
+              </div>
+              <Badge variant="outline" className="text-[10px]">Last 7 days</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-3">
+            <ChartContainer config={revenueChartConfig} className="h-[160px] w-full">
+              <BarChart data={weeklyData} barSize={22} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                <ChartTooltip
+                  cursor={false}
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => [`$${Number(value).toLocaleString()}`, "Revenue"]}
+                    />
+                  }
+                />
+                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <div className="flex items-start justify-between">
+              <div>
+                <CardDescription>Inspection Volume</CardDescription>
+                <CardTitle className="mt-1 text-2xl tabular-nums">
+                  {weeklyData.reduce((s, d) => s + d.orders, 0)}
+                </CardTitle>
+              </div>
+              <Badge variant="outline" className="text-[10px]">Last 7 days</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0 pb-3">
+            <ChartContainer config={volumeChartConfig} className="h-[160px] w-full">
+              <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-orders)" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="var(--color-orders)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} allowDecimals={false} />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent />}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="orders"
+                  stroke="var(--color-orders)"
+                  strokeWidth={2}
+                  fill="url(#volumeGradient)"
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today + activity row */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                Today&apos;s Schedule
+              </CardTitle>
+              <CardDescription>{todayOrders.length} order{todayOrders.length !== 1 ? "s" : ""} today</CardDescription>
+            </div>
+            <Button variant="ghost" asChild className="text-xs">
+              <Link href="/admin/orders">
+                View all <ArrowRight className="ml-1 h-3 w-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {todayOrders.map((order) => (
+              <Link
+                key={order.id}
+                href={`/admin/orders/${order.id}`}
+                className="flex items-center gap-3 rounded-lg border px-3 py-2.5 hover:bg-muted/50 group transition-colors"
+              >
+                <div className="shrink-0 w-11 text-right">
+                  <span className="text-sm font-semibold tabular-nums">{formatTime12(order.scheduled_time ?? "09:00")}</span>
+                </div>
+                <div className="w-px self-stretch bg-border" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium truncate">{getOrderAddress(order)}</span>
+                    <Badge variant={STATUS_VARIANT[order.status] ?? "muted"}>{formatStatusLabel(order.status)}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {order.inspector?.full_name ?? "Unassigned"} · {getServiceSummary(order)}
+                  </p>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </Link>
+            ))}
+            {todayOrders.length === 0 && (
+              <div className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+                No orders scheduled today.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
+            <CardDescription>Latest order updates</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {recentActivity.map((activity) => (
+              <Link
+                key={activity.id}
+                href={`/admin/orders/${activity.id}`}
+                className="flex items-start gap-3 border-l-2 border-border pl-3 hover:border-primary transition-colors group"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium">{activity.action} <span className="text-muted-foreground font-normal">· {activity.client}</span></p>
+                  <p className="text-xs text-muted-foreground truncate">{activity.address}</p>
+                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">{activity.time}</p>
+                </div>
+              </Link>
+            ))}
+            {recentActivity.length === 0 && (
+              <p className="text-xs text-muted-foreground">No recent activity yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom summary cards */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <Link href="/admin/orders?status=pending_report">
+          <Card className="transition-colors hover:border-primary/50 cursor-pointer">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs font-medium text-muted-foreground">Pending Reports</p>
+              <div className="mt-1.5 text-2xl font-bold">
+                {orders.filter((o) => o.status === "pending_report").length}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">Awaiting review</p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/admin/invoices">
+          <Card className="transition-colors hover:border-primary/50 cursor-pointer">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs font-medium text-muted-foreground">Outstanding Invoices</p>
+              <div className="mt-1.5 text-2xl font-bold">
+                ${orders.filter((o) => o.payment_status === "unpaid").reduce((s, o) => s + (o.total ?? 0), 0).toLocaleString()}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {orders.filter((o) => o.payment_status === "unpaid").length} unpaid invoices
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/admin/schedule">
+          <Card className="transition-colors hover:border-primary/50 cursor-pointer">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs font-medium text-muted-foreground">Today&apos;s Inspectors</p>
+              <div className="mt-1.5 text-2xl font-bold">
+                {new Set(todayOrders.filter((o) => o.inspector?.id).map((o) => o.inspector?.id)).size}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {todayOrders.filter((o) => !o.inspector?.id).length > 0
+                  ? `${todayOrders.filter((o) => !o.inspector?.id).length} unassigned`
+                  : "All assigned"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+    </div>
   );
 }

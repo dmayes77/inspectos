@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
@@ -11,7 +10,6 @@ import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { AgencyForm, type AgencyFormValues } from "@/components/partners/agency-form";
 import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useCreateAgency } from "@/hooks/use-agencies";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
@@ -251,55 +249,39 @@ export default function NewAgencyPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents" className="hover:text-foreground">
-                Agents
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/agents?tab=agencies" className="hover:text-foreground">
-                Agencies
-              </Link>
-            </>
-          }
-          title="Add Agency"
-          description="Capture brokerages and referral partners"
-          backHref="/admin/agents?tab=agencies"
-        />
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title="Add Agency"
+        description="Capture brokerages and referral partners"
+      />
 
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <div className="space-y-6">
-                <AgentInternetScrub variant="agency" onApply={applyScrubResult} />
-                <AgencyForm form={form} setForm={setForm} />
-              </div>
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" className="w-full" disabled={createAgency.isPending}>
-                      {createAgency.isPending ? "Saving..." : "Create Agency"}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" asChild>
-                      <Link href="/admin/agents?tab=agencies">Cancel</Link>
-                    </Button>
-                  </>
-                }
-                tips={AGENCY_TIPS}
-              />
-            }
-          />
-        </form>
-      </div>
-    </AdminShell>
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <div className="space-y-6">
+              <AgentInternetScrub variant="agency" onApply={applyScrubResult} />
+              <AgencyForm form={form} setForm={setForm} />
+            </div>
+          }
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={createAgency.isPending}>
+                    {createAgency.isPending ? "Saving..." : "Create Agency"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" asChild>
+                    <Link href="/admin/agents?tab=agencies">Cancel</Link>
+                  </Button>
+                </>
+              }
+              tips={AGENCY_TIPS}
+            />
+          }
+        />
+      </form>
+    </div>
+    </>
   );
 }

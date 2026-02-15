@@ -3,7 +3,6 @@
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -133,274 +132,274 @@ function ClientsPageContent() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Contacts"
-          description="Manage your client relationships and track interactions"
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/contacts/leads/new">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Add Lead
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Contacts"
+        description="Manage your client relationships and track interactions"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/admin/contacts/leads/new">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Add Lead
+              </Link>
+            </Button>
+            {can(userRole, "create_clients") && (
+              <Button asChild>
+                <Link href="/admin/contacts/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Client
                 </Link>
               </Button>
-              {can(userRole, "create_clients") && (
-                <Button asChild>
-                  <Link href="/admin/contacts/new">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Client
-                  </Link>
-                </Button>
-              )}
-            </div>
-          }
-        />
+            )}
+          </div>
+        }
+      />
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(value: string) => router.replace(`/admin/contacts?tab=${value}`)}
-          className="space-y-6"
-        >
-          <TabsList className="grid w-full grid-cols-2 bg-accent md:w-80">
-            <TabsTrigger value="clients" className="gap-2">
-              <Users className="h-4 w-4" />
-              Clients
-            </TabsTrigger>
-            <TabsTrigger value="leads" className="gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Leads
-            </TabsTrigger>
-          </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value: string) => router.replace(`/admin/contacts?tab=${value}`)}
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-2 bg-accent md:w-80">
+          <TabsTrigger value="clients" className="gap-2">
+            <Users className="h-4 w-4" />
+            Clients
+          </TabsTrigger>
+          <TabsTrigger value="leads" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Leads
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="clients" className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalClients}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.activeClients} active (90 days)
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Inspections</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stats.totalInspections}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.totalClients > 0
-                      ? (stats.totalInspections / stats.totalClients).toFixed(1)
-                      : 0}{" "}
-                    per client
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    ${stats.totalRevenue.toLocaleString()}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    ${stats.avgRevenuePerClient.toLocaleString()} avg per client
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Growth</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">+12%</div>
-                  <p className="text-xs text-muted-foreground">vs last month</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Clients Table */}
-            <ModernDataTable
-              columns={contactsTableColumns}
-              data={filteredClients}
-              title="All Clients"
-              description={`${filteredClients.length} of ${contactClients.length} clients`}
-              filterControls={
-                <>
-                  <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search clients..."
-                      className="pl-9"
-                    />
-                  </div>
-
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="w-[140px]">
-                      <Filter className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {typeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recent">Recent</SelectItem>
-                      <SelectItem value="name">Name</SelectItem>
-                      <SelectItem value="revenue">Revenue</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </>
-              }
-              emptyState={
-                filteredClients.length === 0 && !searchQuery && typeFilter === "all" ? (
-                  <div className="rounded-lg border border-dashed p-12 text-center">
-                    <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Add your first client to start scheduling inspections.
-                    </p>
-                    {can(userRole, "create_clients") && (
-                      <Button asChild className="mt-6">
-                        <Link href="/admin/contacts/new">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add client
-                        </Link>
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-dashed p-12 text-center">
-                    <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 text-lg font-semibold">No results found</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Try adjusting your search or filters
-                    </p>
-                  </div>
-                )
-              }
-            />
-          </TabsContent>
-
-          <TabsContent value="leads" className="space-y-6">
+        <TabsContent value="clients" className="space-y-6">
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Lead Pipeline</CardTitle>
-                <CardDescription>Track inquiries and conversions</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                {leadsLoading ? (
-                  <div className="rounded-lg border border-dashed p-12 text-center">
-                    <p className="text-sm text-muted-foreground">Loading leads...</p>
-                  </div>
-                ) : leads.length === 0 ? (
-                  <div className="rounded-lg border border-dashed p-12 text-center">
-                    <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 text-lg font-semibold">No leads yet</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Capture inquiries from your website or add them manually.
-                    </p>
-                    <Button asChild className="mt-6">
-                      <Link href="/admin/contacts/leads/new">
-                        <UserPlus className="mr-2 h-4 w-4" />
-                        Add lead
-                      </Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {leads.map((lead: Lead) => (
-                      <Link
-                        key={lead.leadId}
-                        href={`/admin/contacts/leads/${lead.leadId}?return=/admin/contacts?tab=leads`}
-                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 transition-colors hover:bg-accent"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                            <span className="text-sm font-semibold text-primary">
-                              {lead.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium">{lead.name}</p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              {lead.email && (
-                                <span className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  {lead.email}
-                                </span>
-                              )}
-                              {lead.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {lead.phone}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{formatStage(lead.stage)}</Badge>
-                          {lead.serviceName && (
-                            <Badge variant="secondary">{lead.serviceName}</Badge>
-                          )}
-                          {lead.estimatedValue && (
-                            <span className="text-sm font-semibold text-muted-foreground">
-                              ${lead.estimatedValue}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                <div className="text-2xl font-bold">{stats.totalClients}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.activeClients} active (90 days)
+                </p>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </AdminShell>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Inspections</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalInspections}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.totalClients > 0
+                    ? (stats.totalInspections / stats.totalClients).toFixed(1)
+                    : 0}{" "}
+                  per client
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ${stats.totalRevenue.toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  ${stats.avgRevenuePerClient.toLocaleString()} avg per client
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Growth</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">+12%</div>
+                <p className="text-xs text-muted-foreground">vs last month</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Clients Table */}
+          <ModernDataTable
+            columns={contactsTableColumns}
+            data={filteredClients}
+            title="All Clients"
+            description={`${filteredClients.length} of ${contactClients.length} clients`}
+            filterControls={
+              <>
+                <div className="relative flex-1 min-w-[200px] md:flex-initial md:w-[300px]">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search clients..."
+                    className="!pl-9"
+                  />
+                </div>
+
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {typeOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recent">Recent</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="revenue">Revenue</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            }
+            emptyState={
+              filteredClients.length === 0 && !searchQuery && typeFilter === "all" ? (
+                <div className="rounded-lg border border-dashed p-12 text-center">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Add your first client to start scheduling inspections.
+                  </p>
+                  {can(userRole, "create_clients") && (
+                    <Button asChild className="mt-6">
+                      <Link href="/admin/contacts/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add client
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed p-12 text-center">
+                  <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold">No results found</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Try adjusting your search or filters
+                  </p>
+                </div>
+              )
+            }
+          />
+        </TabsContent>
+
+        <TabsContent value="leads" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Lead Pipeline</CardTitle>
+              <CardDescription>Track inquiries and conversions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {leadsLoading ? (
+                <div className="rounded-lg border border-dashed p-12 text-center">
+                  <p className="text-sm text-muted-foreground">Loading leads...</p>
+                </div>
+              ) : leads.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-12 text-center">
+                  <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                  <h3 className="mt-4 text-lg font-semibold">No leads yet</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Capture inquiries from your website or add them manually.
+                  </p>
+                  <Button asChild className="mt-6">
+                    <Link href="/admin/contacts/leads/new">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Add lead
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {leads.map((lead: Lead) => (
+                    <Link
+                      key={lead.leadId}
+                      href={`/admin/contacts/leads/${lead.leadId}?return=/admin/contacts?tab=leads`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 transition-colors hover:bg-accent"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <span className="text-sm font-semibold text-primary">
+                            {lead.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{lead.name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {lead.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {lead.email}
+                              </span>
+                            )}
+                            {lead.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {lead.phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{formatStage(lead.stage)}</Badge>
+                        {lead.serviceName && (
+                          <Badge variant="secondary">{lead.serviceName}</Badge>
+                        )}
+                        {lead.estimatedValue && (
+                          <span className="text-sm font-semibold text-muted-foreground">
+                            ${lead.estimatedValue}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 
 export default function ClientsPage() {
   return (
+    <>
     <Suspense fallback={<AdminPageSkeleton showTable listItems={10} />}>
       <ClientsPageContent />
     </Suspense>
+    </>
   );
 }

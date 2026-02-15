@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreditCard } from "lucide-react";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { usePayments, useRecordPayment } from "@/hooks/use-payments";
 import { useInvoices } from "@/hooks/use-invoices";
 import { useOrders } from "@/hooks/use-orders";
@@ -83,151 +81,151 @@ export default function PaymentsPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="Payments"
-          description="Track deposits, final payments, and refunds"
-          actions={
-            <Button className="sm:w-auto" onClick={() => setShowDialog(true)}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              Record Payment
-            </Button>
-          }
-        />
+    <>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Payments"
+        description="Track deposits, final payments, and refunds"
+        actions={
+          <Button className="sm:w-auto" onClick={() => setShowDialog(true)}>
+            <CreditCard className="mr-2 h-4 w-4" />
+            Record Payment
+          </Button>
+        }
+      />
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Collected Today</p>
-              <p className="mt-2 text-2xl font-semibold">${collectedToday.toFixed(2)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Pending</p>
-              <p className="mt-2 text-2xl font-semibold">${pendingAmount.toFixed(2)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Refunded</p>
-              <p className="mt-2 text-2xl font-semibold">$0.00</p>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="grid grid-cols-3 gap-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Payment Activity</CardTitle>
-            <CardDescription>Connect payment processors and monitor collections.</CardDescription>
+          <CardHeader className="pb-2">
+            <CardDescription>Collected Today</CardDescription>
+            <CardTitle className="text-2xl">${collectedToday.toFixed(2)}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {paymentsLoading || invoicesLoading ? (
-              <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                Loading payments...
-              </div>
-            ) : payments.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-                No payments yet. Payments will appear as orders are paid.
-              </div>
-            ) : (
-              payments.map((payment) => (
-                <div key={payment.paymentId} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4 text-sm">
-                  <div className="space-y-2">
-                    <div>
-                      <p className="font-medium">{payment.clientName || "Unknown client"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {payment.paidDate || "—"} • {payment.method} • {payment.invoiceId ? formatInvoiceNumber(payment.invoiceId) : "No invoice"}
-                      </p>
-                    </div>
-                    <TagAssignmentEditor scope="payment" entityId={payment.paymentId} />
-                  </div>
-                  <span className="text-xs font-semibold text-muted-foreground">${payment.amount}</span>
-                </div>
-              ))
-            )}
-          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Pending</CardDescription>
+            <CardTitle className="text-2xl">${pendingAmount.toFixed(2)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Refunded</CardDescription>
+            <CardTitle className="text-2xl">$0.00</CardTitle>
+          </CardHeader>
         </Card>
       </div>
 
-      {/* Record Payment Dialog */}
-      <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-            <DialogDescription>
-              Record a payment received for an order.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="order">Order</Label>
-              <Select value={selectedOrderId} onValueChange={handleOrderSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an order" />
-                </SelectTrigger>
-                <SelectContent>
-                  {unpaidOrders.length === 0 ? (
-                    <SelectItem value="none" disabled>
-                      No unpaid orders
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Activity</CardTitle>
+          <CardDescription>Connect payment processors and monitor collections.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {paymentsLoading || invoicesLoading ? (
+            <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+              Loading payments...
+            </div>
+          ) : payments.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+              No payments yet. Payments will appear as orders are paid.
+            </div>
+          ) : (
+            payments.map((payment) => (
+              <div key={payment.paymentId} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4 text-sm">
+                <div className="space-y-2">
+                  <div>
+                    <p className="font-medium">{payment.clientName || "Unknown client"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {payment.paidDate || "—"} • {payment.method} • {payment.invoiceId ? formatInvoiceNumber(payment.invoiceId) : "No invoice"}
+                    </p>
+                  </div>
+                  <TagAssignmentEditor scope="payment" entityId={payment.paymentId} />
+                </div>
+                <span className="text-xs font-semibold text-muted-foreground">${payment.amount}</span>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </div>
+
+    {/* Record Payment Dialog */}
+    <Dialog open={showDialog} onOpenChange={setShowDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Record Payment</DialogTitle>
+          <DialogDescription>
+            Record a payment received for an order.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="order">Order</Label>
+            <Select value={selectedOrderId} onValueChange={handleOrderSelect}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an order" />
+              </SelectTrigger>
+              <SelectContent>
+                {unpaidOrders.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    No unpaid orders
+                  </SelectItem>
+                ) : (
+                  unpaidOrders.map((order) => (
+                    <SelectItem key={order.id} value={order.id}>
+                      {order.order_number} - {order.client?.name || "No client"} (${order.total.toFixed(2)})
                     </SelectItem>
-                  ) : (
-                    unpaidOrders.map((order) => (
-                      <SelectItem key={order.id} value={order.id}>
-                        {order.order_number} - {order.client?.name || "No client"} (${order.total.toFixed(2)})
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="method">Payment Method</Label>
-              <Select value={method} onValueChange={setMethod}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="card">Credit/Debit Card</SelectItem>
-                  <SelectItem value="check">Check</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <Input
-                id="notes"
-                placeholder="Payment notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRecordPayment} disabled={recordPaymentMutation.isPending}>
-              {recordPaymentMutation.isPending ? "Recording..." : "Record Payment"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AdminShell>
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount</Label>
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="method">Payment Method</Label>
+            <Select value={method} onValueChange={setMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="card">Credit/Debit Card</SelectItem>
+                <SelectItem value="check">Check</SelectItem>
+                <SelectItem value="cash">Cash</SelectItem>
+                <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (optional)</Label>
+            <Input
+              id="notes"
+              placeholder="Payment notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowDialog(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleRecordPayment} disabled={recordPaymentMutation.isPending}>
+            {recordPaymentMutation.isPending ? "Recording..." : "Record Payment"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

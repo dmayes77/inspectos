@@ -2,18 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateTag, useTags, useUpdateTag } from "@/hooks/use-tags";
 import type { Tag, TagScope, TagType } from "@/types/tag";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const scopeOptions: { value: TagScope; label: string }[] = [
@@ -94,9 +91,7 @@ export function TagEditor() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <BackButton href="/admin/tags" label="Back to Tags" variant="ghost" />
+    <div className="space-y-6">
 
         <AdminPageHeader
           title={isNew ? "New Tag" : "Edit Tag"}
@@ -164,7 +159,6 @@ export function TagEditor() {
             </form>
           </CardContent>
         </Card>
-      </div>
-    </AdminShell>
+    </div>
   );
 }

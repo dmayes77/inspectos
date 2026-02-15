@@ -4,7 +4,6 @@ import type { FormEvent } from "react";
 import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { toast } from "sonner";
 
@@ -12,7 +11,6 @@ import { Service } from "@/hooks/use-services";
 import { useCreateService, useServices } from "@/hooks/use-services";
 import { useTemplates, useCreateTemplateStub } from "@/hooks/use-templates";
 import { ServiceForm } from "@/components/shared/service-form";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 
 const SERVICE_TIPS = [
   "Use durations and price together to keep scheduling accurate.",
@@ -114,53 +112,41 @@ function NewServicePageContent() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/services" className="hover:text-foreground">
-                Services
-              </Link>
-            </>
-          }
-          title={isPackage ? "Add Package" : "Add Service"}
-          description={isPackage ? "Bundle services with a custom price" : "Create a standalone service"}
-          backHref="/admin/services"
-        />
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title={isPackage ? "Add Package" : "Add Service"}
+        description={isPackage ? "Bundle services with a custom price" : "Create a standalone service"}
+      />
 
-        <ServiceForm
-          title={isPackage ? "Create Package" : "Create Service"}
-          description={isPackage ? "Select the services to include in this package." : "Define service details and pricing."}
-          form={form}
-          setForm={setForm}
-          services={individualServices}
-          selectedServiceIds={selectedServiceIds}
-          setSelectedServiceIds={setSelectedServiceIds}
-          discountPercent={discountPercent}
-          setDiscountPercent={setDiscountPercent}
-          isPackage={isPackage}
-          showTemplate={!isPackage}
-          templates={templates}
-          templateMode={templateMode}
-          setTemplateMode={setTemplateMode}
-          templateSelection={templateSelection}
-          setTemplateSelection={setTemplateSelection}
-          templateName={templateName}
-          setTemplateName={setTemplateName}
-          onSubmit={handleSubmit}
-          onCancel={() => router.push("/admin/services")}
-          primaryLabel={isPackage ? "Create Package" : "Create Service"}
-          pendingLabel={isPackage ? "Creating package..." : "Creating..."}
-          cancelLabel="Cancel"
-          tips={tips}
-          isPending={createService.isPending}
-        />
-      </div>
-    </AdminShell>
+      <ServiceForm
+        title={isPackage ? "Create Package" : "Create Service"}
+        description={isPackage ? "Select the services to include in this package." : "Define service details and pricing."}
+        form={form}
+        setForm={setForm}
+        services={individualServices}
+        selectedServiceIds={selectedServiceIds}
+        setSelectedServiceIds={setSelectedServiceIds}
+        discountPercent={discountPercent}
+        setDiscountPercent={setDiscountPercent}
+        isPackage={isPackage}
+        showTemplate={!isPackage}
+        templates={templates}
+        templateMode={templateMode}
+        setTemplateMode={setTemplateMode}
+        templateSelection={templateSelection}
+        setTemplateSelection={setTemplateSelection}
+        templateName={templateName}
+        setTemplateName={setTemplateName}
+        onSubmit={handleSubmit}
+        onCancel={() => router.push("/admin/services")}
+        primaryLabel={isPackage ? "Create Package" : "Create Service"}
+        pendingLabel={isPackage ? "Creating package..." : "Creating..."}
+        cancelLabel="Cancel"
+        tips={tips}
+        isPending={createService.isPending}
+      />
+    </div>
+    </>
   );
 }

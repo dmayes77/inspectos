@@ -2,11 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,7 +16,6 @@ import { useServices } from "@/hooks/use-services";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import type { Template, TemplateItemType, TemplateSection } from "@/types/template";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const itemTypeOptions: { value: TemplateItemType; label: string }[] = [
@@ -46,7 +43,7 @@ export default function TemplateEditorPage() {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [serviceSearch, setServiceSearch] = useState("");
 
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (!template) return;
     setName(template.name);
@@ -56,7 +53,7 @@ export default function TemplateEditorPage() {
     setStandard(template.standard ?? "Custom");
     setSections(template.sections);
   }, [template]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   const { data: services = [] } = useServices();
   const selectedServiceNames = useMemo(
@@ -71,31 +68,25 @@ export default function TemplateEditorPage() {
 
   if (isLoading) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <BackButton href="/admin/templates" label="Back to Inspection Templates" variant="ghost" />
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              Loading template...
-            </CardContent>
-          </Card>
-        </div>
-      </AdminShell>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Loading template...
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (!template) {
     return (
-      <AdminShell user={mockAdminUser}>
-        <div className="space-y-6">
-          <BackButton href="/admin/templates" label="Back to Inspection Templates" variant="ghost" />
-          <Card>
-            <CardContent className="py-10 text-center text-muted-foreground">
-              Template not found.
-            </CardContent>
-          </Card>
-        </div>
-      </AdminShell>
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Template not found.
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -209,245 +200,242 @@ export default function TemplateEditorPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-          <BackButton href="/admin/templates" label="Back to Inspection Templates" variant="ghost" />
+    <div className="space-y-6">
 
-        <AdminPageHeader
-          title={name}
-          description="Edit template sections and items"
-          actions={
-            <Button onClick={handleSave}>
-              Save Changes
-            </Button>
-          }
-        />
+      <AdminPageHeader
+        title={name}
+        description="Edit template sections and items"
+        actions={
+          <Button onClick={handleSave}>
+            Save Changes
+          </Button>
+        }
+      />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Template Details</CardTitle>
-            <CardDescription>Basic information for this template</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Template Details</CardTitle>
+          <CardDescription>Basic information for this template</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Description</label>
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Linked services</label>
+            <div className="flex flex-wrap gap-2">
+              {serviceIds.length === 0 ? (
+                <span className="text-sm text-muted-foreground">No linked services.</span>
+              ) : (
+                services
+                  .filter((service) => serviceIds.includes(service.serviceId))
+                  .map((service) => (
+                    <Badge key={service.serviceId} variant="outline" className="flex items-center gap-1">
+                      {service.name}
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => setServiceIds((prev) => prev.filter((id) => id !== service.serviceId))}
+                        aria-label={`Remove ${service.name}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))
+              )}
+              <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline" className="h-8">
+                    <Pencil className="mr-2 h-3.5 w-3.5" />
+                    Edit services
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Select linked services</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <Input
+                      value={serviceSearch}
+                      onChange={(e) => setServiceSearch(e.target.value)}
+                      placeholder="Search services..."
+                    />
+                    <div className="max-h-64 overflow-y-auto space-y-2 rounded-md border p-3">
+                      {filteredServices.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">No services match your search.</div>
+                      ) : (
+                        filteredServices.map((service) => {
+                          const checked = serviceIds.includes(service.serviceId);
+                          return (
+                            <label key={service.serviceId} className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(value) => {
+                                  const isChecked = value === true;
+                                  setServiceIds((prev) =>
+                                    isChecked
+                                      ? [...prev, service.serviceId]
+                                      : prev.filter((id) => id !== service.serviceId)
+                                  );
+                                }}
+                              />
+                              <span>{service.name}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                    <div className="flex justify-end">
+                      <Button type="button" onClick={() => setServiceDialogOpen(false)}>
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tags</label>
+            <TagAssignmentEditor scope="template" entityId={template.id} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Name</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <label className="text-sm font-medium">Template type</label>
+              <Select value={templateType} onValueChange={(value) => setTemplateType(value as Template["type"])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="inspection">Inspection</SelectItem>
+                  <SelectItem value="agreement">Agreement</SelectItem>
+                  <SelectItem value="report">Report</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+              <label className="text-sm font-medium">Standard</label>
+              <Select value={standard ?? "None"} onValueChange={(value) => setStandard(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select standard" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Custom">Custom</SelectItem>
+                  <SelectItem value="ASHI">ASHI</SelectItem>
+                  <SelectItem value="InterNACHI">InterNACHI</SelectItem>
+                  <SelectItem value="NFPA">NFPA</SelectItem>
+                  <SelectItem value="None">None</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Linked services</label>
-              <div className="flex flex-wrap gap-2">
-                {serviceIds.length === 0 ? (
-                  <span className="text-sm text-muted-foreground">No linked services.</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">{templateType}</Badge>
+            {standard && standard !== "None" ? <Badge variant="outline">{standard}</Badge> : null}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Sections</h2>
+        <Button variant="outline" onClick={addSection}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Section
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        {sections.map((section) => (
+          <Card key={section.id}>
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-2 flex-1">
+                  <Input
+                    value={section.name}
+                    onChange={(e) => updateSection(section.id, { name: e.target.value })}
+                  />
+                  <Textarea
+                    value={section.description || ""}
+                    onChange={(e) => updateSection(section.id, { description: e.target.value })}
+                    rows={2}
+                    placeholder="Section description"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => moveSection(section.id, "up")}>
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => moveSection(section.id, "down")}>
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => deleteSection(section.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground">Items</h3>
+                <Button variant="secondary" onClick={() => addItem(section.id)}>
+                  <Plus className="mr-1 h-3 w-3" />
+                  Add Item
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {section.items.length === 0 ? (
+                  <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                    No items yet. Add your first checklist item.
+                  </div>
                 ) : (
-                  services
-                    .filter((service) => serviceIds.includes(service.serviceId))
-                    .map((service) => (
-                      <Badge key={service.serviceId} variant="outline" className="flex items-center gap-1">
-                        {service.name}
-                        <button
-                          type="button"
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => setServiceIds((prev) => prev.filter((id) => id !== service.serviceId))}
-                          aria-label={`Remove ${service.name}`}
+                  section.items.map((item) => (
+                    <div key={item.id} className="rounded-md border p-3">
+                      <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_0.5fr_auto] items-center">
+                        <Input
+                          value={item.name}
+                          onChange={(e) => updateItem(section.id, item.id, { name: e.target.value })}
+                        />
+                        <Select
+                          value={item.itemType}
+                          onValueChange={(value) => updateItem(section.id, item.id, { itemType: value as TemplateItemType })}
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))
-                )}
-                <Dialog open={serviceDialogOpen} onOpenChange={setServiceDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button type="button" variant="outline" size="sm" className="h-8">
-                      <Pencil className="mr-2 h-3.5 w-3.5" />
-                      Edit services
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Select linked services</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      <Input
-                        value={serviceSearch}
-                        onChange={(e) => setServiceSearch(e.target.value)}
-                        placeholder="Search services..."
-                      />
-                      <div className="max-h-64 overflow-y-auto space-y-2 rounded-md border p-3">
-                        {filteredServices.length === 0 ? (
-                          <div className="text-sm text-muted-foreground">No services match your search.</div>
-                        ) : (
-                          filteredServices.map((service) => {
-                            const checked = serviceIds.includes(service.serviceId);
-                            return (
-                              <label key={service.serviceId} className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                  checked={checked}
-                                  onCheckedChange={(value) => {
-                                    const isChecked = value === true;
-                                    setServiceIds((prev) =>
-                                      isChecked
-                                        ? [...prev, service.serviceId]
-                                        : prev.filter((id) => id !== service.serviceId)
-                                    );
-                                  }}
-                                />
-                                <span>{service.name}</span>
-                              </label>
-                            );
-                          })
-                        )}
-                      </div>
-                      <div className="flex justify-end">
-                        <Button type="button" onClick={() => setServiceDialogOpen(false)}>
-                          Done
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {itemTypeOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <label className="flex items-center gap-2 text-sm">
+                          <Checkbox
+                            checked={item.isRequired ?? false}
+                            onCheckedChange={(checked) =>
+                              updateItem(section.id, item.id, { isRequired: checked === true })
+                            }
+                          />
+                          Required
+                        </label>
+                        <Button variant="ghost" size="icon" onClick={() => deleteItem(section.id, item.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  ))
+                )}
               </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tags</label>
-              <TagAssignmentEditor scope="template" entityId={template.id} />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Template type</label>
-                <Select value={templateType} onValueChange={(value) => setTemplateType(value as Template["type"])}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="inspection">Inspection</SelectItem>
-                    <SelectItem value="agreement">Agreement</SelectItem>
-                    <SelectItem value="report">Report</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Standard</label>
-                <Select value={standard ?? "None"} onValueChange={(value) => setStandard(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select standard" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Custom">Custom</SelectItem>
-                    <SelectItem value="ASHI">ASHI</SelectItem>
-                    <SelectItem value="InterNACHI">InterNACHI</SelectItem>
-                    <SelectItem value="NFPA">NFPA</SelectItem>
-                    <SelectItem value="None">None</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="outline">{templateType}</Badge>
-              {standard && standard !== "None" ? <Badge variant="outline">{standard}</Badge> : null}
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Sections</h2>
-          <Button variant="outline" onClick={addSection}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Section
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {sections.map((section) => (
-            <Card key={section.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-2 flex-1">
-                    <Input
-                      value={section.name}
-                      onChange={(e) => updateSection(section.id, { name: e.target.value })}
-                    />
-                    <Textarea
-                      value={section.description || ""}
-                      onChange={(e) => updateSection(section.id, { description: e.target.value })}
-                      rows={2}
-                      placeholder="Section description"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => moveSection(section.id, "up")}>
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => moveSection(section.id, "down")}>
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteSection(section.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Items</h3>
-                  <Button variant="secondary" size="sm" onClick={() => addItem(section.id)}>
-                    <Plus className="mr-1 h-3 w-3" />
-                    Add Item
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {section.items.length === 0 ? (
-                    <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                      No items yet. Add your first checklist item.
-                    </div>
-                  ) : (
-                    section.items.map((item) => (
-                      <div key={item.id} className="rounded-md border p-3">
-                        <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_0.5fr_auto] items-center">
-                          <Input
-                            value={item.name}
-                            onChange={(e) => updateItem(section.id, item.id, { name: e.target.value })}
-                          />
-                          <Select
-                            value={item.itemType}
-                            onValueChange={(value) => updateItem(section.id, item.id, { itemType: value as TemplateItemType })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {itemTypeOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <label className="flex items-center gap-2 text-sm">
-                            <Checkbox
-                              checked={item.isRequired ?? false}
-                              onCheckedChange={(checked) =>
-                                updateItem(section.id, item.id, { isRequired: checked === true })
-                              }
-                            />
-                            Required
-                          </label>
-                          <Button variant="ghost" size="icon" onClick={() => deleteItem(section.id, item.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
-    </AdminShell>
+    </div>
   );
 }

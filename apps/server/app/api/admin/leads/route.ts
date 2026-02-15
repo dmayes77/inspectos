@@ -1,15 +1,5 @@
-import { NextRequest } from 'next/server';
-import {
-  createUserClient,
-  getAccessToken,
-  getUserFromToken,
-  unauthorized,
-  badRequest,
-  serverError,
-  success,
-  validationError
-} from '@/lib/supabase';
-import { resolveTenant } from '@/lib/tenants';
+import { serverError, success, validationError } from '@/lib/supabase';
+import { withAuth } from '@/lib/api/with-auth';
 import { createLeadSchema } from '@inspectos/shared/validations/lead';
 
 const normalizeStage = (stage?: string | null) => {
@@ -44,97 +34,55 @@ const mapLead = (lead: {
 /**
  * GET /api/admin/leads
  */
-export async function GET(request: NextRequest) {
-  try {
-    const accessToken = getAccessToken(request);
-    if (!accessToken) {
-      return unauthorized('Missing access token');
-    }
+export const GET = withAuth(async ({ supabase, tenant }) => {
+  const { data: leads, error } = await supabase
+    .from('leads')
+    .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
+    .eq('tenant_id', tenant.id)
+    .order('created_at', { ascending: false });
 
-    const user = getUserFromToken(accessToken);
-    if (!user) {
-      return unauthorized('Invalid access token');
-    }
-
-    const tenantSlug = request.nextUrl.searchParams.get('tenant');
-    const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
-    if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
-    }
-
-    const { data: leads, error } = await supabase
-      .from('leads')
-      .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
-      .eq('tenant_id', tenant.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      return serverError('Failed to fetch leads', error);
-    }
-
-    const payload = (leads || []).map(mapLead);
-
-    return success(payload);
-  } catch (error) {
+  if (error) {
     return serverError('Failed to fetch leads', error);
   }
-}
+
+  const payload = (leads || []).map(mapLead);
+
+  return success(payload);
+});
 
 /**
  * POST /api/admin/leads
  */
-export async function POST(request: NextRequest) {
-  try {
-    const accessToken = getAccessToken(request);
-    if (!accessToken) {
-      return unauthorized('Missing access token');
-    }
+export const POST = withAuth(async ({ supabase, tenant, request }) => {
+  const body = await request.json();
 
-    const user = getUserFromToken(accessToken);
-    if (!user) {
-      return unauthorized('Invalid access token');
-    }
+  // Validate request body
+  const validation = createLeadSchema.safeParse(body);
+  if (!validation.success) {
+    return validationError(validation.error.issues[0]?.message || 'Validation failed');
+  }
+  const payload = validation.data;
 
-    const body = await request.json();
+  const { data: lead, error } = await supabase
+    .from('leads')
+    .insert({
+      tenant_id: tenant.id,
+      name: payload.name,
+      email: payload.email ?? null,
+      phone: payload.phone ?? null,
+      stage: normalizeStage(payload.stage),
+      source: payload.source ?? null,
+      notes: payload.notes ?? null,
+      service_name: payload.serviceName ?? null,
+      requested_date: payload.requestedDate || null,
+      estimated_value: payload.estimatedValue ?? null,
+    })
+    .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
+    .single();
 
-    // Validate request body
-    const validation = createLeadSchema.safeParse(body);
-    if (!validation.success) {
-      return validationError(validation.error.issues[0]?.message || 'Validation failed');
-    }
-    const payload = validation.data;
-
-    const tenantSlug = body.tenant_slug || request.nextUrl.searchParams.get('tenant');
-    const supabase = createUserClient(accessToken);
-    const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
-    if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
-    }
-
-    const { data: lead, error } = await supabase
-      .from('leads')
-      .insert({
-        tenant_id: tenant.id,
-        name: payload.name,
-        email: payload.email ?? null,
-        phone: payload.phone ?? null,
-        stage: normalizeStage(payload.stage),
-        source: payload.source ?? null,
-        notes: payload.notes ?? null,
-        service_name: payload.serviceName ?? null,
-        requested_date: payload.requestedDate || null,
-        estimated_value: payload.estimatedValue ?? null,
-      })
-      .select('id, name, email, phone, stage, source, notes, service_name, requested_date, estimated_value')
-      .single();
-
-    if (error || !lead) {
-      return serverError('Failed to create lead', error);
-    }
-
-    return success(mapLead(lead));
-  } catch (error) {
+  if (error || !lead) {
     return serverError('Failed to create lead', error);
   }
-}
+
+  return success(mapLead(lead));
+});

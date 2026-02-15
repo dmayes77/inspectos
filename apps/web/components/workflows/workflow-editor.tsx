@@ -2,11 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { AdminPageHeader } from "@/components/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/ui/back-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,7 +18,6 @@ import { useTags } from "@/hooks/use-tags";
 import { useCreateWorkflow, useUpdateWorkflow, useWorkflows } from "@/hooks/use-workflows";
 import { useEmailTemplates } from "@/hooks/use-email-templates";
 import type { Workflow, WorkflowScope, WorkflowTriggerType } from "@/types/workflow";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { toast } from "sonner";
 
 const scopeOptions: { value: WorkflowScope; label: string }[] = [
@@ -243,9 +240,7 @@ export function WorkflowEditor() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <BackButton href="/admin/workflows" label="Back to Workflows" variant="ghost" />
+    <div className="space-y-6">
 
         <AdminPageHeader
           title={existing ? "Edit Workflow" : "New Workflow"}
@@ -625,7 +620,6 @@ export function WorkflowEditor() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </AdminShell>
+    </div>
   );
 }

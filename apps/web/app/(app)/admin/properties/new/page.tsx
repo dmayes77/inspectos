@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save } from "lucide-react";
 import { useCreateProperty } from "@/hooks/use-properties";
 import { useClients } from "@/hooks/use-clients";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
@@ -98,77 +96,65 @@ export default function NewPropertyPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/properties" className="hover:text-foreground">
-                Properties
-              </Link>
-            </>
+    <>
+    <div className="space-y-6">
+      <PageHeader
+        title="Add New Property"
+        description="Create a new property record in your database"
+      />
+
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <PropertyFormSections
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              setErrors={setErrors}
+              clients={clients}
+              onOpenClientDialog={() => setShowClientDialog(true)}
+            />
           }
-          title="Add New Property"
-          description="Create a new property record in your database"
-          backHref="/admin/properties"
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={createProperty.isPending}>
+                    {createProperty.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Create Property
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push("/admin/properties")}
+                    disabled={createProperty.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              }
+              tips={[
+                "• Required fields are marked with an asterisk (*)",
+                "• You can assign an owner/contact now or later",
+                "• Property details can be edited at any time",
+              ]}
+            />
+          }
         />
+      </form>
 
-        <form onSubmit={handleSubmit}>
-          <ResourceFormLayout
-            left={
-              <PropertyFormSections
-                form={form}
-                setForm={setForm}
-                errors={errors}
-                setErrors={setErrors}
-                clients={clients}
-                onOpenClientDialog={() => setShowClientDialog(true)}
-              />
-            }
-            right={
-              <ResourceFormSidebar
-                actions={
-                  <>
-                    <Button type="submit" className="w-full" disabled={createProperty.isPending}>
-                      {createProperty.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Create Property
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => router.push("/admin/properties")}
-                      disabled={createProperty.isPending}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                }
-                tips={[
-                  "• Required fields are marked with an asterisk (*)",
-                  "• You can assign an owner/contact now or later",
-                  "• Property details can be edited at any time",
-                ]}
-              />
-            }
-          />
-        </form>
-
-        <InlineClientDialog open={showClientDialog} onOpenChange={setShowClientDialog} onClientCreated={handleClientCreated} />
-      </div>
-    </AdminShell>
+      <InlineClientDialog open={showClientDialog} onOpenChange={setShowClientDialog} onClientCreated={handleClientCreated} />
+    </div>
+    </>
   );
 }

@@ -44,7 +44,6 @@ export const companyNavSections: NavSection[] = [
   {
     label: "Operations",
     items: [
-      { href: "/admin/inspections", icon: ClipboardList, label: "Inspections" },
       { href: "/admin/properties", icon: MapPin, label: "Properties" },
       { href: "/admin/services", icon: Target, label: "Services" },
       { href: "/admin/templates", icon: FileText, label: "Inspection Templates" },
