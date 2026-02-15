@@ -1,8 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "@fullcalendar/core/index.global.css";
-@import "@fullcalendar/daygrid/index.global.css";
-@import "@fullcalendar/timegrid/index.global.css";
 
 /* =============================================================================
    INSPECTOS DESIGN SYSTEM
