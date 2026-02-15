@@ -285,7 +285,6 @@ export default function OrdersPage() {
           </div>
         ) : (
           filteredOrders.map((order) => {
-            const inspection = Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
             return (
               <Link
                 key={order.id}
@@ -317,7 +316,7 @@ export default function OrdersPage() {
 
                 <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
                   <span className="rounded-full border px-2 py-0.5">Agent: {order.agent?.name ?? "Unassigned"}</span>
-                  <span className="rounded-full border px-2 py-0.5">Services: {inspection?.services?.length ?? 0}</span>
+                  <span className="rounded-full border px-2 py-0.5">Services: {order.services?.length ?? 0}</span>
                 </div>
 
                 <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
