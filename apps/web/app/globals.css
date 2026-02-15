@@ -156,7 +156,7 @@
   --foreground: var(--slate-900);
 
   /* Content area background (admin shell main area) */
-  --content-bg: oklch(0.971 0.004 247);
+  --content-bg: oklch(0.960 0.005 247);
 
   --card: oklch(1 0 0);
   --card-foreground: var(--slate-900);

@@ -112,12 +112,12 @@ export function AdminSidebar({
     <aside
       className={cn(
         "hidden md:flex flex-col transition-all duration-200 safe-area-inset-top z-10",
-        "bg-slate-900 border-r border-white/8",
-        collapsed ? "w-14" : "w-56"
+        "bg-[#1C2434] border-r border-[#313d4f]",
+        collapsed ? "w-14" : "w-[260px]"
       )}
     >
       {/* Logo / Brand */}
-      <div className="flex h-12 shrink-0 items-center border-b border-white/8 px-3 gap-2">
+      <div className="flex h-14 shrink-0 items-center border-b border-[#313d4f] px-4 gap-2">
         <Link href={homeHref} className="flex items-center gap-2.5 min-w-0 flex-1">
           <div
             className={cn(
@@ -149,7 +149,7 @@ export function AdminSidebar({
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="shrink-0 rounded-md p-1 text-white/40 hover:bg-white/8 hover:text-white transition-colors"
+            className="shrink-0 rounded-lg p-1 text-[#8D9DB0] hover:bg-white/[0.06] hover:text-white transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -170,9 +170,9 @@ export function AdminSidebar({
               onChange={(e) => setNavQuery(e.target.value)}
               placeholder="Search..."
               className={cn(
-                "w-full h-8 rounded-md px-2.5 text-[12px] outline-none transition-colors",
-                "bg-white/6 text-white placeholder:text-white/30",
-                "border border-white/8 focus:border-white/20"
+                "w-full h-8 rounded-lg px-3 text-[12px] outline-none transition-colors",
+                "bg-white/[0.06] text-white placeholder:text-[#8D9DB0]",
+                "border border-[#313d4f] focus:border-white/25 focus:bg-white/[0.09]"
               )}
             />
           </div>
@@ -186,17 +186,20 @@ export function AdminSidebar({
           </nav>
         ) : (
           <div className="space-y-3">
-            <nav className="flex flex-col gap-0.5">
-              {filteredPinnedNav.map((item) => (
-                <AdminNavLink key={item.href} {...item} size="sm" theme="dark" />
-              ))}
-            </nav>
+            <div>
+              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#8D9DB0]">Main Menu</p>
+              <nav className="flex flex-col gap-0.5">
+                {filteredPinnedNav.map((item) => (
+                  <AdminNavLink key={item.href} {...item} size="sm" theme="dark" />
+                ))}
+              </nav>
+            </div>
 
             {normalizedQuery ? (
               <div className="space-y-3">
                 {filteredSections.map((section) => (
                   <div key={section.label}>
-                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+                    <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-[#8D9DB0]">
                       {section.label}
                     </div>
                     <nav className="mt-1 flex flex-col gap-0.5">
@@ -207,7 +210,7 @@ export function AdminSidebar({
                   </div>
                 ))}
                 {!hasNavMatches && (
-                  <div className="px-2 text-xs text-white/40">
+                  <div className="px-2 text-xs text-[#8D9DB0]">
                     No matches found.
                   </div>
                 )}
@@ -220,7 +223,7 @@ export function AdminSidebar({
                     <button
                       type="button"
                       onClick={() => toggleSection(section.label)}
-                      className="flex w-full items-center justify-between px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors"
+                      className="flex w-full items-center justify-between px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#8D9DB0] hover:text-white/70 transition-colors"
                     >
                       <span>{section.label}</span>
                       <ChevronDown
@@ -246,7 +249,7 @@ export function AdminSidebar({
       </ScrollArea>
 
       {/* System nav */}
-      <div className="shrink-0 border-t border-white/8 px-2 py-3">
+      <div className="shrink-0 border-t border-[#313d4f] px-2 py-3">
         <nav className="flex flex-col gap-0.5">
           {systemNav.map((item) => (
             <AdminNavLink key={item.href} {...item} collapsed={collapsed} size="sm" theme="dark" />

@@ -29,12 +29,12 @@ export function AdminNavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2.5 rounded-md transition-colors focus-visible:outline-none",
-        size === "sm" ? "px-2.5 py-1.5 text-[13px]" : "px-3 py-2 text-sm",
+        "flex items-center gap-3 rounded-lg transition-colors duration-150 focus-visible:outline-none",
+        size === "sm" ? "px-3 py-2 text-[13px]" : "px-3 py-2 text-sm",
         theme === "dark"
           ? isActive
-            ? "bg-white/10 text-white font-semibold"
-            : "text-white/45 hover:bg-white/7 hover:text-white/90 font-medium"
+            ? "bg-white/[0.12] text-white font-medium"
+            : "text-[#8D9DB0] hover:bg-white/[0.06] hover:text-white font-normal"
           : isActive
             ? "bg-primary/8 text-primary font-semibold"
             : "text-muted-foreground font-medium hover:bg-muted/60 hover:text-foreground",
@@ -47,7 +47,7 @@ export function AdminNavLink({
           "shrink-0",
           size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4",
           theme === "dark"
-            ? isActive ? "text-white" : "text-white/40"
+            ? isActive ? "text-white" : "text-[#8D9DB0]"
             : isActive ? "text-primary" : "text-muted-foreground/70"
         )}
       />

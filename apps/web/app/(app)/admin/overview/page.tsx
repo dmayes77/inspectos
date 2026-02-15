@@ -223,28 +223,34 @@ export default function OverviewPage() {
       />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           const isPositive = stat.delta !== null && stat.delta >= 0;
           const isNegative = stat.delta !== null && stat.delta < 0;
           return (
             <Card key={stat.title}>
-              <CardContent className="pt-5 pb-4">
+              <CardContent className="px-6 py-5">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-medium text-muted-foreground leading-none">{stat.title}</p>
-                  <Icon className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted">
+                    <Icon className="h-4.5 w-4.5 text-muted-foreground" />
+                  </div>
                 </div>
-                <div className="mt-2 text-2xl font-bold tabular-nums">{stat.value}</div>
-                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  {isPositive && <ArrowUpRight className="h-3 w-3 text-emerald-600" />}
-                  {isNegative && <ArrowDownRight className="h-3 w-3 text-red-500" />}
+                <div className="mt-3 text-3xl font-bold tabular-nums tracking-tight">{stat.value}</div>
+                <div className="mt-2 flex items-center gap-2">
                   {stat.delta !== null ? (
-                    <span className={isPositive ? "text-emerald-600 font-medium" : "text-red-500 font-medium"}>
+                    <span className={cn(
+                      "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold",
+                      isPositive
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-red-50 text-red-700"
+                    )}>
+                      {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                       {isPositive ? "+" : ""}{stat.delta}{typeof stat.delta === "number" && stat.title.includes("Revenue") ? "%" : ""}
                     </span>
                   ) : null}
-                  <span>{stat.deltaLabel}</span>
+                  <span className="text-xs text-muted-foreground">{stat.deltaLabel}</span>
                 </div>
               </CardContent>
             </Card>
