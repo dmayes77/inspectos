@@ -72,9 +72,8 @@ const getOrderAddress = (order: {
     .join(" · ");
 };
 
-const getServiceSummary = (order: { inspection?: { services?: Array<{ name: string }> } | Array<{ services?: Array<{ name: string }> }> | null }) => {
-  const inspection = Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
-  const services = inspection?.services ?? [];
+const getServiceSummary = (order: { services?: Array<{ name: string }> | null }) => {
+  const services = order.services ?? [];
   if (services.length === 0) return "No services";
   if (services.length === 1) return services[0].name;
   return `${services[0].name} +${services.length - 1}`;

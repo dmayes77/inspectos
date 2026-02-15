@@ -121,10 +121,6 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   const { data: properties = [] } = useProperties();
   const { data: services = [] } = useServices();
   const createProperty = useCreateProperty();
-  const orderInspection = useMemo(() => {
-    if (!order?.inspection) return null;
-    return Array.isArray(order.inspection) ? order.inspection[0] : order.inspection;
-  }, [order?.inspection]);
 
   const [serviceSearch, setServiceSearch] = useState("");
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
@@ -166,8 +162,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   useEffect(() => {
     if (mode !== "edit" || serviceAssignments.length > 0) return;
-    const inspection = Array.isArray(order?.inspection) ? order?.inspection[0] : order?.inspection;
-    const existing: InspectionService[] = inspection?.services ?? [];
+    const existing: InspectionService[] = order?.services ?? [];
     if (existing.length === 0) return;
 
     const assignments: ServiceAssignment[] = existing.map((service) => {
@@ -183,7 +178,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     if (assignments.length > 0) {
       setServiceAssignments(assignments);
     }
-  }, [mode, order?.inspection, serviceAssignments.length, serviceNameMap]);
+  }, [mode, order?.services, serviceAssignments.length, serviceNameMap]);
 
   const selectedServices = useMemo(() => {
     const selectedIds = serviceAssignments.filter((a) => a.selected).map((a) => a.serviceId);
