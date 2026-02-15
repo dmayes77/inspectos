@@ -130,9 +130,11 @@ function ChartTooltipContent({
   active?: boolean
   payload?: TooltipPayloadItem[]
   label?: string | number
-  labelFormatter?: (value: unknown, payload: TooltipPayloadItem[]) => React.ReactNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  labelFormatter?: (value: unknown, payload: any[]) => React.ReactNode
   labelClassName?: string
-  formatter?: (value: unknown, name: string, item: TooltipPayloadItem, index: number, payload: unknown) => React.ReactNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  formatter?: (value: unknown, name: string, item: any, index: number, payload: unknown) => React.ReactNode
   color?: string
   hideLabel?: boolean
   hideIndicator?: boolean
@@ -196,7 +198,7 @@ function ChartTooltipContent({
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || "value"}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
-          const indicatorColor = color || item.payload.fill || item.color
+          const indicatorColor = color || item.payload?.fill || item.color
 
           return (
             <div
