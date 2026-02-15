@@ -101,49 +101,58 @@ export default function SchedulePage() {
         }
       />
 
-      <div className="fc-wrapper rounded-lg border bg-background p-1">
-        <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView="timeGridWeek"
-          headerToolbar={{
-            left: "prev,next today",
-            center: "title",
-            right: "dayGridMonth,timeGridWeek,timeGridDay",
-          }}
-          buttonText={{
-            today: "Today",
-            month: "Month",
-            week: "Week",
-            day: "Day",
-          }}
-          events={events}
-          editable={true}
-          droppable={true}
-          eventDrop={handleEventDrop}
-          eventResize={handleEventResize}
-          slotMinTime="06:00:00"
-          slotMaxTime="21:00:00"
-          allDaySlot={false}
-          nowIndicator={true}
-          dayMaxEvents={true}
-          height="auto"
-          slotDuration="00:30:00"
-          snapDuration="00:15:00"
-          slotLabelInterval="01:00:00"
-          firstDay={1}
-          eventClick={(arg) => {
-            window.location.href = `/admin/orders/${arg.event.id}`;
-          }}
-          eventContent={(arg) => (
-            <div className="overflow-hidden px-1 py-0.5 leading-tight">
-              <div className="text-[11px] font-semibold truncate">{arg.timeText}</div>
-              <div className="text-[11px] truncate opacity-90">{arg.event.title}</div>
-              {arg.event.extendedProps.item?.type && (
-                <div className="text-[10px] truncate opacity-75">{arg.event.extendedProps.item.type}</div>
-              )}
-            </div>
-          )}
-        />
+      <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+        <div className="custom-calendar">
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
+            buttonText={{
+              today: "Today",
+              month: "Month",
+              week: "Week",
+              day: "Day",
+            }}
+            events={events}
+            editable={true}
+            droppable={true}
+            selectable={true}
+            eventDrop={handleEventDrop}
+            eventResize={handleEventResize}
+            slotMinTime="06:00:00"
+            slotMaxTime="21:00:00"
+            allDaySlot={false}
+            nowIndicator={true}
+            dayMaxEvents={true}
+            height="auto"
+            slotDuration="00:30:00"
+            snapDuration="00:15:00"
+            slotLabelInterval="01:00:00"
+            firstDay={1}
+            eventClick={(arg) => {
+              window.location.href = `/admin/orders/${arg.event.id}`;
+            }}
+            eventContent={(arg) => {
+              const color = arg.event.backgroundColor ?? "#f97316";
+              return (
+                <div className="event-fc-color flex fc-event-main rounded-lg py-2.5 pl-4 pr-3 cursor-pointer">
+                  <div
+                    className="fc-daygrid-event-dot w-1 h-5 mr-3 rounded-sm border-none shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  {arg.timeText && (
+                    <div className="fc-event-time text-xs text-muted-foreground mr-1">{arg.timeText}</div>
+                  )}
+                  <div className="fc-event-title text-sm font-normal text-foreground truncate">{arg.event.title}</div>
+                </div>
+              );
+            }}
+          />
+        </div>
       </div>
     </div>
   );
