@@ -2,25 +2,16 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useInspectionData } from "@/hooks/use-inspection-data";
 
 export default function InspectionDetailRedirect() {
   const params = useParams();
   const router = useRouter();
   const { id } = params as { id: string };
 
-  const { data: inspectionData, isLoading } = useInspectionData(id);
-
   useEffect(() => {
-    const orderId = inspectionData?.inspection?.order?.id;
-    if (orderId) {
-      router.replace(`/admin/orders/${orderId}?tab=inspection`);
-    }
-  }, [inspectionData, router]);
-
-  if (!isLoading && !inspectionData?.inspection?.order?.id) {
-    router.replace("/admin/orders");
-  }
+    // After migration 043, inspections are orders. Treat the id as an order id.
+    router.replace(`/admin/orders/${id}?tab=inspection`);
+  }, [id, router]);
 
   return (
     <>
