@@ -22,7 +22,7 @@ function severityBorderClass(severity: string) {
     case "safety": return "border-l-red-500";
     case "major": return "border-l-orange-500";
     case "moderate": return "border-l-yellow-500";
-    case "minor": return "border-l-blue-400";
+    case "minor": return "border-l-brand-400";
     default: return "border-l-border";
   }
 }
@@ -117,7 +117,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
                     {stats.findingCounts.safety > 0 && <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{stats.findingCounts.safety} safety</Badge>}
                     {stats.findingCounts.major > 0 && <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">{stats.findingCounts.major} major</Badge>}
                     {stats.findingCounts.moderate > 0 && <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-xs">{stats.findingCounts.moderate} moderate</Badge>}
-                    {stats.findingCounts.minor > 0 && <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">{stats.findingCounts.minor} minor</Badge>}
+                    {stats.findingCounts.minor > 0 && <Badge className="bg-brand-100 text-brand-700 border-brand-200 text-xs">{stats.findingCounts.minor} minor</Badge>}
                   </span>
                 )}
               </>
@@ -161,7 +161,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
                     <span className="text-sm font-medium">${svc.price.toLocaleString()}</span>
                   )}
                   {svc.status && (
-                    <Badge variant="outline" className="text-xs capitalize">{svc.status.replace(/_/g, " ")}</Badge>
+                    <Badge color="light" className="text-xs capitalize">{svc.status.replace(/_/g, " ")}</Badge>
                   )}
                 </div>
               </div>
@@ -202,12 +202,12 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
                             {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
                             {hasAnswer && (
                               <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                <Badge variant="secondary" className="text-xs">{answer.value}</Badge>
+                                <Badge color="light" className="text-xs">{answer.value}</Badge>
                                 {answer.notes && <span className="text-xs text-muted-foreground">{answer.notes}</span>}
                               </div>
                             )}
                           </div>
-                          <Badge variant="outline" className="text-xs shrink-0">{item.item_type}</Badge>
+                          <Badge color="light" className="text-xs shrink-0">{item.item_type}</Badge>
                         </div>
                       );
                     })}

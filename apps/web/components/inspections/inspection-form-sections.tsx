@@ -266,9 +266,9 @@ export function InspectionFormSections({
           ) : null}
 
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">Status: {statusOptions.find((option) => option.value === form.status)?.label ?? form.status}</Badge>
-            <Badge variant="outline">Inspector {form.inspectorId ? "assigned" : allowUnassignedInspector ? "optional" : "required"}</Badge>
-            <Badge variant="outline">{form.serviceIds.length} services</Badge>
+            <Badge color="light">Status: {statusOptions.find((option) => option.value === form.status)?.label ?? form.status}</Badge>
+            <Badge color="light">Inspector {form.inspectorId ? "assigned" : allowUnassignedInspector ? "optional" : "required"}</Badge>
+            <Badge color="light">{form.serviceIds.length} services</Badge>
           </div>
         </CardContent>
       </Card>

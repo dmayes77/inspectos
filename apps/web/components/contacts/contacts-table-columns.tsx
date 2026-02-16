@@ -26,17 +26,17 @@ import type { Client } from "@/hooks/use-clients";
 import { formatDistanceToNow } from "date-fns";
 
 export function getContactTypeBadge(type: string) {
-  const variants: Record<string, { variant: "default" | "secondary" | "outline" | "destructive", className?: string }> = {
-    "Homebuyer": { variant: "secondary" },
-    "Seller": { variant: "outline" },
-    "Homeowner": { variant: "default", className: "bg-green-500 hover:bg-green-600" },
-    "Real Estate Agent": { variant: "default", className: "bg-blue-500 hover:bg-blue-600" },
+  const variants: Record<string, { color: "primary" | "light", className?: string }> = {
+    "Homebuyer": { color: "light" },
+    "Seller": { color: "light" },
+    "Homeowner": { color: "primary", className: "bg-green-500 hover:bg-green-600" },
+    "Real Estate Agent": { color: "primary", className: "bg-brand-500 hover:bg-brand-600" },
   };
 
-  const config = variants[type] || { variant: "outline" as const };
+  const config = variants[type] || { color: "light" as const };
 
   return (
-    <Badge variant={config.variant} className={config.className}>
+    <Badge color={config.color} className={config.className}>
       {type}
     </Badge>
   );

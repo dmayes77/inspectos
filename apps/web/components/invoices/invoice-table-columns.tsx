@@ -58,7 +58,7 @@ export const invoiceTableColumns: ColumnDef<InvoiceRecord>[] = [
     accessorKey: "status",
     header: "Status",
     cell: ({ row }) => (
-      <Badge variant="outline" className="text-xs capitalize">
+      <Badge color="light" className="text-xs capitalize">
         {formatInvoiceStatusLabel(row.original.status)}
       </Badge>
     ),

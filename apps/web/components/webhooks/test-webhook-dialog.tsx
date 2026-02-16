@@ -116,7 +116,7 @@ export function TestWebhookDialog({ open, onOpenChange, webhookId }: TestWebhook
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">HTTP Status</div>
                     <Badge
-                      variant={testResult.status >= 200 && testResult.status < 300 ? "default" : "destructive"}
+                      color={testResult.status >= 200 && testResult.status < 300 ? "primary" : "error"}
                     >
                       {testResult.status}
                     </Badge>

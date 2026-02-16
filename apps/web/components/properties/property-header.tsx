@@ -46,7 +46,7 @@ export function PropertyHeader({
         {(propertyType || createdAtLabel) ? (
           <div className="flex flex-wrap items-center gap-2">
             {propertyType ? (
-              <Badge variant="outline" className="text-xs px-2 py-0.5 capitalize">
+              <Badge color="light" className="text-xs px-2 py-0.5 capitalize">
                 {propertyType.replace("-", " ")}
               </Badge>
             ) : null}

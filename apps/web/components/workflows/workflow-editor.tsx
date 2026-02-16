@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +48,7 @@ const leadStageOptions = [
 ];
 
 const actionOptions = [
-  { value: "send_email", label: "Send Email", icon: Mail, color: "bg-blue-100 text-blue-600" },
+  { value: "send_email", label: "Send Email", icon: Mail, color: "bg-brand-100 text-brand-600" },
   { value: "add_tag", label: "Add Tag", icon: Tag, color: "bg-emerald-100 text-emerald-600" },
   { value: "remove_tag", label: "Remove Tag", icon: Tag, color: "bg-rose-100 text-rose-600" },
   { value: "wait", label: "Wait", icon: Clock, color: "bg-slate-100 text-slate-600" },
@@ -448,8 +448,8 @@ export function WorkflowEditor() {
               </div>
               {existing ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Badge variant="outline">{existing.triggerScope}</Badge>
-                  <Badge variant="outline">{existing.triggerType.replace("_", " ")}</Badge>
+                  <Badge color="light">{existing.triggerScope}</Badge>
+                  <Badge color="light">{existing.triggerType.replace("_", " ")}</Badge>
                 </div>
               ) : null}
             </CardContent>

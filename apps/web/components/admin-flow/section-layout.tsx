@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 
 export type AdminSectionLayoutProps = {
   title: string;

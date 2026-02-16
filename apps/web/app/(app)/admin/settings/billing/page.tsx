@@ -1,4 +1,4 @@
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,7 +102,7 @@ export default function BillingPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <Badge variant={invoice.status === "paid" ? "secondary" : "outline"}>
+                  <Badge color="light">
                     {invoice.status === "paid" ? "Paid" : "Pending"}
                   </Badge>
                   <span className="font-medium">${invoice.amount}</span>

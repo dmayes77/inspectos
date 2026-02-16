@@ -61,7 +61,7 @@ export function TagAssignmentEditor({ scope, entityId }: TagAssignmentEditorProp
       ) : (
         <div className="flex flex-wrap gap-2">
           {assignedTags.map((tag) => (
-            <Badge key={tag.id} variant="outline" className="flex items-center gap-1">
+            <Badge key={tag.id} color="light" className="flex items-center gap-1">
               {tag.name}
               <button
                 type="button"

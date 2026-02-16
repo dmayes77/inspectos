@@ -171,7 +171,7 @@ export function ServiceForm({
                             key={minutes}
                             type="button"
                             size="sm"
-                            variant={form.durationMinutes === minutes ? "default" : "outline"}
+                            variant={form.durationMinutes === minutes ? "primary" : "outline"}
                             onClick={() => setForm((prev) => ({ ...prev, durationMinutes: minutes }))}
                           >
                             {formatDuration(minutes)}

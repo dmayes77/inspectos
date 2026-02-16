@@ -59,7 +59,7 @@ export function AgencyBrandSearch({ onApply }: AgencyBrandSearchProps) {
                 <div>
                   <div className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="font-medium">{result.name}</span>
-                    <Badge variant="outline" className="text-xs capitalize">
+                    <Badge color="light" className="text-xs capitalize">
                       {result.source === "logo-dev" ? "Logo.dev" : result.source}
                     </Badge>
                   </div>

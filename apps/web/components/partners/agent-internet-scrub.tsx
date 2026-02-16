@@ -212,10 +212,10 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
               <div className="flex-1">
                 <p className="text-sm font-medium">{displayName ?? (isAgencyVariant ? "Unknown agency" : "Unknown agent")}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <Badge variant="outline" className="flex items-center gap-1">
+                  <Badge color="light" className="flex items-center gap-1">
                     <Link2 className="h-3 w-3" /> {result.domain}
                   </Badge>
-                  {supportingBadge && <Badge variant="secondary">{supportingBadge}</Badge>}
+                  {supportingBadge && <Badge color="light">{supportingBadge}</Badge>}
                 </div>
                 {!isAgencyVariant && result.role && <p className="mt-1 text-xs text-muted-foreground">{result.role}</p>}
               </div>

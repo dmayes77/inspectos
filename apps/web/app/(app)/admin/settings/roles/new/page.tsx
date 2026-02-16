@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -144,7 +144,7 @@ export default function NewRolePage() {
                       {template.description}
                     </CardDescription>
                     <div className="pt-2">
-                      <Badge variant="secondary" className="text-xs">
+                      <Badge color="light" className="text-xs">
                         {template.permissions.length} permissions
                       </Badge>
                     </div>

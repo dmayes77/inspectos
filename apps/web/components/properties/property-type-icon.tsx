@@ -31,13 +31,13 @@ export function PropertyTypeIcon({ type, size = "sm", className }: PropertyTypeI
     case "single-family":
       return (
         <span className={wrapperClasses}>
-          <Home className="h-full w-full text-blue-500" />
+          <Home className="h-full w-full text-brand-500" />
         </span>
       );
     case "condo-townhome":
       return (
         <span className={wrapperClasses}>
-          <Home className="h-full w-full text-blue-500" />
+          <Home className="h-full w-full text-brand-500" />
         </span>
       );
     case "commercial":

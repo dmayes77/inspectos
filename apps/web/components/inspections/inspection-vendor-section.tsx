@@ -49,7 +49,7 @@ export function InspectionVendorSection({ selectedVendorIds, onChange }: { selec
                   {vendor.name} ({vendor.vendorType})
                 </SelectItem>
               ))}
-            <SelectItem value="__add_new_vendor__" className="text-blue-600 font-semibold">
+            <SelectItem value="__add_new_vendor__" className="text-brand-600 font-semibold">
               + Add new vendor
             </SelectItem>
           </SelectContent>

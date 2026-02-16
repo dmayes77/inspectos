@@ -1,18 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
+import { Outfit } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import { ReactQueryProvider } from "@/components/providers/query-provider";
 import { TenantProvider } from "@/lib/api/tenant-context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
@@ -50,9 +45,9 @@ export default function RootLayout({
   const tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || "acme-inspections";
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={outfit.variable}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden bg-background text-foreground`}
+        className="antialiased overflow-x-hidden bg-background text-foreground"
         style={{ overscrollBehaviorY: "auto" }}
         suppressHydrationWarning
       >

@@ -12,7 +12,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-orange-100/40 via-background to-background" />
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="secondary" className="mb-6">
+            <Badge color="light" className="mb-6">
               Trusted by 500+ inspection companies
             </Badge>
             <h1 className="mb-6 text-5xl font-semibold tracking-tight sm:text-6xl">
@@ -22,13 +22,13 @@ export default function LandingPage() {
               The all-in-one platform for home inspectors. Schedule, inspect, report, and get paid—all from one beautiful app that works offline.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button size="lg" className="h-12 px-8 text-base" asChild>
+              <Button size="md" className="h-12 px-8 text-base" asChild>
                 <Link href="/register">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base">
+              <Button variant="outline" size="md" className="h-12 px-8 text-base">
                 <Play className="mr-2 h-4 w-4" />
                 Watch Demo
               </Button>
@@ -75,7 +75,7 @@ export default function LandingPage() {
       <section id="features" className="py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-16 max-w-2xl text-center">
-            <Badge variant="secondary" className="mb-4">
+            <Badge color="light" className="mb-4">
               Features
             </Badge>
             <h2 className="mb-4">Everything you need to run your inspection business</h2>
@@ -135,7 +135,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="bg-muted/30 py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-16 max-w-2xl text-center">
-            <Badge variant="secondary" className="mb-4">
+            <Badge color="light" className="mb-4">
               How It Works
             </Badge>
             <h2 className="mb-4">From booking to payment in 4 simple steps</h2>
@@ -181,7 +181,7 @@ export default function LandingPage() {
       <section className="py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-16 max-w-2xl text-center">
-            <Badge variant="secondary" className="mb-4">
+            <Badge color="light" className="mb-4">
               Testimonials
             </Badge>
             <h2 className="mb-4">Loved by inspectors everywhere</h2>
@@ -232,7 +232,7 @@ export default function LandingPage() {
       <section id="pricing" className="bg-muted/30 py-24">
         <div className="mx-auto max-w-6xl px-4">
           <div className="mx-auto mb-16 max-w-2xl text-center">
-            <Badge variant="secondary" className="mb-4">
+            <Badge color="light" className="mb-4">
               Pricing
             </Badge>
             <h2 className="mb-4">Simple, transparent pricing</h2>
@@ -286,7 +286,7 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full" variant={plan.popular ? "default" : "outline"}>
+                  <Button className="w-full" variant={plan.popular ? "primary" : "outline"}>
                     Start 30-Day Trial
                   </Button>
                 </CardContent>
@@ -311,13 +311,13 @@ export default function LandingPage() {
               Join 500+ inspection companies already using InspectOS to save time, impress clients, and grow their business.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button size="lg" variant="secondary" className="h-12 px-8 text-base" asChild>
+              <Button size="md" variant="secondary" className="h-12 px-8 text-base" asChild>
                 <Link href="/register">
                   Start Your Free Trial
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="ghost" className="h-12 px-8 text-base text-white hover:bg-white/10 hover:text-white">
+              <Button size="md" variant="ghost" className="h-12 px-8 text-base text-white hover:bg-white/10 hover:text-white">
                 Schedule a Demo
               </Button>
             </div>

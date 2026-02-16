@@ -40,7 +40,7 @@ export default function AdminError({
             </p>
           )}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Button onClick={reset} variant="default">
+            <Button onClick={reset} variant="primary">
               <RefreshCw className="mr-2 h-4 w-4" />
               Try again
             </Button>

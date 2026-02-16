@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 
 export type ResourceDetailLayoutProps = {
   title: ReactNode;

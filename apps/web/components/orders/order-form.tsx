@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -410,7 +410,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         meta={
           <>
             <Badge className="text-xs px-2 py-0.5">{formatStatusLabel(form.status)}</Badge>
-            <Badge variant="outline" className="text-xs px-2 py-0.5">
+            <Badge color="light" className="text-xs px-2 py-0.5">
               {formatStatusLabel(form.payment_status)}
             </Badge>
             {order?.created_at || order?.source ? (
@@ -454,7 +454,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                       <SelectValue placeholder="Select property" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__add_new_property__" className="text-blue-600 font-semibold">
+                      <SelectItem value="__add_new_property__" className="text-brand-600 font-semibold">
                         <span className="inline-flex items-center gap-2">
                           <Plus className="h-3 w-3" />
                           Add new property
@@ -537,7 +537,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__add_new_client__" className="text-blue-600 font-semibold">
+                    <SelectItem value="__add_new_client__" className="text-brand-600 font-semibold">
                       <span className="inline-flex items-center gap-2">
                         <Plus className="h-3 w-3" />
                         Add new client
@@ -560,7 +560,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                     <SelectValue placeholder="Select agent" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__add_new_agent__" className="text-blue-600 font-semibold">
+                    <SelectItem value="__add_new_agent__" className="text-brand-600 font-semibold">
                       <span className="inline-flex items-center gap-2">
                         <Plus className="h-3 w-3" />
                         Add new agent

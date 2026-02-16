@@ -197,8 +197,8 @@ export default function PricingPage() {
                 {/* CTA */}
                 <Button
                   className="w-full"
-                  variant={plan.popular ? "default" : "outline"}
-                  size="lg"
+                  variant={plan.popular ? "primary" : "outline"}
+                  size="md"
                   asChild
                 >
                   <Link href="/register">Start Free Trial</Link>
@@ -340,10 +340,10 @@ export default function PricingPage() {
           but you&apos;ll need one to activate your trial.
         </p>
         <div className="mt-8 flex justify-center gap-4">
-          <Button size="lg" asChild>
+          <Button size="md" asChild>
             <Link href="/register">Start Free Trial</Link>
           </Button>
-          <Button size="lg" variant="outline" asChild>
+          <Button size="md" variant="outline" asChild>
             <Link href="/contact">Contact Sales</Link>
           </Button>
         </div>

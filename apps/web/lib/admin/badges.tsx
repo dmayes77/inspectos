@@ -3,43 +3,43 @@ import { Badge } from "@/components/ui/badge";
 export function inspectionStatusBadge(status: string) {
   switch (status) {
     case "scheduled":
-      return <Badge variant="secondary">Scheduled</Badge>;
+      return <Badge color="info">Scheduled</Badge>;
     case "in_progress":
-      return <Badge className="bg-amber-500 hover:bg-amber-500">In Progress</Badge>;
+      return <Badge color="warning">In Progress</Badge>;
     case "completed":
-      return <Badge className="bg-green-500 hover:bg-green-500">Completed</Badge>;
+      return <Badge color="success">Completed</Badge>;
     case "pending_report":
-      return <Badge className="bg-blue-500 hover:bg-blue-500">Pending Report</Badge>;
+      return <Badge color="primary">Pending Report</Badge>;
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return <Badge color="light">{status}</Badge>;
   }
 }
 
 export function teamRoleBadge(role: string) {
   switch (role) {
     case "OWNER":
-      return <Badge className="bg-purple-500 hover:bg-purple-500">Owner</Badge>;
+      return <Badge color="primary" variant="solid">Owner</Badge>;
     case "ADMIN":
-      return <Badge className="bg-blue-500 hover:bg-blue-500">Admin</Badge>;
+      return <Badge color="info" variant="solid">Admin</Badge>;
     case "INSPECTOR":
-      return <Badge className="bg-primary hover:bg-primary">Inspector</Badge>;
+      return <Badge color="primary">Inspector</Badge>;
     case "OFFICE_STAFF":
-      return <Badge variant="secondary">Office Staff</Badge>;
+      return <Badge color="light">Office Staff</Badge>;
     default:
-      return <Badge variant="outline">{role}</Badge>;
+      return <Badge color="light">{role}</Badge>;
   }
 }
 
 export function teamStatusBadge(status: string) {
   switch (status) {
     case "active":
-      return <Badge className="bg-green-500 hover:bg-green-500">Active</Badge>;
+      return <Badge color="success">Active</Badge>;
     case "on_leave":
-      return <Badge variant="secondary">On Leave</Badge>;
+      return <Badge color="warning">On Leave</Badge>;
     case "inactive":
-      return <Badge variant="outline">Inactive</Badge>;
+      return <Badge color="light">Inactive</Badge>;
     default:
-      return <Badge variant="outline">{status}</Badge>;
+      return <Badge color="light">{status}</Badge>;
   }
 }
 

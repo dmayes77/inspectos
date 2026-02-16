@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ClientsPage from "@/app/(app)/admin/contacts/page";
+import ClientsPage from "@/app/(app)/admin/(people)/contacts/page";
 import type { Client } from "@/hooks/use-clients";
 
 // Mock the hooks

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ export default function RolesPage() {
         <div className="flex items-center gap-2 mb-4">
           <Lock className="h-5 w-5 text-muted-foreground" />
           <h2 className="text-lg font-medium">System Roles</h2>
-          <Badge variant="secondary" className="text-xs">Protected</Badge>
+          <Badge color="light" className="text-xs">Protected</Badge>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {roles.filter(r => r.isSystem).map((role) => {

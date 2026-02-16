@@ -23,7 +23,7 @@ function PropertyAddressCell({ property }: { property: Property }) {
 
 function PropertyTypeCell({ type }: { type: string }) {
   return (
-    <Badge variant="outline" className="capitalize">
+    <Badge color="light" className="capitalize">
       {type.replace("-", " ")}
     </Badge>
   );

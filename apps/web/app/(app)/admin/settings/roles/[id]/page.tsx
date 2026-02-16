@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Save, Shield, Lock, Trash, Users } from "lucide-react";
+import { Save, Shield, Trash, Users } from "lucide-react";
 import { permissionCategories, rolePermissions } from "@/lib/permissions";
 
 const roles = [
@@ -121,8 +121,7 @@ export default function RoleDetailPage() {
               <div className="mb-1 flex items-center gap-3">
                 <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{role.name}</h1>
                 {role.isSystem ? (
-                  <Badge variant="secondary" className="text-xs">
-                    <Lock className="mr-1 h-3 w-3" />
+                  <Badge color="light" className="text-xs">
                     System Role
                   </Badge>
                 ) : null}
@@ -151,13 +150,11 @@ export default function RoleDetailPage() {
 
       {/* System Role Warning */}
       {role.isSystem && (
-        <Alert>
-          <Lock className="h-4 w-4" />
-          <AlertTitle>System Role</AlertTitle>
-          <AlertDescription>
-            This is a protected system role. You can view its permissions but cannot modify the role name, description, or delete it. To customize permissions for specific users, use the custom permissions feature on the team member edit page.
-          </AlertDescription>
-        </Alert>
+        <Alert
+          variant="warning"
+          title="System Role"
+          message="This is a protected system role. You can view its permissions but cannot modify the role name, description, or delete it. To customize permissions for specific users, use the custom permissions feature on the team member edit page."
+        />
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">

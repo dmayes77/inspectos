@@ -28,8 +28,8 @@
   --color-foreground: var(--foreground);
 
   /* Typography */
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-outfit);
+  --font-mono: var(--font-outfit);
 
   /* Semantic colors */
   --color-primary: var(--primary);
@@ -69,6 +69,22 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
+  /* TailAdmin shadow tokens */
+  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1), 0px 1px 2px 0px rgba(16, 24, 40, 0.06);
+  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1), 0px 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08), 0px 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08), 0px 8px 8px -4px rgba(16, 24, 40, 0.03);
+
+  /* TailAdmin z-index scale */
+  --z-index-1: 1;
+  --z-index-9: 9;
+  --z-index-99: 99;
+  --z-index-999: 999;
+  --z-index-9999: 9999;
+  --z-index-99999: 99999;
+  --z-index-999999: 999999;
+
   /* Border radius (Apple-inspired: subtle, not too rounded) */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -87,6 +103,25 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+}
+
+/* -----------------------------------------------------------------------------
+   Brand color palette — defined with @theme (not inline) so utility classes
+   reference var(--color-brand-*) and can be overridden at runtime by JS.
+   ----------------------------------------------------------------------------- */
+@theme {
+  --color-brand-25: #f2f7ff;
+  --color-brand-50: #ecf3ff;
+  --color-brand-100: #dde9ff;
+  --color-brand-200: #c2d6ff;
+  --color-brand-300: #9cb9ff;
+  --color-brand-400: #7592ff;
+  --color-brand-500: #465fff;
+  --color-brand-600: #3641f5;
+  --color-brand-700: #2a31d8;
+  --color-brand-800: #252dae;
+  --color-brand-900: #262e89;
+  --color-brand-950: #161950;
 }
 
 /* -----------------------------------------------------------------------------
@@ -164,8 +199,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: var(--slate-900);
 
-  /* Primary = Orange (actions, CTAs) */
-  --primary: var(--orange-600);
+  /* Primary = TailAdmin Blue */
+  --primary: oklch(0.585 0.233 264);
   --primary-foreground: oklch(1 0 0);
 
   /* Secondary = Slate (subtle actions) */
@@ -187,10 +222,10 @@
   /* Borders and inputs (subtle, Apple-like) */
   --border: var(--slate-200);
   --input: var(--slate-200);
-  --ring: var(--orange-500);
+  --ring: oklch(0.585 0.233 264);
 
   /* Brand colors */
-  --brand: var(--orange-600);
+  --brand: oklch(0.585 0.233 264);
   --brand-foreground: oklch(1 0 0);
 
   /* Status colors */
@@ -452,8 +487,8 @@
   --popover: var(--slate-900);
   --popover-foreground: var(--slate-50);
 
-  --primary: var(--orange-500);
-  --primary-foreground: var(--slate-950);
+  --primary: oklch(0.585 0.233 264);
+  --primary-foreground: oklch(1 0 0);
 
   --secondary: var(--slate-800);
   --secondary-foreground: var(--slate-100);
@@ -490,6 +525,7 @@
   }
 
   html {
+    font-family: var(--font-outfit, ui-sans-serif, system-ui, sans-serif);
     font-size: var(--font-size-base-fluid);
     min-height: 100%;
     -webkit-font-smoothing: antialiased;
@@ -507,12 +543,9 @@
     overscroll-behavior-x: none;
   }
 
-  /* Focus states (subtle, brand-tinted; keyboard only) */
+  /* Focus rings disabled */
+  :focus,
   :focus-visible {
-    @apply outline-none ring-1 ring-ring/40 ring-offset-1 ring-offset-background;
-  }
-
-  :focus:not(:focus-visible) {
     outline: none;
     box-shadow: none;
   }
@@ -779,6 +812,44 @@
   .animate-fade-in {
     animation: fade-in 0.2s ease-out;
   }
+}
+
+/* Sidebar is excluded from admin-dense font-size shrinkage */
+.admin-dense [data-sidebar] {
+  font-size: 0.875rem;
+}
+
+/* =============================================================================
+   TAILADMIN — Menu item utilities (exact port from TailAdmin globals.css)
+   ============================================================================= */
+
+@utility menu-item {
+  @apply relative flex items-center w-full gap-2.5 px-3 py-1.5 font-medium rounded-lg;
+  font-size: 0.8125rem;
+}
+
+@utility menu-item-active {
+  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/12 dark:text-brand-400;
+}
+
+@utility menu-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5;
+}
+
+@utility menu-item-icon-active {
+  @apply text-brand-500 dark:text-brand-400;
+}
+
+@utility menu-item-icon-inactive {
+  @apply text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* =============================================================================

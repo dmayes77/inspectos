@@ -112,7 +112,7 @@ export function ServiceAssignmentsSection({
           <div key={group.title} className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>{group.title}</Label>
-              <Badge variant="outline">{group.services.length}</Badge>
+              <Badge color="light">{group.services.length}</Badge>
             </div>
             <div className="space-y-3">
               {group.services.length === 0 ? (
