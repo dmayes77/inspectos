@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserCircleIcon, GearIcon, InfoCircleIcon, SignOutIcon } from "@/components/icons";
@@ -29,7 +30,7 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
       .toUpperCase() || "U";
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
@@ -66,42 +67,50 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
         {/* Menu items */}
         <ul className="flex flex-col gap-0.5 pt-3 pb-3 border-b border-border">
           <li>
-            <Link
-              href="/admin/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group"
-            >
-              <UserCircleIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-              Edit profile
-            </Link>
+            <DropdownMenuItem asChild>
+              <Link
+                href="/admin/profile"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+              >
+                <UserCircleIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                Edit profile
+              </Link>
+            </DropdownMenuItem>
           </li>
           <li>
-            <Link
-              href={settingsHref}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group"
-            >
-              <GearIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-              Account settings
-            </Link>
+            <DropdownMenuItem asChild>
+              <Link
+                href={settingsHref}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+              >
+                <GearIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                Account settings
+              </Link>
+            </DropdownMenuItem>
           </li>
           <li>
-            <Link
-              href="/admin/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group"
-            >
-              <InfoCircleIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-              Support
-            </Link>
+            <DropdownMenuItem asChild>
+              <Link
+                href="/admin/settings"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+              >
+                <InfoCircleIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                Support
+              </Link>
+            </DropdownMenuItem>
           </li>
         </ul>
 
         {/* Sign out */}
-        <button
-          type="button"
-          className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group"
-        >
-          <SignOutIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
-          Sign out
-        </button>
+        <DropdownMenuItem asChild>
+          <button
+            type="button"
+            className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+          >
+            <SignOutIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+            Sign out
+          </button>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

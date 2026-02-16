@@ -191,7 +191,7 @@
   --foreground: var(--slate-900);
 
   /* Content area background (admin shell main area) */
-  --content-bg: oklch(0.960 0.005 247);
+  --content-bg: var(--slate-50);
 
   --card: oklch(1 0 0);
   --card-foreground: var(--slate-900);
@@ -514,6 +514,8 @@
   --sidebar-accent-foreground: var(--slate-100);
   --sidebar-border: var(--slate-800);
   --sidebar-ring: var(--orange-500);
+
+  --content-bg: var(--slate-950);
 }
 
 /* -----------------------------------------------------------------------------
@@ -942,7 +944,7 @@
 .custom-calendar .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button.fc-button-active {
   background: hsl(var(--background)) !important;
   color: hsl(var(--foreground)) !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.07) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.07) !important;
 }
 
 /* Column header (day names) */
