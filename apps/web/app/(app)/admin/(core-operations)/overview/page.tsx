@@ -32,8 +32,8 @@ import {
   Area,
 } from "recharts";
 
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
 import { can } from "@/lib/admin/permissions";
+import { useProfile } from "@/hooks/use-profile";
 import { formatTime12 } from "@inspectos/shared/utils/dates";
 import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
@@ -91,6 +91,7 @@ const STATUS_VARIANT: Record<string, BadgeColor> = {
 };
 
 export default function OverviewPage() {
+  const { data: profile } = useProfile();
   const { data: ordersData, isLoading: ordersLoading } = useOrders();
   const { data: clientsData, isLoading: clientsLoading } = useClients();
 
@@ -208,9 +209,9 @@ export default function OverviewPage() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Dashboard"
-        description={`Welcome back, ${mockAdminUser.name.split(" ")[0]}.`}
+        description={`Welcome back, ${(profile?.full_name || profile?.email || "").split(" ")[0]}.`}
         actions={
-          can(mockAdminUser.role, "create_inspections") ? (
+          can(profile?.role ?? "owner", "create_inspections") ? (
             <Button asChild>
               <Link href="/admin/orders/new">
                 <Plus className="mr-1.5 h-4 w-4" />

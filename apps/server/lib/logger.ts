@@ -49,6 +49,18 @@ function formatError(error: unknown): LogEntry['error'] | undefined {
     };
   }
 
+  // Handle Supabase PostgrestError and other plain objects
+  if (typeof error === 'object') {
+    const obj = error as Record<string, unknown>;
+    return {
+      name: (obj['name'] as string) || 'UnknownError',
+      message: (obj['message'] as string) || JSON.stringify(error),
+      stack: (obj['code'] as string)
+        ? `code: ${obj['code']}, hint: ${obj['hint'] ?? ''}, details: ${obj['details'] ?? ''}`
+        : undefined,
+    };
+  }
+
   return {
     name: 'UnknownError',
     message: String(error),

@@ -26,8 +26,8 @@ function formatJoinedDate(value: string | null | undefined) {
 /**
  * GET /api/admin/team
  */
-export const GET = withAuth(async ({ supabase, tenant }) => {
-  const { data, error } = await supabase
+export const GET = withAuth(async ({ serviceClient, tenant }) => {
+  const { data, error } = await serviceClient
     .from('tenant_members')
     .select('user_id, role, created_at, profiles(id, full_name, email, avatar_url, phone)')
     .eq('tenant_id', tenant.id)
@@ -63,7 +63,7 @@ export const GET = withAuth(async ({ supabase, tenant }) => {
 /**
  * POST /api/admin/team
  */
-export const POST = withAuth(async ({ supabase, tenant, request }) => {
+export const POST = withAuth(async ({ serviceClient, tenant, request }) => {
   const body = await request.json();
   const { email: rawEmail, name, role: rawRole, phone } = body;
 
@@ -74,9 +74,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
     return badRequest('Email is required');
   }
 
-  // Note: This requires admin access to list users
-  // In production, you might need to use a service role client here
-  const { data: usersResult, error: userError } = await supabase.auth.admin.listUsers({
+  const { data: usersResult, error: userError } = await serviceClient.auth.admin.listUsers({
     page: 1,
     perPage: 200,
   });
@@ -89,7 +87,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
   const userId = foundUser.id;
 
   if (name || phone) {
-    await supabase
+    await serviceClient
       .from('profiles')
       .upsert(
         { id: userId, email, full_name: name, phone: phone ?? null },
@@ -99,7 +97,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
 
   const memberRole = ['owner', 'admin', 'inspector', 'viewer'].includes(role ?? '') ? role : 'viewer';
 
-  const { error: memberError } = await supabase
+  const { error: memberError } = await serviceClient
     .from('tenant_members')
     .upsert({ tenant_id: tenant.id, user_id: userId, role: memberRole }, { onConflict: 'tenant_id,user_id' });
 

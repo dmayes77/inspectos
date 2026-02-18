@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserCircleIcon, GearIcon, InfoCircleIcon, SignOutIcon } from "@/components/icons";
+import { supabase } from "@/lib/supabase";
 
 interface AdminUserMenuProps {
   user?: {
@@ -22,6 +23,11 @@ interface AdminUserMenuProps {
 }
 
 export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    // Redirect is handled by AdminLayoutClient's onAuthStateChange listener
+  };
+
   const initials =
     user?.name
       ?.split(" ")
@@ -105,6 +111,7 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
         <DropdownMenuItem asChild>
           <button
             type="button"
+            onClick={handleSignOut}
             className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
           >
             <SignOutIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />

@@ -12,13 +12,16 @@ export type UserProfile = {
   social_twitter: string | null;
   social_linkedin: string | null;
   social_instagram: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
   city: string | null;
   state_region: string | null;
   country: string | null;
   postal_code: string | null;
+  role: string | null;
 };
 
-export type ProfileUpdate = Partial<Omit<UserProfile, "id" | "email" | "avatar_url">>;
+export type ProfileUpdate = Partial<Omit<UserProfile, "id" | "email" | "role">>;
 
 export function useProfile() {
   const apiClient = useApiClient();

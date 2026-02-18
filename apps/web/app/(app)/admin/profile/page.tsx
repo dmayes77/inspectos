@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 import { useProfile, useUpdateProfile, type ProfileUpdate } from "@/hooks/use-profile";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 // Facebook icon
 function FacebookIcon() {
@@ -73,10 +74,45 @@ function getInitials(name: string | null | undefined, email?: string | null): st
 export default function ProfilePage() {
   const { data: profile, isLoading } = useProfile();
   const updateMutation = useUpdateProfile();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.avatar_url) setAvatarUrl(profile.avatar_url);
+  }, [profile?.avatar_url]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      setAvatarUrl(publicUrl);
+      updateMutation.mutate({ avatar_url: publicUrl }, {
+        onSuccess: () => toast.success("Avatar updated"),
+        onError: () => toast.error("Failed to save avatar"),
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setAvatarUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const [form, setForm] = useState<ProfileUpdate>({
     full_name: "", phone: "", bio: "",
     social_facebook: "", social_twitter: "", social_linkedin: "", social_instagram: "",
+    address_line1: "", address_line2: "",
     city: "", state_region: "", country: "", postal_code: "",
   });
 
@@ -90,6 +126,8 @@ export default function ProfilePage() {
         social_twitter: profile.social_twitter ?? "",
         social_linkedin: profile.social_linkedin ?? "",
         social_instagram: profile.social_instagram ?? "",
+        address_line1: profile.address_line1 ?? "",
+        address_line2: profile.address_line2 ?? "",
         city: profile.city ?? "",
         state_region: profile.state_region ?? "",
         country: profile.country ?? "",
@@ -132,18 +170,38 @@ export default function ProfilePage() {
           <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-                <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800 shrink-0">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={profile?.avatar_url ?? undefined} className="object-cover" />
+                <div className="relative w-20 h-20 shrink-0">
+                  <Avatar className="h-20 w-20 border border-gray-200 dark:border-gray-800">
+                    <AvatarImage src={avatarUrl ?? undefined} className="object-cover" />
                     <AvatarFallback className="text-xl font-semibold bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-brand-500 text-white shadow-md hover:bg-brand-600 disabled:opacity-60 transition-colors"
+                  >
+                    {avatarUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                  />
                 </div>
                 <div className="order-3 xl:order-2">
-                  <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
+                  <h4 className="mb-1 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
                     {displayName}
                   </h4>
+                  {profile?.role && (
+                    <p className="mb-2 text-sm font-medium text-center text-brand-600 dark:text-brand-400 xl:text-left capitalize">
+                      {profile.role}
+                    </p>
+                  )}
                   <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                     {form.bio && (
                       <p className="text-sm text-gray-500 dark:text-gray-400">{form.bio}</p>
@@ -214,17 +272,23 @@ export default function ProfilePage() {
               Address
             </h4>
             <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-              <FieldRow label="Country">
-                <Input value={form.country ?? ""} onChange={set("country")} placeholder="United States" />
+              <FieldRow label="Street Address">
+                <Input value={form.address_line1 ?? ""} onChange={set("address_line1")} placeholder="123 Main St" />
               </FieldRow>
-              <FieldRow label="City / State">
-                <Input value={form.city ?? ""} onChange={set("city")} placeholder="Phoenix, Arizona" />
+              <FieldRow label="Apt, Suite, etc.">
+                <Input value={form.address_line2 ?? ""} onChange={set("address_line2")} placeholder="Suite 100" />
               </FieldRow>
-              <FieldRow label="State / Region">
+              <FieldRow label="City">
+                <Input value={form.city ?? ""} onChange={set("city")} placeholder="Phoenix" />
+              </FieldRow>
+              <FieldRow label="State / Province">
                 <Input value={form.state_region ?? ""} onChange={set("state_region")} placeholder="Arizona" />
               </FieldRow>
               <FieldRow label="Postal Code">
                 <Input value={form.postal_code ?? ""} onChange={set("postal_code")} placeholder="85001" />
+              </FieldRow>
+              <FieldRow label="Country">
+                <Input value={form.country ?? ""} onChange={set("country")} placeholder="United States" />
               </FieldRow>
             </div>
           </div>

@@ -23,8 +23,9 @@ function AlertDialogTrigger({
 function AlertDialogPortal({
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
+  const container = typeof document !== "undefined" ? document.getElementById("portal-root") ?? document.body : undefined;
   return (
-    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" container={container} {...props} />
   )
 }
 

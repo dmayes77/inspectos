@@ -19,7 +19,7 @@ function mapRoleToDb(role: string | null | undefined) {
 /**
  * PUT /api/admin/team/[id]
  */
-export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
+export const PUT = withAuth<{ id: string }>(async ({ serviceClient, tenant, params, request }) => {
   const { id } = params;
 
   const memberId = id?.trim?.() ?? '';
@@ -44,7 +44,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (phoneNumber) profileUpdate.phone = phoneNumber;
 
   if (Object.keys(profileUpdate).length > 0) {
-    const { error: profileError } = await supabase
+    const { error: profileError } = await serviceClient
       .from('profiles')
       .update(profileUpdate)
       .eq('id', memberId);
@@ -55,7 +55,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   }
 
   if (role) {
-    const { error: memberError } = await supabase
+    const { error: memberError } = await serviceClient
       .from('tenant_members')
       .update({ role })
       .eq('tenant_id', tenant.id)
@@ -72,7 +72,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 /**
  * DELETE /api/admin/team/[id]
  */
-export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
+export const DELETE = withAuth<{ id: string }>(async ({ serviceClient, tenant, params }) => {
   const { id } = params;
 
   const memberId = id?.trim?.() ?? '';
@@ -81,7 +81,7 @@ export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params
     return badRequest('Invalid team member id');
   }
 
-  const { error } = await supabase
+  const { error } = await serviceClient
     .from('tenant_members')
     .delete()
     .eq('tenant_id', tenant.id)

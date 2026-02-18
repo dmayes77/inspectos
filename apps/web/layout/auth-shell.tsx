@@ -1,99 +1,40 @@
-"use client";
-
 import { ReactNode } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
-import { BackButton } from "@/components/ui/back-button";
 
-interface AuthShellProps {
-  children: ReactNode;
-  /** Show back to home button */
-  showBackButton?: boolean;
-  /** Title for the page */
-  title?: string;
-  /** Subtitle or description */
-  subtitle?: string;
+function GridShape() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 opacity-20"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)",
+        backgroundSize: "28px 28px",
+      }}
+    />
+  );
 }
 
-/**
- * AuthShell - Minimal shell for authentication pages
- *
- * Provides a clean, focused experience for:
- * - Login
- * - Registration
- * - Password reset
- * - Team invites
- *
- * Features:
- * - Centered layout
- * - Logo at top
- * - Back to home button
- * - Safe area handling
- * - Works in web and native app
- */
-export function AuthShell({
-  children,
-  showBackButton = true,
-  title,
-  subtitle,
-}: AuthShellProps) {
+export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col bg-background safe-area-inset-top safe-area-inset-bottom safe-area-inset-left safe-area-inset-right">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-4">
-        {showBackButton ? (
-          <BackButton href="/" label="Back to Home" variant="ghost" size="sm" />
-        ) : (
-          <div aria-hidden="true" />
-        )}
+    <div className="relative min-h-screen bg-white dark:bg-gray-900">
+      <div className="relative flex w-full min-h-screen flex-col lg:flex-row">
+        {/* Left — form content (provided by page) */}
+        <div className="flex flex-1 flex-col lg:w-1/2">{children}</div>
 
-        <Link href="/">
-          <Logo size="sm" />
-        </Link>
-      </header>
-
-      {/* Main Content - Centered */}
-      <main className="flex flex-1 items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md space-y-6">
-          {/* Title and Subtitle */}
-          {(title || subtitle) && (
-            <div className="text-center space-y-2">
-              {title && (
-                <h1 className="text-3xl font-semibold tracking-tight">
-                  {title}
-                </h1>
-              )}
-              {subtitle && (
-                <p className="text-muted-foreground">{subtitle}</p>
-              )}
-            </div>
-          )}
-
-          {/* Auth Form/Content */}
-          {children}
+        {/* Right — branding panel */}
+        <div className="hidden lg:flex lg:w-1/2 min-h-screen items-center justify-center bg-brand-950 dark:bg-white/5 relative overflow-hidden">
+          <GridShape />
+          <div className="relative z-10 flex flex-col items-center max-w-xs text-center">
+            <Link href="/" className="mb-6 block">
+              <Logo size="lg" className="brightness-0 invert" />
+            </Link>
+            <p className="text-gray-400 dark:text-white/60 text-sm leading-relaxed">
+              Professional home inspection management — from lead to report.
+            </p>
+          </div>
         </div>
-      </main>
-
-      {/* Footer - Minimal */}
-      <footer className="px-4 py-6 text-center text-sm text-muted-foreground">
-        <p>
-          &copy; {new Date().getFullYear()} InspectOS. All rights reserved.
-        </p>
-        <div className="mt-2 flex items-center justify-center gap-4">
-          <Link
-            href="/privacy"
-            className="hover:text-foreground transition-colors"
-          >
-            Privacy
-          </Link>
-          <Link
-            href="/terms"
-            className="hover:text-foreground transition-colors"
-          >
-            Terms
-          </Link>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   createUserClient,
+  createServiceClient,
   getAccessToken,
   getUserFromToken,
   unauthorized,
@@ -28,6 +29,7 @@ import { resolveTenant } from '@/lib/tenants';
 
 export interface AuthContext {
   supabase: SupabaseClient;
+  serviceClient: SupabaseClient;
   tenant: { id: string; name: string; slug: string };
   user: { userId: string; email?: string };
   request: NextRequest;
@@ -47,7 +49,8 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
 
       const tenantSlug = request.nextUrl.searchParams.get('tenant');
       const supabase = createUserClient(accessToken);
-      const { tenant, error: tenantError } = await resolveTenant(supabase, user.userId, tenantSlug);
+      const serviceClient = createServiceClient();
+      const { tenant, error: tenantError } = await resolveTenant(serviceClient, user.userId, tenantSlug);
       if (tenantError || !tenant) return badRequest('Tenant not found');
 
       const params = routeCtx?.params
@@ -56,7 +59,7 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
           : routeCtx.params
         : ({} as P);
 
-      return await handler({ supabase, tenant, user, request, params });
+      return await handler({ supabase, serviceClient, tenant, user, request, params });
     } catch (error) {
       return serverError('Internal server error', error);
     }

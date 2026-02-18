@@ -37,11 +37,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // TODO: In a multi-tenant scenario, this should come from:
-  // - URL subdomain (e.g., acme.inspectos.com)
-  // - URL path parameter (e.g., /tenants/acme/...)
-  // - User session after authentication
-  // For now, use environment variable as the tenant identifier
   const tenantSlug = process.env.NEXT_PUBLIC_TENANT_SLUG || "acme-inspections";
 
   return (
@@ -58,6 +53,8 @@ export default function RootLayout({
               <Toaster />
             </ReactQueryProvider>
           </TenantProvider>
+          {/* Stable portal container — prevents Radix removeChild race with Next.js navigation */}
+          <div id="portal-root" />
         </ThemeProvider>
       </body>
     </html>

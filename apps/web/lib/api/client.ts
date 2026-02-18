@@ -228,19 +228,12 @@ export function createApiClient(tenantSlug: string): ApiClient {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
   const getAccessToken = async (): Promise<string | null> => {
-    // In development mode with BYPASS_AUTH, use a dummy token
-    // Supports: local dev, Vercel preview, and custom dev deployments (dev.inspectos.co)
-    const isDevelopment =
-      process.env.NODE_ENV === 'development' ||
-      process.env.NEXT_PUBLIC_VERCEL_ENV === 'preview' ||
-      process.env.NEXT_PUBLIC_IS_DEV_DEPLOYMENT === 'true';
-
-    if (isDevelopment) {
-      // Return bypass token for development - server will handle BYPASS_AUTH
+    // Only bypass auth when BYPASS_AUTH is explicitly enabled
+    const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
+    if (bypassAuth) {
       return 'bypass-token';
     }
 
-    // Production: get real access token from Supabase auth
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
@@ -248,7 +241,28 @@ export function createApiClient(tenantSlug: string): ApiClient {
       return null;
     }
 
-    return session?.access_token ?? null;
+    if (session?.access_token) {
+      return session.access_token;
+    }
+
+    // getSession() can return null briefly on first render before Supabase
+    // has loaded the session from localStorage. Wait for the next auth state
+    // change (INITIAL_SESSION fires for every new listener registration).
+    return new Promise<string | null>((resolve) => {
+      const timer = setTimeout(() => {
+        unsub();
+        resolve(null);
+      }, 3000);
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+        clearTimeout(timer);
+        unsub();
+        resolve(s?.access_token ?? null);
+      });
+
+      // alias so the timeout callback can call it
+      function unsub() { subscription.unsubscribe(); }
+    });
   };
 
   return new ApiClient(baseUrl, getAccessToken, tenantSlug);

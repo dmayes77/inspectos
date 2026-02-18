@@ -8,8 +8,8 @@ import { withAuth } from "@/lib/api/with-auth";
  * Query params:
  * - tenant: tenant slug (optional; defaults to user's first tenant)
  */
-export const GET = withAuth(async ({ supabase, tenant }) => {
-  const { data: members, error: membersError } = await supabase
+export const GET = withAuth(async ({ serviceClient, tenant }) => {
+  const { data: members, error: membersError } = await serviceClient
     .from("tenant_members")
     .select("user_id, role, profiles(id, full_name, email)")
     .eq("tenant_id", tenant.id)

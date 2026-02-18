@@ -25,7 +25,8 @@ function SheetClose({
 function SheetPortal({
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+  const container = typeof document !== "undefined" ? document.getElementById("portal-root") ?? document.body : undefined;
+  return <SheetPrimitive.Portal data-slot="sheet-portal" container={container} {...props} />
 }
 
 function SheetOverlay({

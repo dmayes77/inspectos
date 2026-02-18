@@ -47,6 +47,12 @@ function AdminShellContent({ children, headerActions, user }: AdminShellProps) {
     }
   }, [mounted, isLoading, settings]);
 
+  // Close all portals on navigation to prevent Radix removeChild race
+  useEffect(() => {
+    setCommandOpen(false);
+    setNotificationsOpen(false);
+  }, [pathname]);
+
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const isCmdK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";

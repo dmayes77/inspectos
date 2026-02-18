@@ -167,18 +167,14 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       { rel: "apple-touch-icon", href: faviconUrl, sizes: "180x180" },
     ];
 
-    document
-      .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
-      .forEach((link) => {
-        if (link.parentNode) {
-          link.parentNode.removeChild(link);
-        }
-      });
+    // Only remove links we previously added — never touch Next.js-managed <link> tags
+    document.querySelectorAll('link[data-branding="true"]').forEach((link) => link.remove());
 
     iconLinks.forEach(({ rel, href, type: linkType, sizes }) => {
       const link = document.createElement("link");
       link.rel = rel;
       link.href = href;
+      link.setAttribute("data-branding", "true");
       if (linkType) link.type = linkType;
       if (sizes) link.sizes = sizes;
       document.head.appendChild(link);
