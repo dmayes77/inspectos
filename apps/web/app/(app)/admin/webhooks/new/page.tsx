@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminShell } from "@/components/layout/admin-shell";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WebhookForm } from "@/components/webhooks/webhook-form";
-import { mockAdminUser } from "@/lib/constants/mock-users";
 
 export default function NewWebhookPage() {
   const router = useRouter();
@@ -20,43 +18,41 @@ export default function NewWebhookPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-6">
-        <PageHeader
-          breadcrumb={
-            <>
-              <Link href="/admin/overview" className="hover:text-foreground">
-                Overview
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <Link href="/admin/automations" className="hover:text-foreground">
-                Automations
-              </Link>
-              <span className="text-muted-foreground">/</span>
-                  <Link href="/admin/webhooks" className="hover:text-foreground">
-                Webhooks
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <span>Create</span>
-            </>
-          }
-          title="Create Webhook"
-          description="Configure a webhook to receive real-time event notifications."
-          backHref="/admin/webhooks"
-        />
+    <div className="space-y-6">
+      <PageHeader
+        breadcrumb={
+          <>
+            <Link href="/admin/overview" className="hover:text-foreground">
+              Overview
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <Link href="/admin/automations" className="hover:text-foreground">
+              Automations
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <Link href="/admin/webhooks" className="hover:text-foreground">
+              Webhooks
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span>Create</span>
+          </>
+        }
+        title="Create Webhook"
+        description="Configure a webhook to receive real-time event notifications."
+        backHref="/admin/webhooks"
+      />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Webhook Details</CardTitle>
-            <CardDescription>
-              Connect to Zapier, Make, or any custom endpoint to receive webhook events.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <WebhookForm mode="create" onSuccess={handleSuccess} onCancel={handleCancel} />
-          </CardContent>
-        </Card>
-      </div>
-    </AdminShell>
+      <Card>
+        <CardHeader>
+          <CardTitle>Webhook Details</CardTitle>
+          <CardDescription>
+            Connect to Zapier, Make, or any custom endpoint to receive webhook events.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <WebhookForm mode="create" onSuccess={handleSuccess} onCancel={handleCancel} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

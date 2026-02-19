@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AdminShell } from "@/components/layout/admin-shell";
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader } from "@/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreVertical, Webhook, Pause, Play, Trash2, ExternalLink, TestTube } from "lucide-react";
-import { mockAdminUser } from "@/lib/constants/mock-users";
 import { useWebhooks, useDeleteWebhook, useUpdateWebhook } from "@/hooks/use-webhooks";
 import { WebhookDialog } from "@/components/webhooks/webhook-dialog";
 import { TestWebhookDialog } from "@/components/webhooks/test-webhook-dialog";
@@ -79,13 +77,13 @@ export default function WebhooksPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge color="success">Active</Badge>;
       case "paused":
-        return <Badge variant="secondary">Paused</Badge>;
+        return <Badge color="warning">Paused</Badge>;
       case "failed":
-        return <Badge variant="destructive">Failed</Badge>;
+        return <Badge color="error">Failed</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge color="light" className="border border-border">{status}</Badge>;
     }
   };
 
@@ -100,8 +98,7 @@ export default function WebhooksPage() {
   };
 
   return (
-    <AdminShell user={mockAdminUser}>
-      <div className="space-y-4">
+    <div className="space-y-4">
           <PageHeader
             breadcrumb={
             <>
@@ -201,7 +198,7 @@ export default function WebhooksPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{webhook.events.length} events</Badge>
+                          <Badge color="light" className="border border-border">{webhook.events.length} events</Badge>
                         </TableCell>
                         <TableCell>{getStatusBadge(webhook.status)}</TableCell>
                         <TableCell>
@@ -270,7 +267,6 @@ export default function WebhooksPage() {
             </CardContent>
           </Card>
         )}
-      </div>
 
       {editingWebhook && (
         <WebhookDialog
@@ -306,6 +302,6 @@ export default function WebhooksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminShell>
+    </div>
   );
 }
