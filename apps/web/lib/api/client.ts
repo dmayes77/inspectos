@@ -154,7 +154,8 @@ export class ApiClient {
   private async executeRequest<T>(
     endpoint: string,
     options: RequestInit,
-    retryCount = 0
+    retryCount = 0,
+    includeBusinessScope = true
   ): Promise<T> {
     const token = await this.getAccessToken();
 
@@ -163,7 +164,8 @@ export class ApiClient {
     }
 
     // Build URL with optional business query parameter.
-    const hasBusinessIdentifier = this.businessIdentifier.trim().length > 0;
+    const hasBusinessIdentifier =
+      includeBusinessScope && this.businessIdentifier.trim().length > 0;
     const scopeQuery = hasBusinessIdentifier
       ? `${endpoint.includes('?') ? '&' : '?'}business=${encodeURIComponent(this.businessIdentifier)}`
       : "";
@@ -181,6 +183,16 @@ export class ApiClient {
 
       if (!response.ok) {
         const error = await ApiError.fromResponse(response);
+
+        // If the provided business scope is invalid for this user, retry once
+        // without it and let the backend resolve the default tenant membership.
+        if (
+          includeBusinessScope &&
+          response.status === 400 &&
+          error.message === "Business not found"
+        ) {
+          return this.executeRequest<T>(endpoint, options, retryCount, false);
+        }
 
         // Retry on retryable status codes
         if (
