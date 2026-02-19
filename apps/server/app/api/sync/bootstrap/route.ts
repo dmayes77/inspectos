@@ -21,7 +21,7 @@ import {
  * - Services
  *
  * Query params:
- * - tenant: tenant slug (required)
+ * - business: business slug or business ID (required)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -35,22 +35,33 @@ export async function GET(request: NextRequest) {
       return unauthorized('Invalid access token');
     }
 
-    const tenantSlug = request.nextUrl.searchParams.get('tenant');
-    if (!tenantSlug) {
-      return badRequest('Missing tenant parameter');
+    const businessIdentifier = request.nextUrl.searchParams.get('business');
+    if (!businessIdentifier) {
+      return badRequest('Missing business parameter');
     }
 
     const supabase = createUserClient(accessToken);
 
     // Get tenant and verify membership
-    const { data: tenant, error: tenantError } = await supabase
+    const { data: tenantBySlug, error: tenantSlugError } = await supabase
       .from('tenants')
-      .select('id, name, slug')
-      .eq('slug', tenantSlug)
-      .single();
+      .select('id, name, slug, business_id')
+      .eq('slug', businessIdentifier)
+      .maybeSingle();
+
+    const tenantByBusinessId = !tenantBySlug
+      ? await supabase
+          .from('tenants')
+          .select('id, name, slug, business_id')
+          .eq('business_id', businessIdentifier.toUpperCase())
+          .maybeSingle()
+      : { data: null, error: null };
+
+    const tenant = tenantBySlug ?? tenantByBusinessId.data;
+    const tenantError = tenantBySlug ? tenantSlugError : tenantByBusinessId.error;
 
     if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
+      return badRequest('Business not found');
     }
 
     // Verify user is a member of this tenant
@@ -62,7 +73,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (membershipError || !membership) {
-      return unauthorized('Not a member of this tenant');
+      return unauthorized('Not a member of this business');
     }
 
     // Get user profile
@@ -161,10 +172,11 @@ export async function GET(request: NextRequest) {
     return Response.json({
       success: true,
       data: {
-        tenant: {
+        business: {
           id: tenant.id,
           name: tenant.name,
-          slug: tenant.slug
+          slug: tenant.slug,
+          business_id: tenant.business_id
         },
         user: {
           id: user.userId,

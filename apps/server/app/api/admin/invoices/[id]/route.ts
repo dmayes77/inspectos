@@ -1,5 +1,5 @@
 import { badRequest, notFound, serverError, success } from '@/lib/supabase';
-import { withAuth } from '@/lib/api/with-auth';
+import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import { formatInvoiceNumber } from '@inspectos/shared/utils/invoices';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildInvoicePayload } from '@/lib/webhooks/payloads';
@@ -47,7 +47,10 @@ const normalizeDate = (value?: string | null) => {
 /**
  * GET /api/admin/invoices/[id]
  */
-export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
+export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, params }) => {
+  const permissionCheck = requirePermission(memberRole, 'view_invoices', 'You do not have permission to view invoices');
+  if (permissionCheck) return permissionCheck;
+
   const { id } = params;
   const invoiceId = id?.trim?.() ?? "";
 
@@ -68,7 +71,10 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
 /**
  * PATCH /api/admin/invoices/[id]
  */
-export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
+export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, params, request }) => {
+  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to update invoices');
+  if (permissionCheck) return permissionCheck;
+
   const { id } = params;
   const invoiceId = id?.trim?.() ?? "";
 
@@ -173,7 +179,10 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, params,
 /**
  * DELETE /api/admin/invoices/[id]
  */
-export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
+export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, params }) => {
+  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to delete invoices');
+  if (permissionCheck) return permissionCheck;
+
   const { id } = params;
   const invoiceId = id?.trim?.() ?? "";
 

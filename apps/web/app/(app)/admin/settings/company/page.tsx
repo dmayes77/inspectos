@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
-import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
+import { Copy, Loader2, RefreshCw } from "lucide-react";
+import { useRegenerateApiKey, useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 
 export default function CompanySettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
+  const regenerateApiKeyMutation = useRegenerateApiKey();
+  const [newApiKey, setNewApiKey] = useState<string | null>(null);
 
   const [company, setCompany] = useState({
     name: "", email: "", phone: "", website: "",
@@ -31,6 +33,31 @@ export default function CompanySettingsPage() {
         onError: (error) => toast.error(error instanceof Error ? error.message : "Failed to save"),
       }
     );
+  };
+
+  const handleCopyApiKey = async () => {
+    const apiKey = newApiKey;
+    if (!apiKey) {
+      toast.error("API key can only be copied immediately after regeneration");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      toast.success("API key copied");
+    } catch {
+      toast.error("Failed to copy API key");
+    }
+  };
+
+  const handleRegenerateApiKey = () => {
+    regenerateApiKeyMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        setNewApiKey(data.apiKey);
+        toast.success("API key regenerated. Copy and store it now.");
+      },
+      onError: (error) => toast.error(error instanceof Error ? error.message : "Failed to regenerate API key"),
+    });
   };
 
   if (isLoading) {
@@ -86,6 +113,52 @@ export default function CompanySettingsPage() {
             <div className="space-y-2">
               <Label htmlFor="company-zip">ZIP Code</Label>
               <Input id="company-zip" value={company.zip} onChange={(e) => setCompany({ ...company, zip: e.target.value })} />
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold">API Access</h3>
+              <p className="text-xs text-muted-foreground mt-1">Use your Business ID and API key to authenticate external integrations.</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Business ID</Label>
+                <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-mono tracking-wide">
+                  {settings?.business?.businessId ?? "—"}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>API Key</Label>
+                <div className="flex gap-2">
+                  <div className="min-w-0 flex-1 rounded-md border bg-muted/30 px-3 py-2 text-sm font-mono break-all">
+                    {newApiKey ?? settings?.business?.apiKeyPreview ?? "—"}
+                  </div>
+                  <Button type="button" variant="outline" onClick={handleCopyApiKey} disabled={!newApiKey}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRegenerateApiKey}
+                    disabled={regenerateApiKeyMutation.isPending}
+                  >
+                    {regenerateApiKeyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  For security, full API keys are shown only once after regeneration.
+                </p>
+                {settings?.business?.apiKeyLastRotatedAt ? (
+                  <p className="text-xs text-muted-foreground">
+                    Last rotated: {new Date(settings.business.apiKeyLastRotatedAt).toLocaleString()}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
 

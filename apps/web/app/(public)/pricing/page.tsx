@@ -4,137 +4,119 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Check,
-  X,
-  Smartphone,
-  FileText,
+  BarChart3,
+  Brain,
   Calendar,
   Shield,
 } from "lucide-react";
 
 const plans = [
   {
-    name: "Pro",
-    description: "For solo inspectors",
-    monthlyPrice: 79,
-    annualPrice: 790,
-    inspectors: "1 inspector",
+    name: "Growth",
+    description: "For owner-led companies",
+    monthlyPrice: 399,
+    annualPrice: 3990,
+    inspectors: "Up to 5 inspectors",
+    includedInspectors: "First inspector included",
+    additionalSeat: 89,
+    seatCapNote: "Additional seats up to 5 total",
     popular: false,
     features: [
-      { name: "Unlimited inspections", included: true },
-      { name: "Offline mode", included: true },
-      { name: "Photo capture & annotation", included: true },
-      { name: "PDF reports", included: true },
-      { name: "Client booking portal", included: true },
-      { name: "Payment collection", included: true },
-      { name: "Custom branding", included: true },
-      { name: "3 report templates", included: true },
-      { name: "Voice notes", included: true },
-      { name: "Basic analytics", included: true },
-      { name: "Email support", included: true },
-      { name: "Team management", included: false },
-      { name: "Inspector scheduling", included: false },
-      { name: "API access", included: false },
+      "Unlimited inspections and reports",
+      "Order-centric operations dashboard",
+      "Baseline automations + reminders",
+      "Business ID + API key access",
+      "Core performance analytics",
+      "Priority email support",
     ],
   },
   {
     name: "Team",
-    description: "For growing teams",
-    monthlyPrice: 159,
-    annualPrice: 1590,
-    inspectors: "5 inspectors included",
-    additionalSeat: 29,
+    description: "For scaling operations",
+    monthlyPrice: 1290,
+    annualPrice: 12900,
+    inspectors: "Up to 15 inspectors",
+    includedInspectors: "First 5 inspectors included",
+    additionalSeat: 79,
+    seatCapNote: "Additional seats up to 15 total",
     popular: true,
     features: [
-      { name: "Unlimited inspections", included: true },
-      { name: "Offline mode", included: true },
-      { name: "Photo capture & annotation", included: true },
-      { name: "PDF reports", included: true },
-      { name: "Client booking portal", included: true },
-      { name: "Payment collection", included: true },
-      { name: "Custom branding", included: true },
-      { name: "Unlimited report templates", included: true },
-      { name: "Voice notes", included: true },
-      { name: "Basic analytics", included: true },
-      { name: "Priority support", included: true },
-      { name: "Team management", included: true },
-      { name: "Inspector scheduling", included: true },
-      { name: "API access", included: false },
+      "Everything in Growth",
+      "Advanced team management and controls",
+      "Expanded workflow automations",
+      "Service line performance analytics",
+      "Referral and channel performance views",
+      "Priority implementation support",
     ],
   },
   {
-    name: "Business",
-    description: "For inspection firms",
-    monthlyPrice: 279,
-    annualPrice: 2790,
-    inspectors: "15 inspectors included",
-    additionalSeat: 25,
+    name: "Firm",
+    description: "For multi-team and multi-office firms",
+    monthlyPrice: null,
+    annualPrice: null,
+    inspectors: "Custom inspector capacity",
+    includedInspectors: "Pricing requires consultation",
+    additionalSeat: null,
+    seatCapNote: "Business audit required for scoped proposal",
     popular: false,
     features: [
-      { name: "Unlimited inspections", included: true },
-      { name: "Offline mode", included: true },
-      { name: "Photo capture & annotation", included: true },
-      { name: "PDF reports", included: true },
-      { name: "Client booking portal", included: true },
-      { name: "Payment collection", included: true },
-      { name: "Custom branding", included: true },
-      { name: "Unlimited report templates", included: true },
-      { name: "Voice notes", included: true },
-      { name: "Advanced analytics", included: true },
-      { name: "Phone support + CSM", included: true },
-      { name: "Team management", included: true },
-      { name: "Inspector scheduling", included: true },
-      { name: "API access", included: true },
+      "Everything in Team",
+      "Custom implementation and onboarding",
+      "Business audit + operating model review",
+      "Advanced analytics and advisory cadence",
+      "Dedicated success and solutions lead",
+      "Custom integration planning",
     ],
   },
 ];
 
 const highlights = [
   {
-    icon: Smartphone,
-    title: "Offline-First",
-    description: "Complete inspections without internet. Syncs when you're back online.",
+    icon: BarChart3,
+    title: "Profit Intelligence",
+    description: "Move from revenue snapshots to margin-aware operating decisions.",
   },
   {
-    icon: FileText,
-    title: "Unlimited Reports",
-    description: "Generate as many PDF reports as you need. No per-report fees.",
+    icon: Brain,
+    title: "Decision Engine",
+    description: "Understand service performance, pricing leverage, and cost-to-serve.",
   },
   {
     icon: Calendar,
-    title: "30-Day Trial",
-    description: "Try any plan free for 30 days. Cancel anytime.",
+    title: "Implementation-Led",
+    description: "Every account is onboarded against your operating model, not generic templates.",
   },
   {
     icon: Shield,
-    title: "0% Platform Fee",
-    description: "Keep all your inspection revenue. Only pay Stripe's processing fees.",
+    title: "Data Sovereignty",
+    description: "Business-level isolation and ownership-first architecture by design.",
   },
 ];
 
 const faqs = [
   {
-    question: "Can I switch plans anytime?",
-    answer: "Yes. Upgrades are immediate and prorated. Downgrades take effect at the next billing cycle.",
+    question: "Can I move between Growth and Team?",
+    answer: "Yes. We can upgrade or downgrade as your inspector count changes, with prorated billing on plan transitions.",
   },
   {
-    question: "Do you charge per report?",
-    answer: "No. All paid plans include unlimited reports. Generate as many as you need.",
+    question: "How are inspector seats counted?",
+    answer: "Growth supports up to 5 inspectors (first included). Team supports up to 15 inspectors (first 5 included).",
   },
   {
-    question: "Is there a contract?",
-    answer: "No long-term contracts. Monthly plans can be canceled anytime. Annual plans are paid upfront with 2 months free.",
+    question: "Why is Firm pricing custom?",
+    answer: "Firm plans include a consultation and business audit so pricing matches process complexity, team structure, and integration scope.",
   },
   {
-    question: "Can I add inspectors mid-cycle?",
-    answer: "Yes. Additional seats are prorated for the remainder of your billing period.",
+    question: "Do you offer annual pricing?",
+    answer: "Yes. Annual commitments are available for Growth and Team with implementation planning included.",
   },
   {
-    question: "Do you take a cut of my inspection fees?",
-    answer: "No. We charge 0% platform fee. You only pay Stripe's standard processing fees (2.9% + $0.30 per transaction).",
+    question: "Is this a report writer replacement play?",
+    answer: "No. InspectOS is positioned as inspection business infrastructure focused on operational truth and owner decision support.",
   },
   {
-    question: "What happens after the trial?",
-    answer: "Your subscription will automatically start after 30 days. You can cancel anytime before then with no charge.",
+    question: "Can we bring our own workflows and data?",
+    answer: "Yes. Team and Firm onboarding includes migration planning and operating model alignment.",
   },
 ];
 
@@ -143,13 +125,13 @@ export default function PricingPage() {
     <>
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 pt-32 pb-16 text-center">
-        <Badge className="mb-4">Simple, transparent pricing</Badge>
+        <Badge className="mb-4">Premium Pricing</Badge>
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-          Choose your plan
+          Pricing aligned to business impact
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          Start with a 30-day free trial on any plan. No hidden fees, no per-report charges.
-          Just straightforward pricing that scales with your business.
+          InspectOS is built for owner-level decisions, not commodity reporting features.
+          Choose the tier that matches your team size and operating complexity.
         </p>
       </section>
 
@@ -165,7 +147,7 @@ export default function PricingPage() {
             >
               {plan.popular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary px-3 py-1">Most Popular</Badge>
+                  <Badge variant="solid" color="primary" className="px-3 py-1">Most Popular</Badge>
                 </div>
               )}
               <CardHeader className="text-center">
@@ -175,23 +157,36 @@ export default function PricingPage() {
               <CardContent className="space-y-6">
                 {/* Price */}
                 <div className="text-center">
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-4xl font-bold">${plan.monthlyPrice}</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    or ${plan.annualPrice}/year (save ~17%)
-                  </p>
+                  {plan.monthlyPrice ? (
+                    <>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-4xl font-bold">${plan.monthlyPrice}</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        or ${plan.annualPrice}/year
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-4xl font-bold tracking-tight">Custom</div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Consultation + business audit required
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {/* Inspectors */}
                 <div className="rounded-lg bg-muted/50 p-3 text-center">
                   <p className="font-medium">{plan.inspectors}</p>
+                  <p className="text-sm text-muted-foreground">{plan.includedInspectors}</p>
                   {plan.additionalSeat && (
                     <p className="text-sm text-muted-foreground">
                       +${plan.additionalSeat}/mo per additional
                     </p>
                   )}
+                  <p className="text-xs text-muted-foreground mt-1">{plan.seatCapNote}</p>
                 </div>
 
                 {/* CTA */}
@@ -201,25 +196,17 @@ export default function PricingPage() {
                   size="md"
                   asChild
                 >
-                  <Link href="/register">Start Free Trial</Link>
+                  <Link href={plan.name === "Firm" ? "/register?intent=consultation" : "/register"}>
+                    {plan.name === "Firm" ? "Schedule Consultation" : "Book Demo"}
+                  </Link>
                 </Button>
 
                 {/* Features */}
                 <div className="space-y-3">
                   {plan.features.map((feature) => (
-                    <div key={feature.name} className="flex items-center gap-2">
-                      {feature.included ? (
-                        <Check className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <X className="h-4 w-4 text-muted-foreground/50" />
-                      )}
-                      <span
-                        className={
-                          feature.included ? "" : "text-muted-foreground/50"
-                        }
-                      >
-                        {feature.name}
-                      </span>
+                    <div key={feature} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-emerald-500" />
+                      <span>{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -251,61 +238,40 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Comparison */}
+      {/* Profit Impact */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold tracking-tight">
-            Save thousands compared to competitors
+            Profit impact at a glance
           </h2>
           <p className="mt-4 text-muted-foreground">
-            InspectOS is designed to scale with your business without breaking the bank.
+            InspectOS is priced for outcome. Teams adopt it to improve margin decisions and operating clarity.
           </p>
         </div>
 
-        <div className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-lg border">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-6 py-4 text-left font-medium">Company Size</th>
-                <th className="px-6 py-4 text-left font-medium">InspectOS</th>
-                <th className="px-6 py-4 text-left font-medium">Competitor</th>
-                <th className="px-6 py-4 text-left font-medium text-emerald-600">
-                  Annual Savings
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              <tr>
-                <td className="px-6 py-4">Solo (1 inspector)</td>
-                <td className="px-6 py-4 font-medium">$79/mo</td>
-                <td className="px-6 py-4 text-muted-foreground">$99/mo</td>
-                <td className="px-6 py-4 font-semibold text-emerald-600">$240/yr</td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4">Small (3 inspectors)</td>
-                <td className="px-6 py-4 font-medium">$217/mo</td>
-                <td className="px-6 py-4 text-muted-foreground">$277/mo</td>
-                <td className="px-6 py-4 font-semibold text-emerald-600">$720/yr</td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4">Medium (5 inspectors)</td>
-                <td className="px-6 py-4 font-medium">$159/mo</td>
-                <td className="px-6 py-4 text-muted-foreground">$455/mo</td>
-                <td className="px-6 py-4 font-semibold text-emerald-600">$3,552/yr</td>
-              </tr>
-              <tr>
-                <td className="px-6 py-4">Large (10 inspectors)</td>
-                <td className="px-6 py-4 font-medium">$304/mo</td>
-                <td className="px-6 py-4 text-muted-foreground">$900/mo</td>
-                <td className="px-6 py-4 font-semibold text-emerald-600">$7,152/yr</td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="mx-auto mt-12 grid max-w-4xl gap-4 md:grid-cols-3">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Service Margin Visibility</p>
+              <p className="mt-2 text-3xl font-bold tracking-tight">100%</p>
+              <p className="mt-2 text-sm text-muted-foreground">See profitable vs. unprofitable service lines in one operating view.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Pricing Decision Cycle</p>
+              <p className="mt-2 text-3xl font-bold tracking-tight">&lt; 1 day</p>
+              <p className="mt-2 text-sm text-muted-foreground">Move from guesswork to same-day pricing decisions backed by order data.</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tool Consolidation</p>
+              <p className="mt-2 text-3xl font-bold tracking-tight">3+</p>
+              <p className="mt-2 text-sm text-muted-foreground">Replace fragmented workflows with one operating system for inspection teams.</p>
+            </CardContent>
+          </Card>
         </div>
-
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          * Based on public pricing from Spectora. InspectOS Team tier includes 5 inspectors.
-        </p>
       </section>
 
       {/* FAQ */}
@@ -333,18 +299,17 @@ export default function PricingPage() {
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 py-16 text-center">
         <h2 className="text-3xl font-bold tracking-tight">
-          Ready to modernize your inspections?
+          Ready to run your company on operational truth?
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-          Start your 30-day free trial today. No credit card required to explore,
-          but you&apos;ll need one to activate your trial.
+          Start with a consultation to align plan, capacity, and implementation path.
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <Button size="md" asChild>
-            <Link href="/register">Start Free Trial</Link>
+            <Link href="/register?intent=consultation">Schedule Consultation</Link>
           </Button>
           <Button size="md" variant="outline" asChild>
-            <Link href="/contact">Contact Sales</Link>
+            <Link href="/register">Book Demo</Link>
           </Button>
         </div>
       </section>

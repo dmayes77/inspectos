@@ -64,7 +64,7 @@ export default function RegisterPage() {
       });
 
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error || "Failed to create tenant.");
+      if (!response.ok) throw new Error(payload?.error || "Failed to create business.");
 
       router.push("/admin/overview");
       router.refresh();

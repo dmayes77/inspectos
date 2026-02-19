@@ -1,5 +1,5 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
-import { withAuth } from '@/lib/api/with-auth';
+import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import { formatInvoiceNumber } from '@inspectos/shared/utils/invoices';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildInvoicePayload } from '@/lib/webhooks/payloads';
@@ -47,7 +47,10 @@ const normalizeDate = (value?: string | null) => {
 /**
  * GET /api/admin/invoices
  */
-export const GET = withAuth(async ({ supabase, tenant }) => {
+export const GET = withAuth(async ({ supabase, tenant, memberRole }) => {
+  const permissionCheck = requirePermission(memberRole, 'view_invoices', 'You do not have permission to view invoices');
+  if (permissionCheck) return permissionCheck;
+
   const { data, error } = await supabase
     .from('invoices')
     .select('id, status, total, issued_at, due_at, created_at, updated_at, client_id, order_id, client:clients(id, name), order:orders(id, order_number, client_id)')
@@ -65,7 +68,10 @@ export const GET = withAuth(async ({ supabase, tenant }) => {
 /**
  * POST /api/admin/invoices
  */
-export const POST = withAuth(async ({ supabase, tenant, request }) => {
+export const POST = withAuth(async ({ supabase, tenant, memberRole, request }) => {
+  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to create invoices');
+  if (permissionCheck) return permissionCheck;
+
   const payload = await request.json();
 
   const orderId = payload?.order_id?.toString?.() ?? "";

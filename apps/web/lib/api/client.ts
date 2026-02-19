@@ -54,7 +54,7 @@ const defaultRetryConfig: RetryConfig = {
 };
 
 /**
- * Centralized API client with automatic authentication and tenant context
+ * Centralized API client with automatic authentication and business context
  */
 export class ApiClient {
   private retryConfig: RetryConfig;
@@ -62,7 +62,7 @@ export class ApiClient {
   constructor(
     private baseUrl: string,
     private getAccessToken: () => Promise<string | null>,
-    private tenantSlug: string,
+    private businessIdentifier: string,
     retryConfig?: Partial<RetryConfig>
   ) {
     this.retryConfig = { ...defaultRetryConfig, ...retryConfig };
@@ -162,8 +162,12 @@ export class ApiClient {
       throw new ApiError(401, "UNAUTHORIZED", "No access token available");
     }
 
-    // Build URL with tenant query parameter
-    const url = `${this.baseUrl}${endpoint}${endpoint.includes('?') ? '&' : '?'}tenant=${encodeURIComponent(this.tenantSlug)}`;
+    // Build URL with optional business query parameter.
+    const hasBusinessIdentifier = this.businessIdentifier.trim().length > 0;
+    const scopeQuery = hasBusinessIdentifier
+      ? `${endpoint.includes('?') ? '&' : '?'}business=${encodeURIComponent(this.businessIdentifier)}`
+      : "";
+    const url = `${this.baseUrl}${endpoint}${scopeQuery}`;
 
     try {
       const response = await fetch(url, {
@@ -224,7 +228,7 @@ export class ApiClient {
 /**
  * Factory function to create an API client instance
  */
-export function createApiClient(tenantSlug: string): ApiClient {
+export function createApiClient(businessIdentifier: string): ApiClient {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
   const getAccessToken = async (): Promise<string | null> => {
@@ -265,5 +269,5 @@ export function createApiClient(tenantSlug: string): ApiClient {
     });
   };
 
-  return new ApiClient(baseUrl, getAccessToken, tenantSlug);
+  return new ApiClient(baseUrl, getAccessToken, businessIdentifier);
 }

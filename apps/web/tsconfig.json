@@ -22,9 +22,55 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@inspectos/database/client": [
+        "../../database/client/index.ts"
+      ],
+      "@inspectos/database/types": [
+        "../../database/types/index.ts"
+      ],
+      "@inspectos/database/types/*": [
+        "../../database/types/*.ts"
+      ],
+      "@inspectos/shared/types": [
+        "../../shared/types/index.ts"
+      ],
+      "@inspectos/shared/types/*": [
+        "../../shared/types/*.ts"
+      ],
+      "@inspectos/shared/validations": [
+        "../../shared/validations/index.ts"
+      ],
+      "@inspectos/shared/validations/*": [
+        "../../shared/validations/*.ts"
+      ],
+      "@inspectos/shared/utils": [
+        "../../shared/utils/index.ts"
+      ],
+      "@inspectos/shared/utils/*": [
+        "../../shared/utils/*.ts"
+      ],
+      "@inspectos/shared/constants": [
+        "../../shared/constants/index.ts"
+      ],
+      "@inspectos/shared/constants/*": [
+        "../../shared/constants/*.ts"
+      ],
+      "@inspectos/auth/client": [
+        "../../auth/client/index.ts"
+      ],
+      "@inspectos/auth/client/*": [
+        "../../auth/client/*.ts"
+      ],
+      "@inspectos/auth/server": [
+        "../../auth/server/index.ts"
+      ],
+      "@inspectos/auth/server/*": [
+        "../../auth/server/*.ts"
       ]
     }
   },

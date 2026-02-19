@@ -14,7 +14,7 @@ import {
  * Pulls changes since the last sync for incremental updates.
  *
  * Query params:
- * - tenant: tenant slug (required)
+ * - business: business slug or business ID (required)
  * - since: ISO timestamp of last sync (optional, if not provided returns all)
  * - entities: comma-separated list of entity types to pull (optional)
  */
@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
       return unauthorized('Invalid access token');
     }
 
-    const tenantSlug = request.nextUrl.searchParams.get('tenant');
-    if (!tenantSlug) {
-      return badRequest('Missing tenant parameter');
+    const businessIdentifier = request.nextUrl.searchParams.get('business');
+    if (!businessIdentifier) {
+      return badRequest('Missing business parameter');
     }
 
     const since = request.nextUrl.searchParams.get('since');
@@ -42,14 +42,25 @@ export async function GET(request: NextRequest) {
     const supabase = createUserClient(accessToken);
 
     // Get tenant and verify membership
-    const { data: tenant, error: tenantError } = await supabase
+    const { data: tenantBySlug, error: tenantSlugError } = await supabase
       .from('tenants')
       .select('id')
-      .eq('slug', tenantSlug)
-      .single();
+      .eq('slug', businessIdentifier)
+      .maybeSingle();
+
+    const tenantByBusinessId = !tenantBySlug
+      ? await supabase
+          .from('tenants')
+          .select('id')
+          .eq('business_id', businessIdentifier.toUpperCase())
+          .maybeSingle()
+      : { data: null, error: null };
+
+    const tenant = tenantBySlug ?? tenantByBusinessId.data;
+    const tenantError = tenantBySlug ? tenantSlugError : tenantByBusinessId.error;
 
     if (tenantError || !tenant) {
-      return badRequest('Tenant not found');
+      return badRequest('Business not found');
     }
 
     // Verify user is a member of this tenant
@@ -61,7 +72,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (membershipError || !membership) {
-      return unauthorized('Not a member of this tenant');
+      return unauthorized('Not a member of this business');
     }
 
     const changes: Record<string, unknown[]> = {};

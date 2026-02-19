@@ -165,7 +165,7 @@ export function PublicShell({
                   <Logo size="md" />
                 </Link>
                 <p className="text-sm text-muted-foreground">
-                  The all-in-one platform for home inspection businesses.
+                  The operating system for running an inspection business.
                 </p>
               </div>
 
@@ -234,6 +234,12 @@ export function PublicShell({
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Terms of Service
+                  </Link>
+                  <Link
+                    href="/data-charter"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Data Charter
                   </Link>
                 </nav>
               </div>

@@ -130,7 +130,7 @@ function AdminShellContent({ children, headerActions, user }: AdminShellProps) {
         />
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden overscroll-none bg-(--content-bg) [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="admin-content admin-dense mx-auto w-full max-w-none px-4 py-4 md:px-6">
+          <div className="admin-content admin-dense mx-auto w-full max-w-none px-3 py-3 md:px-4">
             {children}
           </div>
         </main>

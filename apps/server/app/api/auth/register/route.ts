@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { generateBusinessApiKey, hashBusinessApiKey } from "@/lib/api/business-api-keys";
 
 type RegisterBody = {
   email?: string;
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userId) {
-      return Response.json({ error: "Unable to resolve user for tenant creation." }, { status: 401 });
+      return Response.json({ error: "Unable to resolve user for business creation." }, { status: 401 });
     }
 
     const slug = company_slug?.trim() ? slugify(company_slug) : slugify(company_name);
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingError) {
-      return Response.json({ error: existingError.message || "Failed to check tenant slug." }, { status: 400 });
+      return Response.json({ error: existingError.message || "Failed to check business slug." }, { status: 400 });
     }
 
     if (existingTenant) {
@@ -83,11 +84,11 @@ export async function POST(request: NextRequest) {
         name: company_name,
         slug,
       })
-      .select("id, name, slug")
+      .select("id, name, slug, business_id")
       .single();
 
     if (tenantError || !tenant) {
-      return Response.json({ error: "Failed to create tenant." }, { status: 500 });
+      return Response.json({ error: "Failed to create business." }, { status: 500 });
     }
 
     const { error: memberError } = await supabaseAdmin.from("tenant_members").insert({
@@ -97,10 +98,25 @@ export async function POST(request: NextRequest) {
     });
 
     if (memberError) {
-      return Response.json({ error: "Failed to link user to tenant." }, { status: 500 });
+      return Response.json({ error: "Failed to link user to business." }, { status: 500 });
     }
 
-    return Response.json({ data: { tenant } });
+    const initialApiKey = generateBusinessApiKey();
+    const { error: apiKeyError } = await supabaseAdmin
+      .from("business_api_keys")
+      .insert({
+        tenant_id: tenant.id,
+        name: "Primary Key",
+        key_prefix: initialApiKey.slice(0, 12),
+        key_hash: hashBusinessApiKey(initialApiKey),
+        scopes: ["admin:api"],
+      });
+
+    if (apiKeyError) {
+      return Response.json({ error: "Failed to provision API access." }, { status: 500 });
+    }
+
+    return Response.json({ data: { business: tenant } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected error.";
     return Response.json({ error: message }, { status: 500 });

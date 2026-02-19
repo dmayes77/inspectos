@@ -6,16 +6,13 @@ const PROFILE_FIELDS = 'id, email, full_name, avatar_url, phone, bio, social_fac
 /**
  * GET /api/admin/profile
  */
-export const GET = withAuth(async ({ supabase, user, tenant }) => {
-  const [profileResult, memberResult] = await Promise.all([
-    supabase.from('profiles').select(PROFILE_FIELDS).eq('id', user.userId).single(),
-    supabase.from('tenant_members').select('role').eq('user_id', user.userId).eq('tenant_id', tenant.id).single(),
-  ]);
+export const GET = withAuth(async ({ supabase, user, memberRole }) => {
+  const profileResult = await supabase.from('profiles').select(PROFILE_FIELDS).eq('id', user.userId).single();
 
   if (profileResult.error) return serverError('Failed to fetch profile', profileResult.error);
   if (!profileResult.data) return notFound('Profile not found');
 
-  return success({ ...profileResult.data, role: memberResult.data?.role ?? null });
+  return success({ ...profileResult.data, role: memberRole });
 });
 
 /**

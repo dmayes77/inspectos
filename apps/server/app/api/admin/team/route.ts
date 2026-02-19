@@ -1,5 +1,5 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
-import { withAuth } from '@/lib/api/with-auth';
+import { requirePermission, withAuth } from '@/lib/api/with-auth';
 
 function mapRole(role: string | null | undefined) {
   switch ((role ?? '').toLowerCase()) {
@@ -10,6 +10,7 @@ function mapRole(role: string | null | undefined) {
     case 'inspector':
       return 'INSPECTOR';
     case 'viewer':
+    case 'member':
       return 'OFFICE_STAFF';
     default:
       return 'OFFICE_STAFF';
@@ -26,7 +27,10 @@ function formatJoinedDate(value: string | null | undefined) {
 /**
  * GET /api/admin/team
  */
-export const GET = withAuth(async ({ serviceClient, tenant }) => {
+export const GET = withAuth(async ({ serviceClient, tenant, memberRole }) => {
+  const permissionCheck = requirePermission(memberRole, 'view_team', 'You do not have permission to view team members');
+  if (permissionCheck) return permissionCheck;
+
   const { data, error } = await serviceClient
     .from('tenant_members')
     .select('user_id, role, created_at, profiles(id, full_name, email, avatar_url, phone)')
@@ -63,7 +67,10 @@ export const GET = withAuth(async ({ serviceClient, tenant }) => {
 /**
  * POST /api/admin/team
  */
-export const POST = withAuth(async ({ serviceClient, tenant, request }) => {
+export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRole, request }) => {
+  const createPermissionCheck = requirePermission(actorRole, 'create_team', 'You do not have permission to add team members');
+  if (createPermissionCheck) return createPermissionCheck;
+
   const body = await request.json();
   const { email: rawEmail, name, role: rawRole, phone } = body;
 
@@ -95,11 +102,22 @@ export const POST = withAuth(async ({ serviceClient, tenant, request }) => {
       );
   }
 
-  const memberRole = ['owner', 'admin', 'inspector', 'viewer'].includes(role ?? '') ? role : 'viewer';
+  const nextMemberRole = ['owner', 'admin', 'inspector', 'viewer', 'member'].includes(role ?? '')
+    ? ((role === 'member' ? 'viewer' : role) as 'owner' | 'admin' | 'inspector' | 'viewer')
+    : 'viewer';
+
+  if (rawRole) {
+    const rolePermissionCheck = requirePermission(actorRole, 'manage_roles', 'You do not have permission to manage member roles');
+    if (rolePermissionCheck) return rolePermissionCheck;
+  }
+
+  if (nextMemberRole === 'owner' && actorRole !== 'owner') {
+    return badRequest('Only owners can assign owner role');
+  }
 
   const { error: memberError } = await serviceClient
     .from('tenant_members')
-    .upsert({ tenant_id: tenant.id, user_id: userId, role: memberRole }, { onConflict: 'tenant_id,user_id' });
+    .upsert({ tenant_id: tenant.id, user_id: userId, role: nextMemberRole }, { onConflict: 'tenant_id,user_id' });
 
   if (memberError) {
     return serverError('Failed to create team member', memberError);

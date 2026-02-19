@@ -7,9 +7,9 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const tenantId = process.env.SUPABASE_TENANT_ID!;
+const businessId = process.env.SUPABASE_BUSINESS_ID!;
 
-if (!supabaseUrl || !supabaseKey || !tenantId) {
+if (!supabaseUrl || !supabaseKey || !businessId) {
   console.error('Missing required environment variables');
   process.exit(1);
 }
@@ -18,6 +18,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkData() {
   console.log('=== Checking Inspections Data ===\n');
+  const { data: business, error: businessError } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('business_id', businessId.toUpperCase())
+    .maybeSingle();
+
+  if (businessError || !business) {
+    console.error('Business not found for SUPABASE_BUSINESS_ID');
+    process.exit(1);
+  }
+
+  const tenantId = business.id;
 
   // 1. Get a sample inspection
   const { data: inspections, error: inspError } = await supabase

@@ -77,6 +77,13 @@ export interface Order {
   discount: number;
   tax: number;
   total: number;
+  labor_cost?: number;
+  travel_cost?: number;
+  overhead_cost?: number;
+  other_cost?: number;
+  total_cost?: number;
+  gross_margin?: number;
+  gross_margin_pct?: number;
   payment_status: PaymentStatus;
   report_delivered_at: string | null;
   source: string | null;
@@ -199,6 +206,10 @@ export interface UpdateOrderInput {
   discount?: number;
   tax?: number;
   total?: number;
+  labor_cost?: number;
+  travel_cost?: number;
+  overhead_cost?: number;
+  other_cost?: number;
   payment_status?: PaymentStatus;
   report_delivered_at?: string | null;
   source?: string;

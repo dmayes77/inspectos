@@ -23,6 +23,9 @@ interface AdminUserMenuProps {
 }
 
 export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
+  const itemClassName =
+    "group rounded-lg px-3 py-2 data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary focus:bg-primary/10 focus:text-primary";
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     // Redirect is handled by AdminLayoutClient's onAuthStateChange listener
@@ -73,34 +76,34 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
         {/* Menu items */}
         <ul className="flex flex-col gap-0.5 pt-3 pb-3 border-b border-border">
           <li>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className={itemClassName}>
               <Link
                 href="/admin/profile"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+                className="flex items-center gap-3 text-sm font-medium text-inherit transition-colors cursor-pointer"
               >
-                <UserCircleIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <UserCircleIcon className="h-5 w-5 text-current opacity-70 transition-opacity group-hover:opacity-100" />
                 Edit profile
               </Link>
             </DropdownMenuItem>
           </li>
           <li>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className={itemClassName}>
               <Link
                 href={settingsHref}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+                className="flex items-center gap-3 text-sm font-medium text-inherit transition-colors cursor-pointer"
               >
-                <GearIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <GearIcon className="h-5 w-5 text-current opacity-70 transition-opacity group-hover:opacity-100" />
                 Account settings
               </Link>
             </DropdownMenuItem>
           </li>
           <li>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className={itemClassName}>
               <Link
                 href="/admin/settings"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+                className="flex items-center gap-3 text-sm font-medium text-inherit transition-colors cursor-pointer"
               >
-                <InfoCircleIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <InfoCircleIcon className="h-5 w-5 text-current opacity-70 transition-opacity group-hover:opacity-100" />
                 Support
               </Link>
             </DropdownMenuItem>
@@ -108,13 +111,13 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
         </ul>
 
         {/* Sign out */}
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className={itemClassName}>
           <button
             type="button"
             onClick={handleSignOut}
-            className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors group cursor-pointer"
+            className="mt-3 flex w-full items-center gap-3 text-sm font-medium text-inherit transition-colors cursor-pointer"
           >
-            <SignOutIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+            <SignOutIcon className="h-5 w-5 text-current opacity-70 transition-opacity group-hover:opacity-100" />
             Sign out
           </button>
         </DropdownMenuItem>

@@ -14,22 +14,23 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import {
-  ClipboardList,
-  DollarSign,
-  Users,
-  TrendingUp,
-  Calendar,
   ArrowRight,
+  Calendar,
+  CircleAlert,
+  DollarSign,
+  Percent,
   Plus,
+  ShieldAlert,
+  Users,
 } from "lucide-react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
   XAxis,
   YAxis,
-  CartesianGrid,
-  AreaChart,
-  Area,
 } from "recharts";
 
 import { can } from "@/lib/admin/permissions";
@@ -39,55 +40,57 @@ import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const revenueChartConfig = {
-  revenue: { label: "Revenue", color: "hsl(var(--primary))" },
+const decisionTrendConfig = {
+  margin: { label: "Margin", color: "var(--color-brand-500)" },
+  avgCost: { label: "Avg Cost", color: "var(--color-brand-300)" },
 } satisfies ChartConfig;
 
-const volumeChartConfig = {
-  orders: { label: "Inspections", color: "hsl(var(--primary))" },
+const referralConfig = {
+  margin: { label: "Margin", color: "var(--color-brand-500)" },
 } satisfies ChartConfig;
 
-const formatStatusLabel = (status?: string | null) => {
-  if (!status) return "—";
-  return status
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
+const formatMoney = (value: number) => `$${Math.round(value).toLocaleString()}`;
 
 const getOrderAddress = (order: {
   property?: {
     address_line1?: string;
-    address_line2?: string | null;
     city?: string;
     state?: string;
-    zip_code?: string;
   };
 }) => {
   const property = order.property;
   if (!property) return "Property unavailable";
-  return [property.address_line1, `${property.city}, ${property.state}`]
-    .filter(Boolean)
-    .join(" · ");
+  return [property.address_line1, `${property.city}, ${property.state}`].filter(Boolean).join(" · ");
 };
 
-const getServiceSummary = (order: { services?: Array<{ name: string }> | null }) => {
-  const services = order.services ?? [];
-  if (services.length === 0) return "No services";
-  if (services.length === 1) return services[0].name;
-  return `${services[0].name} +${services.length - 1}`;
+const getOrderTotalCost = (order: {
+  total_cost?: number;
+  labor_cost?: number;
+  travel_cost?: number;
+  overhead_cost?: number;
+  other_cost?: number;
+}) => {
+  if (typeof order.total_cost === "number") return order.total_cost;
+  return (order.labor_cost ?? 0) + (order.travel_cost ?? 0) + (order.overhead_cost ?? 0) + (order.other_cost ?? 0);
 };
 
-type BadgeColor = "light" | "info" | "warning" | "success" | "error";
+const getOrderGrossMargin = (order: {
+  gross_margin?: number;
+  total?: number;
+  total_cost?: number;
+  labor_cost?: number;
+  travel_cost?: number;
+  overhead_cost?: number;
+  other_cost?: number;
+}) => {
+  if (typeof order.gross_margin === "number") return order.gross_margin;
+  return (order.total ?? 0) - getOrderTotalCost(order);
+};
 
-const STATUS_VARIANT: Record<string, BadgeColor> = {
-  pending: "light",
-  scheduled: "info",
-  in_progress: "warning",
-  pending_report: "light",
-  delivered: "success",
-  completed: "success",
-  cancelled: "error",
+const parseDate = (value?: string | null) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 export default function OverviewPage() {
@@ -99,117 +102,191 @@ export default function OverviewPage() {
   const clients = useMemo(() => clientsData ?? [], [clientsData]);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todayOrders = orders.filter((order) => order.scheduled_date === today);
+  const todayOrders = useMemo(() => orders.filter((order) => order.scheduled_date === today), [orders, today]);
 
-  // Build last-7-days chart data
-  const weeklyData = useMemo(() => {
-    const days: { label: string; date: string; orders: number; revenue: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
-      const label = d.toLocaleDateString("en-US", { weekday: "short" });
-      const dayOrders = orders.filter((o) => o.scheduled_date === dateStr);
-      days.push({
-        label,
-        date: dateStr,
-        orders: dayOrders.length,
-        revenue: dayOrders.reduce((s, o) => s + (o.total ?? 0), 0),
-      });
-    }
-    return days;
-  }, [orders]);
+  const decisionData = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date(now);
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
-  const stats = useMemo(() => {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-    const thisWeek = orders.filter((o) => o.scheduled_date && new Date(o.scheduled_date) >= weekAgo);
-    const lastWeek = orders.filter((o) => {
-      if (!o.scheduled_date) return false;
-      const d = new Date(o.scheduled_date);
-      return d >= twoWeeksAgo && d < weekAgo;
+    const this30 = orders.filter((order) => {
+      const date = parseDate(order.scheduled_date ?? order.created_at);
+      return Boolean(date && date >= thirtyDaysAgo);
     });
 
-    const revenueThis = thisWeek.reduce((s, o) => s + (o.total ?? 0), 0);
-    const revenueLast = lastWeek.reduce((s, o) => s + (o.total ?? 0), 0);
-    const revDelta = revenueLast > 0 ? Math.round(((revenueThis - revenueLast) / revenueLast) * 100) : null;
+    const prior30 = orders.filter((order) => {
+      const date = parseDate(order.scheduled_date ?? order.created_at);
+      return Boolean(date && date >= sixtyDaysAgo && date < thirtyDaysAgo);
+    });
 
-    const countDelta = lastWeek.length > 0 ? thisWeek.length - lastWeek.length : null;
+    const computeTotals = (source: typeof orders) => {
+      const revenue = source.reduce((sum, order) => sum + (order.total ?? 0), 0);
+      const cost = source.reduce((sum, order) => sum + getOrderTotalCost(order), 0);
+      const margin = source.reduce((sum, order) => sum + getOrderGrossMargin(order), 0);
+      return { revenue, cost, margin };
+    };
 
-    const outstandingOrders = orders.filter((o) => o.payment_status === "unpaid");
-    const outstandingTotal = outstandingOrders.reduce((s, o) => s + (o.total ?? 0), 0);
+    const thisTotals = computeTotals(this30);
+    const priorTotals = computeTotals(prior30);
 
-    return [
-      {
-        title: "Inspections This Week",
-        value: thisWeek.length.toString(),
-        delta: countDelta,
-        deltaLabel: "vs last week",
-        icon: ClipboardList,
-      },
-      {
-        title: "Revenue This Week",
-        value: `$${revenueThis.toLocaleString()}`,
-        delta: revDelta,
-        deltaLabel: "vs last week",
-        icon: DollarSign,
-      },
-      {
-        title: "Active Clients",
-        value: clients.length.toString(),
-        delta: null,
-        deltaLabel: "total clients",
-        icon: Users,
-      },
-      {
-        title: "Outstanding",
-        value: `$${outstandingTotal.toLocaleString()}`,
-        delta: null,
-        deltaLabel: `${outstandingOrders.length} unpaid`,
-        icon: TrendingUp,
-      },
-    ];
-  }, [clients, orders]);
+    const marginPct = thisTotals.revenue > 0 ? (thisTotals.margin / thisTotals.revenue) * 100 : 0;
+    const priorMarginPct = priorTotals.revenue > 0 ? (priorTotals.margin / priorTotals.revenue) * 100 : 0;
+    const marginDelta = priorTotals.margin > 0 ? ((thisTotals.margin - priorTotals.margin) / priorTotals.margin) * 100 : null;
+    const marginRateDelta = priorMarginPct > 0 ? marginPct - priorMarginPct : null;
 
-  const recentActivity = useMemo(() => {
-    return orders
-      .slice()
-      .sort((a, b) => (a.updated_at > b.updated_at ? -1 : 1))
-      .slice(0, 5)
-      .map((order) => ({
-        id: order.id,
-        action: formatStatusLabel(order.status),
-        address: getOrderAddress(order),
-        client: order.client?.name ?? "No client",
-        time: new Date(order.updated_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
-        status: order.status,
-      }));
+    const avgCostPerInspection = this30.length > 0 ? thisTotals.cost / this30.length : 0;
+
+    const lowMarginOrders = this30
+      .map((order) => {
+        const margin = getOrderGrossMargin(order);
+        const revenue = order.total ?? 0;
+        const marginPctForOrder = revenue > 0 ? (margin / revenue) * 100 : 0;
+        return {
+          id: order.id,
+          orderNumber: order.order_number,
+          scheduledDate: order.scheduled_date,
+          address: getOrderAddress(order),
+          margin,
+          marginPct: marginPctForOrder,
+          source: order.source?.trim() || "Unknown",
+        };
+      })
+      .filter((order) => order.marginPct < 25)
+      .sort((a, b) => a.marginPct - b.marginPct)
+      .slice(0, 6);
+
+    const atRiskMargin = lowMarginOrders.reduce((sum, order) => sum + order.margin, 0);
+
+    const serviceMetrics = new Map<string, { service: string; inspections: number; revenue: number; margin: number }>();
+    const referralMetrics = new Map<string, { source: string; inspections: number; revenue: number; margin: number }>();
+
+    this30.forEach((order) => {
+      const orderRevenue = order.total ?? 0;
+      const orderMargin = getOrderGrossMargin(order);
+      const source = order.source?.trim() || "Unknown";
+
+      const referralRow = referralMetrics.get(source) ?? { source, inspections: 0, revenue: 0, margin: 0 };
+      referralRow.inspections += 1;
+      referralRow.revenue += orderRevenue;
+      referralRow.margin += orderMargin;
+      referralMetrics.set(source, referralRow);
+
+      const services = order.services?.length ? order.services : [{ name: "Unassigned Service", price: orderRevenue }];
+      const totalServicePrice = services.reduce((sum, service) => sum + (service.price ?? 0), 0);
+      const fallbackShare = services.length > 0 ? 1 / services.length : 1;
+
+      services.forEach((service) => {
+        const name = service.name?.trim() || "Unnamed Service";
+        const share = totalServicePrice > 0 ? (service.price ?? 0) / totalServicePrice : fallbackShare;
+        const serviceRevenue = orderRevenue * share;
+        const serviceMargin = orderMargin * share;
+
+        const row = serviceMetrics.get(name) ?? { service: name, inspections: 0, revenue: 0, margin: 0 };
+        row.inspections += 1;
+        row.revenue += serviceRevenue;
+        row.margin += serviceMargin;
+        serviceMetrics.set(name, row);
+      });
+    });
+
+    const serviceLeaderboard = Array.from(serviceMetrics.values())
+      .map((service) => ({
+        ...service,
+        marginPct: service.revenue > 0 ? (service.margin / service.revenue) * 100 : 0,
+      }))
+      .sort((a, b) => b.margin - a.margin);
+
+    const topServices = serviceLeaderboard.slice(0, 5);
+    const bottomServices = [...serviceLeaderboard]
+      .sort((a, b) => a.marginPct - b.marginPct)
+      .slice(0, 5);
+
+    const referralLeaderboard = Array.from(referralMetrics.values())
+      .sort((a, b) => b.margin - a.margin)
+      .slice(0, 6);
+
+    const weekStarts: Date[] = [];
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(startOfToday);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() - i * 7);
+      weekStarts.push(weekStart);
+    }
+
+    const trendBuckets = weekStarts.map((weekStart) => ({
+      label: weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      orders: 0,
+      revenue: 0,
+      cost: 0,
+      margin: 0,
+      avgCost: 0,
+    }));
+
+    this30.forEach((order) => {
+      const scheduled = parseDate(order.scheduled_date ?? order.created_at);
+      if (!scheduled) return;
+      for (let i = 0; i < trendBuckets.length; i++) {
+        const start = weekStarts[i];
+        const end = new Date(start);
+        end.setDate(end.getDate() + 7);
+        if (scheduled >= start && scheduled < end) {
+          trendBuckets[i].orders += 1;
+          trendBuckets[i].revenue += order.total ?? 0;
+          trendBuckets[i].cost += getOrderTotalCost(order);
+          trendBuckets[i].margin += getOrderGrossMargin(order);
+          break;
+        }
+      }
+    });
+
+    trendBuckets.forEach((bucket) => {
+      bucket.avgCost = bucket.orders > 0 ? bucket.cost / bucket.orders : 0;
+    });
+
+    return {
+      kpis: {
+        margin: thisTotals.margin,
+        marginDelta,
+        marginRate: marginPct,
+        marginRateDelta,
+        avgCostPerInspection,
+        atRiskMargin,
+        atRiskCount: lowMarginOrders.length,
+        inspectionCount: this30.length,
+      },
+      trendBuckets,
+      referralLeaderboard,
+      topServices,
+      bottomServices,
+      lowMarginOrders,
+    };
   }, [orders]);
 
   if (ordersLoading || clientsLoading) {
     return (
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}><CardContent className="pt-5"><Skeleton className="h-16 w-full" /></CardContent></Card>
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Card key={i}><CardContent className="pt-4"><Skeleton className="h-16 w-full" /></CardContent></Card>
           ))}
         </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="lg:col-span-2"><CardContent className="pt-5"><Skeleton className="h-48 w-full" /></CardContent></Card>
-          <Card><CardContent className="pt-5"><Skeleton className="h-48 w-full" /></CardContent></Card>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Card><CardContent className="pt-4"><Skeleton className="h-56 w-full" /></CardContent></Card>
+          <Card><CardContent className="pt-4"><Skeleton className="h-56 w-full" /></CardContent></Card>
         </div>
       </div>
     );
   }
 
+  const greetingName = (profile?.full_name || profile?.email || "").split(" ")[0];
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <AdminPageHeader
-        title="Dashboard"
-        description={`Welcome back, ${(profile?.full_name || profile?.email || "").split(" ")[0]}.`}
+        title="Owner Command Center"
+        description={`Margin-first view for ${greetingName}. Use this to price, cut, and scale with confidence.`}
         actions={
           can(profile?.role ?? "owner", "create_inspections") ? (
             <Button asChild>
@@ -222,42 +299,52 @@ export default function OverviewPage() {
         }
       />
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <StatCard
-            key={stat.title}
-            label={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            trend={stat.delta}
-            trendLabel={
-              stat.delta !== null
-                ? `${stat.delta >= 0 ? "+" : ""}${stat.delta}${stat.title.includes("Revenue") ? "%" : ""}`
-                : undefined
-            }
-            sublabel={stat.deltaLabel}
-          />
-        ))}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <StatCard
+          label="Gross Margin (30d)"
+          value={formatMoney(decisionData.kpis.margin)}
+          icon={DollarSign}
+          trend={decisionData.kpis.marginDelta ? Math.round(decisionData.kpis.marginDelta) : null}
+          trendLabel={decisionData.kpis.marginDelta ? `${decisionData.kpis.marginDelta >= 0 ? "+" : ""}${Math.round(decisionData.kpis.marginDelta)}%` : undefined}
+          sublabel="vs prior 30 days"
+        />
+        <StatCard
+          label="Margin Rate"
+          value={`${decisionData.kpis.marginRate.toFixed(1)}%`}
+          icon={Percent}
+          trend={decisionData.kpis.marginRateDelta ? Math.round(decisionData.kpis.marginRateDelta * 10) / 10 : null}
+          trendLabel={decisionData.kpis.marginRateDelta ? `${decisionData.kpis.marginRateDelta >= 0 ? "+" : ""}${decisionData.kpis.marginRateDelta.toFixed(1)} pts` : undefined}
+          sublabel="gross margin %"
+        />
+        <StatCard
+          label="Cost / Inspection"
+          value={formatMoney(decisionData.kpis.avgCostPerInspection)}
+          icon={CircleAlert}
+          sublabel="30-day average"
+        />
+        <StatCard
+          label="Low-Margin Orders"
+          value={decisionData.kpis.atRiskCount}
+          icon={ShieldAlert}
+          sublabel={`${formatMoney(decisionData.kpis.atRiskMargin)} margin at risk`}
+        />
+        <StatCard
+          label="Active Clients"
+          value={clients.length}
+          icon={Users}
+          sublabel={`${decisionData.kpis.inspectionCount} inspections in 30d`}
+        />
       </div>
 
-      {/* Charts row */}
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid gap-3 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader className="pb-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <CardDescription>Weekly Revenue</CardDescription>
-                <CardTitle className="mt-1 text-2xl tabular-nums">
-                  ${weeklyData.reduce((s, d) => s + d.revenue, 0).toLocaleString()}
-                </CardTitle>
-              </div>
-              <Badge color="light" className="text-[10px]">Last 7 days</Badge>
-            </div>
+            <CardTitle className="text-sm font-semibold">Margin vs Cost Trend</CardTitle>
+            <CardDescription>Weekly margin dollars against average cost per inspection</CardDescription>
           </CardHeader>
-          <CardContent className="pt-0 pb-3">
-            <ChartContainer config={revenueChartConfig} className="h-[160px] w-full">
-              <BarChart data={weeklyData} barSize={22} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CardContent className="pt-0 pb-2">
+            <ChartContainer config={decisionTrendConfig} className="h-[200px] w-full">
+              <LineChart data={decisionData.trendBuckets} margin={{ top: 4, right: 6, left: -14, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
                 <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
@@ -265,166 +352,163 @@ export default function OverviewPage() {
                   cursor={false}
                   content={
                     <ChartTooltipContent
-                      formatter={(value) => [`$${Number(value).toLocaleString()}`, "Revenue"]}
+                      formatter={(value, key) => [formatMoney(Number(value)), key === "margin" ? "Margin" : "Avg Cost"]}
                     />
                   }
                 />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
-              </BarChart>
+                <Line type="monotone" dataKey="margin" stroke="var(--color-margin)" strokeWidth={2.2} dot={false} />
+                <Line type="monotone" dataKey="avgCost" stroke="var(--color-avgCost)" strokeWidth={2} dot={false} strokeDasharray="5 3" />
+              </LineChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <CardDescription>Inspection Volume</CardDescription>
-                <CardTitle className="mt-1 text-2xl tabular-nums">
-                  {weeklyData.reduce((s, d) => s + d.orders, 0)}
-                </CardTitle>
-              </div>
-              <Badge color="light" className="text-[10px]">Last 7 days</Badge>
-            </div>
+            <CardTitle className="text-sm font-semibold">Referral Value (30d)</CardTitle>
+            <CardDescription>Margin contribution by source</CardDescription>
           </CardHeader>
-          <CardContent className="pt-0 pb-3">
-            <ChartContainer config={volumeChartConfig} className="h-[160px] w-full">
-              <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-orders)" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="var(--color-orders)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} allowDecimals={false} />
+          <CardContent className="pt-0 pb-2">
+            <ChartContainer config={referralConfig} className="h-[200px] w-full">
+              <BarChart data={decisionData.referralLeaderboard} layout="vertical" margin={{ top: 6, right: 8, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} />
+                <YAxis
+                  type="category"
+                  dataKey="source"
+                  tickLine={false}
+                  axisLine={false}
+                  width={90}
+                  tick={{ fontSize: 10 }}
+                />
                 <ChartTooltip
                   cursor={false}
-                  content={<ChartTooltipContent />}
+                  content={<ChartTooltipContent formatter={(value) => [formatMoney(Number(value)), "Margin"]} />}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="orders"
-                  stroke="var(--color-orders)"
-                  strokeWidth={2}
-                  fill="url(#volumeGradient)"
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </AreaChart>
+                <Bar dataKey="margin" fill="var(--color-margin)" radius={[0, 4, 4, 0]} />
+              </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Today + activity row */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div>
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                Today&apos;s Schedule
-              </CardTitle>
-              <CardDescription>{todayOrders.length} order{todayOrders.length !== 1 ? "s" : ""} today</CardDescription>
+      <div className="grid gap-3 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Service Margin Leaderboard</CardTitle>
+            <CardDescription>Highest and lowest margin services in the last 30 days</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top Margin Services</p>
+              {decisionData.topServices.map((service) => (
+                <div key={`top-${service.service}`} className="rounded-lg border px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium truncate">{service.service}</p>
+                    <Badge color="success">{service.marginPct.toFixed(1)}%</Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatMoney(service.margin)} margin · {service.inspections} inspections
+                  </p>
+                </div>
+              ))}
+              {decisionData.topServices.length === 0 && (
+                <p className="text-xs text-muted-foreground">No service margin data yet.</p>
+              )}
             </div>
-            <Button variant="ghost" asChild className="text-xs">
-              <Link href="/admin/orders">
-                View all <ArrowRight className="ml-1 h-3 w-3" />
-              </Link>
-            </Button>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Margin Risk Services</p>
+              {decisionData.bottomServices.map((service) => (
+                <div key={`bottom-${service.service}`} className="rounded-lg border px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium truncate">{service.service}</p>
+                    <Badge color={service.marginPct < 15 ? "error" : "warning"}>{service.marginPct.toFixed(1)}%</Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {formatMoney(service.margin)} margin · {service.inspections} inspections
+                  </p>
+                </div>
+              ))}
+              {decisionData.bottomServices.length === 0 && (
+                <p className="text-xs text-muted-foreground">No service margin data yet.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Margin Leak Alerts</CardTitle>
+            <CardDescription>Orders below 25% gross margin</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {todayOrders.map((order) => (
+            {decisionData.lowMarginOrders.map((order) => (
               <Link
                 key={order.id}
                 href={`/admin/orders/${order.id}`}
-                className="flex items-center gap-3 rounded-lg border px-3 py-2.5 hover:bg-muted/50 group transition-colors"
+                className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 hover:bg-muted/50 transition-colors"
               >
-                <div className="shrink-0 w-11 text-right">
-                  <span className="text-sm font-semibold tabular-nums">{formatTime12(order.scheduled_time ?? "09:00")}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{order.orderNumber || "Order"} · {order.address}</p>
+                  <p className="text-xs text-muted-foreground">{order.scheduledDate || "No date"} · {order.source}</p>
                 </div>
-                <div className="w-px self-stretch bg-border" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium truncate">{getOrderAddress(order)}</span>
-                    <Badge color={STATUS_VARIANT[order.status] ?? "light"}>{formatStatusLabel(order.status)}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {order.inspector?.full_name ?? "Unassigned"} · {getServiceSummary(order)}
-                  </p>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground">Margin</p>
+                  <p className="text-sm font-semibold">{order.marginPct.toFixed(1)}%</p>
                 </div>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </Link>
             ))}
-            {todayOrders.length === 0 && (
-              <div className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                No orders scheduled today.
+            {decisionData.lowMarginOrders.length === 0 && (
+              <p className="text-xs text-muted-foreground">No low-margin alerts in the last 30 days.</p>
+            )}
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/admin/orders">
+                Open Orders
+                <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              Today&apos;s Schedule
+            </CardTitle>
+            <CardDescription>{todayOrders.length} order{todayOrders.length !== 1 ? "s" : ""} scheduled today</CardDescription>
+          </div>
+          <Button variant="ghost" asChild className="text-xs">
+            <Link href="/admin/orders">
+              View all
+              <ArrowRight className="ml-1 h-3 w-3" />
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {todayOrders.slice(0, 4).map((order) => (
+            <Link
+              key={order.id}
+              href={`/admin/orders/${order.id}`}
+              className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 hover:bg-muted/50 transition-colors"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{getOrderAddress(order)}</p>
+                <p className="text-xs text-muted-foreground">{order.client?.name ?? "No client"}</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Recent Activity</CardTitle>
-            <CardDescription>Latest order updates</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {recentActivity.map((activity) => (
-              <Link
-                key={activity.id}
-                href={`/admin/orders/${activity.id}`}
-                className="flex items-start gap-3 border-l-2 border-border pl-3 hover:border-primary transition-colors group"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium">{activity.action} <span className="text-muted-foreground font-normal">· {activity.client}</span></p>
-                  <p className="text-xs text-muted-foreground truncate">{activity.address}</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">{activity.time}</p>
-                </div>
-              </Link>
-            ))}
-            {recentActivity.length === 0 && (
-              <p className="text-xs text-muted-foreground">No recent activity yet.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom summary cards */}
-      <div className="grid gap-3 md:grid-cols-3">
-        <Link href="/admin/orders?status=pending_report">
-          <StatCard
-            label="Pending Reports"
-            value={orders.filter((o) => o.status === "pending_report").length}
-            sublabel="Awaiting review"
-            className="cursor-pointer transition-colors hover:border-brand-300"
-          />
-        </Link>
-
-        <Link href="/admin/invoices">
-          <StatCard
-            label="Outstanding Invoices"
-            value={`$${orders.filter((o) => o.payment_status === "unpaid").reduce((s, o) => s + (o.total ?? 0), 0).toLocaleString()}`}
-            sublabel={`${orders.filter((o) => o.payment_status === "unpaid").length} unpaid invoices`}
-            className="cursor-pointer transition-colors hover:border-brand-300"
-          />
-        </Link>
-
-        <Link href="/admin/schedule">
-          <StatCard
-            label="Today's Inspectors"
-            value={new Set(todayOrders.filter((o) => o.inspector?.id).map((o) => o.inspector?.id)).size}
-            sublabel={
-              todayOrders.filter((o) => !o.inspector?.id).length > 0
-                ? `${todayOrders.filter((o) => !o.inspector?.id).length} unassigned`
-                : "All assigned"
-            }
-            className="cursor-pointer transition-colors hover:border-brand-300"
-          />
-        </Link>
-      </div>
+              <p className="text-sm font-semibold tabular-nums">{formatTime12(order.scheduled_time ?? "09:00")}</p>
+            </Link>
+          ))}
+          {todayOrders.length === 0 && (
+            <div className="rounded-lg border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
+              No orders scheduled today.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/server";
-import { getTenantId } from "@/lib/supabase/admin-helpers";
+import { NextResponse } from "next/server";
+import { requirePermission, withAuth } from "@/lib/api/with-auth";
 
 const BUCKET_NAME = "branding";
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -32,8 +31,19 @@ const defaultSettings = {
 
 type TenantSettings = typeof defaultSettings;
 
-export async function POST(request: NextRequest) {
-  const tenantId = getTenantId();
+function buildSettings(currentSettings: Partial<TenantSettings>, logoUrl: string | null): TenantSettings {
+  return {
+    company: { ...defaultSettings.company, ...currentSettings.company },
+    branding: { ...defaultSettings.branding, ...currentSettings.branding, logoUrl },
+    notifications: { ...defaultSettings.notifications, ...currentSettings.notifications },
+  };
+}
+
+export const POST = withAuth(async ({ serviceClient, tenant, memberRole, request }) => {
+  const permissionCheck = requirePermission(memberRole, "edit_branding", "You do not have permission to update branding");
+  if (permissionCheck) return permissionCheck;
+
+  const tenantId = tenant.id;
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -67,17 +77,17 @@ export async function POST(request: NextRequest) {
   const buffer = Buffer.from(arrayBuffer);
 
   // Delete existing logo if present
-  const { data: existingFiles } = await supabaseAdmin.storage
+  const { data: existingFiles } = await serviceClient.storage
     .from(BUCKET_NAME)
     .list(tenantId, { limit: 100, search: "logo-" });
 
   if (existingFiles && existingFiles.length > 0) {
     const filesToDelete = existingFiles.map((f) => `${tenantId}/${f.name}`);
-    await supabaseAdmin.storage.from(BUCKET_NAME).remove(filesToDelete);
+    await serviceClient.storage.from(BUCKET_NAME).remove(filesToDelete);
   }
 
   // Upload new logo
-  const { error: uploadError } = await supabaseAdmin.storage
+  const { error: uploadError } = await serviceClient.storage
     .from(BUCKET_NAME)
     .upload(filename, buffer, {
       contentType: file.type,
@@ -90,27 +100,27 @@ export async function POST(request: NextRequest) {
   }
 
   // Get public URL
-  const { data: publicUrlData } = supabaseAdmin.storage
+  const { data: publicUrlData } = serviceClient.storage
     .from(BUCKET_NAME)
     .getPublicUrl(filename);
 
   const logoUrl = publicUrlData.publicUrl;
 
   // Update tenant settings with new logo URL
-  const { data: current } = await supabaseAdmin
+  const { data: current, error: currentError } = await serviceClient
     .from("tenants")
     .select("settings")
     .eq("id", tenantId)
-    .single();
+    .maybeSingle();
+
+  if (currentError || !current) {
+    return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+  }
 
   const currentSettings = (current?.settings as Partial<TenantSettings>) || {};
-  const newSettings: TenantSettings = {
-    company: { ...defaultSettings.company, ...currentSettings.company },
-    branding: { ...defaultSettings.branding, ...currentSettings.branding, logoUrl },
-    notifications: { ...defaultSettings.notifications, ...currentSettings.notifications },
-  };
+  const newSettings = buildSettings(currentSettings, logoUrl);
 
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await serviceClient
     .from("tenants")
     .update({ settings: newSettings })
     .eq("id", tenantId);
@@ -121,36 +131,39 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ logoUrl });
-}
+});
 
-export async function DELETE() {
-  const tenantId = getTenantId();
+export const DELETE = withAuth(async ({ serviceClient, tenant, memberRole }) => {
+  const permissionCheck = requirePermission(memberRole, "edit_branding", "You do not have permission to update branding");
+  if (permissionCheck) return permissionCheck;
+
+  const tenantId = tenant.id;
 
   // Delete all logos for this tenant
-  const { data: existingFiles } = await supabaseAdmin.storage
+  const { data: existingFiles } = await serviceClient.storage
     .from(BUCKET_NAME)
     .list(tenantId, { limit: 100, search: "logo-" });
 
   if (existingFiles && existingFiles.length > 0) {
     const filesToDelete = existingFiles.map((f) => `${tenantId}/${f.name}`);
-    await supabaseAdmin.storage.from(BUCKET_NAME).remove(filesToDelete);
+    await serviceClient.storage.from(BUCKET_NAME).remove(filesToDelete);
   }
 
   // Clear logo URL from settings
-  const { data: current } = await supabaseAdmin
+  const { data: current, error: currentError } = await serviceClient
     .from("tenants")
     .select("settings")
     .eq("id", tenantId)
-    .single();
+    .maybeSingle();
+
+  if (currentError || !current) {
+    return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+  }
 
   const currentSettings = (current?.settings as Partial<TenantSettings>) || {};
-  const newSettings: TenantSettings = {
-    company: { ...defaultSettings.company, ...currentSettings.company },
-    branding: { ...defaultSettings.branding, ...currentSettings.branding, logoUrl: null },
-    notifications: { ...defaultSettings.notifications, ...currentSettings.notifications },
-  };
+  const newSettings = buildSettings(currentSettings, null);
 
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await serviceClient
     .from("tenants")
     .update({ settings: newSettings })
     .eq("id", tenantId);
@@ -161,4 +174,4 @@ export async function DELETE() {
   }
 
   return NextResponse.json({ success: true });
-}
+});

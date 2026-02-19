@@ -256,11 +256,19 @@ function AgentsPageContent() {
               </Button>
             )}
             {activeTab === "agencies" ? (
-              <Button variant="outline" asChild>
+              <Button
+                variant="outline"
+                className="border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"
+                asChild
+              >
                 <Link href="/admin/agents/new">Add Agent</Link>
               </Button>
             ) : (
-              <Button variant="outline" asChild>
+              <Button
+                variant="outline"
+                className="border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"
+                asChild
+              >
                 <Link href="/admin/agents/agencies/new">Add Agency</Link>
               </Button>
             )}
@@ -269,9 +277,13 @@ function AgentsPageContent() {
       />
 
       <Tabs value={activeTab} onValueChange={(value: string) => router.replace(`/admin/agents?tab=${value}`)} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 bg-accent md:w-70">
-          <TabsTrigger value="agents">Agents</TabsTrigger>
-          <TabsTrigger value="agencies">Agencies</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 bg-brand-50 dark:bg-brand-950/40 md:w-70">
+          <TabsTrigger className="text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white" value="agents">
+            Agents
+          </TabsTrigger>
+          <TabsTrigger className="text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white" value="agencies">
+            Agencies
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="agents" className="space-y-6">
@@ -296,6 +308,7 @@ function AgentsPageContent() {
                       key={status}
                       variant={agentStatusFilter === status ? "primary" : "outline"}
                       size="sm"
+                      className={agentStatusFilter === status ? undefined : "border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"}
                       onClick={() => setAgentStatusFilter(status as typeof agentStatusFilter)}
                     >
                       {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}
@@ -333,6 +346,7 @@ function AgentsPageContent() {
                       key={status}
                       variant={agencyStatusFilter === status ? "primary" : "outline"}
                       size="sm"
+                      className={agencyStatusFilter === status ? undefined : "border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"}
                       onClick={() => setAgencyStatusFilter(status as typeof agencyStatusFilter)}
                     >
                       {status === "all" ? "All" : `${status.charAt(0).toUpperCase()}${status.slice(1)}`}

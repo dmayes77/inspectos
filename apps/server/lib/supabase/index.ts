@@ -58,7 +58,18 @@ export function getUserFromToken(accessToken: string): { userId: string; email?:
   }
   try {
     const payload = accessToken.split('.')[1];
-    const decoded = JSON.parse(atob(payload));
+    if (!payload) {
+      return null;
+    }
+
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    const decoded = JSON.parse(Buffer.from(padded, 'base64').toString('utf-8'));
+
+    if (typeof decoded?.sub !== 'string') {
+      return null;
+    }
+
     return {
       userId: decoded.sub,
       email: decoded.email

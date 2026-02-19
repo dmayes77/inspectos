@@ -138,11 +138,19 @@ function ClientsPageContent() {
         description="Manage your client relationships and track interactions"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={handleExport}>
+            <Button
+              variant="outline"
+              className="border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"
+              onClick={handleExport}
+            >
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
-            <Button variant="outline" asChild>
+            <Button
+              variant="outline"
+              className="border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"
+              asChild
+            >
               <Link href="/admin/contacts/leads/new">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Lead
@@ -165,12 +173,18 @@ function ClientsPageContent() {
         onValueChange={(value: string) => router.replace(`/admin/contacts?tab=${value}`)}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-2 bg-accent md:w-80">
-          <TabsTrigger value="clients" className="gap-2">
+        <TabsList className="grid w-full grid-cols-2 bg-brand-50 dark:bg-brand-950/40 md:w-80">
+          <TabsTrigger
+            value="clients"
+            className="gap-2 text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white"
+          >
             <Users className="h-4 w-4" />
             Clients
           </TabsTrigger>
-          <TabsTrigger value="leads" className="gap-2">
+          <TabsTrigger
+            value="leads"
+            className="gap-2 text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white"
+          >
             <TrendingUp className="h-4 w-4" />
             Leads
           </TabsTrigger>

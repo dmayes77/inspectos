@@ -4,5 +4,5 @@
 export function getTenantId(): string {
   // This is the default tenant ID for the seed data
   // In production, this would come from the authenticated user's session
-  return process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || 'acme-inspections';
+  return process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || 'demo';
 }

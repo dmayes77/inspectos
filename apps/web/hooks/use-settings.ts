@@ -1,4 +1,4 @@
-import { useGet, usePut } from "@/hooks/crud";
+import { useGet, usePost, usePut } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
 
 export type TenantSettings = {
@@ -24,6 +24,11 @@ export type TenantSettings = {
     reportViewed: boolean;
     weeklySummary: boolean;
   };
+  business: {
+    businessId: string;
+    apiKeyPreview: string;
+    apiKeyLastRotatedAt: string | null;
+  };
 };
 
 const defaultSettings: TenantSettings = {
@@ -48,6 +53,11 @@ const defaultSettings: TenantSettings = {
     reportViewed: false,
     weeklySummary: true,
   },
+  business: {
+    businessId: "",
+    apiKeyPreview: "",
+    apiKeyLastRotatedAt: null,
+  },
 };
 
 export function useSettings() {
@@ -64,6 +74,16 @@ export function useUpdateSettings() {
     "settings",
     async (settings) => {
       return await apiClient.put<TenantSettings>('/admin/settings', settings);
+    }
+  );
+}
+
+export function useRegenerateApiKey() {
+  const apiClient = useApiClient();
+  return usePost<{ apiKey: string; apiKeyPreview: string; apiKeyLastRotatedAt: string }, void>(
+    "settings",
+    async () => {
+      return await apiClient.post<{ apiKey: string; apiKeyPreview: string; apiKeyLastRotatedAt: string }>('/admin/settings/api-key', undefined);
     }
   );
 }

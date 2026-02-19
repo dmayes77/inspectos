@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { generateBusinessApiKey, hashBusinessApiKey } from "@/lib/api/business-api-keys";
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
   const { data: tenant, error: tErr } = await supabaseAdmin
     .from("tenants")
     .insert({ name, slug })
-    .select("*")
+    .select("id, name, slug, business_id")
     .single();
 
   if (tErr) return Response.json({ error: tErr.message }, { status: 400 });
@@ -40,5 +41,18 @@ export async function POST(req: Request) {
 
   if (mErr) return Response.json({ error: mErr.message }, { status: 400 });
 
-  return Response.json({ tenant });
+  const initialApiKey = generateBusinessApiKey();
+  const { error: apiKeyError } = await supabaseAdmin
+    .from("business_api_keys")
+    .insert({
+      tenant_id: tenant.id,
+      name: "Primary Key",
+      key_prefix: initialApiKey.slice(0, 12),
+      key_hash: hashBusinessApiKey(initialApiKey),
+      scopes: ["admin:api"],
+    });
+
+  if (apiKeyError) return Response.json({ error: apiKeyError.message }, { status: 400 });
+
+  return Response.json({ business: tenant });
 }
