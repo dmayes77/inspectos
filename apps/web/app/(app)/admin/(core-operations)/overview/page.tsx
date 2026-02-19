@@ -16,6 +16,7 @@ import {
 import {
   ArrowRight,
   Calendar,
+  ClipboardList,
   CircleAlert,
   DollarSign,
   Percent,
@@ -93,6 +94,18 @@ const parseDate = (value?: string | null) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const isOrderAssignedToUser = (
+  order: {
+    inspector_id?: string | null;
+    assignments?: Array<{ inspector_id: string }>;
+  },
+  userId?: string,
+) => {
+  if (!userId) return false;
+  if (order.inspector_id === userId) return true;
+  return (order.assignments ?? []).some((assignment) => assignment.inspector_id === userId);
+};
+
 export default function OverviewPage() {
   const { data: profile } = useProfile();
   const { data: ordersData, isLoading: ordersLoading } = useOrders();
@@ -100,6 +113,8 @@ export default function OverviewPage() {
 
   const orders = useMemo(() => ordersData ?? [], [ordersData]);
   const clients = useMemo(() => clientsData ?? [], [clientsData]);
+  const role = (profile?.role ?? "").toUpperCase();
+  const isCommandCenterRole = role === "OWNER" || role === "ADMIN";
 
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => orders.filter((order) => order.scheduled_date === today), [orders, today]);
@@ -264,6 +279,43 @@ export default function OverviewPage() {
     };
   }, [orders]);
 
+  const operationalOverview = useMemo(() => {
+    const roleScopedOrders = role === "INSPECTOR"
+      ? orders.filter((order) => isOrderAssignedToUser(order, profile?.id))
+      : orders;
+
+    const scheduledToday = roleScopedOrders.filter((order) => order.scheduled_date === today);
+    const activeQueue = roleScopedOrders.filter((order) => ["scheduled", "in_progress", "pending_report"].includes(order.status));
+    const pendingReports = roleScopedOrders.filter((order) => order.status === "pending_report");
+
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const completedThisWeek = roleScopedOrders.filter((order) => {
+      const completedAt = parseDate(order.completed_at);
+      return Boolean(completedAt && completedAt >= sevenDaysAgo);
+    });
+
+    const nextSevenDays = new Date(now);
+    nextSevenDays.setDate(nextSevenDays.getDate() + 7);
+    const upcoming = roleScopedOrders
+      .filter((order) => {
+        const scheduled = parseDate(order.scheduled_date);
+        return Boolean(scheduled && scheduled > now && scheduled <= nextSevenDays);
+      })
+      .sort((a, b) => (a.scheduled_date ?? "").localeCompare(b.scheduled_date ?? ""))
+      .slice(0, 6);
+
+    return {
+      roleScopedOrders,
+      scheduledToday,
+      activeQueue,
+      pendingReports,
+      completedThisWeek,
+      upcoming,
+    };
+  }, [orders, profile?.id, role, today]);
+
   if (ordersLoading || clientsLoading) {
     return (
       <div className="space-y-3">
@@ -281,6 +333,129 @@ export default function OverviewPage() {
   }
 
   const greetingName = (profile?.full_name || profile?.email || "").split(" ")[0];
+
+  if (!isCommandCenterRole) {
+    return (
+      <div className="space-y-3">
+        <AdminPageHeader
+          title="Operations Overview"
+          description={`Execution-focused view for ${greetingName || "your team"}.`}
+          actions={
+            can(profile?.role ?? "INSPECTOR", "create_inspections") ? (
+              <Button asChild>
+                <Link href="/admin/orders/new">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  New Order
+                </Link>
+              </Button>
+            ) : null
+          }
+        />
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard
+            label="My/Team Queue"
+            value={operationalOverview.activeQueue.length}
+            icon={ClipboardList}
+            sublabel="scheduled, in progress, pending report"
+          />
+          <StatCard
+            label="Scheduled Today"
+            value={operationalOverview.scheduledToday.length}
+            icon={Calendar}
+            sublabel="orders on today's schedule"
+          />
+          <StatCard
+            label="Pending Reports"
+            value={operationalOverview.pendingReports.length}
+            icon={CircleAlert}
+            sublabel="awaiting report completion"
+          />
+          <StatCard
+            label="Completed (7d)"
+            value={operationalOverview.completedThisWeek.length}
+            icon={Users}
+            sublabel="completed in last 7 days"
+          />
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  Today&apos;s Schedule
+                </CardTitle>
+                <CardDescription>
+                  {operationalOverview.scheduledToday.length} order{operationalOverview.scheduledToday.length !== 1 ? "s" : ""} scheduled today
+                </CardDescription>
+              </div>
+              <Button variant="ghost" asChild className="text-xs">
+                <Link href="/admin/orders">
+                  View all
+                  <ArrowRight className="ml-1 h-3 w-3" />
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {operationalOverview.scheduledToday.slice(0, 6).map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/admin/orders/${order.id}`}
+                  className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{getOrderAddress(order)}</p>
+                    <p className="text-xs text-muted-foreground">{order.client?.name ?? "No client"}</p>
+                  </div>
+                  <p className="text-sm font-semibold tabular-nums">{formatTime12(order.scheduled_time ?? "09:00")}</p>
+                </Link>
+              ))}
+              {operationalOverview.scheduledToday.length === 0 && (
+                <div className="rounded-lg border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
+                  No orders scheduled today.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Upcoming (Next 7 Days)</CardTitle>
+              <CardDescription>Role-scoped schedule preview</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {operationalOverview.upcoming.map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/admin/orders/${order.id}`}
+                  className="flex items-center justify-between gap-2 rounded-lg border px-3 py-2 hover:bg-muted/50 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{order.order_number || "Order"}</p>
+                    <p className="text-xs text-muted-foreground">{getOrderAddress(order)}</p>
+                  </div>
+                  <Badge color="light">{order.scheduled_date ?? "TBD"}</Badge>
+                </Link>
+              ))}
+              {operationalOverview.upcoming.length === 0 && (
+                <div className="rounded-lg border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
+                  No upcoming orders in the next 7 days.
+                </div>
+              )}
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/admin/orders">
+                  Open Orders
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
