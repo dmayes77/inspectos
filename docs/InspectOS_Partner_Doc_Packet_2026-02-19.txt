@@ -1,0 +1,56 @@
+InspectOS Partner Share Packet
+Date: February 19, 2026
+
+Purpose
+This packet lists the new strategy and execution docs created during the InspectOS pivot so you can share one aligned narrative with your partner.
+
+Recommended Share Order
+1) docs/positioning.md
+Why share: Defines category and competitive framing in one page.
+Key message: InspectOS is the operating system for running an inspection company.
+
+2) docs/product-principles.md
+Why share: Sets product decision rules so roadmap and UI choices stay aligned.
+Key message: Profit over productivity, order-centric architecture, and trust-first design.
+
+3) docs/mvp-v2.md
+Why share: Main operating plan for MVP v2 with goals, scope, and sprint structure.
+Key message: Clear 90-day execution path from foundation to launch readiness.
+
+4) docs/pivot-backlog.md
+Why share: Priority backlog (P0/P1/P2) for day-to-day execution.
+Key message: Exactly what is in progress vs planned.
+
+5) docs/v1-roadmap.md
+Why share: Broader 2-quarter roadmap across parity, differentiation, trust, and AI.
+Key message: How MVP v2 scales into V1 strategy.
+
+6) docs/mvp-v2-github-issues.md
+Why share: Issue-ready implementation specs with acceptance criteria.
+Key message: Converts strategy into executable GitHub issues.
+
+7) docs/landing-page-messaging.md
+Why share: Public-facing narrative and messaging language.
+Key message: Consistent go-to-market story for site and sales conversations.
+
+8) docs/admin-reusable-pattern.md
+Why share: Internal build pattern for faster, consistent admin delivery.
+Key message: Reusable scaffolding and conventions reduce UI drift and rework.
+
+Optional Context Docs (if asked)
+- docs/webhook-implementation-summary.md
+- docs/webhook-system-architecture.md
+- docs/CI_CD_SETUP.md
+
+Suggested Email Copy
+Subject: InspectOS Pivot Docs (Positioning, MVP v2, and Execution Plan)
+
+I pulled together the latest InspectOS pivot docs so we can align on direction and execution:
+- Positioning and category definition
+- Product principles
+- MVP v2 plan and backlog
+- V1 roadmap
+- GitHub issue pack mapped to delivery
+- Landing page messaging
+
+If you review in the order listed above, it should read as one coherent strategy from narrative to shipping plan.
