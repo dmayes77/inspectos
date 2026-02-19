@@ -25,7 +25,10 @@ const IS_DEVELOPMENT =
   process.env.VERCEL_ENV === 'preview' ||
   process.env.NEXT_PUBLIC_IS_DEV_DEPLOYMENT === 'true';
 const BYPASS_AUTH = IS_DEVELOPMENT && process.env.BYPASS_AUTH === 'true';
-const BYPASS_BUSINESS_ID = IS_DEVELOPMENT ? process.env.SUPABASE_BUSINESS_ID?.toUpperCase() : undefined;
+// Backward compatibility: older env docs used SUPABASE_TENANT_ID.
+const BYPASS_BUSINESS_ID = IS_DEVELOPMENT
+  ? (process.env.SUPABASE_BUSINESS_ID ?? process.env.SUPABASE_TENANT_ID)?.toUpperCase()
+  : undefined;
 
 export async function resolveTenant(
   supabase: SupabaseClient,
