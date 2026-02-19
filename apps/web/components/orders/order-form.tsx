@@ -52,6 +52,10 @@ type OrderFormState = {
   scheduled_date: string;
   scheduled_time: string;
   duration_minutes: string;
+  labor_cost: string;
+  travel_cost: string;
+  overhead_cost: string;
+  other_cost: string;
   status: Order["status"];
   payment_status: Order["payment_status"];
   source: string;
@@ -110,6 +114,12 @@ function getServicePrice(service: Service) {
   return Number.isFinite(price) ? price : 0;
 }
 
+function parseCostInput(value: string) {
+  if (!value.trim()) return undefined;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
 export function OrderForm({ mode, order }: OrderFormProps) {
   const router = useRouter();
   const createOrder = useCreateOrder();
@@ -138,6 +148,10 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     scheduled_date: order?.scheduled_date ?? "",
     scheduled_time: order?.scheduled_time ?? "",
     duration_minutes: order?.duration_minutes ? String(order.duration_minutes) : "",
+    labor_cost: typeof order?.labor_cost === "number" ? String(order.labor_cost) : "",
+    travel_cost: typeof order?.travel_cost === "number" ? String(order.travel_cost) : "",
+    overhead_cost: typeof order?.overhead_cost === "number" ? String(order.overhead_cost) : "",
+    other_cost: typeof order?.other_cost === "number" ? String(order.other_cost) : "",
     status: order?.status ?? "pending",
     payment_status: order?.payment_status ?? "unpaid",
     source: order?.source ?? "",
@@ -193,6 +207,17 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   const servicesSatisfied = totals.count > 0;
 
+  const costTotals = useMemo(() => {
+    const labor = parseCostInput(form.labor_cost) ?? 0;
+    const travel = parseCostInput(form.travel_cost) ?? 0;
+    const overhead = parseCostInput(form.overhead_cost) ?? 0;
+    const other = parseCostInput(form.other_cost) ?? 0;
+    const totalCost = labor + travel + overhead + other;
+    const grossMargin = totals.subtotal - totalCost;
+    const grossMarginPct = totals.subtotal > 0 ? (grossMargin / totals.subtotal) * 100 : 0;
+    return { labor, travel, overhead, other, totalCost, grossMargin, grossMarginPct };
+  }, [form.labor_cost, form.travel_cost, form.overhead_cost, form.other_cost, totals.subtotal]);
+
   const handleServiceToggle = (serviceId: string, checked: boolean) => {
     setServiceAssignments((prev) => {
       const existing = prev.find((a) => a.serviceId === serviceId);
@@ -229,6 +254,10 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       scheduled_date: form.scheduled_date || null,
       scheduled_time: form.scheduled_time || null,
       duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : undefined,
+      labor_cost: parseCostInput(form.labor_cost),
+      travel_cost: parseCostInput(form.travel_cost),
+      overhead_cost: parseCostInput(form.overhead_cost),
+      other_cost: parseCostInput(form.other_cost),
       source: form.source || undefined,
       internal_notes: form.internal_notes || null,
       client_notes: form.client_notes || null,
@@ -657,6 +686,82 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                   </Select>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                Cost Inputs
+              </CardTitle>
+              <CardDescription>Capture estimated order costs to keep margin visibility accurate.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="space-y-2">
+                  <Label htmlFor="labor_cost">Labor</Label>
+                  <Input
+                    id="labor_cost"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.labor_cost}
+                    onChange={(event) => setForm((prev) => ({ ...prev, labor_cost: event.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="travel_cost">Travel</Label>
+                  <Input
+                    id="travel_cost"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.travel_cost}
+                    onChange={(event) => setForm((prev) => ({ ...prev, travel_cost: event.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="overhead_cost">Overhead</Label>
+                  <Input
+                    id="overhead_cost"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.overhead_cost}
+                    onChange={(event) => setForm((prev) => ({ ...prev, overhead_cost: event.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="other_cost">Other</Label>
+                  <Input
+                    id="other_cost"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.other_cost}
+                    onChange={(event) => setForm((prev) => ({ ...prev, other_cost: event.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 rounded-md border bg-muted/30 p-3 md:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total cost</p>
+                  <p className="text-sm font-semibold">${costTotals.totalCost.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Projected gross margin</p>
+                  <p className="text-sm font-semibold">${costTotals.grossMargin.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Projected margin %</p>
+                  <p className="text-sm font-semibold">{costTotals.grossMarginPct.toFixed(1)}%</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

@@ -186,6 +186,10 @@ export interface CreateOrderInput {
   scheduled_time?: string | null;
   duration_minutes?: number;
   services: OrderService[];
+  labor_cost?: number;
+  travel_cost?: number;
+  overhead_cost?: number;
+  other_cost?: number;
   source?: string;
   internal_notes?: string | null;
   client_notes?: string | null;

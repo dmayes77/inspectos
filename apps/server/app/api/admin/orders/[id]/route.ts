@@ -114,6 +114,10 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (payload.discount !== undefined) updateData.discount = payload.discount;
   if (payload.tax !== undefined) updateData.tax = payload.tax;
   if (payload.total !== undefined) updateData.total = payload.total;
+  if (payload.labor_cost !== undefined) updateData.labor_cost = payload.labor_cost;
+  if (payload.travel_cost !== undefined) updateData.travel_cost = payload.travel_cost;
+  if (payload.overhead_cost !== undefined) updateData.overhead_cost = payload.overhead_cost;
+  if (payload.other_cost !== undefined) updateData.other_cost = payload.other_cost;
   if (payload.payment_status !== undefined) updateData.payment_status = payload.payment_status;
   if (payload.report_delivered_at !== undefined) updateData.report_delivered_at = payload.report_delivered_at;
   if (payload.source !== undefined) updateData.source = payload.source;

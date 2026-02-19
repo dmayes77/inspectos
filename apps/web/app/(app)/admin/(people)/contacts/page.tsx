@@ -176,16 +176,14 @@ function ClientsPageContent() {
         <TabsList className="grid w-full grid-cols-2 bg-brand-50 dark:bg-brand-950/40 md:w-80">
           <TabsTrigger
             value="clients"
-            className="gap-2 text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white"
+            className="text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white"
           >
-            <Users className="h-4 w-4" />
             Clients
           </TabsTrigger>
           <TabsTrigger
             value="leads"
-            className="gap-2 text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white"
+            className="text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200 data-[state=active]:bg-brand-500 data-[state=active]:text-white"
           >
-            <TrendingUp className="h-4 w-4" />
             Leads
           </TabsTrigger>
         </TabsList>

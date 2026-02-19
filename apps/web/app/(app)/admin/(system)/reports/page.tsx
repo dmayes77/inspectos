@@ -153,7 +153,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Reports"
-        description="Business performance, revenue, and inspector productivity"
+        description="Business performance, revenue, and operating margins"
         actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
