@@ -25,9 +25,9 @@ const IS_DEVELOPMENT =
   process.env.VERCEL_ENV === 'preview' ||
   process.env.NEXT_PUBLIC_IS_DEV_DEPLOYMENT === 'true';
 const BYPASS_AUTH = IS_DEVELOPMENT && process.env.BYPASS_AUTH === 'true';
-// Backward compatibility: older env docs used SUPABASE_TENANT_ID.
-const BYPASS_BUSINESS_ID = IS_DEVELOPMENT
-  ? (process.env.SUPABASE_BUSINESS_ID ?? process.env.SUPABASE_TENANT_ID)?.toUpperCase()
+// Backward compatibility: older env docs used SUPABASE_TENANT_ID (often tenant UUID).
+const BYPASS_TENANT_IDENTIFIER = IS_DEVELOPMENT
+  ? (process.env.SUPABASE_BUSINESS_ID ?? process.env.SUPABASE_TENANT_ID)?.trim()
   : undefined;
 
 export async function resolveTenant(
@@ -36,15 +36,19 @@ export async function resolveTenant(
   tenantIdentifier?: string | null,
 ): Promise<{ tenant: TenantRecord | null; role?: TenantMemberRole; error?: Error }> {
   // When BYPASS_AUTH is enabled, use business/tenant identifier from environment
-  if (BYPASS_AUTH && BYPASS_BUSINESS_ID) {
+  if (BYPASS_AUTH && BYPASS_TENANT_IDENTIFIER) {
+    const businessIdCandidate = BYPASS_TENANT_IDENTIFIER.toUpperCase();
+    const slugCandidate = BYPASS_TENANT_IDENTIFIER.toLowerCase();
+
+    // Support either business_id, tenant UUID (id), or slug for dev bypass.
     const { data: tenant, error } = await supabase
       .from("tenants")
       .select("id, name, slug, business_id")
-      .eq("business_id", BYPASS_BUSINESS_ID)
-      .single();
+      .or(`business_id.eq.${businessIdCandidate},id.eq.${BYPASS_TENANT_IDENTIFIER},slug.eq.${slugCandidate}`)
+      .maybeSingle();
 
-    if (error) {
-      return { tenant: null, error };
+    if (error || !tenant) {
+      return { tenant: null, error: error ?? new Error("Bypass tenant not found") };
     }
 
     return { tenant: tenant as TenantRecord, role: "owner" };
