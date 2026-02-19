@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { CommunicationEntityType, CommunicationThread } from "@/lib/types/communication";
+import type { CommunicationEntityType, CommunicationThread } from "@inspectos/shared/types/communication";
 
 export function useCommunicationThread(entityType: CommunicationEntityType, entityId: string) {
   return useQuery<CommunicationThread>({

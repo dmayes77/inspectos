@@ -1,7 +1,7 @@
 "use client";
 
-import { formatTimestampFull } from "@/lib/utils/dates";
-import type { CommunicationChannel, CommunicationEntityType } from "@/lib/types/communication";
+import { formatTimestampFull } from "@inspectos/shared/utils/dates";
+import type { CommunicationChannel, CommunicationEntityType } from "@inspectos/shared/types/communication";
 import { Mail, MessageSquare, PhoneCall, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +49,7 @@ export function ChatThreadPanel({ entityType, entityId }: ChatThreadPanelProps) 
           <div className="space-y-3">
             {data.messages.map((message) => {
               const Icon = CHANNEL_ICONS[message.channel];
-              const badgeVariant = message.direction === "outbound" ? "outline" : "secondary";
+              const badgeColor = message.direction === "outbound" ? "primary" : "light";
               return (
                 <div
                   key={message.id}
@@ -64,7 +64,7 @@ export function ChatThreadPanel({ entityType, entityId }: ChatThreadPanelProps) 
                     <Icon className="h-3 w-3" />
                     <span>{CHANNEL_LABELS[message.channel]}</span>
                     <span>·</span>
-                    <Badge className="rounded-full px-2 text-[10px]" variant={badgeVariant}>
+                    <Badge className="rounded-full px-2 text-[10px]" color={badgeColor}>
                       {message.direction === "outbound" ? "Sent" : "Received"}
                     </Badge>
                     <span className="ml-auto text-[11px] text-muted-foreground">

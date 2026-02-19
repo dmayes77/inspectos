@@ -1,9 +1,16 @@
 "use client";
 
 import { ReactNode } from "react";
-import { AdminShell, type AdminUser } from "@/components/layout/admin-shell";
-import { AdminPageHeader } from "@/components/layout/admin-page-header";
+import { AdminShell } from "@/layout/admin-shell";
+import { AdminPageHeader } from "@/layout/admin-page-header";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
+
+type AdminUser = {
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  companyName?: string;
+};
 
 type AdminResourceHeaderProps = {
   title: ReactNode;
