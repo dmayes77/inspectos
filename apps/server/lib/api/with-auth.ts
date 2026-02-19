@@ -107,9 +107,19 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
         if (!tokenUser) return unauthorized('Invalid access token');
 
         supabase = createUserClient(accessToken);
-        const tenantResult = await resolveTenant(serviceClient, tokenUser.userId, businessIdentifier);
+        let tenantResult = await resolveTenant(serviceClient, tokenUser.userId, businessIdentifier);
         tenant = tenantResult.tenant;
         memberRole = tenantResult.role;
+
+        // If explicit business scoping fails, fall back to the user's default tenant.
+        // This protects admin pages from hard-failing when stale env/config points at
+        // a business the current user can no longer access.
+        if ((!tenant || !memberRole) && businessIdentifier) {
+          tenantResult = await resolveTenant(serviceClient, tokenUser.userId, null);
+          tenant = tenantResult.tenant;
+          memberRole = tenantResult.role;
+        }
+
         if (tenantResult.error || !tenant) return badRequest('Business not found');
         if (!memberRole) return badRequest('Business role not found');
         user = tokenUser;
