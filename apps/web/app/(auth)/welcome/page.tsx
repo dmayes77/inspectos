@@ -15,15 +15,15 @@ const PLAN_OPTIONS = [
   {
     code: "growth" as PlanCode,
     name: "Growth",
-    monthly: 399,
+    monthly: 499,
     includedInspectors: 1,
     maxInspectors: 5,
-    additionalInspectorPrice: 89,
+    additionalInspectorPrice: 99,
   },
   {
     code: "team" as PlanCode,
     name: "Team",
-    monthly: 1290,
+    monthly: 799,
     includedInspectors: 5,
     maxInspectors: 15,
     additionalInspectorPrice: 79,

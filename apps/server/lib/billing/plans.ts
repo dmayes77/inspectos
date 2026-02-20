@@ -13,15 +13,15 @@ export const BILLING_PLAN_DEFAULTS: Record<PlanCode, PlanDefaults> = {
   growth: {
     code: "growth",
     name: "Growth",
-    baseMonthlyPrice: 399,
+    baseMonthlyPrice: 499,
     includedInspectors: 1,
     maxInspectors: 5,
-    additionalInspectorPrice: 89,
+    additionalInspectorPrice: 99,
   },
   team: {
     code: "team",
     name: "Team",
-    baseMonthlyPrice: 1290,
+    baseMonthlyPrice: 799,
     includedInspectors: 5,
     maxInspectors: 15,
     additionalInspectorPrice: 79,

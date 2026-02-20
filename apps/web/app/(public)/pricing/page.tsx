@@ -14,11 +14,10 @@ const plans = [
   {
     name: "Growth",
     description: "For owner-led companies",
-    monthlyPrice: 399,
-    annualPrice: 3990,
+    monthlyPrice: 499,
     inspectors: "Up to 5 inspectors",
     includedInspectors: "First inspector included",
-    additionalSeat: 89,
+    additionalSeat: 99,
     seatCapNote: "Additional seats up to 5 total",
     popular: false,
     features: [
@@ -33,8 +32,7 @@ const plans = [
   {
     name: "Team",
     description: "For scaling operations",
-    monthlyPrice: 1290,
-    annualPrice: 12900,
+    monthlyPrice: 799,
     inspectors: "Up to 15 inspectors",
     includedInspectors: "First 5 inspectors included",
     additionalSeat: 79,
@@ -53,7 +51,6 @@ const plans = [
     name: "Firm",
     description: "For multi-team and multi-office firms",
     monthlyPrice: null,
-    annualPrice: null,
     inspectors: "Custom inspector capacity",
     includedInspectors: "Pricing requires consultation",
     additionalSeat: null,
@@ -108,7 +105,7 @@ const faqs = [
   },
   {
     question: "Do you offer annual pricing?",
-    answer: "Yes. Annual commitments are available for Growth and Team with implementation planning included.",
+    answer: "Not at this time. Plans are billed monthly.",
   },
   {
     question: "Is this a report writer replacement play?",
@@ -163,9 +160,6 @@ export default function PricingPage() {
                         <span className="text-4xl font-bold">${plan.monthlyPrice}</span>
                         <span className="text-muted-foreground">/month</span>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        or ${plan.annualPrice}/year
-                      </p>
                     </>
                   ) : (
                     <>
