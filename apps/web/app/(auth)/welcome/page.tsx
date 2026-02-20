@@ -46,6 +46,13 @@ function WelcomePageContent() {
     () => PLAN_OPTIONS.find((plan) => plan.code === planCode) ?? PLAN_OPTIONS[0],
     [planCode]
   );
+  const normalizedInspectorSeats = Math.max(
+    selectedPlan.includedInspectors,
+    Math.min(selectedPlan.maxInspectors, inspectorSeats)
+  );
+  const additionalSeatCount = Math.max(0, normalizedInspectorSeats - selectedPlan.includedInspectors);
+  const additionalSeatMonthlyTotal = additionalSeatCount * selectedPlan.additionalInspectorPrice;
+  const monthlyTotal = selectedPlan.monthly + additionalSeatMonthlyTotal;
 
   useEffect(() => {
     let active = true;
@@ -90,11 +97,6 @@ function WelcomePageContent() {
       setError("Accept the trial and billing terms to continue.");
       return;
     }
-
-    const normalizedInspectorSeats = Math.max(
-      selectedPlan.includedInspectors,
-      Math.min(selectedPlan.maxInspectors, inspectorSeats)
-    );
 
     setIsSubmitting(true);
     try {
@@ -277,6 +279,42 @@ function WelcomePageContent() {
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Allowed range for {selectedPlan.name}: {selectedPlan.includedInspectors} to {selectedPlan.maxInspectors}.
             </p>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Invoice Preview</p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              30-day free trial today, then monthly billing.
+            </p>
+
+            <div className="mt-4 space-y-2 text-sm">
+              <div className="flex items-center justify-between text-gray-700 dark:text-gray-300">
+                <span>{selectedPlan.name} base plan</span>
+                <span>${selectedPlan.monthly.toLocaleString()}.00</span>
+              </div>
+              <div className="flex items-center justify-between text-gray-700 dark:text-gray-300">
+                <span>
+                  Included inspectors ({selectedPlan.includedInspectors})
+                </span>
+                <span>$0.00</span>
+              </div>
+              <div className="flex items-center justify-between text-gray-700 dark:text-gray-300">
+                <span>
+                  Additional inspector seats ({additionalSeatCount} x ${selectedPlan.additionalInspectorPrice})
+                </span>
+                <span>${additionalSeatMonthlyTotal.toLocaleString()}.00</span>
+              </div>
+              <div className="mt-2 border-t border-gray-200 pt-2 dark:border-gray-800">
+                <div className="flex items-center justify-between font-semibold text-gray-900 dark:text-gray-100">
+                  <span>Total after trial</span>
+                  <span>${monthlyTotal.toLocaleString()}.00 / month</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>Due today</span>
+                  <span>$0.00</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <label className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">

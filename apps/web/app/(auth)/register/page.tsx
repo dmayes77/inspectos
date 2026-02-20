@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
@@ -31,34 +31,6 @@ function RegisterPageContent() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const passwordChecks = getPasswordPolicyChecks(password);
-
-  useEffect(() => {
-    let active = true;
-
-    const checkSessionAndContinue = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!active) return;
-      if (data.session) {
-        router.push("/welcome");
-      }
-    };
-
-    checkSessionAndContinue();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        router.push("/welcome");
-      }
-    });
-
-    const interval = window.setInterval(checkSessionAndContinue, 3000);
-
-    return () => {
-      active = false;
-      authListener.subscription.unsubscribe();
-      window.clearInterval(interval);
-    };
-  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,16 +113,12 @@ function RegisterPageContent() {
         </div>
 
         <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto px-6 pb-12 text-center">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-950/30">
-            <Loader2 className="h-7 w-7 animate-spin text-brand-600 dark:text-brand-400" />
-          </div>
-
           <h1 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90 sm:text-3xl">
-            Waiting for email confirmation
+            Check your email
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             We sent a confirmation link to <span className="font-medium">{pendingEmail}</span>.
-            Confirm your email to continue to onboarding.
+            Confirm your email on this device and continue to onboarding from that link.
           </p>
 
           <div className="mt-6 space-y-2 text-left text-sm text-gray-600 dark:text-gray-300">
