@@ -5,8 +5,11 @@ import {
   getUserFromToken,
   unauthorized,
   badRequest,
+  paymentRequired,
   serverError
 } from '@/lib/supabase';
+import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
+import { RateLimitPresets, rateLimitByIP } from '@/lib/rate-limit';
 
 interface SignRequest {
   tenant_id: string;
@@ -43,6 +46,11 @@ interface SignedUrl {
  */
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResponse = rateLimitByIP(request, RateLimitPresets.expensive);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     const accessToken = getAccessToken(request);
     if (!accessToken) {
       return unauthorized('Missing access token');
@@ -78,6 +86,14 @@ export async function POST(request: NextRequest) {
 
     if (membershipError || !membership) {
       return unauthorized('Not a member of this tenant');
+    }
+
+    const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, body.tenant_id);
+    if (billingAccess.error) {
+      return serverError('Failed to verify business billing status', billingAccess.error);
+    }
+    if (!billingAccess.allowed) {
+      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.');
     }
 
     const signedUrls: SignedUrl[] = [];

@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
+function getSafeRedirectPath(urlParam: string | null): string {
+  if (!urlParam) return "/app/overview";
+  if (!urlParam.startsWith("/")) return "/app/overview";
+  if (urlParam.startsWith("//")) return "/app/overview";
+  if (!urlParam.startsWith("/app")) return "/app/overview";
+  return urlParam;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,7 +36,9 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/app/overview");
+    const redirectPath = getSafeRedirectPath(searchParams.get("url"));
+    router.push(redirectPath);
+    router.refresh();
   };
 
   return (
@@ -115,7 +126,7 @@ export default function LoginPage() {
         <p className="mt-6 text-sm text-center text-gray-600 dark:text-gray-400">
           Don&apos;t have an account?{" "}
           <Link
-            href="/register"
+            href={searchParams.get("url") ? `/register?url=${encodeURIComponent(searchParams.get("url") as string)}` : "/register"}
             className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
           >
             Sign up

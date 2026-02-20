@@ -5,8 +5,10 @@ import {
   getUserFromToken,
   unauthorized,
   badRequest,
+  paymentRequired,
   serverError
 } from '@/lib/supabase';
+import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
 
 /**
  * GET /api/sync/bootstrap
@@ -74,6 +76,14 @@ export async function GET(request: NextRequest) {
 
     if (membershipError || !membership) {
       return unauthorized('Not a member of this business');
+    }
+
+    const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, tenant.id);
+    if (billingAccess.error) {
+      return serverError('Failed to verify business billing status', billingAccess.error);
+    }
+    if (!billingAccess.allowed) {
+      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.');
     }
 
     const membershipProfile = Array.isArray((membership as { profiles?: unknown[] }).profiles)

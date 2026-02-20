@@ -32,7 +32,10 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
   // Redirect to login when session is gone — rAF lets open portals clean up first
   useEffect(() => {
     if (session === null) {
-      requestAnimationFrame(() => router.replace("/login"));
+      const returnTo = typeof window !== "undefined"
+        ? `${window.location.pathname}${window.location.search}`
+        : "/app/overview";
+      requestAnimationFrame(() => router.replace(`/login?url=${encodeURIComponent(returnTo)}`));
     }
   }, [session, router]);
 

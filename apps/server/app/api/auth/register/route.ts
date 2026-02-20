@@ -1,11 +1,29 @@
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { generateBusinessApiKey, hashBusinessApiKey } from "@/lib/api/business-api-keys";
+import { RateLimitPresets, rateLimitByIP } from "@/lib/rate-limit";
+import { enforceAuthBackoff, getAuthBackoffKey, recordAuthFailure, recordAuthSuccess } from "@/lib/security/auth-backoff";
+import { getRequestIp, recordAuthAuditEvent } from "@/lib/security/auth-audit";
+import { BILLING_PLAN_DEFAULTS, type PlanCode } from "@/lib/billing/plans";
 
 type RegisterBody = {
   email?: string;
   company_name: string;
   company_slug?: string;
+  selected_plan?: {
+    code?: PlanCode;
+    name?: string;
+    baseMonthlyPrice?: number;
+    includedInspectors?: number;
+    maxInspectors?: number;
+    additionalInspectorPrice?: number;
+  };
+  trial?: {
+    enabled?: boolean;
+    days?: number;
+    consented_to_trial?: boolean;
+    consented_to_autopay?: boolean;
+  };
 };
 
 const slugify = (value: string) =>
@@ -17,12 +35,55 @@ const slugify = (value: string) =>
     .slice(0, 48);
 
 export async function POST(request: NextRequest) {
+  const ip = getRequestIp(request);
+  const route = request.nextUrl.pathname;
+  const method = request.method;
+
+  const rateLimitResponse = rateLimitByIP(request, RateLimitPresets.auth);
+  if (rateLimitResponse) {
+    recordAuthAuditEvent({
+      type: "rate_limited",
+      statusCode: 429,
+      route,
+      method,
+      ip,
+      reason: "register_rate_limit_ip",
+    });
+    return rateLimitResponse;
+  }
+
   try {
     const body = (await request.json()) as RegisterBody;
     const { company_name, company_slug, email } = body;
+    const backoffKey = getAuthBackoffKey(ip, email);
+    const backoffResponse = enforceAuthBackoff(backoffKey);
+    if (backoffResponse) {
+      recordAuthAuditEvent({
+        type: "rate_limited",
+        statusCode: 429,
+        route,
+        method,
+        ip,
+        reason: "register_auth_backoff",
+      });
+      return backoffResponse;
+    }
+
+    const fail = (status: 400 | 401 | 409 | 500, message: string): Response => {
+      recordAuthFailure(backoffKey);
+      recordAuthAuditEvent({
+        type: status === 401 ? "auth_failure" : "authz_denied",
+        statusCode: status,
+        route,
+        method,
+        ip,
+        reason: message,
+      });
+      return Response.json({ error: message }, { status });
+    };
 
     if (!company_name) {
-      return Response.json({ error: "Missing required fields." }, { status: 400 });
+      return fail(400, "Missing required fields.");
     }
 
     const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
@@ -39,7 +100,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (profileError) {
-        return Response.json({ error: profileError.message || "Failed to find user profile." }, { status: 400 });
+        return fail(400, profileError.message || "Failed to find user profile.");
       }
       userId = profile?.id ?? null;
     }
@@ -56,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userId) {
-      return Response.json({ error: "Unable to resolve user for business creation." }, { status: 401 });
+      return fail(401, "Unable to resolve user for business creation.");
     }
 
     const { data: existingMembership, error: existingMembershipError } = await supabaseAdmin
@@ -66,16 +127,16 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingMembershipError) {
-      return Response.json({ error: existingMembershipError.message || "Failed to verify membership state." }, { status: 400 });
+      return fail(400, existingMembershipError.message || "Failed to verify membership state.");
     }
 
     if (existingMembership) {
-      return Response.json({ error: "This account is already linked to a business." }, { status: 409 });
+      return fail(409, "This account is already linked to a business.");
     }
 
     const slug = company_slug?.trim() ? slugify(company_slug) : slugify(company_name);
     if (!slug) {
-      return Response.json({ error: "Invalid company name or slug." }, { status: 400 });
+      return fail(400, "Invalid company name or slug.");
     }
 
     const { data: existingTenant, error: existingError } = await supabaseAdmin
@@ -85,24 +146,51 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingError) {
-      return Response.json({ error: existingError.message || "Failed to check business slug." }, { status: 400 });
+      return fail(400, existingError.message || "Failed to check business slug.");
     }
 
     if (existingTenant) {
-      return Response.json({ error: "Company slug is already in use." }, { status: 409 });
+      return fail(409, "Company slug is already in use.");
     }
+
+    const requestedPlanCode = body.selected_plan?.code ?? "growth";
+    const selectedPlan = BILLING_PLAN_DEFAULTS[requestedPlanCode] ?? BILLING_PLAN_DEFAULTS.growth;
+    const trialDays = Math.max(1, Math.min(60, Number(body.trial?.days ?? 30)));
+    const trialEnabled = body.trial?.enabled !== false;
+    const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const tenantSettings = {
+      billing: {
+        planCode: selectedPlan.code,
+        planName: selectedPlan.name,
+        currency: "USD",
+        baseMonthlyPrice: selectedPlan.baseMonthlyPrice,
+        includedInspectors: selectedPlan.includedInspectors,
+        maxInspectors: selectedPlan.maxInspectors,
+        additionalInspectorPrice: selectedPlan.additionalInspectorPrice,
+        subscriptionStatus: trialEnabled ? "trialing" : "active",
+        trialEnabled,
+        trialDays,
+        trialStartedAt: new Date().toISOString(),
+        trialEndsAt,
+        consentedToTrial: body.trial?.consented_to_trial === true,
+        consentedToAutopay: body.trial?.consented_to_autopay === true,
+        paymentMethodOnFile: false,
+      },
+    };
 
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from("tenants")
       .insert({
         name: company_name,
         slug,
+        settings: tenantSettings,
       })
       .select("id, name, slug, business_id")
       .single();
 
     if (tenantError || !tenant) {
-      return Response.json({ error: "Failed to create business." }, { status: 500 });
+      return fail(500, "Failed to create business.");
     }
 
     const { error: memberError } = await supabaseAdmin.from("tenant_members").insert({
@@ -112,7 +200,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (memberError) {
-      return Response.json({ error: "Failed to link user to business." }, { status: 500 });
+      return fail(500, "Failed to link user to business.");
     }
 
     const initialApiKey = generateBusinessApiKey();
@@ -127,12 +215,32 @@ export async function POST(request: NextRequest) {
       });
 
     if (apiKeyError) {
-      return Response.json({ error: "Failed to provision API access." }, { status: 500 });
+      return fail(500, "Failed to provision API access.");
     }
+
+    recordAuthSuccess(backoffKey);
+    recordAuthAuditEvent({
+      type: "auth_success",
+      statusCode: 200,
+      route,
+      method,
+      ip,
+      userId,
+      tenantId: tenant.id,
+      reason: "business_registered",
+    });
 
     return Response.json({ data: { business: tenant } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected error.";
+    recordAuthAuditEvent({
+      type: "auth_failure",
+      statusCode: 401,
+      route,
+      method,
+      ip,
+      reason: "register_unexpected_error",
+    });
     return Response.json({ error: message }, { status: 500 });
   }
 }

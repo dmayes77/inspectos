@@ -5,11 +5,13 @@ import {
   getUserFromToken,
   unauthorized,
   badRequest,
+  paymentRequired,
   serverError,
   success
 } from '@/lib/supabase';
 import { createLogger, generateRequestId } from '@/lib/logger';
 import { rateLimitByIP, RateLimitPresets } from '@/lib/rate-limit';
+import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
 
 interface OutboxItem {
   id: string;
@@ -88,6 +90,14 @@ export async function POST(request: NextRequest) {
 
     if (membershipError || !membership) {
       return unauthorized('Not a member of this tenant');
+    }
+
+    const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, body.tenant_id);
+    if (billingAccess.error) {
+      return serverError('Failed to verify business billing status', billingAccess.error, { requestId });
+    }
+    if (!billingAccess.allowed) {
+      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.', { requestId });
     }
 
     const membershipProfile = Array.isArray((membership as { profiles?: unknown[] }).profiles)

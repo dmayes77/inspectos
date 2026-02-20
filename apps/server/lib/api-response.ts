@@ -31,6 +31,7 @@ export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 export const ErrorCodes = {
   UNAUTHORIZED: "UNAUTHORIZED",
   FORBIDDEN: "FORBIDDEN",
+  PAYMENT_REQUIRED: "PAYMENT_REQUIRED",
   NOT_FOUND: "NOT_FOUND",
   BAD_REQUEST: "BAD_REQUEST",
   VALIDATION_ERROR: "VALIDATION_ERROR",
@@ -108,6 +109,13 @@ export function unauthorized(message = "Authentication required", options?: Omit
  */
 export function forbidden(message = "Access denied", options?: Omit<ErrorOptions, "code">): Response {
   return createErrorResponse(403, message, { ...options, code: ErrorCodes.FORBIDDEN });
+}
+
+/**
+ * 402 Payment Required
+ */
+export function paymentRequired(message = "Payment required", options?: Omit<ErrorOptions, "code">): Response {
+  return createErrorResponse(402, message, { ...options, code: ErrorCodes.PAYMENT_REQUIRED });
 }
 
 /**

@@ -1,6 +1,7 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -334,7 +335,8 @@ export const PUT = withAuth<{ id: string }>(
     }
   }
 
-  return success({ success: true });
+  const seatSync = await syncStripeSeatQuantityForTenant(serviceClient, tenant.id);
+  return success({ success: true, billingSeatSync: seatSync });
 });
 
 /**
@@ -392,5 +394,6 @@ export const DELETE = withAuth<{ id: string }>(async ({ serviceClient, tenant, m
     return serverError('Failed to delete team member', error);
   }
 
-  return success({ success: true });
+  const seatSync = await syncStripeSeatQuantityForTenant(serviceClient, tenant.id);
+  return success({ success: true, billingSeatSync: seatSync });
 });

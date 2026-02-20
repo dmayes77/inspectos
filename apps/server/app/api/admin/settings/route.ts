@@ -23,10 +23,10 @@ const defaultSettings = {
     paymentReminders: true,
   },
   billing: {
-    planCode: 'pro',
-    planName: 'Professional',
+    planCode: 'growth',
+    planName: 'Growth',
     currency: 'USD',
-    baseMonthlyPrice: 99,
+    baseMonthlyPrice: 399,
     includedInspectors: 1,
     maxInspectors: 5,
     additionalInspectorPrice: 89,
@@ -58,7 +58,7 @@ function getBillingConfig(settings: Partial<TenantSettings> | null | undefined) 
   const includedInspectors = Math.max(0, Number((source as { includedInspectors?: number }).includedInspectors ?? 1));
   const maxInspectors = Math.max(includedInspectors, Number((source as { maxInspectors?: number }).maxInspectors ?? 5));
   const additionalInspectorPrice = Math.max(0, Number((source as { additionalInspectorPrice?: number }).additionalInspectorPrice ?? 89));
-  const baseMonthlyPrice = Math.max(0, Number((source as { baseMonthlyPrice?: number }).baseMonthlyPrice ?? 99));
+  const baseMonthlyPrice = Math.max(0, Number((source as { baseMonthlyPrice?: number }).baseMonthlyPrice ?? 399));
   const currency = typeof (source as { currency?: string }).currency === 'string' && (source as { currency?: string }).currency
     ? (source as { currency: string }).currency
     : 'USD';

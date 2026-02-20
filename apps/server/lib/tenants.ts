@@ -21,12 +21,48 @@ function normalizeRole(role: string | null | undefined): TenantMemberRole | null
 export async function resolveTenant(
   supabase: SupabaseClient,
   userId: string,
-  _tenantIdentifier?: string | null,
+  tenantIdentifier?: string | null,
 ): Promise<{ tenant: TenantRecord | null; role?: TenantMemberRole; error?: Error }> {
+  const requestedIdentifier = tenantIdentifier?.trim();
+
+  if (requestedIdentifier) {
+    const identifierLower = requestedIdentifier.toLowerCase();
+    const identifierUpper = requestedIdentifier.toUpperCase();
+
+    const { data: tenant, error: tenantError } = await supabase
+      .from("tenants")
+      .select("id, name, slug, business_id")
+      .or(`slug.eq.${identifierLower},business_id.eq.${identifierUpper},id.eq.${requestedIdentifier}`)
+      .maybeSingle();
+
+    if (tenantError || !tenant) {
+      return { tenant: null, error: tenantError || new Error("Tenant not found") };
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from("tenant_members")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("tenant_id", tenant.id)
+      .maybeSingle();
+
+    if (membershipError || !membership) {
+      return { tenant: null, error: membershipError || new Error("Tenant membership not found") };
+    }
+
+    const role = normalizeRole((membership as { role?: string }).role);
+    if (!role) {
+      return { tenant: null, error: new Error("Tenant role not found") };
+    }
+
+    return { tenant: tenant as TenantRecord, role };
+  }
+
   const { data: membership, error } = await supabase
     .from("tenant_members")
     .select("role, tenant:tenants(id, name, slug, business_id)")
     .eq("user_id", userId)
+    .limit(1)
     .maybeSingle();
 
   if (error || !membership) {

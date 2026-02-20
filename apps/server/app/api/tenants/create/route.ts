@@ -1,5 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { generateBusinessApiKey, hashBusinessApiKey } from "@/lib/api/business-api-keys";
+import { RateLimitPresets, rateLimitByIP } from "@/lib/rate-limit";
+import { enforceAuthBackoff, getAuthBackoffKey, recordAuthFailure, recordAuthSuccess } from "@/lib/security/auth-backoff";
+import { getRequestIp, recordAuthAuditEvent } from "@/lib/security/auth-audit";
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
@@ -7,24 +10,68 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: Request) {
+  const ip = getRequestIp(req);
+  const route = new URL(req.url).pathname;
+  const method = req.method;
+
+  const rateLimitResponse = rateLimitByIP(req, RateLimitPresets.auth);
+  if (rateLimitResponse) {
+    recordAuthAuditEvent({
+      type: "rate_limited",
+      statusCode: 429,
+      route,
+      method,
+      ip,
+      reason: "tenant_create_rate_limit_ip",
+    });
+    return rateLimitResponse;
+  }
+
   const authHeader = req.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  if (!token) return Response.json({ error: "Missing bearer token" }, { status: 401 });
+  const backoffKey = getAuthBackoffKey(ip, token?.slice(0, 24));
+  const backoffResponse = enforceAuthBackoff(backoffKey);
+  if (backoffResponse) {
+    recordAuthAuditEvent({
+      type: "rate_limited",
+      statusCode: 429,
+      route,
+      method,
+      ip,
+      reason: "tenant_create_auth_backoff",
+    });
+    return backoffResponse;
+  }
+
+  const fail = (status: 400 | 401 | 409, message: string): Response => {
+    recordAuthFailure(backoffKey);
+    recordAuthAuditEvent({
+      type: status === 401 ? "auth_failure" : "authz_denied",
+      statusCode: status,
+      route,
+      method,
+      ip,
+      reason: message,
+    });
+    return Response.json({ error: message }, { status });
+  };
+
+  if (!token) return fail(401, "Missing bearer token");
 
   const supabaseUser = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
     global: { headers: { Authorization: `Bearer ${token}` } }
   });
 
   const { data: userData, error: userErr } = await supabaseUser.auth.getUser();
-  if (userErr || !userData.user) return Response.json({ error: "Invalid token" }, { status: 401 });
+  if (userErr || !userData.user) return fail(401, "Invalid token");
 
   const body = await req.json().catch(() => ({} as Record<string, unknown>));
   const name = String(body?.name ?? "").trim();
   const slug = String(body?.slug ?? "").trim().toLowerCase();
 
-  if (!name || !slug) return Response.json({ error: "name and slug are required" }, { status: 400 });
+  if (!name || !slug) return fail(400, "name and slug are required");
   if (!/^[a-z0-9-]{3,40}$/.test(slug)) {
-    return Response.json({ error: "slug must be 3-40 chars: lowercase letters, numbers, hyphen" }, { status: 400 });
+    return fail(400, "slug must be 3-40 chars: lowercase letters, numbers, hyphen");
   }
 
   const { data: existingMembership, error: existingMembershipError } = await supabaseAdmin
@@ -34,11 +81,11 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (existingMembershipError) {
-    return Response.json({ error: existingMembershipError.message }, { status: 400 });
+    return fail(400, existingMembershipError.message);
   }
 
   if (existingMembership) {
-    return Response.json({ error: "This account is already linked to a business" }, { status: 409 });
+    return fail(409, "This account is already linked to a business");
   }
 
   const { data: tenant, error: tErr } = await supabaseAdmin
@@ -47,13 +94,13 @@ export async function POST(req: Request) {
     .select("id, name, slug, business_id")
     .single();
 
-  if (tErr) return Response.json({ error: tErr.message }, { status: 400 });
+  if (tErr) return fail(400, tErr.message);
 
   const { error: mErr } = await supabaseAdmin
     .from("tenant_members")
     .insert({ tenant_id: tenant.id, user_id: userData.user.id, role: "owner" });
 
-  if (mErr) return Response.json({ error: mErr.message }, { status: 400 });
+  if (mErr) return fail(400, mErr.message);
 
   const initialApiKey = generateBusinessApiKey();
   const { error: apiKeyError } = await supabaseAdmin
@@ -66,7 +113,19 @@ export async function POST(req: Request) {
       scopes: ["admin:api"],
     });
 
-  if (apiKeyError) return Response.json({ error: apiKeyError.message }, { status: 400 });
+  if (apiKeyError) return fail(400, apiKeyError.message);
+
+  recordAuthSuccess(backoffKey);
+  recordAuthAuditEvent({
+    type: "auth_success",
+    statusCode: 200,
+    route,
+    method,
+    ip,
+    userId: userData.user.id,
+    tenantId: tenant.id,
+    reason: "tenant_created",
+  });
 
   return Response.json({ business: tenant });
 }

@@ -1,4 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { assertNoProdAuthBypass } from '@/lib/security/env-guard';
+
+assertNoProdAuthBypass();
 
 // Server-side Supabase client with service role (bypasses RLS)
 export function createServiceClient(): SupabaseClient {
@@ -78,6 +81,7 @@ export function getAccessToken(request: Request): string | null {
 export {
   unauthorized,
   badRequest,
+  paymentRequired,
   serverError,
   success,
   forbidden,

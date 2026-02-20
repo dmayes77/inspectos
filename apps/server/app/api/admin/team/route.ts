@@ -1,6 +1,7 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -355,9 +356,12 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
     return serverError('Failed to resolve member id', profileAfterUpsertError);
   }
 
+  const seatSync = await syncStripeSeatQuantityForTenant(serviceClient, tenant.id);
+
   return success({
     user_id: userId,
     member_id: profileAfterUpsert?.member_id ?? null,
     login_email_requested: wantsLoginEmail,
+    billingSeatSync: seatSync,
   });
 });

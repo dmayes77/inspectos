@@ -23,11 +23,14 @@ import {
   getUserFromToken,
   unauthorized,
   badRequest,
+  paymentRequired,
   forbidden,
   serverError,
 } from '@/lib/supabase';
 import { resolveTenant, type TenantMemberRole } from '@/lib/tenants';
 import { getBusinessApiKey, resolveBusinessByApiKey } from '@/lib/api/business-api-keys';
+import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
+import { getRequestIp, recordAuthAuditEvent } from '@/lib/security/auth-audit';
 
 export interface AuthContext {
   supabase: SupabaseClient;
@@ -107,6 +110,30 @@ type AuthHandler<P = Record<string, string>> = (ctx: AuthContext & { params: P }
 
 export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
   return async (request: NextRequest, routeCtx?: RouteCtx<P>): Promise<Response> => {
+    const route = request.nextUrl.pathname;
+    const method = request.method;
+    const ip = getRequestIp(request);
+
+    const audit = (
+      statusCode: 200 | 401 | 402 | 403 | 429,
+      type: 'auth_success' | 'auth_failure' | 'authz_denied' | 'billing_denied' | 'rate_limited',
+      reason: string,
+      options?: { userId?: string; tenantId?: string; authType?: 'user' | 'api_key'; requestId?: string }
+    ) => {
+      recordAuthAuditEvent({
+        type,
+        statusCode,
+        route,
+        method,
+        ip,
+        userId: options?.userId,
+        tenantId: options?.tenantId,
+        authType: options?.authType,
+        requestId: options?.requestId,
+        reason,
+      });
+    };
+
     try {
       const serviceClient = createServiceClient();
       const apiKey = getBusinessApiKey(request);
@@ -122,21 +149,34 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
 
       if (accessToken) {
         const tokenUser = getUserFromToken(accessToken);
-        if (!tokenUser) return unauthorized('Invalid access token');
+        if (!tokenUser) {
+          audit(401, 'auth_failure', 'invalid_access_token');
+          return unauthorized('Invalid access token', { logContext: { route, method, ip } });
+        }
 
         supabase = createUserClient(accessToken);
-        const tenantResult = await resolveTenant(serviceClient, tokenUser.userId, null);
+        const tenantResult = await resolveTenant(serviceClient, tokenUser.userId, businessIdentifier);
         tenant = tenantResult.tenant;
         memberRole = tenantResult.role;
 
-        if (tenantResult.error || !tenant) return badRequest('Business not found');
-        if (!memberRole) return badRequest('Business role not found');
+        if (tenantResult.error || !tenant) {
+          audit(401, 'auth_failure', 'tenant_membership_missing', { userId: tokenUser.userId });
+          return unauthorized('Business membership not found', { logContext: { route, method, ip, userId: tokenUser.userId } });
+        }
+        if (!memberRole) {
+          audit(401, 'auth_failure', 'tenant_role_missing', { userId: tokenUser.userId, tenantId: tenant.id });
+          return unauthorized('Business role not found', { logContext: { route, method, ip, userId: tokenUser.userId, tenantId: tenant.id } });
+        }
         const { data: profile, error: profileError } = await serviceClient
           .from('profiles')
           .select('custom_permissions')
           .eq('id', tokenUser.userId)
           .maybeSingle();
-        if (profileError) return serverError('Failed to load permission profile', profileError);
+        if (profileError) {
+          return serverError('Failed to load permission profile', profileError, {
+            logContext: { route, method, ip, userId: tokenUser.userId, tenantId: tenant.id },
+          });
+        }
 
         const rolePermissions = ROLE_PERMISSIONS[memberRole] ?? [];
         const customPermissions = Array.isArray((profile as { custom_permissions?: unknown[] } | null)?.custom_permissions)
@@ -149,7 +189,10 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
         authType = 'user';
       } else if (apiKey) {
         const keyResult = await resolveBusinessByApiKey(serviceClient, apiKey);
-        if (!keyResult.key) return unauthorized('Invalid API key');
+        if (!keyResult.key) {
+          audit(401, 'auth_failure', 'invalid_api_key', { authType: 'api_key' });
+          return unauthorized('Invalid API key', { logContext: { route, method, ip, authType: 'api_key' } });
+        }
         tenant = keyResult.key.tenant;
 
         if (businessIdentifier) {
@@ -157,6 +200,7 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
           const slug = tenant.slug.toLowerCase();
           const businessId = tenant.business_id?.toLowerCase();
           if (normalized !== slug && normalized !== businessId) {
+            audit(401, 'auth_failure', 'business_mismatch_for_api_key', { tenantId: tenant.id, authType: 'api_key' });
             return badRequest('Business not found');
           }
         }
@@ -166,7 +210,23 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
         memberPermissions = ROLE_PERMISSIONS.owner;
         supabase = serviceClient;
       } else {
-        return unauthorized('Missing access token');
+        audit(401, 'auth_failure', 'missing_access_token');
+        return unauthorized('Missing access token', { logContext: { route, method, ip } });
+      }
+
+      const billingAccess = await verifyBusinessBillingAccessByTenantId(serviceClient, tenant.id);
+      if (billingAccess.error) {
+        return serverError('Failed to verify business billing status', billingAccess.error, {
+          logContext: { route, method, ip, userId: user.userId, tenantId: tenant.id, authType },
+        });
+      }
+      if (!billingAccess.allowed) {
+        audit(402, 'billing_denied', 'subscription_unpaid', {
+          userId: user.userId,
+          tenantId: tenant.id,
+          authType,
+        });
+        return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.');
       }
 
       const params = routeCtx?.params
@@ -175,7 +235,7 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
           : routeCtx.params
         : ({} as P);
 
-      return await handler({
+      const response = await handler({
         supabase,
         serviceClient,
         tenant,
@@ -187,8 +247,16 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
         params,
         authType,
       });
+
+      if (response.status < 400) {
+        audit(200, 'auth_success', 'authorized_request', { userId: user.userId, tenantId: tenant.id, authType });
+      } else if (response.status === 403) {
+        audit(403, 'authz_denied', 'forbidden_response', { userId: user.userId, tenantId: tenant.id, authType });
+      }
+
+      return response;
     } catch (error) {
-      return serverError('Internal server error', error);
+      return serverError('Internal server error', error, { logContext: { route, method, ip } });
     }
   };
 }
