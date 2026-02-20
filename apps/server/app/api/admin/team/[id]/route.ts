@@ -2,6 +2,7 @@ import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
+import { isValidPublicId } from '@/lib/identifiers/public-id';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -110,7 +111,7 @@ export const PUT = withAuth<{ id: string }>(
   const { id } = params;
 
   const memberId = id?.trim?.().toUpperCase() ?? '';
-  if (!/^[A-Z0-9]{10}$/.test(memberId)) {
+  if (!isValidPublicId(memberId)) {
     return badRequest('Invalid team member id');
   }
 
@@ -354,7 +355,7 @@ export const DELETE = withAuth<{ id: string }>(async ({ serviceClient, tenant, m
   const { id } = params;
 
   const memberId = id?.trim?.().toUpperCase() ?? '';
-  if (!/^[A-Z0-9]{10}$/.test(memberId)) {
+  if (!isValidPublicId(memberId)) {
     return badRequest('Invalid team member id');
   }
 
