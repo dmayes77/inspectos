@@ -46,6 +46,7 @@ const NAV_SECTIONS = [
     label: "Account",
     items: [
       { href: "/app/settings/integrations",  label: "Integrations",     icon: Plug       },
+      { href: "/app/settings/integrations/smtp", label: "SMTP",         icon: Mail       },
       { href: "/app/settings/billing",       label: "Billing",          icon: CreditCard },
       { href: "/app/settings/compliance",    label: "Compliance",       icon: ShieldCheck},
     ],

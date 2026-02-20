@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
@@ -27,10 +27,20 @@ function RegisterPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const passwordChecks = getPasswordPolicyChecks(password);
+  const isRateLimited = cooldownSeconds > 0;
+
+  useEffect(() => {
+    if (!isRateLimited) return;
+    const timer = window.setInterval(() => {
+      setCooldownSeconds((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [isRateLimited]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +70,11 @@ function RegisterPageContent() {
       });
 
       if (signUpResult.error) {
+        if ((signUpResult.error as { status?: number }).status === 429) {
+          setCooldownSeconds(60);
+          setError("Too many signup attempts. Please wait 60 seconds and try again.");
+          return;
+        }
         throw new Error(signUpResult.error.message);
       }
 
@@ -89,6 +104,10 @@ function RegisterPageContent() {
         options: { emailRedirectTo: getEmailRedirectUrl() },
       });
       if (resendError) {
+        if ((resendError as { status?: number }).status === 429) {
+          setCooldownSeconds(60);
+          throw new Error("Too many requests. Please wait 60 seconds before resending.");
+        }
         throw new Error(resendError.message);
       }
       setNotice("Confirmation email resent.");
@@ -133,11 +152,16 @@ function RegisterPageContent() {
           {error ? (
             <p className="mt-2 text-sm text-red-500 dark:text-red-400">{error}</p>
           ) : null}
+          {isRateLimited ? (
+            <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+              Please wait {cooldownSeconds}s before trying again.
+            </p>
+          ) : null}
 
           <button
             type="button"
             onClick={handleResend}
-            disabled={isResending}
+            disabled={isResending || isRateLimited}
             className="mt-6 inline-flex w-full items-center justify-center rounded-lg border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
           >
             {isResending ? "Resending..." : "Resend confirmation email"}
@@ -240,10 +264,15 @@ function RegisterPageContent() {
           {notice ? (
             <p className="text-sm text-emerald-600 dark:text-emerald-400">{notice}</p>
           ) : null}
+          {isRateLimited ? (
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              Too many attempts. Try again in {cooldownSeconds}s.
+            </p>
+          ) : null}
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isRateLimited}
             className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Creating account..." : "Create account"}

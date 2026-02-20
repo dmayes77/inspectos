@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,20 @@ export default function IntegrationsSettingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Business SMTP</CardTitle>
+          <CardDescription>
+            Configure tenant-owned SMTP credentials for outbound business notifications.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" asChild>
+            <Link href="/app/settings/integrations/smtp">Open SMTP settings</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

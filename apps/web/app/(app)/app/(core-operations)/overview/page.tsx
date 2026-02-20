@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,7 @@ import { formatTime12 } from "@inspectos/shared/utils/dates";
 import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSettings } from "@/hooks/use-settings";
 
 const decisionTrendConfig = {
   margin: { label: "Margin", color: "var(--color-brand-500)" },
@@ -51,6 +52,8 @@ const referralConfig = {
 } satisfies ChartConfig;
 
 const formatMoney = (value: number) => `$${Math.round(value).toLocaleString()}`;
+const formatCurrency = (value: number, currency: string) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 
 const getOrderAddress = (order: {
   property?: {
@@ -108,13 +111,35 @@ const isOrderAssignedToUser = (
 
 export default function OverviewPage() {
   const { data: profile } = useProfile();
+  const { data: settings } = useSettings();
   const { data: ordersData, isLoading: ordersLoading } = useOrders();
   const { data: clientsData, isLoading: clientsLoading } = useClients();
+  const [showWelcome, setShowWelcome] = useState(false);
 
   const orders = useMemo(() => ordersData ?? [], [ordersData]);
   const clients = useMemo(() => clientsData ?? [], [clientsData]);
   const role = (profile?.role ?? "").toUpperCase();
   const isCommandCenterRole = role === "OWNER" || role === "ADMIN";
+  const businessId = settings?.business.businessId ?? "";
+  const billing = settings?.billing;
+  const inspectorBilling = settings?.business.inspectorBilling;
+
+  useEffect(() => {
+    if (!businessId) return;
+    const storageKey = `inspectos:dashboard-welcome-dismissed:${businessId}`;
+    const dismissedAt = window.localStorage.getItem(storageKey);
+    setShowWelcome(!dismissedAt);
+  }, [businessId]);
+
+  const dismissWelcome = () => {
+    if (!businessId) {
+      setShowWelcome(false);
+      return;
+    }
+    const storageKey = `inspectos:dashboard-welcome-dismissed:${businessId}`;
+    window.localStorage.setItem(storageKey, new Date().toISOString());
+    setShowWelcome(false);
+  };
 
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => orders.filter((order) => order.scheduled_date === today), [orders, today]);
@@ -463,7 +488,59 @@ export default function OverviewPage() {
   }
 
   return (
-      <div className="space-y-2.5">
+    <div className="space-y-2.5">
+      {showWelcome && billing && inspectorBilling ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-6">
+          <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+              Welcome to InspectOS
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">
+              Your account is ready
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+              You are on the {billing.planName} plan. Here is your current subscription setup and what to expect next.
+            </p>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border p-3 dark:border-gray-700">
+                <p className="text-xs text-muted-foreground">Base monthly</p>
+                <p className="text-lg font-semibold">
+                  {formatCurrency(billing.baseMonthlyPrice, billing.currency)}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3 dark:border-gray-700">
+                <p className="text-xs text-muted-foreground">Estimated monthly total</p>
+                <p className="text-lg font-semibold">
+                  {formatCurrency(inspectorBilling.estimatedMonthlyTotal, inspectorBilling.currency)}
+                </p>
+              </div>
+              <div className="rounded-lg border p-3 dark:border-gray-700">
+                <p className="text-xs text-muted-foreground">Included inspectors</p>
+                <p className="text-lg font-semibold">{inspectorBilling.includedInspectors}</p>
+              </div>
+              <div className="rounded-lg border p-3 dark:border-gray-700">
+                <p className="text-xs text-muted-foreground">Current inspector seats</p>
+                <p className="text-lg font-semibold">{settings.business.inspectorSeatCount}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border border-dashed p-3 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300">
+              <p>Expectations:</p>
+              <p>1. Billing runs monthly after your trial period ends.</p>
+              <p>2. Additional inspectors are billed per your plan seat price.</p>
+              <p>3. You can update branding, SMTP, and team permissions in Settings.</p>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <Button onClick={dismissWelcome} className="px-6">
+                Lets get started
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <AdminPageHeader
         title="Owner Command Center"
         description={`Margin-first view for ${greetingName}. Use this to price, cut, and scale with confidence.`}
