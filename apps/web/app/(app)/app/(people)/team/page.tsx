@@ -29,7 +29,7 @@ import { useApiClient } from "@/lib/api/tenant-context";
 import { can } from "@/lib/admin/permissions";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
-import { validatePasswordPolicy } from "@/lib/password-policy";
+import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
 const ROLE_OPTIONS: TeamMember["role"][] = ["OWNER", "ADMIN", "OFFICE_STAFF", "INSPECTOR"];
 
@@ -58,6 +58,7 @@ export default function TeamPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSavingLogin, setIsSavingLogin] = useState(false);
+  const loginPasswordChecks = getPasswordPolicyChecks(loginPassword.trim());
 
   const userRole = (profile?.role ?? "").toUpperCase();
   const userPermissions = profile?.permissions ?? [];
@@ -391,9 +392,23 @@ export default function TeamPage() {
                 type="password"
                 value={loginPassword}
                 onChange={(event) => setLoginPassword(event.target.value)}
-                placeholder="Min 8 characters"
+                placeholder="10+ chars, 1 uppercase, 1 number, 1 special"
                 autoComplete="new-password"
               />
+              {loginPassword ? (
+                <div className="space-y-1">
+                  {loginPasswordChecks.map((check) => (
+                    <p
+                      key={check.key}
+                      className={`text-xs ${
+                        check.met ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                      }`}
+                    >
+                      {check.met ? "✓" : "○"} {check.label}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </div>
 

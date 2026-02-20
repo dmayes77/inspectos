@@ -2,10 +2,10 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { validatePasswordPolicy } from "@/lib/password-policy";
+import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
 const REGISTER_API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/register`;
 
@@ -38,7 +38,6 @@ const PLAN_OPTIONS: Array<{
 ];
 
 function RegisterPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState({
@@ -53,6 +52,7 @@ function RegisterPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordChecks = getPasswordPolicyChecks(form.password);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -254,6 +254,18 @@ function RegisterPageContent() {
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
+                </div>
+                <div className="mt-2 space-y-1">
+                  {passwordChecks.map((check) => (
+                    <p
+                      key={check.key}
+                      className={`text-xs ${
+                        check.met ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500 dark:text-gray-400"
+                      }`}
+                    >
+                      {check.met ? "✓" : "○"} {check.label}
+                    </p>
+                  ))}
                 </div>
               </div>
             </>

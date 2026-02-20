@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -22,7 +21,7 @@ import { Save, Shield } from "lucide-react";
 import { useProfile } from "@/hooks/use-profile";
 import { useCreateTeamMember } from "@/hooks/use-team";
 import { can } from "@/lib/admin/permissions";
-import { validatePasswordPolicy } from "@/lib/password-policy";
+import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
 const roles = [
   {
@@ -80,6 +79,7 @@ export default function NewTeamMemberPage() {
   const [postalCode, setPostalCode] = useState("");
   const [country, setCountry] = useState("US");
   const [formError, setFormError] = useState<string | null>(null);
+  const passwordChecks = getPasswordPolicyChecks(password);
   const requiresInspectorAddress =
     selectedRole === "INSPECTOR" ||
     ((selectedRole === "OWNER" || selectedRole === "ADMIN") && isInspector);
@@ -246,6 +246,20 @@ export default function NewTeamMemberPage() {
                   minLength={password ? 10 : undefined}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                {password ? (
+                  <div className="mt-2 space-y-1">
+                    {passwordChecks.map((check) => (
+                      <p
+                        key={check.key}
+                        className={`text-xs ${
+                          check.met ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                        }`}
+                      >
+                        {check.met ? "✓" : "○"} {check.label}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
