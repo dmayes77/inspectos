@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +40,7 @@ import { formatTime12 } from "@inspectos/shared/utils/dates";
 import { useOrders } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSettings } from "@/hooks/use-settings";
+import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 
 const decisionTrendConfig = {
   margin: { label: "Margin", color: "var(--color-brand-500)" },
@@ -112,33 +112,36 @@ const isOrderAssignedToUser = (
 export default function OverviewPage() {
   const { data: profile } = useProfile();
   const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
   const { data: ordersData, isLoading: ordersLoading } = useOrders();
   const { data: clientsData, isLoading: clientsLoading } = useClients();
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [dismissError, setDismissError] = useState<string | null>(null);
+  const [isDismissingWelcome, setIsDismissingWelcome] = useState(false);
 
   const orders = useMemo(() => ordersData ?? [], [ordersData]);
   const clients = useMemo(() => clientsData ?? [], [clientsData]);
   const role = (profile?.role ?? "").toUpperCase();
   const isCommandCenterRole = role === "OWNER" || role === "ADMIN";
-  const businessId = settings?.business.businessId ?? "";
   const billing = settings?.billing;
   const inspectorBilling = settings?.business.inspectorBilling;
+  const dashboardWelcomeDismissed = Boolean(settings?.onboarding?.dashboardWelcomeDismissedAt);
+  const showWelcome = Boolean(isCommandCenterRole && settings && !dashboardWelcomeDismissed);
 
-  useEffect(() => {
-    if (!businessId) return;
-    const storageKey = `inspectos:dashboard-welcome-dismissed:${businessId}`;
-    const dismissedAt = window.localStorage.getItem(storageKey);
-    setShowWelcome(!dismissedAt);
-  }, [businessId]);
-
-  const dismissWelcome = () => {
-    if (!businessId) {
-      setShowWelcome(false);
-      return;
+  const dismissWelcome = async () => {
+    if (!settings) return;
+    setDismissError(null);
+    setIsDismissingWelcome(true);
+    try {
+      await updateSettings.mutateAsync({
+        onboarding: {
+          dashboardWelcomeDismissedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      setDismissError(error instanceof Error ? error.message : "Could not dismiss welcome screen.");
+    } finally {
+      setIsDismissingWelcome(false);
     }
-    const storageKey = `inspectos:dashboard-welcome-dismissed:${businessId}`;
-    window.localStorage.setItem(storageKey, new Date().toISOString());
-    setShowWelcome(false);
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -533,9 +536,14 @@ export default function OverviewPage() {
             </div>
 
             <div className="mt-6 flex justify-end">
-              <Button onClick={dismissWelcome} className="px-6">
-                Lets get started
-              </Button>
+              <div className="space-y-2 text-right">
+                {dismissError ? (
+                  <p className="text-xs text-red-500 dark:text-red-400">{dismissError}</p>
+                ) : null}
+                <Button onClick={dismissWelcome} className="px-6" disabled={isDismissingWelcome}>
+                  {isDismissingWelcome ? "Saving..." : "Lets get started"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

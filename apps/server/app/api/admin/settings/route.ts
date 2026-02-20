@@ -31,6 +31,9 @@ const defaultSettings = {
     maxInspectors: 5,
     additionalInspectorPrice: 99,
   },
+  onboarding: {
+    dashboardWelcomeDismissedAt: null as string | null,
+  },
 };
 
 type TenantSettings = typeof defaultSettings;
@@ -206,6 +209,7 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
     branding: { ...defaultSettings.branding, ...currentSettings.branding, ...updates.branding },
     notifications: { ...defaultSettings.notifications, ...currentSettings.notifications, ...updates.notifications },
     billing: { ...defaultSettings.billing, ...currentSettings.billing, ...updates.billing },
+    onboarding: { ...defaultSettings.onboarding, ...currentSettings.onboarding, ...updates.onboarding },
   };
 
   // Update tenant settings

@@ -33,6 +33,9 @@ export type TenantSettings = {
     maxInspectors: number;
     additionalInspectorPrice: number;
   };
+  onboarding: {
+    dashboardWelcomeDismissedAt: string | null;
+  };
   business: {
     businessId: string;
     inspectorSeatCount: number;
@@ -81,6 +84,9 @@ const defaultSettings: TenantSettings = {
     includedInspectors: 1,
     maxInspectors: 5,
     additionalInspectorPrice: 99,
+  },
+  onboarding: {
+    dashboardWelcomeDismissedAt: null,
   },
   business: {
     businessId: "",
