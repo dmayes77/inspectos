@@ -29,6 +29,7 @@ import { useApiClient } from "@/lib/api/tenant-context";
 import { can } from "@/lib/admin/permissions";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
+import { validatePasswordPolicy } from "@/lib/password-policy";
 
 const ROLE_OPTIONS: TeamMember["role"][] = ["OWNER", "ADMIN", "OFFICE_STAFF", "INSPECTOR"];
 
@@ -122,9 +123,12 @@ export default function TeamPage() {
       setLoginError("Password is required.");
       return;
     }
-    if (hasPassword && loginPassword.trim().length < 8) {
-      setLoginError("Password must be at least 8 characters.");
-      return;
+    if (hasPassword) {
+      const passwordError = validatePasswordPolicy(loginPassword.trim());
+      if (passwordError) {
+        setLoginError(passwordError);
+        return;
+      }
     }
 
     setIsSavingLogin(true);

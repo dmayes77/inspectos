@@ -22,6 +22,7 @@ import { Save, Shield } from "lucide-react";
 import { useProfile } from "@/hooks/use-profile";
 import { useCreateTeamMember } from "@/hooks/use-team";
 import { can } from "@/lib/admin/permissions";
+import { validatePasswordPolicy } from "@/lib/password-policy";
 
 const roles = [
   {
@@ -93,6 +94,14 @@ export default function NewTeamMemberPage() {
     ) {
       setFormError("Address line 1, city, state, and ZIP are required for inspectors.");
       return;
+    }
+
+    if (password.trim()) {
+      const passwordError = validatePasswordPolicy(password.trim());
+      if (passwordError) {
+        setFormError(passwordError);
+        return;
+      }
     }
 
     setIsSaving(true);
@@ -232,9 +241,9 @@ export default function NewTeamMemberPage() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Min 8 characters"
+                  placeholder="10+ chars, 1 uppercase, 1 number, 1 special"
                   value={password}
-                  minLength={password ? 8 : undefined}
+                  minLength={password ? 10 : undefined}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>

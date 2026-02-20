@@ -9,7 +9,6 @@ import { BILLING_PLAN_DEFAULTS, type PlanCode } from "@/lib/billing/plans";
 type RegisterBody = {
   email?: string;
   company_name: string;
-  company_slug?: string;
   selected_plan?: {
     code?: PlanCode;
     name?: string;
@@ -34,6 +33,32 @@ const slugify = (value: string) =>
     .replace(/^-+|-+$/g, "")
     .slice(0, 48);
 
+async function resolveUniqueTenantSlug(companyName: string): Promise<string> {
+  const baseSlug = slugify(companyName) || "business";
+  const maxAttempts = 100;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const suffix = attempt === 0 ? "" : `-${attempt + 1}`;
+    const candidate = `${baseSlug}${suffix}`.slice(0, 63);
+
+    const { data: existingTenant, error } = await supabaseAdmin
+      .from("tenants")
+      .select("id")
+      .eq("slug", candidate)
+      .maybeSingle();
+
+    if (error) {
+      throw new Error(error.message || "Failed to generate a unique company slug.");
+    }
+
+    if (!existingTenant) {
+      return candidate;
+    }
+  }
+
+  return `${baseSlug}-${Date.now().toString(36)}`.slice(0, 63);
+}
+
 export async function POST(request: NextRequest) {
   const ip = getRequestIp(request);
   const route = request.nextUrl.pathname;
@@ -54,7 +79,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as RegisterBody;
-    const { company_name, company_slug, email } = body;
+    const { company_name, email } = body;
     const backoffKey = getAuthBackoffKey(ip, email);
     const backoffResponse = enforceAuthBackoff(backoffKey);
     if (backoffResponse) {
@@ -134,24 +159,7 @@ export async function POST(request: NextRequest) {
       return fail(409, "This account is already linked to a business.");
     }
 
-    const slug = company_slug?.trim() ? slugify(company_slug) : slugify(company_name);
-    if (!slug) {
-      return fail(400, "Invalid company name or slug.");
-    }
-
-    const { data: existingTenant, error: existingError } = await supabaseAdmin
-      .from("tenants")
-      .select("id")
-      .eq("slug", slug)
-      .maybeSingle();
-
-    if (existingError) {
-      return fail(400, existingError.message || "Failed to check business slug.");
-    }
-
-    if (existingTenant) {
-      return fail(409, "Company slug is already in use.");
-    }
+    const slug = await resolveUniqueTenantSlug(company_name);
 
     const requestedPlanCode = body.selected_plan?.code ?? "growth";
     const selectedPlan = BILLING_PLAN_DEFAULTS[requestedPlanCode] ?? BILLING_PLAN_DEFAULTS.growth;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { validatePasswordPolicy } from "@/lib/password-policy";
 
 const REGISTER_API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/register`;
 
@@ -45,7 +46,6 @@ function RegisterPageContent() {
     email: "",
     password: "",
     companyName: "",
-    companySlug: "",
     planCode: "growth" as PlanCode,
     agreeToTrial: false,
     agreeToAutopay: false,
@@ -61,8 +61,13 @@ function RegisterPageContent() {
     e.preventDefault();
 
     if (step === 1) {
-      if (!form.fullName.trim() || !form.email.trim() || form.password.length < 8) {
+      if (!form.fullName.trim() || !form.email.trim()) {
         setError("Complete all required account fields.");
+        return;
+      }
+      const passwordError = validatePasswordPolicy(form.password);
+      if (passwordError) {
+        setError(passwordError);
         return;
       }
       setError(null);
@@ -123,7 +128,6 @@ function RegisterPageContent() {
         body: JSON.stringify({
           email: form.email,
           company_name: form.companyName,
-          company_slug: form.companySlug,
           selected_plan: PLAN_OPTIONS.find((plan) => plan.code === form.planCode),
           trial: {
             enabled: true,
@@ -238,8 +242,8 @@ function RegisterPageContent() {
                     type={showPassword ? "text" : "password"}
                     value={form.password}
                     onChange={set("password")}
-                    placeholder="Create a password (8+ chars)"
-                    minLength={8}
+                    placeholder="Create a password (10+ chars, A-Z, 0-9, !)"
+                    minLength={10}
                     required
                     className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
@@ -267,20 +271,6 @@ function RegisterPageContent() {
                   onChange={set("companyName")}
                   placeholder="Acme Inspections"
                   required
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Company Slug{" "}
-                  <span className="text-gray-400 font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.companySlug}
-                  onChange={set("companySlug")}
-                  placeholder="acme"
                   className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
               </div>

@@ -1,5 +1,6 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
+import { validatePasswordPolicy } from '@/lib/security/password-policy';
 
 /**
  * PUT /api/admin/team/[id]/login
@@ -51,8 +52,11 @@ export const PUT = withAuth<{ id: string }>(async ({ serviceClient, tenant, memb
     return badRequest('Password is required');
   }
 
-  if (password !== undefined && password.length < 8) {
-    return badRequest('Password must be at least 8 characters');
+  if (password !== undefined) {
+    const passwordError = validatePasswordPolicy(password);
+    if (passwordError) {
+      return badRequest(passwordError);
+    }
   }
 
   if (password) {

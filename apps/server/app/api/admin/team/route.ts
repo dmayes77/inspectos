@@ -2,6 +2,7 @@ import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
+import { validatePasswordPolicy } from '@/lib/security/password-policy';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -237,8 +238,12 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
   let userId = foundUser?.id ?? null;
 
   if (!userId) {
-    if (!password || password.length < 8) {
-      return badRequest('Password is required (minimum 8 characters) when creating a new user');
+    if (!password) {
+      return badRequest('Password is required when creating a new user.');
+    }
+    const passwordError = validatePasswordPolicy(password);
+    if (passwordError) {
+      return badRequest(passwordError);
     }
 
     const { data: createdAuthUser, error: createAuthUserError } = await serviceClient.auth.admin.createUser({
@@ -253,8 +258,9 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
 
     userId = createdAuthUser.user.id;
   } else if (password) {
-    if (password.length < 8) {
-      return badRequest('Password must be at least 8 characters');
+    const passwordError = validatePasswordPolicy(password);
+    if (passwordError) {
+      return badRequest(passwordError);
     }
     const { error: resetPasswordError } = await serviceClient.auth.admin.updateUserById(userId, { password });
     if (resetPasswordError) {
