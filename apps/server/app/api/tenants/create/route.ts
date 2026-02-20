@@ -27,6 +27,20 @@ export async function POST(req: Request) {
     return Response.json({ error: "slug must be 3-40 chars: lowercase letters, numbers, hyphen" }, { status: 400 });
   }
 
+  const { data: existingMembership, error: existingMembershipError } = await supabaseAdmin
+    .from("tenant_members")
+    .select("tenant_id")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  if (existingMembershipError) {
+    return Response.json({ error: existingMembershipError.message }, { status: 400 });
+  }
+
+  if (existingMembership) {
+    return Response.json({ error: "This account is already linked to a business" }, { status: 409 });
+  }
+
   const { data: tenant, error: tErr } = await supabaseAdmin
     .from("tenants")
     .insert({ name, slug })
@@ -36,7 +50,7 @@ export async function POST(req: Request) {
   if (tErr) return Response.json({ error: tErr.message }, { status: 400 });
 
   const { error: mErr } = await supabaseAdmin
-    .from("memberships")
+    .from("tenant_members")
     .insert({ tenant_id: tenant.id, user_id: userData.user.id, role: "owner" });
 
   if (mErr) return Response.json({ error: mErr.message }, { status: 400 });

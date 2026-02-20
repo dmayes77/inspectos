@@ -23,7 +23,7 @@ import { toast } from "sonner";
 
 import { useServices, useDeleteService } from "@/hooks/use-services";
 import { useTemplates } from "@/hooks/use-templates";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { useProfile } from "@/hooks/use-profile";
 import { can } from "@/lib/admin/permissions";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 
@@ -42,8 +42,10 @@ export default function ServiceDetailPage() {
   const service = allServices.find((svc) => svc.serviceId === serviceId);
   const deleteService = useDeleteService();
   const { data: templatesData = [] } = useTemplates();
+  const { data: profile } = useProfile();
   const currentTemplate = templatesData.find((template) => template.id === service?.templateId);
-  const userRole = mockAdminUser.role;
+  const userRole = (profile?.role ?? "").toUpperCase();
+  const userPermissions = profile?.permissions ?? [];
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -107,7 +109,7 @@ export default function ServiceDetailPage() {
         }
         description={service.description || "No description provided."}
         actions={
-          can(userRole, "manage_billing") ? (
+          can(userRole, "manage_billing", userPermissions) ? (
             <div className="flex flex-wrap gap-2 sm:flex-nowrap">
               <Button asChild variant="outline">
                 <Link href={`/admin/services/${service.serviceId}/edit`}>

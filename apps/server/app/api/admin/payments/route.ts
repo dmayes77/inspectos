@@ -13,8 +13,13 @@ type PaymentRow = {
 /**
  * GET /api/admin/payments
  */
-export const GET = withAuth(async ({ supabase, tenant, memberRole }) => {
-  const permissionCheck = requirePermission(memberRole, 'view_invoices', 'You do not have permission to view payments');
+export const GET = withAuth(async ({ supabase, tenant, memberRole, memberPermissions }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'view_invoices',
+    'You do not have permission to view payments',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const { data, error } = await supabase
@@ -47,8 +52,13 @@ export const GET = withAuth(async ({ supabase, tenant, memberRole }) => {
 /**
  * POST /api/admin/payments
  */
-export const POST = withAuth(async ({ supabase, tenant, memberRole, request }) => {
-  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to record payments');
+export const POST = withAuth(async ({ supabase, tenant, memberRole, memberPermissions, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'create_invoices',
+    'You do not have permission to record payments',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const body = await request.json();

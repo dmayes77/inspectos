@@ -24,8 +24,28 @@ export type TenantSettings = {
     reportViewed: boolean;
     weeklySummary: boolean;
   };
+  billing: {
+    planCode: string;
+    planName: string;
+    currency: string;
+    baseMonthlyPrice: number;
+    includedInspectors: number;
+    maxInspectors: number;
+    additionalInspectorPrice: number;
+  };
   business: {
     businessId: string;
+    inspectorSeatCount: number;
+    inspectorBilling: {
+      includedInspectors: number;
+      maxInspectors: number;
+      additionalInspectorPrice: number;
+      billableAdditionalSeats: number;
+      additionalSeatsMonthlyCharge: number;
+      estimatedMonthlyTotal: number;
+      overSeatLimitBy: number;
+      currency: string;
+    };
     apiKeyPreview: string;
     apiKeyLastRotatedAt: string | null;
   };
@@ -53,8 +73,28 @@ const defaultSettings: TenantSettings = {
     reportViewed: false,
     weeklySummary: true,
   },
+  billing: {
+    planCode: "pro",
+    planName: "Professional",
+    currency: "USD",
+    baseMonthlyPrice: 99,
+    includedInspectors: 1,
+    maxInspectors: 5,
+    additionalInspectorPrice: 89,
+  },
   business: {
     businessId: "",
+    inspectorSeatCount: 0,
+    inspectorBilling: {
+      includedInspectors: 1,
+      maxInspectors: 5,
+      additionalInspectorPrice: 89,
+      billableAdditionalSeats: 0,
+      additionalSeatsMonthlyCharge: 0,
+      estimatedMonthlyTotal: 99,
+      overSeatLimitBy: 0,
+      currency: "USD",
+    },
     apiKeyPreview: "",
     apiKeyLastRotatedAt: null,
   },

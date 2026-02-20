@@ -4,52 +4,38 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { createApiClient, type ApiClient } from "./client";
 
 interface TenantContextValue {
-  businessSlug: string;
   apiClient: ApiClient;
 }
 
 const TenantContext = createContext<TenantContextValue | null>(null);
 
 interface TenantProviderProps {
-  businessSlug: string;
   children: ReactNode;
 }
 
 /**
- * Provider component that makes tenant context available to all child components
+ * Provider component that makes API context available to all child components.
+ * Business resolution now happens server-side from authenticated membership.
  */
-export function TenantProvider({ businessSlug, children }: TenantProviderProps) {
-  const resolvedBusinessSlug = businessSlug.trim();
-  const apiClient = useMemo(() => createApiClient(resolvedBusinessSlug), [resolvedBusinessSlug]);
+export function TenantProvider({ children }: TenantProviderProps) {
+  const apiClient = useMemo(() => createApiClient(), []);
 
   return (
-    <TenantContext.Provider value={{ businessSlug: resolvedBusinessSlug, apiClient }}>
+    <TenantContext.Provider value={{ apiClient }}>
       {children}
     </TenantContext.Provider>
   );
 }
 
 /**
- * Hook to access the current tenant slug
+ * Compatibility hook: business slug is no longer required client-side.
  */
 export function useTenant(): { tenantSlug: string } {
-  const context = useContext(TenantContext);
-
-  if (!context) {
-    throw new Error("useTenant must be used within TenantProvider");
-  }
-
-  return { tenantSlug: context.businessSlug };
+  return { tenantSlug: "" };
 }
 
 export function useBusiness(): { businessSlug: string } {
-  const context = useContext(TenantContext);
-
-  if (!context) {
-    throw new Error("useBusiness must be used within TenantProvider");
-  }
-
-  return { businessSlug: context.businessSlug };
+  return { businessSlug: "" };
 }
 
 /**

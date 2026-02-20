@@ -54,7 +54,7 @@ const defaultRetryConfig: RetryConfig = {
 };
 
 /**
- * Centralized API client with automatic authentication and business context
+ * Centralized API client with automatic authentication
  */
 export class ApiClient {
   private retryConfig: RetryConfig;
@@ -62,7 +62,6 @@ export class ApiClient {
   constructor(
     private baseUrl: string,
     private getAccessToken: () => Promise<string | null>,
-    private businessIdentifier: string,
     retryConfig?: Partial<RetryConfig>
   ) {
     this.retryConfig = { ...defaultRetryConfig, ...retryConfig };
@@ -154,8 +153,7 @@ export class ApiClient {
   private async executeRequest<T>(
     endpoint: string,
     options: RequestInit,
-    retryCount = 0,
-    includeBusinessScope = true
+    retryCount = 0
   ): Promise<T> {
     const token = await this.getAccessToken();
 
@@ -163,13 +161,7 @@ export class ApiClient {
       throw new ApiError(401, "UNAUTHORIZED", "No access token available");
     }
 
-    // Build URL with optional business query parameter.
-    const hasBusinessIdentifier =
-      includeBusinessScope && this.businessIdentifier.trim().length > 0;
-    const scopeQuery = hasBusinessIdentifier
-      ? `${endpoint.includes('?') ? '&' : '?'}business=${encodeURIComponent(this.businessIdentifier)}`
-      : "";
-    const url = `${this.baseUrl}${endpoint}${scopeQuery}`;
+    const url = `${this.baseUrl}${endpoint}`;
 
     try {
       const response = await fetch(url, {
@@ -183,16 +175,6 @@ export class ApiClient {
 
       if (!response.ok) {
         const error = await ApiError.fromResponse(response);
-
-        // If the provided business scope is invalid for this user, retry once
-        // without it and let the backend resolve the default tenant membership.
-        if (
-          includeBusinessScope &&
-          response.status === 400 &&
-          error.message === "Business not found"
-        ) {
-          return this.executeRequest<T>(endpoint, options, retryCount, false);
-        }
 
         // Retry on retryable status codes
         if (
@@ -240,16 +222,10 @@ export class ApiClient {
 /**
  * Factory function to create an API client instance
  */
-export function createApiClient(businessIdentifier: string): ApiClient {
+export function createApiClient(): ApiClient {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
   const getAccessToken = async (): Promise<string | null> => {
-    // Only bypass auth when BYPASS_AUTH is explicitly enabled
-    const bypassAuth = process.env.NEXT_PUBLIC_BYPASS_AUTH === 'true';
-    if (bypassAuth) {
-      return 'bypass-token';
-    }
-
     const { data: { session }, error } = await supabase.auth.getSession();
 
     if (error) {
@@ -281,5 +257,5 @@ export function createApiClient(businessIdentifier: string): ApiClient {
     });
   };
 
-  return new ApiClient(baseUrl, getAccessToken, businessIdentifier);
+  return new ApiClient(baseUrl, getAccessToken);
 }

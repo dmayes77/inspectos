@@ -19,6 +19,8 @@ export type UserProfile = {
   country: string | null;
   postal_code: string | null;
   role: string | null;
+  custom_permissions?: string[] | null;
+  permissions?: string[] | null;
 };
 
 export type ProfileUpdate = Partial<Omit<UserProfile, "id" | "email" | "role">>;

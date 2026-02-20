@@ -1,27 +1,31 @@
+"use client";
+
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Receipt, Download } from "lucide-react";
+import { CreditCard } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
 
-const mockInvoices = [
-  { id: "INV-001", date: "2024-01-15", amount: 99, status: "paid" },
-  { id: "INV-002", date: "2024-02-15", amount: 99, status: "paid" },
-  { id: "INV-003", date: "2024-03-15", amount: 99, status: "paid" },
-  { id: "INV-004", date: "2024-04-15", amount: 99, status: "pending" },
-  { id: "INV-005", date: "2024-05-15", amount: 99, status: "pending" },
-];
+function money(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
+}
 
 export default function BillingPage() {
-  return (
-    <>
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-      </div>
+  const { data: settings, isLoading } = useSettings();
 
+  if (isLoading || !settings) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading billing...</div>;
+  }
+
+  const billing = settings.business.inspectorBilling;
+  const base = settings.billing.baseMonthlyPrice;
+  const currency = billing.currency;
+
+  return (
+    <div className="space-y-6">
       <AdminPageHeader
         title="Billing & Invoices"
-        description="Manage your subscription and view invoices"
+        description="Inspector seats are tied to your plan limits and billed automatically."
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -32,90 +36,67 @@ export default function BillingPage() {
               <CardTitle>Current Plan</CardTitle>
             </div>
             <CardDescription>
-              You are currently on the Professional plan
+              {settings.billing.planName} ({settings.billing.planCode.toUpperCase()})
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div>
-                <h3 className="font-semibold">Professional</h3>
-                <p className="text-sm text-muted-foreground">
-                  Up to 5 inspectors, all features included
-                </p>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Base monthly</span>
+                <span className="text-lg font-semibold">{money(base, currency)}</span>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold">$99</p>
-                <p className="text-sm text-muted-foreground">/month</p>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Included inspector seats</span>
+                <span className="font-medium">{billing.includedInspectors}</span>
               </div>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <Button variant="outline">Change Plan</Button>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Additional seat price</span>
+                <span className="font-medium">{money(billing.additionalInspectorPrice, currency)}/seat</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Max seats on plan</span>
+                <span className="font-medium">{billing.maxInspectors}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Payment Method</CardTitle>
-            <CardDescription>
-              Manage your payment methods
-            </CardDescription>
+            <CardTitle>Inspector Seat Billing</CardTitle>
+            <CardDescription>Live seat usage and monthly overage calculation.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-14 items-center justify-center rounded bg-slate-800 text-white text-xs font-bold">
-                  VISA
-                </div>
-                <div>
-                  <p className="font-medium">•••• •••• •••• 4242</p>
-                  <p className="text-sm text-muted-foreground">Expires 12/2027</p>
-                </div>
+          <CardContent className="space-y-3">
+            <div className="rounded-lg border p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Current inspector seats</span>
+                <span className="text-lg font-semibold">{settings.business.inspectorSeatCount}</span>
               </div>
-              <Button variant="outline">Update</Button>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Billable additional seats</span>
+                <span className="font-medium">{billing.billableAdditionalSeats}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Additional seats charge</span>
+                <span className="font-medium">{money(billing.additionalSeatsMonthlyCharge, currency)}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Estimated monthly total</span>
+                <span className="text-lg font-semibold">{money(billing.estimatedMonthlyTotal, currency)}</span>
+              </div>
             </div>
+
+            {billing.overSeatLimitBy > 0 ? (
+              <Badge color="error">
+                Over seat limit by {billing.overSeatLimitBy}. Upgrade plan or reduce inspector seats.
+              </Badge>
+            ) : (
+              <Badge color="light">Within plan inspector seat limit.</Badge>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            <CardTitle>Invoices</CardTitle>
-          </div>
-          <CardDescription>
-            View and download your billing history
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {mockInvoices.map((invoice) => (
-              <div
-                key={invoice.id}
-                className="flex items-center justify-between rounded-lg border p-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="font-medium">{invoice.id}</p>
-                    <p className="text-sm text-muted-foreground">{invoice.date}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Badge color="light">
-                    {invoice.status === "paid" ? "Paid" : "Pending"}
-                  </Badge>
-                  <span className="font-medium">${invoice.amount}</span>
-                  <Button variant="ghost">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
-    </>
   );
 }
+

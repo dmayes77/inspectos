@@ -59,6 +59,20 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: "Unable to resolve user for business creation." }, { status: 401 });
     }
 
+    const { data: existingMembership, error: existingMembershipError } = await supabaseAdmin
+      .from("tenant_members")
+      .select("tenant_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingMembershipError) {
+      return Response.json({ error: existingMembershipError.message || "Failed to verify membership state." }, { status: 400 });
+    }
+
+    if (existingMembership) {
+      return Response.json({ error: "This account is already linked to a business." }, { status: 409 });
+    }
+
     const slug = company_slug?.trim() ? slugify(company_slug) : slugify(company_name);
     if (!slug) {
       return Response.json({ error: "Invalid company name or slug." }, { status: 400 });

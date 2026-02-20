@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,207 +9,402 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Mail, Phone, MapPin, Star, ClipboardList, Search } from "lucide-react";
-import { useTeamMembers } from "@/hooks/use-team";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
-import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert } from "@/components/ui/alert";
+import {
+  Plus,
+  Search,
+  Mail,
+  Phone,
+  FileText,
+  StickyNote,
+  Trash2,
+  KeyRound,
+} from "lucide-react";
+import { useTeamMembers, useUpdateTeamMember, useDeleteTeamMember, type TeamMember } from "@/hooks/use-team";
+import { useProfile } from "@/hooks/use-profile";
+import { useApiClient } from "@/lib/api/tenant-context";
 import { can } from "@/lib/admin/permissions";
+import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
 
-function formatShortMemberId(id?: string | null) {
-  if (!id) return "TM-0000";
-  const clean = id.replace(/-/g, "").toUpperCase();
-  return `TM-${clean.slice(-4).padStart(4, "0")}`;
+const ROLE_OPTIONS: TeamMember["role"][] = ["OWNER", "ADMIN", "OFFICE_STAFF", "INSPECTOR"];
+
+function getAssignableRoles(currentRole: string): TeamMember["role"][] {
+  if (currentRole === "OWNER") return ROLE_OPTIONS;
+  if (currentRole === "ADMIN") return ["ADMIN", "OFFICE_STAFF", "INSPECTOR"];
+  return [];
+}
+
+function canEditRoleForTarget(actorRole: string, targetRole: TeamMember["role"]) {
+  if (actorRole === "OWNER") return true;
+  if (actorRole === "ADMIN") return targetRole !== "OWNER";
+  return false;
 }
 
 export default function TeamPage() {
+  const apiClient = useApiClient();
   const { data: teamMembers = [], isLoading } = useTeamMembers();
+  const { data: profile } = useProfile();
+  const updateMember = useUpdateTeamMember();
+  const deleteMember = useDeleteTeamMember();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
-  const userRole = mockAdminUser.role;
+  const [loginDialogMember, setLoginDialogMember] = useState<TeamMember | null>(null);
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSavingLogin, setIsSavingLogin] = useState(false);
 
-  const inspectors = teamMembers.filter((m) => m.role === "INSPECTOR");
-  const activeMembers = teamMembers.filter((m) => m.status === "active");
+  const userRole = (profile?.role ?? "").toUpperCase();
+  const userPermissions = profile?.permissions ?? [];
+  const canInvite = can(userRole, "create_team", userPermissions);
+  const canEditMembers = can(userRole, "edit_team", userPermissions);
+  const canDeleteMembers = can(userRole, "delete_team", userPermissions);
+  const canManageRoles = can(userRole, "manage_roles", userPermissions);
+  const assignableRoles = getAssignableRoles(userRole);
 
-  // Show loading skeleton while data is being fetched
-  if (isLoading) {
-    return <AdminPageSkeleton listItems={8} />;
-  }
+  const inspectors = useMemo(() => teamMembers.filter((m) => m.isInspector), [teamMembers]);
+  const activeMembers = useMemo(() => teamMembers.filter((m) => m.status === "active"), [teamMembers]);
 
-  const filteredMembers = teamMembers.filter((member) => {
-    const matchesRole = roleFilter === "all" || member.role === roleFilter;
-    if (!matchesRole) return false;
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      member.name.toLowerCase().includes(query) ||
-      member.email.toLowerCase().includes(query) ||
-      member.teamMemberId.toLowerCase().includes(query)
-    );
-  });
+  const filteredMembers = useMemo(() => {
+    return teamMembers.filter((member) => {
+      const matchesRole = roleFilter === "all" || member.role === roleFilter;
+      if (!matchesRole) return false;
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return member.name.toLowerCase().includes(query) || member.email.toLowerCase().includes(query);
+    });
+  }, [teamMembers, roleFilter, searchQuery]);
 
   const roleOptions = [
     { value: "all", label: "All" },
     { value: "INSPECTOR", label: "Inspectors" },
-    { value: "OFFICE_STAFF", label: "Office Staff" },
+    { value: "OFFICE_STAFF", label: "Office" },
     { value: "ADMIN", label: "Admins" },
     { value: "OWNER", label: "Owners" },
   ];
 
+  const handleRoleChange = async (member: TeamMember, nextRole: TeamMember["role"]) => {
+    if (!canEditMembers || !canManageRoles) return;
+    if (nextRole === member.role) return;
+    if (!canEditRoleForTarget(userRole, member.role)) return;
+
+    await updateMember.mutateAsync({ memberId: member.memberId, role: nextRole });
+  };
+
+  const handleDelete = async (member: TeamMember) => {
+    if (!canDeleteMembers) return;
+    if (!canEditRoleForTarget(userRole, member.role)) return;
+    await deleteMember.mutateAsync(member.memberId);
+  };
+
+  const openLoginDialog = (member: TeamMember) => {
+    setLoginDialogMember(member);
+    setLoginPassword("");
+    setLoginError(null);
+  };
+
+  const closeLoginDialog = () => {
+    setLoginDialogMember(null);
+    setLoginPassword("");
+    setLoginError(null);
+  };
+
+  const handleResetLogin = async () => {
+    if (!loginDialogMember) return;
+    setLoginError(null);
+
+    const hasPassword = loginPassword.trim().length > 0;
+    if (!hasPassword) {
+      setLoginError("Password is required.");
+      return;
+    }
+    if (hasPassword && loginPassword.trim().length < 8) {
+      setLoginError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setIsSavingLogin(true);
+    try {
+      await apiClient.put(`/admin/team/${loginDialogMember.memberId}/login`, {
+        password: hasPassword ? loginPassword.trim() : undefined,
+      });
+      closeLoginDialog();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to reset login";
+      setLoginError(message);
+    } finally {
+      setIsSavingLogin(false);
+    }
+  };
+
+  if (isLoading) {
+    return <AdminPageSkeleton listItems={8} />;
+  }
+
   return (
-    <>
-    <div className="space-y-6">
+    <div className="space-y-4">
       <AdminPageHeader
         title="Team Members"
-        description="Manage team members, roles, and permissions"
+        description="Owner command view for access, role assignment, and member operations"
         actions={
-          can(userRole, "create_team") ? (
-          <Button asChild className="sm:w-auto">
-            <Link href="/admin/team/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Team Member
-            </Link>
-          </Button>
+          canInvite ? (
+            <Button asChild className="sm:w-auto">
+              <Link href="/admin/team/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Team Member
+              </Link>
+            </Button>
           ) : null
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
         <StatCard label="Total Members" value={teamMembers.length} />
         <StatCard label="Inspectors" value={inspectors.length} />
         <StatCard label="Active Members" value={activeMembers.length} />
         <StatCard label="Total Inspections" value={inspectors.reduce((acc, i) => acc + i.inspections, 0)} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team Directory</CardTitle>
-          <CardDescription>
-            {isLoading ? "Loading..." : `${filteredMembers.length} team members`}
-          </CardDescription>
+      <Card className="card-admin">
+        <CardHeader className="pb-2">
+          <CardTitle>Users</CardTitle>
+          <CardDescription>{filteredMembers.length} members</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-3">
-            <div className="relative">
+        <CardContent className="space-y-3">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search team members..."
-                className="pl-9!"
+                placeholder="Search by name or email"
+                className="h-9 pl-9"
               />
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {roleOptions.map((option) => (
                 <Button
                   key={option.value}
                   type="button"
                   variant={roleFilter === option.value ? "primary" : "outline"}
-                 
                   onClick={() => setRoleFilter(option.value)}
+                  size="sm"
                 >
                   {option.label}
                 </Button>
               ))}
             </div>
           </div>
+
+          {filteredMembers.length === 0 ? (
+            <div className="rounded-lg border border-dashed p-10 text-center">
+              <h3 className="text-lg font-semibold">No team members found</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Try a different filter or search term.</p>
+            </div>
+          ) : (
+            <>
+              <div className="hidden overflow-hidden rounded-md border lg:block">
+                <div className="grid grid-cols-12 border-b bg-muted/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <div className="col-span-1">Avatar</div>
+                  <div className="col-span-2">User ID</div>
+                  <div className="col-span-3">Details</div>
+                  <div className="col-span-2">Access</div>
+                  <div className="col-span-1">Color</div>
+                  <div className="col-span-3">Actions</div>
+                </div>
+                {filteredMembers.map((member) => {
+                  const canManageThisMemberRole =
+                    canEditMembers && canManageRoles && canEditRoleForTarget(userRole, member.role);
+                  const canResetMemberLogin = canEditMembers && canEditRoleForTarget(userRole, member.role);
+                  const canDeleteMemberRow = canDeleteMembers && canEditRoleForTarget(userRole, member.role);
+                  return (
+                    <div key={member.memberId} className="border-b last:border-b-0">
+                      <div className="grid grid-cols-12 items-center px-3 py-2">
+                        <div className="col-span-1">
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={member.avatarUrl} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {member.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+
+                        <div className="col-span-2">
+                          <Link href={`/admin/team/${member.memberId}`} className="text-sm font-medium leading-tight hover:underline">
+                            {member.name}
+                          </Link>
+                          <div className="mt-0.5 text-xs text-muted-foreground">ID# {member.memberId}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {member.status === "on_leave"
+                              ? "On Leave"
+                              : member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                          </div>
+                        </div>
+
+                        <div className="col-span-3 flex items-center gap-2.5 pr-3">
+                          <div className="min-w-0">
+                            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Mail className="h-3 w-3" />
+                              <span className="truncate">{member.email}</span>
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <span>{member.phone || "—"}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="col-span-2 pr-3">
+                          {canManageThisMemberRole ? (
+                            <Select value={member.role} onValueChange={(value) => handleRoleChange(member, value as TeamMember["role"])}>
+                              <SelectTrigger className="h-9 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {assignableRoles.map((role) => (
+                                  <SelectItem key={`${member.memberId}-${role}`} value={role} className="text-sm">
+                                    {role === "OFFICE_STAFF" ? "Office" : role.charAt(0) + role.slice(1).toLowerCase()}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="text-xs">{teamRoleBadge(member.role)}</div>
+                          )}
+                        </div>
+
+                        <div className="col-span-1">
+                          <div className="h-7 w-7 rounded border bg-primary/10" />
+                        </div>
+
+                        <div className="col-span-3 flex flex-nowrap items-center gap-1">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/admin/team/${member.memberId}`}>
+                              <FileText className="mr-1 h-3.5 w-3.5" />
+                              Profile
+                            </Link>
+                          </Button>
+                          {canResetMemberLogin ? (
+                            <Button size="sm" variant="outline" onClick={() => openLoginDialog(member)}>
+                              <KeyRound className="mr-1 h-3.5 w-3.5" />
+                              Reset
+                            </Button>
+                          ) : null}
+                          {canEditMembers ? (
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/admin/team/${member.memberId}/edit`}>Edit</Link>
+                            </Button>
+                          ) : null}
+                          {canDeleteMemberRow ? (
+                            <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDelete(member)}>
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              Delete
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-2 lg:hidden">
+                {filteredMembers.map((member) => (
+                  <Card key={member.memberId} className="card-admin">
+                    <CardContent className="space-y-2.5 pt-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={member.avatarUrl} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {member.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <Link href={`/admin/team/${member.memberId}`} className="font-medium hover:underline">
+                            {member.name}
+                          </Link>
+                          <div className="text-xs text-muted-foreground truncate">{member.email}</div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-[11px] text-muted-foreground">ID# {member.memberId}</span>
+                        {teamRoleBadge(member.role)}
+                        {teamStatusBadge(member.status)}
+                        <Badge color="light">{member.phone || "No phone"}</Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href={`/admin/team/${member.memberId}`}>
+                            <StickyNote className="mr-1 h-3.5 w-3.5" />Open
+                          </Link>
+                        </Button>
+                        {canEditMembers && canEditRoleForTarget(userRole, member.role) ? (
+                          <Button size="sm" variant="outline" onClick={() => openLoginDialog(member)}>
+                            <KeyRound className="mr-1 h-3.5 w-3.5" />Reset Login
+                          </Button>
+                        ) : null}
+                        {canEditMembers ? (
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/admin/team/${member.memberId}/edit`}>
+                              Edit
+                            </Link>
+                          </Button>
+                        ) : null}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Team Members Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <div className="col-span-full py-12 text-center text-muted-foreground">Loading…</div>
-        ) : filteredMembers.length === 0 ? (
-          <div className="col-span-full rounded-lg border border-dashed p-10 text-center">
-            <h3 className="text-lg font-semibold">No team members yet</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Invite your first inspector or office staff member.
-            </p>
-            {can(userRole, "create_team") && (
-              <Button asChild className="mt-4">
-                <Link href="/admin/team/new">Add team member</Link>
-              </Button>
-            )}
+      <Dialog open={Boolean(loginDialogMember)} onOpenChange={(open) => (!open ? closeLoginDialog() : undefined)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User Login</DialogTitle>
+            <DialogDescription>
+              Set a new password for {loginDialogMember?.name ?? "this member"}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reset-password">Password</Label>
+              <Input
+                id="reset-password"
+                type="password"
+                value={loginPassword}
+                onChange={(event) => setLoginPassword(event.target.value)}
+                placeholder="Min 8 characters"
+                autoComplete="new-password"
+              />
+            </div>
           </div>
-        ) : (
-          filteredMembers.map((member) => (
-            <Link key={member.teamMemberId} href={`/admin/team/${member.teamMemberId}`} className="block">
-              <Card className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer h-full">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={member.avatarUrl} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {member.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-base">{member.name}</CardTitle>
-                      <CardDescription className="flex flex-col gap-1 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {formatShortMemberId(member.id || member.teamMemberId)}
-                        </span>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {teamRoleBadge(member.role)}
-                          {teamStatusBadge(member.status)}
-                        </div>
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-1">
-                      {member.certifications.map((cert) => (
-                        <Badge key={cert} color="light" className="text-xs">
-                          {cert}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{member.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      {member.phone}
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {member.location}
-                    </div>
-                  </div>
-                  {member.role === "INSPECTOR" && (
-                    <div className="flex items-center justify-between border-t pt-4">
-                      <div className="flex items-center gap-1">
-                        <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">{member.inspections.toLocaleString()}</span>
-                        <span className="text-sm text-muted-foreground">inspections</span>
-                      </div>
-                      {member.rating && (
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                          <span className="text-sm font-medium">{member.rating}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {member.role !== "INSPECTOR" && <div className="border-t pt-4 text-xs text-muted-foreground">Joined {member.joinedDate}</div>}
-                  {/* No Edit button on card */}
-                </CardContent>
-              </Card>
-            </Link>
-          ))
-        )}
-      </div>
+
+          {loginError ? <Alert variant="error" title="Unable to save login" message={loginError} /> : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={closeLoginDialog} disabled={isSavingLogin}>
+              Cancel
+            </Button>
+            <Button onClick={handleResetLogin} disabled={isSavingLogin}>
+              {isSavingLogin ? "Saving..." : "Save Logins"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-    </>
   );
 }

@@ -51,14 +51,14 @@ export default function HrPage() {
             <div className="space-y-3">
               {teamMembers.map((member) => (
                 <Link
-                  key={member.teamMemberId}
-                  href={`/admin/team/${member.teamMemberId}`}
+                  key={member.memberId}
+                  href={`/admin/team/${member.memberId}`}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 text-sm hover:bg-muted/50"
                 >
                   <div className="space-y-1">
                     <p className="font-medium">{member.name}</p>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <Badge color="light">{member.teamMemberId}</Badge>
+                      <Badge color="light">{member.memberId}</Badge>
                       {teamRoleBadge(member.role)}
                       {teamStatusBadge(member.status)}
                     </div>

@@ -24,7 +24,7 @@ import {
 import { ModernDataTable } from "@/components/ui/modern-data-table";
 import { useClients, type Client } from "@/hooks/use-clients";
 import { useLeads, type Lead } from "@/hooks/use-leads";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { useProfile } from "@/hooks/use-profile";
 import { can } from "@/lib/admin/permissions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -41,10 +41,12 @@ import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
 function ClientsPageContent() {
   const { data: clientList = [] as Client[], isLoading } = useClients();
   const { data: leads = [] as Lead[], isLoading: leadsLoading } = useLeads();
+  const { data: profile } = useProfile();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("recent");
-  const userRole = mockAdminUser.role;
+  const userRole = (profile?.role ?? "").toUpperCase();
+  const userPermissions = profile?.permissions ?? [];
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -156,7 +158,7 @@ function ClientsPageContent() {
                 Add Lead
               </Link>
             </Button>
-            {can(userRole, "create_clients") && (
+            {can(userRole, "create_clients", userPermissions) && (
               <Button asChild>
                 <Link href="/admin/contacts/new">
                   <Plus className="mr-2 h-4 w-4" />
@@ -299,7 +301,7 @@ function ClientsPageContent() {
                   <p className="mt-2 text-sm text-muted-foreground">
                     Add your first client to start scheduling inspections.
                   </p>
-                  {can(userRole, "create_clients") && (
+                  {can(userRole, "create_clients", userPermissions) && (
                     <Button asChild className="mt-6">
                       <Link href="/admin/contacts/new">
                         <Plus className="mr-2 h-4 w-4" />

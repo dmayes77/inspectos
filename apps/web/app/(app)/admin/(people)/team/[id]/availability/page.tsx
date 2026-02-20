@@ -116,8 +116,10 @@ function getTypeLabel(type: string) {
 export default function TeamMemberAvailabilityPage() {
   const params = useParams();
   const { data: teamMembers = [] } = useTeamMembers();
+  const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const memberId = rawMemberId ? String(rawMemberId) : "";
   const member = teamMembers.find(
-    (m: TeamMember) => m.teamMemberId === params.id || m.id === params.id
+    (m: TeamMember) => m.memberId.toLowerCase() === memberId.toLowerCase()
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
@@ -153,13 +155,13 @@ export default function TeamMemberAvailabilityPage() {
 
   return (
     <>
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Back Button */}
 
       <AdminPageHeader
         title={
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12">
               <AvatarImage src={member.avatarUrl} />
               <AvatarFallback className="bg-primary/10 text-xl text-primary">
                 {member.name
@@ -169,13 +171,13 @@ export default function TeamMemberAvailabilityPage() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{member.name}&apos;s Availability</h1>
-              <p className="text-muted-foreground">Manage time off and working hours</p>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{member.name}&apos;s Availability</h1>
+              <p className="text-xs text-muted-foreground sm:text-sm">Manage time off and working hours</p>
             </div>
           </div>
         }
         actions={
-          <Button onClick={() => setAddTimeOffOpen(true)} className="sm:w-auto">
+          <Button size="sm" onClick={() => setAddTimeOffOpen(true)} className="sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
             Add Time Off
           </Button>
@@ -183,27 +185,27 @@ export default function TeamMemberAvailabilityPage() {
       />
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
+      <div className="grid gap-2 md:grid-cols-4">
+        <Card className="card-admin">
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold">{timeOffRequests.filter((r) => r.status === "approved").length}</div>
             <p className="text-sm text-muted-foreground">Approved Requests</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="card-admin">
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold">{timeOffRequests.filter((r) => r.status === "pending").length}</div>
             <p className="text-sm text-muted-foreground">Pending Requests</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="card-admin">
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold">15</div>
             <p className="text-sm text-muted-foreground">Days Used (2024)</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="card-admin">
+          <CardContent className="pt-4">
             <div className="text-2xl font-bold">10</div>
             <p className="text-sm text-muted-foreground">Days Remaining</p>
           </CardContent>
@@ -211,16 +213,16 @@ export default function TeamMemberAvailabilityPage() {
       </div>
 
       {/* Recurring Availability */}
-      <Card>
-        <CardHeader>
+      <Card className="card-admin">
+        <CardHeader className="pb-2">
           <CardTitle>Weekly Schedule</CardTitle>
           <CardDescription>Standard working hours for each day of the week</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-2">
           {Object.entries(recurringAvailability).map(([day, schedule]) => (
-            <div key={day} className="flex items-center gap-4">
+            <div key={day} className="flex items-center gap-3 rounded-md border px-2.5 py-2">
               <div className="w-32">
-                <p className="font-medium capitalize">{day}</p>
+                <p className="text-sm font-medium capitalize">{day}</p>
               </div>
               <div className="flex items-center gap-2 flex-1">
                 {schedule.available ? (
@@ -234,7 +236,7 @@ export default function TeamMemberAvailabilityPage() {
                   <Badge color="light">Not Available</Badge>
                 )}
               </div>
-              <Button variant="ghost">
+              <Button variant="ghost" size="sm">
                 <Edit className="h-4 w-4" />
               </Button>
             </div>
@@ -243,12 +245,12 @@ export default function TeamMemberAvailabilityPage() {
       </Card>
 
       {/* Time Off Requests */}
-      <Card>
-        <CardHeader>
+      <Card className="card-admin">
+        <CardHeader className="pb-2">
           <CardTitle>Time Off Requests</CardTitle>
           <CardDescription>View and manage all time off requests</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-2.5">
           {timeOffRequests.length === 0 ? (
             <div className="text-center py-8">
               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -257,7 +259,7 @@ export default function TeamMemberAvailabilityPage() {
             </div>
           ) : (
             timeOffRequests.map((request) => (
-              <div key={request.id} className="flex items-start justify-between border rounded-lg p-4">
+              <div key={request.id} className="flex items-start justify-between rounded-lg border p-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="font-medium">{getTypeLabel(request.type)}</h4>
@@ -274,22 +276,22 @@ export default function TeamMemberAvailabilityPage() {
                     <p className="pl-6 text-xs">Requested on {new Date(request.requestedDate).toLocaleDateString()}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   {request.status === "pending" && (
                     <>
-                      <Button variant="outline" className="text-green-600 hover:text-green-700" onClick={() => handleApproveRequest(request.id)}>
+                      <Button variant="outline" size="sm" className="text-green-600 hover:text-green-700" onClick={() => handleApproveRequest(request.id)}>
                         <CheckCircle className="mr-1 h-4 w-4" />
                         Approve
                       </Button>
-                      <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={() => handleDenyRequest(request.id)}>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDenyRequest(request.id)}>
                         <XCircle className="mr-1 h-4 w-4" />
                         Deny
                       </Button>
                     </>
                   )}
                   <Button
-                   
                     variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setSelectedRequestId(request.id);
                       setDeleteDialogOpen(true);

@@ -101,7 +101,9 @@ const pastInspections = [
 export default function TeamMemberSchedulePage() {
   const params = useParams();
   const { data: teamMembers = [] } = useTeamMembers();
-  const member = teamMembers.find((m) => m.teamMemberId === params.id);
+  const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const member = teamMembers.find((m) => m.memberId.toLowerCase() === memberId.toLowerCase());
 
   if (!member) {
     return (
@@ -114,13 +116,13 @@ export default function TeamMemberSchedulePage() {
 
   return (
     <>
-    <div className="section-gap-admin">
+    <div className="space-y-4">
       {/* Back Button */}
 
       <AdminPageHeader
         title={
-          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:text-left">
-            <Avatar className="h-16 w-16">
+          <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:items-center sm:text-left">
+            <Avatar className="h-12 w-12">
               <AvatarImage src={member.avatarUrl} />
               <AvatarFallback className="bg-primary/10 text-xl text-primary">
                 {member.name
@@ -130,13 +132,13 @@ export default function TeamMemberSchedulePage() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{member.name}&apos;s Schedule</h1>
-              <p className="text-sm text-muted-foreground">View and manage inspection assignments</p>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{member.name}&apos;s Schedule</h1>
+              <p className="text-xs text-muted-foreground sm:text-sm">View and manage inspection assignments</p>
             </div>
           </div>
         }
         actions={
-          <Button className="btn-admin sm:w-auto" asChild>
+          <Button size="sm" className="btn-admin sm:w-auto" asChild>
             <Link href="/admin/inspections/new">
               <Plus className="mr-2 h-4 w-4" />
               Assign Inspection
@@ -146,7 +148,7 @@ export default function TeamMemberSchedulePage() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 items-stretch gap-3 lg:grid-cols-4 section-gap-admin">
+      <div className="grid grid-cols-2 items-stretch gap-2 lg:grid-cols-4">
         <Card className="card-admin h-full">
           <CardContent className="flex h-full flex-col gap-1 pt-4">
             <div className="text-xl font-bold sm:text-2xl">{upcomingInspections.length}</div>
@@ -174,7 +176,7 @@ export default function TeamMemberSchedulePage() {
       </div>
 
       {/* Schedule Tabs */}
-      <Tabs defaultValue="upcoming" className="section-gap-admin">
+      <Tabs defaultValue="upcoming" className="space-y-3">
         <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:justify-start">
           <TabsTrigger value="upcoming">Upcoming ({upcomingInspections.length})</TabsTrigger>
           <TabsTrigger value="past">Past ({pastInspections.length})</TabsTrigger>
@@ -182,14 +184,14 @@ export default function TeamMemberSchedulePage() {
         </TabsList>
 
         {/* Upcoming Inspections */}
-        <TabsContent value="upcoming" className="section-gap-admin">
+        <TabsContent value="upcoming" className="space-y-2">
           {upcomingInspections.map((inspection) => (
-            <Card key={inspection.id} className="hover:shadow-md transition-shadow card-admin">
-              <CardHeader className="pb-3">
+            <Card key={inspection.id} className="card-admin transition-shadow hover:shadow-md">
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-lg">{inspection.propertyAddress}</CardTitle>
+                      <CardTitle className="text-base">{inspection.propertyAddress}</CardTitle>
                       {inspectionStatusBadge(inspection.status)}
                     </div>
                     <CardDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -206,7 +208,7 @@ export default function TeamMemberSchedulePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm">
                       <Home className="h-4 w-4 text-muted-foreground" />
@@ -214,7 +216,7 @@ export default function TeamMemberSchedulePage() {
                     </div>
                     <div className="text-sm text-muted-foreground">Client: {inspection.client}</div>
                   </div>
-                  <Button variant="outline" className="w-full sm:w-auto" asChild>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
                     <Link href={`/admin/inspections/${inspection.id}`}>View Details</Link>
                   </Button>
                 </div>
@@ -224,14 +226,14 @@ export default function TeamMemberSchedulePage() {
         </TabsContent>
 
         {/* Past Inspections */}
-        <TabsContent value="past" className="section-gap-admin">
+        <TabsContent value="past" className="space-y-2">
           {pastInspections.map((inspection) => (
-            <Card key={inspection.id} className="hover:shadow-md transition-shadow card-admin">
-              <CardHeader className="pb-3">
+            <Card key={inspection.id} className="card-admin transition-shadow hover:shadow-md">
+              <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <CardTitle className="text-lg">{inspection.propertyAddress}</CardTitle>
+                      <CardTitle className="text-base">{inspection.propertyAddress}</CardTitle>
                       {inspectionStatusBadge(inspection.status)}
                     </div>
                     <CardDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
@@ -248,7 +250,7 @@ export default function TeamMemberSchedulePage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm">
                       <Home className="h-4 w-4 text-muted-foreground" />
@@ -256,7 +258,7 @@ export default function TeamMemberSchedulePage() {
                     </div>
                     <div className="text-sm text-muted-foreground">Client: {inspection.client}</div>
                   </div>
-                  <Button variant="outline" className="w-full sm:w-auto" asChild>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
                     <Link href={`/admin/inspections/${inspection.id}`}>View Report</Link>
                   </Button>
                 </div>

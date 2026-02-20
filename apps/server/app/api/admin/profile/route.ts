@@ -1,18 +1,23 @@
 import { serverError, success, notFound } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 
-const PROFILE_FIELDS = 'id, email, full_name, avatar_url, phone, bio, social_facebook, social_twitter, social_linkedin, social_instagram, address_line1, address_line2, city, state_region, country, postal_code';
+const PROFILE_FIELDS =
+  'id, email, full_name, avatar_url, phone, bio, social_facebook, social_twitter, social_linkedin, social_instagram, address_line1, address_line2, city, state_region, country, postal_code, custom_permissions';
 
 /**
  * GET /api/admin/profile
  */
-export const GET = withAuth(async ({ supabase, user, memberRole }) => {
+export const GET = withAuth(async ({ supabase, user, memberRole, memberPermissions }) => {
   const profileResult = await supabase.from('profiles').select(PROFILE_FIELDS).eq('id', user.userId).single();
 
   if (profileResult.error) return serverError('Failed to fetch profile', profileResult.error);
   if (!profileResult.data) return notFound('Profile not found');
 
-  return success({ ...profileResult.data, role: memberRole });
+  return success({
+    ...profileResult.data,
+    role: memberRole,
+    permissions: memberPermissions,
+  });
 });
 
 /**

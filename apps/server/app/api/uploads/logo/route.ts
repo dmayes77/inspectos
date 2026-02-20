@@ -39,8 +39,13 @@ function buildSettings(currentSettings: Partial<TenantSettings>, logoUrl: string
   };
 }
 
-export const POST = withAuth(async ({ serviceClient, tenant, memberRole, request }) => {
-  const permissionCheck = requirePermission(memberRole, "edit_branding", "You do not have permission to update branding");
+export const POST = withAuth(async ({ serviceClient, tenant, memberRole, memberPermissions, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    "edit_branding",
+    "You do not have permission to update branding",
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const tenantId = tenant.id;
@@ -133,8 +138,13 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole, request
   return NextResponse.json({ logoUrl });
 });
 
-export const DELETE = withAuth(async ({ serviceClient, tenant, memberRole }) => {
-  const permissionCheck = requirePermission(memberRole, "edit_branding", "You do not have permission to update branding");
+export const DELETE = withAuth(async ({ serviceClient, tenant, memberRole, memberPermissions }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    "edit_branding",
+    "You do not have permission to update branding",
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const tenantId = tenant.id;

@@ -36,6 +36,7 @@ export interface AuthContext {
   business: { id: string; name: string; slug: string; business_id?: string };
   user: { userId: string; email?: string };
   memberRole: TenantMemberRole;
+  memberPermissions: Permission[];
   request: NextRequest;
   authType?: 'user' | 'api_key';
 }
@@ -85,6 +86,22 @@ const ROLE_PERMISSIONS: Record<TenantMemberRole, Permission[]> = {
   member: ['view_team', 'view_invoices'],
 };
 
+function isPermission(value: string): value is Permission {
+  return (
+    value === 'view_team' ||
+    value === 'create_team' ||
+    value === 'edit_team' ||
+    value === 'delete_team' ||
+    value === 'manage_roles' ||
+    value === 'view_settings' ||
+    value === 'edit_settings' ||
+    value === 'edit_branding' ||
+    value === 'view_billing' ||
+    value === 'view_invoices' ||
+    value === 'create_invoices'
+  );
+}
+
 type RouteCtx<P> = { params: Promise<P> | P };
 type AuthHandler<P = Record<string, string>> = (ctx: AuthContext & { params: P }) => Promise<Response>;
 
@@ -99,6 +116,7 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
       let supabase: SupabaseClient;
       let tenant: { id: string; name: string; slug: string; business_id?: string } | null = null;
       let memberRole: TenantMemberRole | undefined;
+      let memberPermissions: Permission[] = [];
       let user: { userId: string; email?: string } = { userId: 'api-key' };
       let authType: 'user' | 'api_key' = 'api_key';
 
@@ -107,21 +125,26 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
         if (!tokenUser) return unauthorized('Invalid access token');
 
         supabase = createUserClient(accessToken);
-        let tenantResult = await resolveTenant(serviceClient, tokenUser.userId, businessIdentifier);
+        const tenantResult = await resolveTenant(serviceClient, tokenUser.userId, null);
         tenant = tenantResult.tenant;
         memberRole = tenantResult.role;
 
-        // If explicit business scoping fails, fall back to the user's default tenant.
-        // This protects admin pages from hard-failing when stale env/config points at
-        // a business the current user can no longer access.
-        if ((!tenant || !memberRole) && businessIdentifier) {
-          tenantResult = await resolveTenant(serviceClient, tokenUser.userId, null);
-          tenant = tenantResult.tenant;
-          memberRole = tenantResult.role;
-        }
-
         if (tenantResult.error || !tenant) return badRequest('Business not found');
         if (!memberRole) return badRequest('Business role not found');
+        const { data: profile, error: profileError } = await serviceClient
+          .from('profiles')
+          .select('custom_permissions')
+          .eq('id', tokenUser.userId)
+          .maybeSingle();
+        if (profileError) return serverError('Failed to load permission profile', profileError);
+
+        const rolePermissions = ROLE_PERMISSIONS[memberRole] ?? [];
+        const customPermissions = Array.isArray((profile as { custom_permissions?: unknown[] } | null)?.custom_permissions)
+          ? (profile as { custom_permissions: unknown[] }).custom_permissions
+              .filter((value): value is string => typeof value === 'string')
+              .filter(isPermission)
+          : [];
+        memberPermissions = Array.from(new Set([...rolePermissions, ...customPermissions]));
         user = tokenUser;
         authType = 'user';
       } else if (apiKey) {
@@ -140,6 +163,7 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
 
         // API keys are owner-scoped by default in v1.
         memberRole = 'owner';
+        memberPermissions = ROLE_PERMISSIONS.owner;
         supabase = serviceClient;
       } else {
         return unauthorized('Missing access token');
@@ -151,7 +175,18 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
           : routeCtx.params
         : ({} as P);
 
-      return await handler({ supabase, serviceClient, tenant, business: tenant, user, memberRole, request, params, authType });
+      return await handler({
+        supabase,
+        serviceClient,
+        tenant,
+        business: tenant,
+        user,
+        memberRole,
+        memberPermissions,
+        request,
+        params,
+        authType,
+      });
     } catch (error) {
       return serverError('Internal server error', error);
     }
@@ -165,13 +200,22 @@ export function requireRoles(memberRole: TenantMemberRole, allowedRoles: TenantM
   return forbidden(message);
 }
 
-export function hasPermission(memberRole: TenantMemberRole, permission: Permission): boolean {
-  const permissions = ROLE_PERMISSIONS[memberRole] ?? [];
+export function hasPermission(
+  memberRole: TenantMemberRole,
+  permission: Permission,
+  memberPermissions?: Permission[]
+): boolean {
+  const permissions = memberPermissions && memberPermissions.length > 0 ? memberPermissions : ROLE_PERMISSIONS[memberRole] ?? [];
   return permissions.includes(permission);
 }
 
-export function requirePermission(memberRole: TenantMemberRole, permission: Permission, message = 'Insufficient permissions'): Response | null {
-  if (hasPermission(memberRole, permission)) {
+export function requirePermission(
+  memberRole: TenantMemberRole,
+  permission: Permission,
+  message = 'Insufficient permissions',
+  memberPermissions?: Permission[]
+): Response | null {
+  if (hasPermission(memberRole, permission, memberPermissions)) {
     return null;
   }
   return forbidden(message);

@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { useProfile } from "@/hooks/use-profile";
 import { can } from "@/lib/admin/permissions";
 import { useTemplates, useDuplicateTemplate, useUpdateTemplate, useCreateTemplateStub } from "@/hooks/use-templates";
 import { toast } from "sonner";
@@ -33,7 +33,9 @@ function getTypeBadge(type: string) {
 
 export default function TemplatesPage() {
   const router = useRouter();
-  const userRole = mockAdminUser.role;
+  const { data: profile } = useProfile();
+  const userRole = (profile?.role ?? "").toUpperCase();
+  const userPermissions = profile?.permissions ?? [];
   const { data: templates = [] } = useTemplates();
   const duplicateMutation = useDuplicateTemplate();
   const updateMutation = useUpdateTemplate();
@@ -112,7 +114,7 @@ export default function TemplatesPage() {
         title="Inspection Templates"
         description="Manage inspection checklists, agreements, and report templates"
         actions={
-          can(userRole, "create_templates") ? (
+          can(userRole, "create_templates", userPermissions) ? (
             <Button className="sm:w-auto" onClick={() => setShowNewDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New Template

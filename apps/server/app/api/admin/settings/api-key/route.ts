@@ -6,8 +6,13 @@ import { generateBusinessApiKey, hashBusinessApiKey, toApiKeyPreview } from "@/l
  * POST /api/admin/settings/api-key
  * Regenerate the business API key.
  */
-export const POST = withAuth(async ({ serviceClient, tenant, memberRole }) => {
-  const permissionCheck = requirePermission(memberRole, "edit_settings", "You do not have permission to regenerate API keys");
+export const POST = withAuth(async ({ serviceClient, tenant, memberRole, memberPermissions }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    "edit_settings",
+    "You do not have permission to regenerate API keys",
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   let nextApiKey = generateBusinessApiKey();

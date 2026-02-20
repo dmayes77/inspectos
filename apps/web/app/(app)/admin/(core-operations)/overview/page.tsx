@@ -333,6 +333,7 @@ export default function OverviewPage() {
   }
 
   const greetingName = (profile?.full_name || profile?.email || "").split(" ")[0];
+  const userPermissions = profile?.permissions ?? [];
 
   if (!isCommandCenterRole) {
     return (
@@ -341,7 +342,7 @@ export default function OverviewPage() {
           title="Operations Overview"
           description={`Execution-focused view for ${greetingName || "your team"}.`}
           actions={
-            can(profile?.role ?? "INSPECTOR", "create_inspections") ? (
+            can(profile?.role ?? "INSPECTOR", "create_inspections", userPermissions) ? (
               <Button asChild>
                 <Link href="/admin/orders/new">
                   <Plus className="mr-1.5 h-4 w-4" />
@@ -463,7 +464,7 @@ export default function OverviewPage() {
         title="Owner Command Center"
         description={`Margin-first view for ${greetingName}. Use this to price, cut, and scale with confidence.`}
         actions={
-          can(profile?.role ?? "owner", "create_inspections") ? (
+          can(profile?.role ?? "owner", "create_inspections", userPermissions) ? (
             <Button asChild>
               <Link href="/admin/orders/new">
                 <Plus className="mr-1.5 h-4 w-4" />

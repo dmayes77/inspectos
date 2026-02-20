@@ -37,12 +37,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const businessSlug = (
-    process.env.NEXT_PUBLIC_BUSINESS_SLUG ||
-    process.env.NEXT_PUBLIC_TENANT_SLUG ||
-    ""
-  ).trim();
-
   return (
     <html lang="en" suppressHydrationWarning className={outfit.variable}>
       <body
@@ -51,7 +45,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <TenantProvider businessSlug={businessSlug}>
+          <TenantProvider>
             <ReactQueryProvider>
               {children}
               <Toaster />

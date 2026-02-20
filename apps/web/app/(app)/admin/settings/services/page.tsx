@@ -12,7 +12,7 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { useServices, useDeleteService, type Service } from "@/hooks/use-services";
-import { mockAdminUser } from "@inspectos/shared/constants/mock-users";
+import { useProfile } from "@/hooks/use-profile";
 import { can } from "@/lib/admin/permissions";
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
@@ -33,7 +33,11 @@ const formatDuration = (minutes?: number) => {
   return `${label}h`;
 };
 
-const createServicesColumns = (userRole: string, handleArchive: (id: string) => void): ColumnDef<Service>[] => [
+const createServicesColumns = (
+  userRole: string,
+  userPermissions: string[],
+  handleArchive: (id: string) => void
+): ColumnDef<Service>[] => [
   {
     accessorKey: "name",
     header: "Name",
@@ -76,7 +80,7 @@ const createServicesColumns = (userRole: string, handleArchive: (id: string) => 
     header: "Actions",
     enableHiding: false,
     cell: ({ row }) =>
-      can(userRole, "manage_billing") ? (
+      can(userRole, "manage_billing", userPermissions) ? (
         <Button
           variant="destructive"
          
@@ -93,9 +97,11 @@ const createServicesColumns = (userRole: string, handleArchive: (id: string) => 
 
 export default function ServicesAdminPage() {
   const { data: allServices = [], isLoading, isError, error } = useServices();
+  const { data: profile } = useProfile();
   const deleteService = useDeleteService();
   const [typeFilter, setTypeFilter] = useState<FilterValue>("all");
-  const userRole = mockAdminUser.role;
+  const userRole = (profile?.role ?? "").toUpperCase();
+  const userPermissions = profile?.permissions ?? [];
 
   const filteredByType = useMemo(() => {
     return allServices.filter((service) => {
@@ -156,7 +162,7 @@ export default function ServicesAdminPage() {
           title="Services & Packages"
           description="Define individual services and bundle them into packages."
           actions={
-            can(userRole, "manage_billing") ? (
+            can(userRole, "manage_billing", userPermissions) ? (
               <div className="flex flex-wrap gap-2 sm:flex-nowrap">
                 <Button asChild>
                   <Link href="/admin/services/new?mode=service">
@@ -183,7 +189,7 @@ export default function ServicesAdminPage() {
       }
       table={
         <ModernDataTable
-          columns={createServicesColumns(userRole, handleArchive)}
+          columns={createServicesColumns(userRole, userPermissions, handleArchive)}
           data={filteredByType}
           title="All Services & Packages"
           description={`${stats.total} total (${stats.services} services, ${stats.packages} packages)`}
@@ -204,7 +210,7 @@ export default function ServicesAdminPage() {
                 <p className="mt-2 text-sm text-muted-foreground">
                   Create your first service or package to get started.
                 </p>
-                {can(userRole, "manage_billing") && (
+                {can(userRole, "manage_billing", userPermissions) && (
                   <Button className="mt-4" asChild>
                     <Link href="/admin/services/new?mode=service">Create service</Link>
                   </Button>

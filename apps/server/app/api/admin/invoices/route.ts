@@ -47,8 +47,13 @@ const normalizeDate = (value?: string | null) => {
 /**
  * GET /api/admin/invoices
  */
-export const GET = withAuth(async ({ supabase, tenant, memberRole }) => {
-  const permissionCheck = requirePermission(memberRole, 'view_invoices', 'You do not have permission to view invoices');
+export const GET = withAuth(async ({ supabase, tenant, memberRole, memberPermissions }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'view_invoices',
+    'You do not have permission to view invoices',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const { data, error } = await supabase
@@ -68,8 +73,13 @@ export const GET = withAuth(async ({ supabase, tenant, memberRole }) => {
 /**
  * POST /api/admin/invoices
  */
-export const POST = withAuth(async ({ supabase, tenant, memberRole, request }) => {
-  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to create invoices');
+export const POST = withAuth(async ({ supabase, tenant, memberRole, memberPermissions, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'create_invoices',
+    'You do not have permission to create invoices',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const payload = await request.json();

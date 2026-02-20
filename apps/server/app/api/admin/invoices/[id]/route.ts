@@ -47,8 +47,13 @@ const normalizeDate = (value?: string | null) => {
 /**
  * GET /api/admin/invoices/[id]
  */
-export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, params }) => {
-  const permissionCheck = requirePermission(memberRole, 'view_invoices', 'You do not have permission to view invoices');
+export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, memberPermissions, params }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'view_invoices',
+    'You do not have permission to view invoices',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;
@@ -71,8 +76,13 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, memberRol
 /**
  * PATCH /api/admin/invoices/[id]
  */
-export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, params, request }) => {
-  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to update invoices');
+export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, memberPermissions, params, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'create_invoices',
+    'You do not have permission to update invoices',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;
@@ -179,8 +189,13 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, memberR
 /**
  * DELETE /api/admin/invoices/[id]
  */
-export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, params }) => {
-  const permissionCheck = requirePermission(memberRole, 'create_invoices', 'You do not have permission to delete invoices');
+export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, memberPermissions, params }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'create_invoices',
+    'You do not have permission to delete invoices',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;

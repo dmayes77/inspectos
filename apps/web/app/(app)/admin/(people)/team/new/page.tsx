@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/layout/admin-page-header";
@@ -19,7 +19,9 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert } from "@/components/ui/alert";
 import { Save, Shield } from "lucide-react";
-import { generateNextTeamMemberId, type TeamMemberRole } from "@/lib/team-member-id";
+import { useProfile } from "@/hooks/use-profile";
+import { useCreateTeamMember } from "@/hooks/use-team";
+import { can } from "@/lib/admin/permissions";
 
 const roles = [
   {
@@ -46,21 +48,79 @@ const roles = [
 
 const certifications = ["ASHI", "InterNACHI", "NAHI", "CREIA", "NACHI"];
 
+function getAssignableRoles(currentRole: string) {
+  if (currentRole === "OWNER") {
+    return roles;
+  }
+  if (currentRole === "ADMIN") {
+    return roles.filter((role) => role.value !== "OWNER");
+  }
+  return [];
+}
+
 export default function NewTeamMemberPage() {
   const router = useRouter();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const createMember = useCreateTeamMember();
   const [selectedRole, setSelectedRole] = useState("INSPECTOR");
   const [selectedCertifications, setSelectedCertifications] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [sendLoginDetails, setSendLoginDetails] = useState(false);
+  const [isInspector, setIsInspector] = useState(false);
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [stateRegion, setStateRegion] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [country, setCountry] = useState("US");
+  const [formError, setFormError] = useState<string | null>(null);
+  const requiresInspectorAddress =
+    selectedRole === "INSPECTOR" ||
+    ((selectedRole === "OWNER" || selectedRole === "ADMIN") && isInspector);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
+    if (
+      requiresInspectorAddress &&
+      (!addressLine1.trim() || !city.trim() || !stateRegion.trim() || !postalCode.trim())
+    ) {
+      setFormError("Address line 1, city, state, and ZIP are required for inspectors.");
+      return;
+    }
+
     setIsSaving(true);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // TODO: Implement API call to create team member
-    router.push("/admin/team");
+    try {
+      await createMember.mutateAsync({
+        name: `${firstName} ${lastName}`.trim(),
+        email,
+        password,
+        sendLoginDetails,
+        phone,
+        role: selectedRole as "OWNER" | "ADMIN" | "INSPECTOR" | "OFFICE_STAFF",
+        isInspector:
+          selectedRole === "INSPECTOR"
+            ? true
+            : selectedRole === "OWNER" || selectedRole === "ADMIN"
+              ? isInspector
+              : false,
+        addressLine1,
+        addressLine2,
+        city,
+        stateRegion,
+        postalCode,
+        country,
+      });
+      router.push("/admin/team");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleCertification = (cert: string) => {
@@ -71,30 +131,58 @@ export default function NewTeamMemberPage() {
 
   const selectedRoleInfo = roles.find((r) => r.value === selectedRole);
 
-  // Mock counters for each role (in production, these would come from the database)
-  const roleCounters: Record<string, number> = {
-    OWNER: 2, // Last issued: ACM-1002 (Tom Anderson)
-    ADMIN: 2, // Shares counter with OWNER
-    INSPECTOR: 3, // Last issued: ACM-3003 (David Chen)
-    OFFICE_STAFF: 1, // Last issued: ACM-2001 (Jennifer Martinez)
-  };
+  const userRole = (profile?.role ?? "").toUpperCase();
+  const userPermissions = profile?.permissions ?? [];
+  const canInvite = can(userRole, "create_team", userPermissions);
+  const assignableRoles = getAssignableRoles(userRole);
 
-  // Get next ID for selected role
-  const getNextTeamMemberId = (role: TeamMemberRole): string => {
-    const lastNumber = roleCounters[role] || 0;
-    const result = generateNextTeamMemberId({
-      companyPrefix: 'ACM',
-      role,
-      lastIssuedNumberForRole: lastNumber,
-    });
-    return result.id;
-  };
+  useEffect(() => {
+    if (assignableRoles.length > 0 && !assignableRoles.some((role) => role.value === selectedRole)) {
+      setSelectedRole(assignableRoles[0].value);
+    }
+  }, [assignableRoles, selectedRole]);
 
-  const nextTeamMemberId = getNextTeamMemberId(selectedRole as TeamMemberRole);
+  useEffect(() => {
+    if (selectedRole === "INSPECTOR") {
+      setIsInspector(true);
+      return;
+    }
+    if (selectedRole !== "OWNER" && selectedRole !== "ADMIN") {
+      setIsInspector(false);
+    }
+  }, [selectedRole]);
+
+  if (profileLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Loading access...</div>;
+  }
+
+  if (!canInvite) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <AdminPageHeader
+          title="Add Team Member"
+          description="Only owners and admins can send team invites."
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Access Restricted</CardTitle>
+            <CardDescription>
+              You do not have permission to invite members to this business.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline">
+              <Link href="/admin/team">Back to Team</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
-    <div className="space-y-6 max-w-4xl">
+    <div className="max-w-5xl space-y-4">
       {/* Back Button */}
 
       <AdminPageHeader
@@ -102,129 +190,155 @@ export default function NewTeamMemberPage() {
         description="Create a new team member account with role and permissions"
       />
 
-      {/* Next ID Alert */}
       <Alert
         variant="info"
-        title="Team Member ID"
-        message={
-          <>
-            This team member will be assigned ID: <span className="font-mono font-semibold">{nextTeamMemberId}</span>
-            <br />
-            <span className="text-xs">This ID is permanently assigned and will be used for authentication. The leading digit indicates the role type.</span>
-          </>
-        }
+        title="Identity Model"
+        message="Members sign in with their globally unique email. Internal UUID identity is managed automatically."
       />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {formError ? (
+          <Alert variant="error" title="Missing required fields" message={formError} />
+        ) : null}
         {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Personal details and contact information</CardDescription>
+        <Card className="card-admin">
+          <CardHeader className="pb-2">
+            <CardTitle>Add A New User</CardTitle>
+            <CardDescription>Member setup and access configuration</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
-                <Input id="firstName" placeholder="John" required />
+                <Input id="firstName" placeholder="John" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name *</Label>
-                <Input id="lastName" placeholder="Doe" required />
+                <Input id="lastName" placeholder="Doe" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" placeholder="john@example.com" required />
+                <Input id="email" type="email" placeholder="john@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone *</Label>
-                <Input id="phone" type="tel" placeholder="(555) 123-4567" required />
+                <Input id="phone" type="tel" placeholder="(555) 123-4567" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Min 8 characters"
+                  value={password}
+                  minLength={password ? 8 : undefined}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Brief description of experience and specialties..."
-                rows={3}
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="role">Permissions *</Label>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Role-based access</span>
+                </div>
+                <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select a role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assignableRoles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select defaultValue="active">
+                  <SelectTrigger id="status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="on_leave">On Leave</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="send-login-details"
+                checked={sendLoginDetails}
+                onCheckedChange={(value) => setSendLoginDetails(Boolean(value))}
               />
+              <Label htmlFor="send-login-details" className="text-xs uppercase tracking-wide text-muted-foreground">
+                Send user login details?
+              </Label>
             </div>
+
+            {(selectedRole === "OWNER" || selectedRole === "ADMIN" || selectedRole === "INSPECTOR") ? (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="also-inspector"
+                  checked={selectedRole === "INSPECTOR" ? true : isInspector}
+                  disabled={selectedRole === "INSPECTOR"}
+                  onCheckedChange={(value) => setIsInspector(Boolean(value))}
+                />
+                <Label htmlFor="also-inspector" className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Also inspector (billable seat)
+                </Label>
+              </div>
+            ) : null}
+
+            {selectedRoleInfo && (
+              <p className="text-xs text-muted-foreground">{selectedRoleInfo.description}</p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Role & Permissions */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              <CardTitle>Role & Permissions</CardTitle>
-            </div>
-            <CardDescription>Select the role and access level for this team member</CardDescription>
+        {/* Additional Options */}
+        <Card className="card-admin">
+          <CardHeader className="pb-2">
+            <CardTitle>Additional Options</CardTitle>
+            <CardDescription>Address is optional, required for inspectors</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label htmlFor="role">Role *</Label>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.value} value={role.value}>
-                      {role.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedRoleInfo && (
-                <p className="text-sm text-muted-foreground">{selectedRoleInfo.description}</p>
-              )}
+              <Label htmlFor="address">Street Address {requiresInspectorAddress ? "*" : ""}</Label>
+              <Input id="address" placeholder="123 Main St" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} required={requiresInspectorAddress} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status *</Label>
-              <Select defaultValue="active">
-                <SelectTrigger id="status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="on_leave">On Leave</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Location */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Location</CardTitle>
-            <CardDescription>Physical address and service area</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="address">Street Address</Label>
-              <Input id="address" placeholder="123 Main St" />
+              <Label htmlFor="address2">Address Line 2</Label>
+              <Input id="address2" placeholder="Suite, unit, etc." value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input id="city" placeholder="Austin" />
+                <Label htmlFor="city">City {requiresInspectorAddress ? "*" : ""}</Label>
+                <Input id="city" placeholder="Austin" value={city} onChange={(e) => setCity(e.target.value)} required={requiresInspectorAddress} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input id="state" placeholder="TX" />
+                <Label htmlFor="state">State {requiresInspectorAddress ? "*" : ""}</Label>
+                <Input id="state" placeholder="TX" value={stateRegion} onChange={(e) => setStateRegion(e.target.value)} required={requiresInspectorAddress} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zipCode">ZIP Code</Label>
-                <Input id="zipCode" placeholder="78701" />
+                <Label htmlFor="zipCode">ZIP Code {requiresInspectorAddress ? "*" : ""}</Label>
+                <Input id="zipCode" placeholder="78701" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} required={requiresInspectorAddress} />
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="country">Country</Label>
+                <Input id="country" placeholder="US" value={country} onChange={(e) => setCountry(e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -232,15 +346,15 @@ export default function NewTeamMemberPage() {
 
         {/* Inspector Specific Fields */}
         {selectedRole === "INSPECTOR" && (
-          <Card>
-            <CardHeader>
+          <Card className="card-admin">
+            <CardHeader className="pb-2">
               <CardTitle>Inspector Certifications</CardTitle>
               <CardDescription>Professional certifications and credentials</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {certifications.map((cert) => (
-                  <div key={cert} className="flex items-center space-x-2">
+                  <div key={cert} className="flex items-center space-x-2 rounded-md border px-2 py-1.5">
                     <Checkbox
                       id={cert}
                       checked={selectedCertifications.includes(cert)}
@@ -248,7 +362,7 @@ export default function NewTeamMemberPage() {
                     />
                     <Label
                       htmlFor={cert}
-                      className="text-sm font-normal cursor-pointer"
+                      className="cursor-pointer text-sm font-normal"
                     >
                       {cert}
                     </Label>
@@ -260,11 +374,11 @@ export default function NewTeamMemberPage() {
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between">
-          <Button type="button" variant="outline" asChild>
+        <div className="flex items-center justify-between border-t pt-3">
+          <Button type="button" variant="outline" size="sm" asChild>
             <Link href="/admin/team">Cancel</Link>
           </Button>
-          <Button type="submit" disabled={isSaving}>
+          <Button type="submit" size="sm" disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />
             {isSaving ? "Creating..." : "Create Team Member"}
           </Button>

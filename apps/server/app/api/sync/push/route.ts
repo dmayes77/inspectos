@@ -81,13 +81,24 @@ export async function POST(request: NextRequest) {
     // Verify user is a member of this tenant
     const { data: membership, error: membershipError } = await supabase
       .from('tenant_members')
-      .select('id, role')
+      .select('id, role, profiles!inner(is_inspector)')
       .eq('tenant_id', body.tenant_id)
       .eq('user_id', user.userId)
       .single();
 
     if (membershipError || !membership) {
       return unauthorized('Not a member of this tenant');
+    }
+
+    const membershipProfile = Array.isArray((membership as { profiles?: unknown[] }).profiles)
+      ? (membership as { profiles?: unknown[] }).profiles?.[0]
+      : (membership as { profiles?: unknown }).profiles;
+    const hasInspectorAccess =
+      (membership as { role?: string }).role === 'inspector' ||
+      Boolean((membershipProfile as { is_inspector?: boolean } | undefined)?.is_inspector);
+
+    if (!hasInspectorAccess) {
+      return unauthorized('Inspector mobile access is restricted to inspector seats.');
     }
 
     const results: PushResult[] = [];

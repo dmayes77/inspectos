@@ -1,5 +1,6 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Default settings structure
 const defaultSettings = {
@@ -21,22 +22,100 @@ const defaultSettings = {
     inspectionReminders: true,
     paymentReminders: true,
   },
+  billing: {
+    planCode: 'pro',
+    planName: 'Professional',
+    currency: 'USD',
+    baseMonthlyPrice: 99,
+    includedInspectors: 1,
+    maxInspectors: 5,
+    additionalInspectorPrice: 89,
+  },
 };
 
 type TenantSettings = typeof defaultSettings;
 type SettingsResponse = TenantSettings & {
   business: {
     businessId: string;
+    inspectorSeatCount: number;
+    inspectorBilling: {
+      includedInspectors: number;
+      maxInspectors: number;
+      additionalInspectorPrice: number;
+      billableAdditionalSeats: number;
+      additionalSeatsMonthlyCharge: number;
+      estimatedMonthlyTotal: number;
+      overSeatLimitBy: number;
+      currency: string;
+    };
     apiKeyPreview: string;
     apiKeyLastRotatedAt: string | null;
   };
 };
 
+function getBillingConfig(settings: Partial<TenantSettings> | null | undefined) {
+  const source = settings?.billing ?? {};
+  const includedInspectors = Math.max(0, Number((source as { includedInspectors?: number }).includedInspectors ?? 1));
+  const maxInspectors = Math.max(includedInspectors, Number((source as { maxInspectors?: number }).maxInspectors ?? 5));
+  const additionalInspectorPrice = Math.max(0, Number((source as { additionalInspectorPrice?: number }).additionalInspectorPrice ?? 89));
+  const baseMonthlyPrice = Math.max(0, Number((source as { baseMonthlyPrice?: number }).baseMonthlyPrice ?? 99));
+  const currency = typeof (source as { currency?: string }).currency === 'string' && (source as { currency?: string }).currency
+    ? (source as { currency: string }).currency
+    : 'USD';
+  return {
+    includedInspectors,
+    maxInspectors,
+    additionalInspectorPrice,
+    baseMonthlyPrice,
+    currency,
+  };
+}
+
+function computeInspectorBilling(
+  inspectorSeatCount: number,
+  config: ReturnType<typeof getBillingConfig>
+) {
+  const billableAdditionalSeats = Math.max(0, inspectorSeatCount - config.includedInspectors);
+  const additionalSeatsMonthlyCharge = billableAdditionalSeats * config.additionalInspectorPrice;
+  const estimatedMonthlyTotal = config.baseMonthlyPrice + additionalSeatsMonthlyCharge;
+  const overSeatLimitBy = Math.max(0, inspectorSeatCount - config.maxInspectors);
+
+  return {
+    includedInspectors: config.includedInspectors,
+    maxInspectors: config.maxInspectors,
+    additionalInspectorPrice: config.additionalInspectorPrice,
+    billableAdditionalSeats,
+    additionalSeatsMonthlyCharge,
+    estimatedMonthlyTotal,
+    overSeatLimitBy,
+    currency: config.currency,
+  };
+}
+
+async function countInspectorSeats(serviceClient: SupabaseClient, tenantId: string) {
+  const { count, error } = await serviceClient
+    .from('tenant_members')
+    .select('user_id, profiles!inner(id)', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('profiles.is_inspector', true);
+
+  if (error) {
+    return { inspectorSeatCount: 0, error };
+  }
+
+  return { inspectorSeatCount: count ?? 0, error: null };
+}
+
 /**
  * GET /api/admin/settings
  */
-export const GET = withAuth(async ({ serviceClient, tenant, memberRole }) => {
-  const permissionCheck = requirePermission(memberRole, 'view_settings', 'You do not have permission to view settings');
+export const GET = withAuth(async ({ serviceClient, tenant, memberRole, memberPermissions }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'view_settings',
+    'You do not have permission to view settings',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const { data, error } = await serviceClient
@@ -69,10 +148,19 @@ export const GET = withAuth(async ({ serviceClient, tenant, memberRole }) => {
     .limit(1)
     .maybeSingle();
 
+  const { inspectorSeatCount, error: seatCountError } = await countInspectorSeats(serviceClient, tenant.id);
+  if (seatCountError) {
+    return serverError('Failed to fetch inspector seat count', seatCountError);
+  }
+  const billingConfig = getBillingConfig(settings);
+  const inspectorBilling = computeInspectorBilling(inspectorSeatCount, billingConfig);
+
   const response: SettingsResponse = {
     ...settings,
     business: {
       businessId: data?.business_id ?? '',
+      inspectorSeatCount,
+      inspectorBilling,
       apiKeyPreview: keyData?.key_prefix ? `${keyData.key_prefix}••••••••` : '',
       apiKeyLastRotatedAt: keyData?.created_at ?? null,
     },
@@ -84,8 +172,13 @@ export const GET = withAuth(async ({ serviceClient, tenant, memberRole }) => {
 /**
  * PUT /api/admin/settings
  */
-export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, request }) => {
-  const permissionCheck = requirePermission(memberRole, 'edit_settings', 'You do not have permission to update settings');
+export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPermissions, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'edit_settings',
+    'You do not have permission to update settings',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const body = await request.json();
@@ -112,6 +205,7 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, request 
     company: { ...defaultSettings.company, ...currentSettings.company, ...updates.company },
     branding: { ...defaultSettings.branding, ...currentSettings.branding, ...updates.branding },
     notifications: { ...defaultSettings.notifications, ...currentSettings.notifications, ...updates.notifications },
+    billing: { ...defaultSettings.billing, ...currentSettings.billing, ...updates.billing },
   };
 
   // Update tenant settings
@@ -139,10 +233,19 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, request 
     .limit(1)
     .maybeSingle();
 
+  const { inspectorSeatCount, error: seatCountError } = await countInspectorSeats(serviceClient, tenant.id);
+  if (seatCountError) {
+    return serverError('Failed to fetch inspector seat count', seatCountError);
+  }
+  const billingConfig = getBillingConfig(newSettings);
+  const inspectorBilling = computeInspectorBilling(inspectorSeatCount, billingConfig);
+
   const response: SettingsResponse = {
     ...newSettings,
     business: {
       businessId: data?.business_id ?? '',
+      inspectorSeatCount,
+      inspectorBilling,
       apiKeyPreview: keyData?.key_prefix ? `${keyData.key_prefix}••••••••` : '',
       apiKeyLastRotatedAt: keyData?.created_at ?? null,
     },

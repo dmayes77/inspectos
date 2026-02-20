@@ -4,8 +4,13 @@ import { requirePermission, withAuth } from '@/lib/api/with-auth';
 /**
  * GET /api/admin/payouts
  */
-export const GET = withAuth(async ({ supabase, tenant, memberRole, request }) => {
-  const permissionCheck = requirePermission(memberRole, 'view_billing', 'You do not have permission to view payouts');
+export const GET = withAuth(async ({ supabase, tenant, memberRole, memberPermissions, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'view_billing',
+    'You do not have permission to view payouts',
+    memberPermissions
+  );
   if (permissionCheck) return permissionCheck;
 
   const status = request.nextUrl.searchParams.get('status');

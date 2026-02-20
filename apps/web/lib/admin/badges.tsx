@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 
+const COMPACT_TEAM_BADGE_CLASS = "h-5 px-1.5 text-[10px] font-medium leading-none";
+
 export function inspectionStatusBadge(status: string) {
   switch (status) {
     case "scheduled":
@@ -18,28 +20,28 @@ export function inspectionStatusBadge(status: string) {
 export function teamRoleBadge(role: string) {
   switch (role) {
     case "OWNER":
-      return <Badge color="primary" variant="solid">Owner</Badge>;
+      return <Badge color="primary" variant="solid" className={COMPACT_TEAM_BADGE_CLASS}>Owner</Badge>;
     case "ADMIN":
-      return <Badge color="info" variant="solid">Admin</Badge>;
+      return <Badge color="info" variant="solid" className={COMPACT_TEAM_BADGE_CLASS}>Admin</Badge>;
     case "INSPECTOR":
-      return <Badge color="primary">Inspector</Badge>;
+      return <Badge color="primary" className={COMPACT_TEAM_BADGE_CLASS}>Inspector</Badge>;
     case "OFFICE_STAFF":
-      return <Badge color="light">Office Staff</Badge>;
+      return <Badge color="light" className={COMPACT_TEAM_BADGE_CLASS}>Office Staff</Badge>;
     default:
-      return <Badge color="light">{role}</Badge>;
+      return <Badge color="light" className={COMPACT_TEAM_BADGE_CLASS}>{role}</Badge>;
   }
 }
 
 export function teamStatusBadge(status: string) {
   switch (status) {
     case "active":
-      return <Badge color="success">Active</Badge>;
+      return <Badge color="success" className={COMPACT_TEAM_BADGE_CLASS}>Active</Badge>;
     case "on_leave":
-      return <Badge color="warning">On Leave</Badge>;
+      return <Badge color="warning" className={COMPACT_TEAM_BADGE_CLASS}>On Leave</Badge>;
     case "inactive":
-      return <Badge color="light">Inactive</Badge>;
+      return <Badge color="light" className={COMPACT_TEAM_BADGE_CLASS}>Inactive</Badge>;
     default:
-      return <Badge color="light">{status}</Badge>;
+      return <Badge color="light" className={COMPACT_TEAM_BADGE_CLASS}>{status}</Badge>;
   }
 }
 
