@@ -9,6 +9,8 @@ import { BILLING_PLAN_DEFAULTS, type PlanCode } from "@/lib/billing/plans";
 type RegisterBody = {
   email?: string;
   company_name: string;
+  inspector_seat_count?: number;
+  allow_existing_membership?: boolean;
   selected_plan?: {
     code?: PlanCode;
     name?: string;
@@ -156,7 +158,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingMembership) {
-      return fail(409, "This account is already linked to a business.");
+      if (!body.allow_existing_membership) {
+        return fail(409, "This account is already linked to a business.");
+      }
+
+      const { data: existingTenant, error: existingTenantError } = await supabaseAdmin
+        .from("tenants")
+        .select("id, name, slug, business_id")
+        .eq("id", existingMembership.tenant_id)
+        .maybeSingle();
+
+      if (existingTenantError || !existingTenant) {
+        return fail(500, "Failed to load existing business.");
+      }
+
+      return Response.json({ data: { business: existingTenant, existing: true } });
     }
 
     const slug = await resolveUniqueTenantSlug(company_name);
@@ -166,6 +182,13 @@ export async function POST(request: NextRequest) {
     const trialDays = Math.max(1, Math.min(60, Number(body.trial?.days ?? 30)));
     const trialEnabled = body.trial?.enabled !== false;
     const trialEndsAt = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString();
+    const inspectorSeatCount = Math.max(
+      1,
+      Math.min(
+        selectedPlan.maxInspectors,
+        Number(body.inspector_seat_count ?? selectedPlan.includedInspectors)
+      )
+    );
 
     const tenantSettings = {
       billing: {
@@ -184,6 +207,7 @@ export async function POST(request: NextRequest) {
         consentedToTrial: body.trial?.consented_to_trial === true,
         consentedToAutopay: body.trial?.consented_to_autopay === true,
         paymentMethodOnFile: false,
+        inspectorSeatCount,
       },
     };
 

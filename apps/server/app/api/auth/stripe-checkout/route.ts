@@ -13,6 +13,7 @@ type CheckoutBody = {
   tenant_id?: string;
   plan_code?: PlanCode;
   trial_days?: number;
+  inspector_seat_count?: number;
 };
 
 function getWebBaseUrl(): string {
@@ -113,9 +114,13 @@ export async function POST(request: NextRequest) {
   }
 
   const includedInspectors = BILLING_PLAN_DEFAULTS[planCode].includedInspectors;
+  const maxInspectors = BILLING_PLAN_DEFAULTS[planCode].maxInspectors;
   let additionalSeatQuantity = 0;
   try {
-    const inspectorSeatCount = await countInspectorSeats(tenantId);
+    const requestedInspectorSeatCount = Number(body.inspector_seat_count);
+    const inspectorSeatCount = Number.isFinite(requestedInspectorSeatCount)
+      ? Math.max(1, Math.min(maxInspectors, requestedInspectorSeatCount))
+      : await countInspectorSeats(tenantId);
     additionalSeatQuantity = Math.max(0, inspectorSeatCount - includedInspectors);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to resolve inspector seats";
@@ -132,8 +137,8 @@ export async function POST(request: NextRequest) {
   }
 
   const baseUrl = getWebBaseUrl();
-  const successUrl = `${baseUrl}/app/overview?stripe=success`;
-  const cancelUrl = `${baseUrl}/register?stripe=cancel`;
+  const successUrl = `${baseUrl}/welcome/success`;
+  const cancelUrl = `${baseUrl}/welcome?stripe=cancel`;
 
   const params = new URLSearchParams();
   params.append("mode", "subscription");
