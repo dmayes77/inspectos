@@ -215,7 +215,7 @@ export function WorkflowEditor() {
         {
           onSuccess: () => {
             toast.success("Workflow updated.");
-            router.push("/admin/workflows");
+            router.push("/app/workflows");
           },
           onError: (error) => {
             toast.error(error instanceof Error ? error.message : "Failed to update workflow.");
@@ -230,7 +230,7 @@ export function WorkflowEditor() {
       {
         onSuccess: () => {
           toast.success("Workflow created.");
-          router.push("/admin/workflows");
+          router.push("/app/workflows");
         },
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "Failed to create workflow.");

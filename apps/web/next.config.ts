@@ -25,12 +25,27 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/admin/contacts/clients",
-        destination: "/admin/contacts",
+        destination: "/app/contacts",
         permanent: true,
       },
       {
         source: "/admin/contacts/clients/:path*",
-        destination: "/admin/contacts/:path*",
+        destination: "/app/contacts/:path*",
+        permanent: true,
+      },
+      {
+        source: "/app/contacts/clients",
+        destination: "/app/contacts",
+        permanent: true,
+      },
+      {
+        source: "/app/contacts/clients/:path*",
+        destination: "/app/contacts/:path*",
+        permanent: true,
+      },
+      {
+        source: "/admin/:path*",
+        destination: "/app/:path*",
         permanent: true,
       },
     ];

@@ -13,32 +13,57 @@ interface StatCardProps {
   /** Small context text below the value (e.g. "vs last week"). */
   sublabel?: string;
   className?: string;
+  density?: "default" | "dense";
 }
 
-export function StatCard({ label, value, icon: Icon, trend, trendLabel, sublabel, className }: StatCardProps) {
+export function StatCard({
+  label,
+  value,
+  icon: Icon,
+  trend,
+  trendLabel,
+  sublabel,
+  className,
+  density = "default",
+}: StatCardProps) {
   const hasTrend = trend !== undefined && trend !== null;
   const isPositive = hasTrend && trend >= 0;
   const badgeText = trendLabel ?? (hasTrend ? `${isPositive ? "+" : ""}${trend}%` : undefined);
+  const isDense = density === "dense";
 
   return (
-    <div className={cn("rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3 md:p-6", className)}>
+    <div
+      className={cn(
+        "border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3",
+        isDense ? "rounded-lg p-3 md:p-3.5" : "rounded-2xl p-5 md:p-6",
+        className
+      )}
+    >
       {Icon && (
-        <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl dark:bg-gray-800">
-          <Icon className="text-gray-800 size-6 dark:text-white/90" />
+        <div
+          className={cn(
+            "flex items-center justify-center bg-gray-100 dark:bg-gray-800",
+            isDense ? "h-8 w-8 rounded-md" : "h-12 w-12 rounded-xl"
+          )}
+        >
+          <Icon className={cn("text-gray-800 dark:text-white/90", isDense ? "size-4" : "size-6")} />
         </div>
       )}
-      <div className={cn("flex items-end justify-between", Icon ? "mt-5" : "")}>
+      <div className={cn("flex items-end justify-between", Icon ? (isDense ? "mt-2" : "mt-5") : "")}>
         <div>
-          <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
-          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">{value}</h4>
+          <span className={cn("text-gray-500 dark:text-gray-400", isDense ? "text-xs" : "text-sm")}>{label}</span>
+          <h4 className={cn("font-bold text-gray-800 dark:text-white/90", isDense ? "mt-1 text-base" : "mt-2 text-title-sm")}>
+            {value}
+          </h4>
           {sublabel && (
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">{sublabel}</p>
+            <p className={cn("text-gray-400 dark:text-gray-500", isDense ? "mt-0.5 text-[11px]" : "mt-1 text-xs")}>{sublabel}</p>
           )}
         </div>
         {badgeText && (
           <div
             className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium shrink-0",
+              "inline-flex items-center gap-1 rounded-full font-medium shrink-0",
+              isDense ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-0.5 text-xs",
               isPositive
                 ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"
                 : "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500"

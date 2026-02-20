@@ -287,7 +287,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         {
           onSuccess: (updated) => {
             toast.success("Order updated.");
-            router.push(`/admin/orders/${updated.id}`);
+            router.push(`/app/orders/${updated.id}`);
           },
           onError: (error) => {
             const message = error instanceof Error ? error.message : "Failed to update order.";
@@ -301,7 +301,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     createOrder.mutate(payload, {
       onSuccess: (created) => {
         toast.success("Order created.");
-        router.push(`/admin/orders/${created.id}`);
+        router.push(`/app/orders/${created.id}`);
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to create order.";
@@ -417,18 +417,18 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   const isSubmitting = createOrder.isPending || updateOrder.isPending;
   const primaryActionLabel = mode === "edit" ? "Save Changes" : "Create Order";
-  const cancelHref = mode === "edit" && order ? `/admin/orders/${order.id}` : "/admin/orders";
+  const cancelHref = mode === "edit" && order ? `/app/orders/${order.id}` : "/app/orders";
 
   return (
     <div className="space-y-4">
       <PageHeader
         breadcrumb={
           <>
-            <Link href="/admin/overview" className="hover:text-foreground">
+            <Link href="/app/overview" className="hover:text-foreground">
               Overview
             </Link>
             <span className="text-muted-foreground">/</span>
-            <Link href="/admin/orders" className="hover:text-foreground">
+            <Link href="/app/orders" className="hover:text-foreground">
               Orders
             </Link>
             <span className="text-muted-foreground">/</span>

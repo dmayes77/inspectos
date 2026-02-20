@@ -72,9 +72,9 @@ function AdminShellContent({ children, headerActions, user }: AdminShellProps) {
   const pinnedNav = isPlatformAdmin ? [] : companyPinnedNav;
   const navSections = isPlatformAdmin ? [] : companyNavSections;
   const systemNav = isPlatformAdmin ? platformSystemNav : companySystemNav;
-  const homeHref = isPlatformAdmin ? "/platform" : "/admin/overview";
+  const homeHref = isPlatformAdmin ? "/platform" : "/app/overview";
   const contextLabel = isPlatformAdmin ? "Platform Admin" : user?.companyName;
-  const settingsHref = isPlatformAdmin ? "/platform/content" : "/admin/settings";
+  const settingsHref = isPlatformAdmin ? "/platform/content" : "/app/settings";
 
   const commandItems = useMemo<CommandItem[]>(() => {
     const navItems = [...mainNav, ...systemNav].map((item) => ({
@@ -84,10 +84,10 @@ function AdminShellContent({ children, headerActions, user }: AdminShellProps) {
       keywords: [item.label],
     }));
     return [
-      { label: "Overview", description: "Admin dashboard", href: "/admin/overview" },
-      { label: "New inspection", description: "Schedule an inspection", href: "/admin/inspections/new" },
-      { label: "Add team member", description: "Invite a teammate", href: "/admin/team/new" },
-      { label: "New client", description: "Create a client", href: "/admin/contacts/new" },
+      { label: "Overview", description: "Admin dashboard", href: "/app/overview" },
+      { label: "New inspection", description: "Schedule an inspection", href: "/app/inspections/new" },
+      { label: "Add team member", description: "Invite a teammate", href: "/app/team/new" },
+      { label: "New client", description: "Create a client", href: "/app/contacts/new" },
       ...navItems,
     ];
   }, [mainNav, systemNav]);

@@ -28,7 +28,7 @@ export const invoiceTableColumns: ColumnDef<InvoiceRecord>[] = [
     enableHiding: false,
     cell: ({ row }) => (
       <Link
-        href={`/admin/invoices/${row.original.invoiceId}`}
+        href={`/app/invoices/${row.original.invoiceId}`}
         className="text-xs font-medium hover:underline"
       >
         {row.original.invoiceNumber || formatInvoiceNumber(row.original.invoiceId)}

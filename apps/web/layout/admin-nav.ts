@@ -30,55 +30,55 @@ export type NavSection = {
 };
 
 export const companyPinnedNav: NavItem[] = [
-  { href: "/admin/overview", icon: LayoutDashboard, label: "Overview" },
-  { href: "/admin/orders", icon: Folders, label: "Orders" },
-  { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/admin/contacts", icon: Users, label: "Contacts" },
-  { href: "/admin/agents", icon: IdCard, label: "Agents" },
+  { href: "/app/overview", icon: LayoutDashboard, label: "Overview" },
+  { href: "/app/orders", icon: Folders, label: "Orders" },
+  { href: "/app/schedule", icon: Calendar, label: "Schedule" },
+  { href: "/app/contacts", icon: Users, label: "Contacts" },
+  { href: "/app/agents", icon: IdCard, label: "Agents" },
 ];
 
 export const companyNavSections: NavSection[] = [
   {
     label: "Operations",
     items: [
-      { href: "/admin/properties", icon: MapPin, label: "Properties" },
-      { href: "/admin/templates", icon: FileText, label: "Inspection Templates" },
-      { href: "/admin/tags", icon: Tag, label: "Tags" },
+      { href: "/app/properties", icon: MapPin, label: "Properties" },
+      { href: "/app/templates", icon: FileText, label: "Inspection Templates" },
+      { href: "/app/tags", icon: Tag, label: "Tags" },
     ],
   },
   {
     label: "People",
     items: [
-      { href: "/admin/team", icon: HardHat, label: "Team" },
-      { href: "/admin/vendors", icon: Building2, label: "Vendors" },
+      { href: "/app/team", icon: HardHat, label: "Team" },
+      { href: "/app/vendors", icon: Building2, label: "Vendors" },
     ],
   },
   {
     label: "Communications",
     items: [
-      { href: "/admin/communications", icon: FileText, label: "Communications" },
+      { href: "/app/communications", icon: FileText, label: "Communications" },
     ],
   },
   {
     label: "Documents & Reports",
     items: [
-      { href: "/admin/documents", icon: FileText, label: "Documents" },
-      { href: "/admin/reports", icon: BarChart3, label: "Reports" },
+      { href: "/app/documents", icon: FileText, label: "Documents" },
+      { href: "/app/reports", icon: BarChart3, label: "Reports" },
     ],
   },
   {
     label: "Finance",
     items: [
-      { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
-      { href: "/admin/payments", icon: CreditCard, label: "Payments" },
-      { href: "/admin/payouts", icon: DollarSign, label: "Payouts" },
+      { href: "/app/invoices", icon: Receipt, label: "Invoices" },
+      { href: "/app/payments", icon: CreditCard, label: "Payments" },
+      { href: "/app/payouts", icon: DollarSign, label: "Payouts" },
     ],
   },
   {
     label: "Assets",
     items: [
-      { href: "/admin/inventory", icon: ClipboardList, label: "Inventory" },
-      { href: "/admin/assets", icon: HardHat, label: "Assets" },
+      { href: "/app/inventory", icon: ClipboardList, label: "Inventory" },
+      { href: "/app/assets", icon: HardHat, label: "Assets" },
     ],
   },
 ];
@@ -97,13 +97,13 @@ export const platformMainNav: NavItem[] = [
 export const platformSystemNav: NavItem[] = [{ href: "/platform/content", icon: FileText, label: "Content" }];
 
 export const companyMobileNav: NavItem[] = [
-  { href: "/admin/overview", icon: LayoutDashboard, label: "Home" },
-  { href: "/admin/orders", icon: Folders, label: "Orders" },
-  { href: "/admin/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/admin/contacts", icon: Users, label: "Contacts" },
-  { href: "/admin/invoices", icon: Receipt, label: "Invoices" },
-  { href: "/admin/reports", icon: BarChart3, label: "Reports" },
-  { href: "/admin/settings", icon: Settings, label: "Settings" },
+  { href: "/app/overview", icon: LayoutDashboard, label: "Home" },
+  { href: "/app/orders", icon: Folders, label: "Orders" },
+  { href: "/app/schedule", icon: Calendar, label: "Schedule" },
+  { href: "/app/contacts", icon: Users, label: "Contacts" },
+  { href: "/app/invoices", icon: Receipt, label: "Invoices" },
+  { href: "/app/reports", icon: BarChart3, label: "Reports" },
+  { href: "/app/settings", icon: Settings, label: "Settings" },
 ];
 
 export const platformMobileNav: NavItem[] = [

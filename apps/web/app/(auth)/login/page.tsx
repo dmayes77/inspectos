@@ -27,7 +27,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/admin/overview");
+    router.push("/app/overview");
   };
 
   return (

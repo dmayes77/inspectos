@@ -66,7 +66,7 @@ export default function RegisterPage() {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Failed to create business.");
 
-      router.push("/admin/overview");
+      router.push("/app/overview");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");

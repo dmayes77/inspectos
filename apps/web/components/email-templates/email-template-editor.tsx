@@ -45,7 +45,7 @@ export function EmailTemplateEditor() {
         {
           onSuccess: () => {
             toast.success("Email template updated.");
-            router.push("/admin/email-templates");
+            router.push("/app/email-templates");
           },
           onError: (error) => {
             toast.error(error instanceof Error ? error.message : "Failed to update template.");
@@ -58,7 +58,7 @@ export function EmailTemplateEditor() {
     createTemplate.mutate(form, {
       onSuccess: () => {
         toast.success("Email template created.");
-        router.push("/admin/email-templates");
+        router.push("/app/email-templates");
       },
       onError: (error) => {
         toast.error(error instanceof Error ? error.message : "Failed to create template.");

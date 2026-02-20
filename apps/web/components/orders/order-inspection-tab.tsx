@@ -66,7 +66,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
         <CardContent className="py-12 text-center space-y-3">
           <p className="text-muted-foreground">No inspection data found.</p>
           <Button asChild>
-            <Link href={`/admin/inspections/new?orderId=${orderId}`}>Add Inspection</Link>
+            <Link href={`/app/inspections/new?orderId=${orderId}`}>Add Inspection</Link>
           </Button>
         </CardContent>
       </Card>
@@ -87,7 +87,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
             </div>
             <div className="flex gap-2 shrink-0">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/admin/orders/${orderId}/edit`}>
+                <Link href={`/app/orders/${orderId}/edit`}>
                   <Edit className="mr-1.5 h-3.5 w-3.5" />
                   Edit
                 </Link>

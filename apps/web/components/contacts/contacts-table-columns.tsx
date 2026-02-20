@@ -64,7 +64,7 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
       const client = row.original;
       return (
         <Link
-          href={`/admin/contacts/${client.clientId}`}
+          href={`/app/contacts/${client.clientId}`}
           className="flex flex-col gap-0.5 hover:opacity-80 transition-opacity py-2"
         >
           <span className="font-medium">{client.name}</span>
@@ -146,13 +146,13 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
           <DropdownMenuContent align="end" className="w-[200px]">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href={`/admin/contacts/${client.clientId}`}>
+              <Link href={`/app/contacts/${client.clientId}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/admin/contacts/${client.clientId}/edit`}>
+              <Link href={`/app/contacts/${client.clientId}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit client
               </Link>

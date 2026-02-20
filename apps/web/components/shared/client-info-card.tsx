@@ -45,7 +45,7 @@ export function ClientInfoCard({
                 <User className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <Link href={`/admin/contacts/${client.id}`} className="font-medium hover:underline block truncate">
+                <Link href={`/app/contacts/${client.id}`} className="font-medium hover:underline block truncate">
                   {client.name}
                 </Link>
                 {typeBadge ? <div className="mt-1">{typeBadge}</div> : null}

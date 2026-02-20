@@ -121,7 +121,7 @@ function ContactsPage() {
         Create your first order to get started.
       </p>
       <Button asChild className="mt-6">
-        <Link href="/admin/orders/new">
+        <Link href="/app/orders/new">
           <Plus className="mr-2 h-4 w-4" />
           Create Order
         </Link>
@@ -145,7 +145,7 @@ function ContactsPage() {
         Export
       </Button>
       <Button asChild>
-        <Link href="/admin/invoices/new">
+        <Link href="/app/invoices/new">
           <Plus className="mr-2 h-4 w-4" />
           New Invoice
         </Link>
@@ -191,7 +191,7 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
     cell: ({ row }) => {
       const client = row.original;
       return (
-        <Link href={`/admin/contacts/${client.id}`} className="flex flex-col gap-0.5">
+        <Link href={`/app/contacts/${client.id}`} className="flex flex-col gap-0.5">
           <span className="font-medium">{client.name}</span>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <Mail className="h-3 w-3 shrink-0" />
