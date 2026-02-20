@@ -7,6 +7,15 @@ import { ChevronLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
+function getEmailRedirectUrl(): string {
+  const configuredBaseUrl =
+    process.env.NEXT_PUBLIC_WEB_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+  const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
+  return `${baseUrl}/welcome`;
+}
+
 function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,7 +83,7 @@ function RegisterPageContent() {
         password,
         options: {
           data: { full_name: fullName.trim() },
-          emailRedirectTo: `${window.location.origin}/welcome`,
+          emailRedirectTo: getEmailRedirectUrl(),
         },
       });
 
@@ -105,7 +114,7 @@ function RegisterPageContent() {
       const { error: resendError } = await supabase.auth.resend({
         type: "signup",
         email: pendingEmail,
-        options: { emailRedirectTo: `${window.location.origin}/welcome` },
+        options: { emailRedirectTo: getEmailRedirectUrl() },
       });
       if (resendError) {
         throw new Error(resendError.message);
