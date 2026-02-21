@@ -4,6 +4,7 @@ import {
   CreditCard,
   Receipt,
   LayoutDashboard,
+  Inbox,
   Users,
   ClipboardList,
   FileText,
@@ -56,6 +57,7 @@ export const companyNavSections: NavSection[] = [
   {
     label: "Communications",
     items: [
+      { href: "/app/inbox", icon: Inbox, label: "Inbox" },
       { href: "/app/communications", icon: FileText, label: "Communications" },
     ],
   },
