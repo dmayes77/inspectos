@@ -35,7 +35,7 @@ function DropdownPanel({ isOpen, onClose, children, className }: DropdownPanelPr
     <div
       ref={ref}
       className={cn(
-        "absolute right-0 z-40 mt-2 rounded-xl border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark",
+        "absolute right-0 z-40 mt-2 rounded-sm border border-gray-200 bg-white shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark",
         className
       )}
     >

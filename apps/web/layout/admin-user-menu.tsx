@@ -24,7 +24,7 @@ interface AdminUserMenuProps {
 
 export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
   const itemClassName =
-    "group rounded-lg px-3 py-2 data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary focus:bg-primary/10 focus:text-primary";
+    "group rounded-sm px-3 py-2 data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary focus:bg-primary/10 focus:text-primary";
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -61,7 +61,7 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
 
       <DropdownMenuContent
         align="end"
-        className="mt-4 flex w-[260px] flex-col rounded-2xl border border-border bg-background p-3 shadow-lg"
+        className="mt-4 flex w-[260px] flex-col rounded-sm border border-border bg-background p-3 shadow-lg"
       >
         {/* User info */}
         <div className="pb-3 border-b border-border">

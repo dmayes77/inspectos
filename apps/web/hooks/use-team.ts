@@ -20,6 +20,7 @@ export type TeamMember = {
   stateRegion?: string;
   postalCode?: string;
   country?: string;
+  color?: string;
   inspections: number;
   rating: number | null;
   certifications: string[];
@@ -62,6 +63,20 @@ export type CreateTeamMemberInput = {
   isInspector?: boolean;
   avatarUrl?: string;
 };
+
+function defaultColorForRole(role: TeamMember["role"]): string {
+  switch (role) {
+    case "OWNER":
+      return "#94A3B8";
+    case "ADMIN":
+      return "#60A5FA";
+    case "INSPECTOR":
+      return "#2DD4BF";
+    case "OFFICE_STAFF":
+    default:
+      return "#C4B5FD";
+  }
+}
 
 export function useInspectors() {
   const apiClient = useApiClient();
@@ -114,6 +129,7 @@ export function useCreateTeamMember() {
       stateRegion: data.stateRegion,
       postalCode: data.postalCode,
       country: data.country,
+      color: defaultColorForRole(data.role),
       inspections: 0,
       rating: null,
       certifications: [],

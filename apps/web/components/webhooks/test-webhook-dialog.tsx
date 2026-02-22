@@ -74,7 +74,7 @@ export function TestWebhookDialog({ open, onOpenChange, webhookId }: TestWebhook
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Webhook URL</Label>
-            <div className="rounded-md border p-2 bg-muted">
+            <div className="rounded-sm border p-2 bg-muted">
               <code className="text-xs break-all">{webhook.url}</code>
             </div>
           </div>
@@ -136,7 +136,7 @@ export function TestWebhookDialog({ open, onOpenChange, webhookId }: TestWebhook
                 {testResult.delivery_id && (
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">Delivery ID</div>
-                    <code className="text-xs bg-muted px-2 py-1 rounded">
+                    <code className="text-xs bg-muted px-2 py-1 rounded-sm">
                       {testResult.delivery_id}
                     </code>
                   </div>
@@ -145,7 +145,7 @@ export function TestWebhookDialog({ open, onOpenChange, webhookId }: TestWebhook
                 {testResult.error && (
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">Error</div>
-                    <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    <div className="text-sm text-red-600 bg-red-50 p-2 rounded-sm">
                       {testResult.error}
                     </div>
                   </div>
@@ -155,7 +155,7 @@ export function TestWebhookDialog({ open, onOpenChange, webhookId }: TestWebhook
                   <div className="space-y-1">
                     <div className="text-sm text-muted-foreground">Response Body</div>
                     <div className="max-h-40 overflow-auto">
-                      <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap break-words">
+                      <pre className="text-xs bg-muted p-2 rounded-sm whitespace-pre-wrap break-words">
                         {testResult.response_body}
                       </pre>
                     </div>

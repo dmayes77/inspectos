@@ -358,6 +358,69 @@ export default function TeamMemberDetailPage() {
                 </Label>
               </div>
             ) : null}
+
+            <Separator />
+
+            <div className="space-y-1">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Address</div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="member-address-line-1">Address Line 1</Label>
+              <Input
+                id="member-address-line-1"
+                value={form.addressLine1 ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, addressLine1: e.target.value }))}
+                placeholder="123 Main St"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="member-address-line-2">Address Line 2</Label>
+              <Input
+                id="member-address-line-2"
+                value={form.addressLine2 ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, addressLine2: e.target.value }))}
+                placeholder="Suite, unit, etc."
+              />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="member-city">City</Label>
+                <Input
+                  id="member-city"
+                  value={form.city ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="member-state-region">State</Label>
+                <Input
+                  id="member-state-region"
+                  value={form.stateRegion ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, stateRegion: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="member-postal-code">ZIP</Label>
+                <Input
+                  id="member-postal-code"
+                  value={form.postalCode ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, postalCode: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="member-country">Country</Label>
+              <Input
+                id="member-country"
+                value={form.country ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
+                placeholder="US"
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -480,7 +543,7 @@ export default function TeamMemberDetailPage() {
               </p>
               <div className="space-y-2">
                 {availabilityExceptions.map((exception) => (
-                  <div key={exception.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div key={exception.id} className="flex items-center justify-between rounded-sm border px-3 py-2">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1.5 text-sm font-medium">
                         <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -571,7 +634,7 @@ export default function TeamMemberDetailPage() {
           <CardContent className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {Object.entries(permissionCategories).map(([categoryKey, category]) => {
               return (
-                <div key={categoryKey} className="rounded-md border p-3">
+                <div key={categoryKey} className="rounded-sm border p-3">
                   <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">{category.label}</h4>
                   <div className="space-y-2 pl-3">
                     {category.permissions.map((permission) => {

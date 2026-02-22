@@ -27,7 +27,7 @@ export function InspectionVendorSection({ selectedVendorIds, onChange }: { selec
         {selectedVendorIds.map((id) => {
           const vendor = vendors.find((v) => v.id === id);
           return vendor ? (
-            <span key={id} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-1 text-sm">
+            <span key={id} className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-1 text-sm">
               {vendor.name}
               <Button size="sm" variant="ghost" onClick={() => handleRemove(id)}>
                 ×

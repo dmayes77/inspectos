@@ -54,7 +54,7 @@ export function ChatThreadPanel({ entityType, entityId }: ChatThreadPanelProps) 
                 <div
                   key={message.id}
                   className={clsx(
-                    "flex flex-col gap-2 rounded-2xl border p-4",
+                    "flex flex-col gap-2 rounded-sm border p-4",
                     message.direction === "outbound"
                       ? "border-primary/60 bg-primary/5"
                       : "border-border bg-background",

@@ -38,7 +38,7 @@ export default function HrPage() {
           {isLoading ? (
             <div className="py-8 text-center text-sm text-muted-foreground">Loading employees...</div>
           ) : teamMembers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
               <UserCheck className="h-10 w-10 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">No employees yet</p>
@@ -53,7 +53,7 @@ export default function HrPage() {
                 <Link
                   key={member.memberId}
                   href={`/app/team/${member.memberId}`}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 text-sm hover:bg-muted/50"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4 text-sm hover:bg-muted/50"
                 >
                   <div className="space-y-1">
                     <p className="font-medium">{member.name}</p>
@@ -79,7 +79,7 @@ export default function HrPage() {
           <CardDescription>Capture hours, PTO, and payroll summaries.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
             <Users className="h-10 w-10 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">No time entries yet</p>

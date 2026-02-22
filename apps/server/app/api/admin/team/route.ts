@@ -5,6 +5,23 @@ import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync'
 import { validatePasswordPolicy } from '@/lib/security/password-policy';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const NEUTRAL_MEMBER_COLOR = '#CBD5E1';
+
+function defaultProfileColorForDbRole(role: string | null | undefined) {
+  switch ((role ?? '').toLowerCase()) {
+    case 'owner':
+      return '#94A3B8';
+    case 'admin':
+      return '#60A5FA';
+    case 'inspector':
+      return '#2DD4BF';
+    case 'viewer':
+    case 'member':
+      return '#C4B5FD';
+    default:
+      return '#CBD5E1';
+  }
+}
 
 function mapRoleToDb(role: string | null | undefined) {
   switch ((role ?? '').toUpperCase()) {
@@ -95,7 +112,7 @@ export const GET = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
 
   const { data, error } = await serviceClient
     .from('tenant_members')
-    .select('user_id, role, created_at, profiles(id, member_id, full_name, email, avatar_url, phone, address_line1, address_line2, city, state_region, postal_code, country, custom_permissions, weekly_availability, availability_exceptions, is_inspector)')
+    .select('user_id, role, created_at, profiles(id, member_id, full_name, email, avatar_url, phone, address_line1, address_line2, city, state_region, postal_code, country, profile_color, custom_permissions, weekly_availability, availability_exceptions, is_inspector)')
     .eq('tenant_id', tenant.id)
     .order('created_at', { ascending: true });
 
@@ -124,6 +141,7 @@ export const GET = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
       stateRegion: profile?.state_region ?? '',
       postalCode: profile?.postal_code ?? '',
       country: profile?.country ?? '',
+      color: profile?.profile_color ?? defaultProfileColorForDbRole(row.role as string | null | undefined),
       inspections: 0,
       rating: null,
       certifications: [],
@@ -270,10 +288,17 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
 
   const { data: existingProfile } = await serviceClient
     .from('profiles')
-    .select('is_inspector')
+    .select('is_inspector, profile_color')
     .eq('id', userId)
     .maybeSingle();
   const wasInspectorSeat = Boolean(existingProfile?.is_inspector);
+  const defaultRoleColor = defaultProfileColorForDbRole(nextMemberRole);
+  const existingProfileColor =
+    typeof existingProfile?.profile_color === 'string'
+      ? existingProfile.profile_color.trim().toUpperCase()
+      : null;
+  const shouldApplyDefaultColor =
+    !existingProfileColor || existingProfileColor === NEUTRAL_MEMBER_COLOR;
 
   if (effectiveInspectorSeat && !wasInspectorSeat) {
     const [{ inspectorSeatCount, error: seatCountError }, { maxInspectors, error: planError }] = await Promise.all([
@@ -296,7 +321,8 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
     state_region ||
     postal_code ||
     country ||
-    effectiveInspectorSeat
+    effectiveInspectorSeat ||
+    shouldApplyDefaultColor
   ) {
     await serviceClient
       .from('profiles')
@@ -313,6 +339,7 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
           postal_code: postal_code ?? null,
           country: country ?? null,
           is_inspector: effectiveInspectorSeat,
+          profile_color: shouldApplyDefaultColor ? defaultRoleColor : undefined,
         },
         { onConflict: 'id' }
       );

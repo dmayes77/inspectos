@@ -63,7 +63,7 @@ export function AdminHeader({
           <button
             type="button"
             onClick={handleToggle}
-            className="flex items-center justify-center w-10 h-10 text-gray-500 border border-gray-200 rounded-lg dark:border-gray-800 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors lg:h-11 lg:w-11"
+            className="flex items-center justify-center w-10 h-10 text-gray-500 border border-gray-200 rounded-sm dark:border-gray-800 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors lg:h-11 lg:w-11"
             aria-label="Toggle sidebar"
           >
             {isMobileOpen ? (
@@ -77,7 +77,7 @@ export function AdminHeader({
           <button
             type="button"
             onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
-            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
+            className="flex items-center justify-center w-10 h-10 text-gray-700 rounded-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
           >
             <DotsMenuIcon />
           </button>
@@ -92,14 +92,14 @@ export function AdminHeader({
                 ref={inputRef}
                 type="button"
                 onClick={onOpenCommand}
-                className="h-11 w-full rounded-lg border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-500 shadow-theme-xs placeholder:text-gray-400 hover:border-gray-300 hover:bg-gray-50 focus:outline-none dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5 xl:w-[430px] text-left"
+                className="h-11 w-full rounded-sm border border-gray-200 bg-transparent py-2.5 pl-12 pr-14 text-sm text-gray-500 shadow-theme-xs placeholder:text-gray-400 hover:border-gray-300 hover:bg-gray-50 focus:outline-none dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5 xl:w-[430px] text-left"
               >
                 Search or type command...
               </button>
               <button
                 type="button"
                 onClick={onOpenCommand}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 px-1.75 py-[4.5px] text-xs tracking-tight text-gray-500 dark:border-gray-800 dark:bg-white/5 dark:text-gray-400"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 rounded-sm border border-gray-200 bg-gray-50 px-1.75 py-[4.5px] text-xs tracking-tight text-gray-500 dark:border-gray-800 dark:bg-white/5 dark:text-gray-400"
               >
                 <span>⌘</span><span>K</span>
               </button>

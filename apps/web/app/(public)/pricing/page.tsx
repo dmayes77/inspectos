@@ -172,7 +172,7 @@ export default function PricingPage() {
                 </div>
 
                 {/* Inspectors */}
-                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                <div className="rounded-sm bg-muted/50 p-3 text-center">
                   <p className="font-medium">{plan.inspectors}</p>
                   <p className="text-sm text-muted-foreground">{plan.includedInspectors}</p>
                   {plan.additionalSeat && (
@@ -218,7 +218,7 @@ export default function PricingPage() {
               const Icon = highlight.icon;
               return (
                 <div key={highlight.title} className="text-center">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-sm bg-primary/10">
                     <Icon className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="font-semibold">{highlight.title}</h3>

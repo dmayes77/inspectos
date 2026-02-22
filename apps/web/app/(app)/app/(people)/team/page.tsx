@@ -22,6 +22,7 @@ import {
   StickyNote,
   Trash2,
   KeyRound,
+  Pencil,
 } from "lucide-react";
 import { useTeamMembers, useUpdateTeamMember, useDeleteTeamMember, type TeamMember } from "@/hooks/use-team";
 import { useProfile } from "@/hooks/use-profile";
@@ -95,6 +96,14 @@ export default function TeamPage() {
     if (!canEditRoleForTarget(userRole, member.role)) return;
 
     await updateMember.mutateAsync({ memberId: member.memberId, role: nextRole });
+  };
+
+  const handleColorChange = async (member: TeamMember, color: string) => {
+    if (!canEditMembers) return;
+    if (!canEditRoleForTarget(userRole, member.role)) return;
+    const normalized = color.trim().toUpperCase();
+    if (!/^#[0-9A-F]{6}$/.test(normalized)) return;
+    await updateMember.mutateAsync({ memberId: member.memberId, color: normalized });
   };
 
   const handleDelete = async (member: TeamMember) => {
@@ -206,20 +215,20 @@ export default function TeamPage() {
           </div>
 
           {filteredMembers.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-10 text-center">
+            <div className="rounded-sm border border-dashed p-10 text-center">
               <h3 className="text-lg font-semibold">No team members found</h3>
               <p className="mt-2 text-sm text-muted-foreground">Try a different filter or search term.</p>
             </div>
           ) : (
             <>
-              <div className="hidden overflow-hidden rounded-md border lg:block">
-                <div className="grid grid-cols-12 border-b bg-muted/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <div className="col-span-1">Avatar</div>
-                  <div className="col-span-2">User ID</div>
-                  <div className="col-span-3">Details</div>
-                  <div className="col-span-2">Access</div>
-                  <div className="col-span-1">Color</div>
-                  <div className="col-span-3">Actions</div>
+              <div className="hidden overflow-hidden rounded-sm border lg:block">
+                <div className="grid grid-cols-[72px_minmax(0,1.3fr)_minmax(0,1.9fr)_minmax(0,1.1fr)_72px_160px] items-center gap-x-3 border-b bg-muted/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <div>Avatar</div>
+                  <div>User ID</div>
+                  <div>Details</div>
+                  <div>Access</div>
+                  <div>Color</div>
+                  <div className="text-left">Actions</div>
                 </div>
                 {filteredMembers.map((member) => {
                   const canManageThisMemberRole =
@@ -228,8 +237,8 @@ export default function TeamPage() {
                   const canDeleteMemberRow = canDeleteMembers && canEditRoleForTarget(userRole, member.role);
                   return (
                     <div key={member.memberId} className="border-b last:border-b-0">
-                      <div className="grid grid-cols-12 items-center px-3 py-2">
-                        <div className="col-span-1">
+                      <div className="grid grid-cols-[72px_minmax(0,1.3fr)_minmax(0,1.9fr)_minmax(0,1.1fr)_72px_160px] items-center gap-x-3 px-3 py-2">
+                        <div>
                           <Avatar className="h-9 w-9">
                             <AvatarImage src={member.avatarUrl} />
                             <AvatarFallback className="bg-primary/10 text-primary">
@@ -241,7 +250,7 @@ export default function TeamPage() {
                           </Avatar>
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="min-w-0">
                           <Link href={`/admin/team/${member.memberId}`} className="text-sm font-medium leading-tight hover:underline">
                             {member.name}
                           </Link>
@@ -253,7 +262,7 @@ export default function TeamPage() {
                           </div>
                         </div>
 
-                        <div className="col-span-3 flex items-center gap-2.5 pr-3">
+                        <div className="min-w-0 flex items-center gap-2.5">
                           <div className="min-w-0">
                             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                               <Mail className="h-3 w-3" />
@@ -266,7 +275,7 @@ export default function TeamPage() {
                           </div>
                         </div>
 
-                        <div className="col-span-2 pr-3">
+                        <div className="min-w-0">
                           {canManageThisMemberRole ? (
                             <Select value={member.role} onValueChange={(value) => handleRoleChange(member, value as TeamMember["role"])}>
                               <SelectTrigger className="h-9 text-sm">
@@ -285,32 +294,52 @@ export default function TeamPage() {
                           )}
                         </div>
 
-                        <div className="col-span-1">
-                          <div className="h-7 w-7 rounded border bg-primary/10" />
+                        <div>
+                          <input
+                            type="color"
+                            value={member.color ?? "#CBD5E1"}
+                            onChange={(event) => void handleColorChange(member, event.target.value)}
+                            aria-label={`${member.name} color`}
+                            className="h-8 w-8 cursor-pointer rounded-sm border border-border bg-transparent p-0"
+                            disabled={!canEditMembers || !canEditRoleForTarget(userRole, member.role)}
+                          />
                         </div>
 
-                        <div className="col-span-3 flex flex-nowrap items-center gap-1">
-                          <Button size="sm" variant="outline" asChild>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
                             <Link href={`/admin/team/${member.memberId}`}>
-                              <FileText className="mr-1 h-3.5 w-3.5" />
-                              Profile
+                              <FileText className="h-3.5 w-3.5" />
+                              <span className="sr-only">Profile</span>
                             </Link>
                           </Button>
                           {canResetMemberLogin ? (
-                            <Button size="sm" variant="outline" onClick={() => openLoginDialog(member)}>
-                              <KeyRound className="mr-1 h-3.5 w-3.5" />
-                              Reset
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openLoginDialog(member)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <KeyRound className="h-3.5 w-3.5" />
+                              <span className="sr-only">Reset Login</span>
                             </Button>
                           ) : null}
                           {canEditMembers ? (
-                            <Button size="sm" variant="outline" asChild>
-                              <Link href={`/admin/team/${member.memberId}/edit`}>Edit</Link>
+                            <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
+                              <Link href={`/admin/team/${member.memberId}/edit`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                                <span className="sr-only">Edit</span>
+                              </Link>
                             </Button>
                           ) : null}
                           {canDeleteMemberRow ? (
-                            <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDelete(member)}>
-                              <Trash2 className="mr-1 h-3.5 w-3.5" />
-                              Delete
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 w-8 p-0 text-destructive"
+                              onClick={() => handleDelete(member)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span className="sr-only">Delete</span>
                             </Button>
                           ) : null}
                         </div>
@@ -345,6 +374,11 @@ export default function TeamPage() {
                         <span className="text-[11px] text-muted-foreground">ID# {member.memberId}</span>
                         {teamRoleBadge(member.role)}
                         {teamStatusBadge(member.status)}
+                        <span
+                          className="inline-block h-4 w-4 rounded-sm border border-border"
+                          style={{ backgroundColor: member.color ?? "#CBD5E1" }}
+                          aria-label="Member color"
+                        />
                         <Badge color="light">{member.phone || "No phone"}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-1.5">

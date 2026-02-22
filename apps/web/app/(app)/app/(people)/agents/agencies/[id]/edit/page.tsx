@@ -374,7 +374,7 @@ export default function EditAgencyPage() {
                       {selectableAgents.map((agent) => {
                         const checked = linkedAgentIds.includes(agent.id);
                         return (
-                          <label key={agent.id} className="flex items-start gap-3 rounded-lg border p-3">
+                          <label key={agent.id} className="flex items-start gap-3 rounded-sm border p-3">
                             <Checkbox checked={checked} onCheckedChange={(value) => toggleAgentLink(agent.id, value === true)} />
                             <div className="flex-1 space-y-1">
                               <p className="text-sm font-medium">{agent.name}</p>

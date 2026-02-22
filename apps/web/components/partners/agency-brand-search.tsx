@@ -53,7 +53,7 @@ export function AgencyBrandSearch({ onApply }: AgencyBrandSearchProps) {
 
         <div className="space-y-3">
           {results.map((result) => (
-            <div key={result.id} className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div key={result.id} className="flex flex-col gap-3 rounded-sm border p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-1 items-start gap-3">
                 <CompanyLogo name={result.name} domain={result.domain} website={result.website} size={48} className="h-12 w-12" />
                 <div>

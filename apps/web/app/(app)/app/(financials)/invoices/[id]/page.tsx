@@ -166,7 +166,7 @@ export default function InvoiceDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Delete invoice</p>
           <p className="text-xs text-muted-foreground">Permanently remove this invoice and all associated data.</p>

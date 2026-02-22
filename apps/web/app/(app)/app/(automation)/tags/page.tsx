@@ -74,12 +74,12 @@ export default function TagsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {filteredTags.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
                 No tags yet. Create your first tag.
               </div>
             ) : (
               filteredTags.map((tag) => (
-                <div key={tag.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+                <div key={tag.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                       <TagIcon className="h-5 w-5 text-muted-foreground" />

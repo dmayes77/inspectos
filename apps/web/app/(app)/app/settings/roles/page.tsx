@@ -73,7 +73,7 @@ export default function RolesPage() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <div className="h-12 w-12 rounded-sm bg-primary/10 flex items-center justify-center">
                           <Shield className="h-6 w-6 text-primary" />
                         </div>
                         <div>

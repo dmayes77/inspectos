@@ -104,7 +104,7 @@ export default function AgencyDetailPage() {
               website={agency.website}
               domain={agency.website}
               size={96}
-              className="h-24 w-24 rounded-2xl"
+              className="h-24 w-24 rounded-sm"
             />
             <div className="flex-1">
               <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
@@ -172,7 +172,7 @@ export default function AgencyDetailPage() {
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               {stats.map((stat) => (
-                <div key={stat.label} className="rounded-lg border p-4">
+                <div key={stat.label} className="rounded-sm border p-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <stat.icon className="h-4 w-4" />
                     {stat.label}
@@ -257,7 +257,7 @@ export default function AgencyDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {agentList.map((agent) => (
-                    <div key={agent.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                    <div key={agent.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3 text-sm">
                       <div>
                         <Link href={`/app/agents/${agent.id}`} className="font-medium hover:underline">
                           {agent.name}

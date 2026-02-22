@@ -131,7 +131,7 @@ export default function ContactDetailPage() {
               <Link
                 key={property.propertyId}
                 href={`/app/properties/${property.propertyId}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-border/70 px-4 py-3 transition hover:border-primary hover:bg-primary/10"
+                className="flex items-center justify-between gap-4 rounded-sm border border-border/70 px-4 py-3 transition hover:border-primary hover:bg-primary/10"
               >
                 <div>
                   <p className="text-sm font-medium">{formatPropertyAddress(property)}</p>
@@ -157,7 +157,7 @@ export default function ContactDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Delete contact</p>
           <p className="text-xs text-muted-foreground">Permanently remove this contact and all associated data.</p>

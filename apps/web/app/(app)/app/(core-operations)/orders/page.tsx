@@ -249,11 +249,11 @@ export default function OrdersPage() {
       {/* Mobile View - Custom Cards */}
       <div className="md:hidden space-y-4">
         {isError ? (
-          <div className="rounded-lg border border-dashed p-6 text-center">
+          <div className="rounded-sm border border-dashed p-6 text-center">
             <p className="text-sm text-red-500">Failed to load orders.</p>
           </div>
         ) : filteredOrders.length === 0 && !isLoading ? (
-          <div className="rounded-lg border border-dashed p-6 text-center">
+          <div className="rounded-sm border border-dashed p-6 text-center">
             <p className="text-sm text-muted-foreground">No orders found.</p>
           </div>
         ) : (
@@ -262,7 +262,7 @@ export default function OrdersPage() {
               <Link
                 key={order.id}
                 href={`/app/orders/${order.id}`}
-                className="block rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
+                className="block rounded-sm border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -364,13 +364,13 @@ export default function OrdersPage() {
           }
           emptyState={
             isError ? (
-              <div className="rounded-lg border border-dashed p-10 text-center">
+              <div className="rounded-sm border border-dashed p-10 text-center">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold text-red-500">Failed to load orders</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Please try refreshing the page.</p>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed p-10 text-center">
+              <div className="rounded-sm border border-dashed p-10 text-center">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold">No orders yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Create your first order to start managing inspections.</p>

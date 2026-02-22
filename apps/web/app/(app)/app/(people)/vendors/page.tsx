@@ -32,14 +32,14 @@ export default function VendorsPage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
               <Building2 className="h-10 w-10 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">Loading vendors...</p>
               </div>
             </div>
           ) : vendors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
               <Building2 className="h-10 w-10 text-muted-foreground" />
               <div>
                 <p className="text-sm font-medium">No vendors yet</p>

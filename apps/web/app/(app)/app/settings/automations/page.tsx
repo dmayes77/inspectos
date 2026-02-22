@@ -83,7 +83,7 @@ export default function AutomationsPage() {
       return (
         <div
           key={workflow.id}
-          className="flex flex-col gap-4 rounded-lg border p-4 transition hover:shadow"
+          className="flex flex-col gap-4 rounded-sm border p-4 transition hover:shadow"
         >
           <div className="flex items-start justify-between">
             <div>
@@ -126,7 +126,7 @@ export default function AutomationsPage() {
     return ruleWorkflows.map((workflow) => (
       <div
         key={workflow.id}
-        className="flex flex-col gap-4 rounded-lg border p-4 transition hover:shadow"
+        className="flex flex-col gap-4 rounded-sm border p-4 transition hover:shadow"
       >
         <div className="flex items-start justify-between">
           <div>
@@ -214,7 +214,7 @@ export default function AutomationsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
             <Sparkles className="h-10 w-10 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">Launch the workflow builder</p>

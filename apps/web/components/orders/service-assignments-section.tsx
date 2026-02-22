@@ -125,7 +125,7 @@ export function ServiceAssignmentsSection({
                   const vendorIds = assignment?.vendorIds ?? [];
 
                   return (
-                    <div key={service.serviceId} className="rounded-md border">
+                    <div key={service.serviceId} className="rounded-sm border">
                       <label className="flex items-start gap-3 px-3 py-2 hover:bg-muted/50">
                         <Checkbox checked={checked} onCheckedChange={(value) => onServiceToggle(service.serviceId, value === true)} />
                         <div className="flex-1 space-y-2">

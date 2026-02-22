@@ -20,12 +20,12 @@ export default function WorkflowRunsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {runs.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
               No workflow runs yet.
             </div>
           ) : (
             runs.map((run) => (
-              <div key={run.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+              <div key={run.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3">
                 <div>
                   <div className="text-sm font-medium">{run.workflowId}</div>
                   <div className="text-xs text-muted-foreground">

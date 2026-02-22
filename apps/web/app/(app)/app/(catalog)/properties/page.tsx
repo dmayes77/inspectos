@@ -201,11 +201,11 @@ export default function PropertiesPage() {
           }
           emptyState={
             isError ? (
-              <div className="rounded-lg border border-dashed p-10 text-center text-red-500">
+              <div className="rounded-sm border border-dashed p-10 text-center text-red-500">
                 Failed to load properties.
               </div>
             ) : properties.length === 0 ? (
-              <div className="rounded-lg border border-dashed p-10 text-center">
+              <div className="rounded-sm border border-dashed p-10 text-center">
                 <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No properties yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -216,7 +216,7 @@ export default function PropertiesPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed p-10 text-center">
+              <div className="rounded-sm border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No properties match your filters</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Adjust your search or type filter to find the property you need.

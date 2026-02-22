@@ -75,7 +75,7 @@ export default function InvoicesPage() {
   const overdueTotal = hasInvoices ? totals.overdue : 0;
 
   const emptyState = (
-    <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+    <div className="rounded-sm border border-dashed p-10 text-center text-sm text-muted-foreground">
       No invoices yet. Create an invoice from an order.
       {orderTotals.unpaidCount > 0 && (
         <div className="mt-4 flex items-center justify-center gap-2">
@@ -121,18 +121,18 @@ export default function InvoicesPage() {
           {/* Mobile View - Custom Cards */}
           <div className="md:hidden space-y-3">
             {isError ? (
-              <div className="rounded-lg border border-dashed p-6 text-center">
+              <div className="rounded-sm border border-dashed p-6 text-center">
                 <p className="text-sm text-red-500">Failed to load invoices.</p>
               </div>
             ) : isLoading ? (
-              <div className="rounded-lg border border-dashed p-6 text-center">
+              <div className="rounded-sm border border-dashed p-6 text-center">
                 <p className="text-sm text-muted-foreground">Loading invoices...</p>
               </div>
             ) : filteredInvoices.length === 0 ? (
               emptyState
             ) : (
               filteredInvoices.map((invoice) => (
-                <div key={invoice.invoiceId} className="rounded-lg border p-4 text-sm">
+                <div key={invoice.invoiceId} className="rounded-sm border p-4 text-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Link
@@ -201,13 +201,13 @@ export default function InvoicesPage() {
               }
               emptyState={
                 isError ? (
-                  <div className="rounded-lg border border-dashed p-10 text-center">
+                  <div className="rounded-sm border border-dashed p-10 text-center">
                     <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <h3 className="mt-4 text-lg font-semibold text-red-500">Failed to load invoices</h3>
                     <p className="mt-2 text-sm text-muted-foreground">Please try refreshing the page.</p>
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed p-10 text-center">
+                  <div className="rounded-sm border border-dashed p-10 text-center">
                     <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                     <h3 className="mt-4 text-lg font-semibold">No invoices yet</h3>
                     <p className="mt-2 text-sm text-muted-foreground">

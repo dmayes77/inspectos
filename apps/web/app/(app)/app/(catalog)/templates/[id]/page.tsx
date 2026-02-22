@@ -265,7 +265,7 @@ export default function TemplateEditorPage() {
                       onChange={(e) => setServiceSearch(e.target.value)}
                       placeholder="Search services..."
                     />
-                    <div className="max-h-64 overflow-y-auto space-y-2 rounded-md border p-3">
+                    <div className="max-h-64 overflow-y-auto space-y-2 rounded-sm border p-3">
                       {filteredServices.length === 0 ? (
                         <div className="text-sm text-muted-foreground">No services match your search.</div>
                       ) : (
@@ -389,12 +389,12 @@ export default function TemplateEditorPage() {
               </div>
               <div className="space-y-3">
                 {section.items.length === 0 ? (
-                  <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                  <div className="rounded-sm border border-dashed p-4 text-sm text-muted-foreground">
                     No items yet. Add your first checklist item.
                   </div>
                 ) : (
                   section.items.map((item) => (
-                    <div key={item.id} className="rounded-md border p-3">
+                    <div key={item.id} className="rounded-sm border p-3">
                       <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_0.5fr_auto] items-center">
                         <Input
                           value={item.name}

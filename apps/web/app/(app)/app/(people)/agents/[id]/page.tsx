@@ -188,7 +188,7 @@ export default function AgentDetailPage() {
                   logoUrl={agent.brand_logo_url}
                   website={agent.agency?.website ?? undefined}
                   size={64}
-                  className="hidden rounded-2xl border bg-background p-2 sm:block"
+                  className="hidden rounded-sm border bg-background p-2 sm:block"
                 />
               )}
             </div>
@@ -314,7 +314,7 @@ export default function AgentDetailPage() {
                           logoUrl={agent.brand_logo_url}
                           website={agent.agency.website ?? undefined}
                           size={48}
-                          className="rounded-lg border bg-background p-2"
+                          className="rounded-sm border bg-background p-2"
                         />
                       )}
                       <div>
@@ -417,7 +417,7 @@ export default function AgentDetailPage() {
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             {stats.map((stat) => (
-              <div key={stat.label} className="rounded-lg border p-4">
+              <div key={stat.label} className="rounded-sm border p-4">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <stat.icon className="h-4 w-4" />
                   {stat.label}
@@ -435,7 +435,7 @@ export default function AgentDetailPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {notifications.map((row) => (
-              <div key={row.label} className="flex items-start justify-between gap-4 rounded-lg border p-3">
+              <div key={row.label} className="flex items-start justify-between gap-4 rounded-sm border p-3">
                 <div>
                   <p className="font-medium">{row.label}</p>
                   <p className="text-sm text-muted-foreground">{row.description}</p>
@@ -466,7 +466,7 @@ export default function AgentDetailPage() {
             ) : (
               <div className="space-y-3">
                 {orders.map((order) => (
-                  <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 text-sm">
+                  <div key={order.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3 text-sm">
                     <div>
                       <p className="font-medium">{order.order_number}</p>
                       <p className="text-muted-foreground">

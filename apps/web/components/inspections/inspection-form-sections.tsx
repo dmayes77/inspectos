@@ -170,17 +170,17 @@ export function InspectionFormSections({
           {errors?.serviceIds ? <p className="text-sm text-destructive">{errors.serviceIds}</p> : null}
 
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-lg border bg-muted/40 p-3">
+            <div className="rounded-sm border bg-muted/40 p-3">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Services</p>
               <p className="text-lg font-semibold">{form.serviceIds.length || 0}</p>
               <p className="text-xs text-muted-foreground">selected</p>
             </div>
-            <div className="rounded-lg border bg-muted/40 p-3">
+            <div className="rounded-sm border bg-muted/40 p-3">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Duration</p>
               <p className="text-lg font-semibold">{selectedDuration ? `${selectedDuration} min` : "—"}</p>
               <p className="text-xs text-muted-foreground">estimated</p>
             </div>
-            <div className="rounded-lg border bg-muted/40 p-3">
+            <div className="rounded-sm border bg-muted/40 p-3">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Price</p>
               <p className="text-lg font-semibold">{formattedPrice}</p>
               <p className="text-xs text-muted-foreground">{autoCalculatePrice ? "auto" : "manual"}</p>

@@ -21,11 +21,11 @@ import Link from "next/link";
 function getTypeBadge(type: string) {
   switch (type) {
     case "inspection":
-      return <Badge className="bg-primary">Inspection</Badge>;
+      return <Badge color="primary" variant="solid">Inspection</Badge>;
     case "agreement":
-      return <Badge color="primary">Agreement</Badge>;
+      return <Badge color="info" variant="solid">Agreement</Badge>;
     case "report":
-      return <Badge className="bg-green-500">Report</Badge>;
+      return <Badge color="success" variant="solid">Report</Badge>;
     default:
       return <Badge color="light">{type}</Badge>;
   }

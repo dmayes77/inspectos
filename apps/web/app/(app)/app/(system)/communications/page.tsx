@@ -164,7 +164,7 @@ export default function CommunicationsPage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {DELIVERY_RULES.map((rule, idx) => (
-              <div key={idx} className="flex items-center justify-between rounded-md border px-3 py-2">
+              <div key={idx} className="flex items-center justify-between rounded-sm border px-3 py-2">
                 <div>
                   <span className="font-medium">{rule.trigger}</span>
                   <p className="text-xs text-muted-foreground">{rule.description}</p>
@@ -188,7 +188,7 @@ export default function CommunicationsPage() {
           </CardHeader>
           <CardContent>
             {connectedChannels === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-8 text-center text-sm text-muted-foreground">
                 <p>Connect email or SMS to start sending messages.</p>
                 <Button variant="outline" asChild>
                   <Link href="/app/integrations">
@@ -197,7 +197,7 @@ export default function CommunicationsPage() {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              <div className="flex items-center justify-center rounded-sm border border-dashed p-8 text-center text-sm text-muted-foreground">
                 No messages sent yet. Messages will appear here once orders are processed.
               </div>
             )}

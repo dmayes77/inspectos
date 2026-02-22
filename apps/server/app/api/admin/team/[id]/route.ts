@@ -5,6 +5,24 @@ import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync'
 import { isValidPublicId } from '@/lib/identifiers/public-id';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const COLOR_HEX_REGEX = /^#[0-9A-Fa-f]{6}$/;
+const NEUTRAL_MEMBER_COLOR = '#CBD5E1';
+
+function defaultProfileColorForDbRole(role: string | null | undefined) {
+  switch ((role ?? '').toLowerCase()) {
+    case 'owner':
+      return '#94A3B8';
+    case 'admin':
+      return '#60A5FA';
+    case 'inspector':
+      return '#2DD4BF';
+    case 'viewer':
+    case 'member':
+      return '#C4B5FD';
+    default:
+      return '#CBD5E1';
+  }
+}
 
 function mapRoleToDb(role: string | null | undefined) {
   switch ((role ?? '').toUpperCase()) {
@@ -128,6 +146,7 @@ export const PUT = withAuth<{ id: string }>(
     stateRegion,
     postalCode,
     country,
+    color,
     isInspector,
     customPermissions,
     weeklyAvailability,
@@ -145,6 +164,7 @@ export const PUT = withAuth<{ id: string }>(
   const stateRegionValue = typeof stateRegion === 'string' ? stateRegion.trim() : undefined;
   const postalCodeValue = typeof postalCode === 'string' ? postalCode.trim() : undefined;
   const countryValue = typeof country === 'string' ? country.trim() : undefined;
+  const colorValue = typeof color === 'string' ? color.trim() : undefined;
   const isInspectorValue = typeof isInspector === 'boolean' ? isInspector : undefined;
   const customPermissionsValue = Array.isArray(customPermissions)
     ? customPermissions.filter((value: unknown): value is string => typeof value === 'string')
@@ -164,7 +184,7 @@ export const PUT = withAuth<{ id: string }>(
 
   const { data: targetProfile, error: targetProfileError } = await serviceClient
     .from('profiles')
-    .select('email, address_line1, city, state_region, postal_code, is_inspector')
+    .select('email, address_line1, city, state_region, postal_code, is_inspector, profile_color')
     .eq('id', targetUserId)
     .maybeSingle();
 
@@ -193,13 +213,21 @@ export const PUT = withAuth<{ id: string }>(
     }
   }
 
+  if (colorValue !== undefined && !COLOR_HEX_REGEX.test(colorValue)) {
+    return badRequest('Color must be a valid hex value like #1F2937');
+  }
+
   const targetRole = targetRoleRaw.toLowerCase();
   const isRoleChanging = Boolean(role && role !== targetRole);
-  if (actorRole !== 'owner' && targetRole === 'owner') {
+  const normalizedCurrentProfileColor =
+    typeof targetProfile?.profile_color === 'string'
+      ? targetProfile.profile_color.trim().toUpperCase()
+      : '';
+  if (actorRole !== 'owner' && targetRole === 'owner' && isRoleChanging) {
     return badRequest('Only owners can modify owner members');
   }
 
-  if (role === 'owner' && actorRole !== 'owner') {
+  if (role === 'owner' && actorRole !== 'owner' && isRoleChanging) {
     return badRequest('Only owners can assign owner role');
   }
 
@@ -295,6 +323,11 @@ export const PUT = withAuth<{ id: string }>(
   if (stateRegionValue !== undefined) profileUpdate.state_region = stateRegionValue;
   if (postalCodeValue !== undefined) profileUpdate.postal_code = postalCodeValue;
   if (countryValue !== undefined) profileUpdate.country = countryValue;
+  if (colorValue !== undefined) {
+    profileUpdate.profile_color = colorValue.toUpperCase();
+  } else if (isRoleChanging) {
+    profileUpdate.profile_color = defaultProfileColorForDbRole(role);
+  }
   if (role || isInspectorValue !== undefined || effectiveIsInspector !== currentIsInspector) {
     profileUpdate.is_inspector = effectiveIsInspector;
   }

@@ -76,7 +76,7 @@ import { useMemo, useState } from "react";
                      router.push(item.href);
                    }}
                    className={cn(
-                     "w-full rounded-md px-3 py-2 text-left transition-colors hover:bg-muted",
+                     "w-full rounded-sm px-3 py-2 text-left transition-colors hover:bg-muted",
                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                    )}
                  >

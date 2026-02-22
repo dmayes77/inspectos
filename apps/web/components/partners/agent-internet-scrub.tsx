@@ -200,7 +200,7 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
         <p className="text-sm text-muted-foreground">{helperText}</p>
 
         {result && (
-          <div className="space-y-3 rounded-lg border p-4">
+          <div className="space-y-3 rounded-sm border p-4">
             <div className="flex flex-wrap items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarImage

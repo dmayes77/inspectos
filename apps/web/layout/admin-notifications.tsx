@@ -44,7 +44,7 @@
            {notifications.map((item) => {
              const Icon = item.icon;
              return (
-               <div key={item.id} className="flex items-start gap-3 rounded-lg border p-3">
+               <div key={item.id} className="flex items-start gap-3 rounded-sm border p-3">
                  <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                    <Icon className="h-4 w-4" />
                  </div>

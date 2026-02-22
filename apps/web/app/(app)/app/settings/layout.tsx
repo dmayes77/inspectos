@@ -81,7 +81,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                         <Link
                           href={href}
                           className={cn(
-                            "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                            "group flex items-center gap-2.5 rounded-sm px-3 py-2 text-sm font-medium transition-colors",
                             isActive
                               ? "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
                               : "text-muted-foreground hover:bg-muted hover:text-foreground"

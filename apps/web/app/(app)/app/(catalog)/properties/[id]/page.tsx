@@ -145,7 +145,7 @@ export default function PropertyDetailPage() {
             <p className="text-sm text-muted-foreground">No ownership history recorded.</p>
           ) : (
             ownerHistory.map((owner) => (
-              <div key={owner.propertyOwnerId} className="flex items-start gap-3 rounded-lg border p-3">
+              <div key={owner.propertyOwnerId} className="flex items-start gap-3 rounded-sm border p-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     {owner.client ? (
@@ -374,14 +374,14 @@ export default function PropertyDetailPage() {
           <CardDescription>Inspection orders for this property</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-dashed p-8 text-center">
+          <div className="rounded-sm border border-dashed p-8 text-center">
             <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">Orders feature coming soon</p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Delete property</p>
           <p className="text-xs text-muted-foreground">Permanently remove this property record.</p>

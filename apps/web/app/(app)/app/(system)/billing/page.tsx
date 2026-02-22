@@ -37,7 +37,7 @@ export default function BillingPage() {
           <CardDescription>Set recurring billing rules and payment methods.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-sm border border-dashed p-10 text-center text-sm text-muted-foreground">
             Configure plans and connect payment processors to enable subscriptions.
           </div>
         </CardContent>

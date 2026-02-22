@@ -26,7 +26,7 @@ export default function AssetsPage() {
           <CardDescription>Track serial numbers, assignments, and maintenance.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-10 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
             <HardHat className="h-10 w-10 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">No assets yet</p>

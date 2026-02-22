@@ -161,7 +161,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
           {
             onSuccess: () => {
               toast.success("Inspection updated successfully");
-              router.push(`/admin/inspections/${inspection.id}`);
+              router.push(`/app/inspections/${inspection.id}`);
             },
             onError: (error) => {
               const errorMessage = error instanceof Error ? error.message : "Failed to update inspection";
@@ -173,7 +173,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         createMutation.mutate(payload, {
           onSuccess: (data) => {
             toast.success("Inspection created successfully");
-            router.push(data?.id ? `/admin/inspections/${data.id}` : "/admin/inspections");
+            router.push(data?.id ? `/app/inspections/${data.id}` : "/app/inspections");
           },
           onError: (error) => {
             const errorMessage = error instanceof Error ? error.message : "Failed to create inspection";
@@ -571,7 +571,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                     )}
                   </Button>
                   <Button type="button" variant="outline" asChild>
-                    <Link href={inspection ? `/admin/inspections/${inspection.id}` : "/admin/inspections"}>Cancel</Link>
+                    <Link href={inspection ? `/app/inspections/${inspection.id}` : "/app/inspections"}>Cancel</Link>
                   </Button>
                 </>
               }

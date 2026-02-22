@@ -109,7 +109,7 @@ export function InspectionDetailsSection({
                 group.services.map((service) => {
                   const checked = selectedServiceIds.includes(service.serviceId);
                   return (
-                    <label key={service.serviceId} className="flex items-start gap-3 rounded-md border px-3 py-2 hover:bg-muted/50">
+                    <label key={service.serviceId} className="flex items-start gap-3 rounded-sm border px-3 py-2 hover:bg-muted/50">
                       <Checkbox checked={checked} onCheckedChange={(value) => onServiceToggle(service.serviceId, value === true)} />
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-3">

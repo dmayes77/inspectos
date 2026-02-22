@@ -319,7 +319,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="mx-auto mt-10 max-w-4xl rounded-xl border bg-card p-6 text-center">
+          <div className="mx-auto mt-10 max-w-4xl rounded-sm border bg-card p-6 text-center">
             <p className="text-sm text-muted-foreground">
               InspectOS is not another add-on. It is the platform that replaces the fragmented operating model.
               One system for execution context and owner-level decisions.
@@ -379,7 +379,7 @@ export default function LandingPage() {
             {solutionPillars.map((feature) => (
               <Card key={feature.title} className="shadow-card transition-apple hover:shadow-card-hover">
                 <CardContent className="pt-6">
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-sm bg-primary/10">
                     <feature.icon className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="mb-2 text-lg font-semibold">{feature.title}</h3>
@@ -567,7 +567,7 @@ export default function LandingPage() {
 
       <section className="py-24">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="overflow-hidden rounded-2xl bg-primary px-8 py-16 text-center text-primary-foreground">
+          <div className="overflow-hidden rounded-sm bg-primary px-8 py-16 text-center text-primary-foreground">
             <h2 className="mb-4 text-3xl font-semibold text-white sm:text-4xl">
               If you are not solving fragmentation, fragmentation keeps solving you.
             </h2>

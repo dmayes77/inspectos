@@ -66,7 +66,7 @@ export function IncludesEditor({ includes, onChange }: IncludesEditorProps) {
             onDragStart={() => handleDragStart(index)}
             onDragOver={(e) => handleDragOver(e, index)}
             onDragEnd={handleDragEnd}
-            className={`flex items-center gap-2 p-2 border rounded-md bg-background ${
+            className={`flex items-center gap-2 p-2 border rounded-sm bg-background ${
               draggedIndex === index ? "opacity-50" : ""
             } cursor-move hover:bg-accent/50 transition-colors`}
           >

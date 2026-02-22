@@ -198,14 +198,14 @@ export default function ServicesAdminPage() {
           }
           emptyState={
             isError ? (
-              <div className="rounded-lg border border-dashed p-10 text-center text-red-500">
+              <div className="rounded-sm border border-dashed p-10 text-center text-red-500">
                 Failed to load services.
                 {error instanceof Error && (
                   <span className="ml-2 text-xs text-muted-foreground">{error.message}</span>
                 )}
               </div>
             ) : hasNoServices ? (
-              <div className="rounded-lg border border-dashed p-10 text-center">
+              <div className="rounded-sm border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No services yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Create your first service or package to get started.
@@ -217,7 +217,7 @@ export default function ServicesAdminPage() {
                 )}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed p-10 text-center">
+              <div className="rounded-sm border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No services match your filters</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Adjust your search or type filter to find the service you need.

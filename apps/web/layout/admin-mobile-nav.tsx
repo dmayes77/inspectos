@@ -94,7 +94,7 @@ export function AdminMobileNav({
         <SheetHeader className="border-b px-3 py-3">
           <SheetTitle className="p-0">
             <div className="flex items-center gap-2">
-              <div className="relative flex h-8 w-8 items-center justify-center rounded-lg shrink-0">
+              <div className="relative flex h-8 w-8 items-center justify-center rounded-sm shrink-0">
                 {businessLogo ? (
                   <Image
                     src={businessLogo}
@@ -104,7 +104,7 @@ export function AdminMobileNav({
                     className="object-contain"
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full w-full rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+                  <div className="flex items-center justify-center h-full w-full rounded-sm bg-primary text-primary-foreground font-bold text-sm">
                     {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
                   </div>
                 )}

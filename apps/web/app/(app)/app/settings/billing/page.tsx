@@ -40,7 +40,7 @@ export default function BillingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-sm border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Base monthly</span>
                 <span className="text-lg font-semibold">{money(base, currency)}</span>
@@ -67,7 +67,7 @@ export default function BillingPage() {
             <CardDescription>Live seat usage and monthly overage calculation.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-lg border p-4">
+            <div className="rounded-sm border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Current inspector seats</span>
                 <span className="text-lg font-semibold">{settings.business.inspectorSeatCount}</span>

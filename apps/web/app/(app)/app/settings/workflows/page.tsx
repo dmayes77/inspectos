@@ -41,12 +41,12 @@ export default function WorkflowsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {workflows.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
               No workflows yet. Create your first workflow.
             </div>
           ) : (
             workflows.map((workflow: Workflow) => (
-              <div key={workflow.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+              <div key={workflow.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3">
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
                     <WorkflowIcon className="h-5 w-5 text-muted-foreground" />

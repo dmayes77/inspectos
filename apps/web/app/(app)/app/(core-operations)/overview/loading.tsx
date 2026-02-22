@@ -17,7 +17,7 @@ export default function OverviewLoading() {
             <Card key={i}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-4 rounded" />
+                <Skeleton className="h-4 w-4 rounded-sm" />
               </CardHeader>
               <CardContent>
                 <Skeleton className="h-8 w-24 mb-2" />

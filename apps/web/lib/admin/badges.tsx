@@ -3,17 +3,22 @@ import { Badge } from "@/components/ui/badge";
 const COMPACT_TEAM_BADGE_CLASS = "h-5 px-1.5 text-[10px] font-medium leading-none";
 
 export function inspectionStatusBadge(status: string) {
+  const label = status
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
   switch (status) {
     case "scheduled":
-      return <Badge color="info">Scheduled</Badge>;
+      return <Badge color="light" className="bg-blue-100 text-blue-800">Scheduled</Badge>;
     case "in_progress":
-      return <Badge color="warning">In Progress</Badge>;
+      return <Badge color="light" className="bg-amber-100 text-amber-800">In Progress</Badge>;
     case "completed":
-      return <Badge color="success">Completed</Badge>;
+      return <Badge color="light" className="bg-green-100 text-green-800">Completed</Badge>;
     case "pending_report":
-      return <Badge color="primary">Pending Report</Badge>;
+      return <Badge color="light" className="bg-purple-100 text-purple-800">Pending Report</Badge>;
     default:
-      return <Badge color="light">{status}</Badge>;
+      return <Badge color="light" className="bg-gray-100 text-gray-800">{label}</Badge>;
   }
 }
 

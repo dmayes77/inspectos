@@ -295,7 +295,7 @@ function ClientsPageContent() {
             }
             emptyState={
               filteredClients.length === 0 && !searchQuery && typeFilter === "all" ? (
-                <div className="rounded-lg border border-dashed p-12 text-center">
+                <div className="rounded-sm border border-dashed p-12 text-center">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -311,7 +311,7 @@ function ClientsPageContent() {
                   )}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed p-12 text-center">
+                <div className="rounded-sm border border-dashed p-12 text-center">
                   <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">No results found</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -331,11 +331,11 @@ function ClientsPageContent() {
             </CardHeader>
             <CardContent>
               {leadsLoading ? (
-                <div className="rounded-lg border border-dashed p-12 text-center">
+                <div className="rounded-sm border border-dashed p-12 text-center">
                   <p className="text-sm text-muted-foreground">Loading leads...</p>
                 </div>
               ) : leads.length === 0 ? (
-                <div className="rounded-lg border border-dashed p-12 text-center">
+                <div className="rounded-sm border border-dashed p-12 text-center">
                   <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">No leads yet</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -354,7 +354,7 @@ function ClientsPageContent() {
                     <Link
                       key={lead.leadId}
                       href={`/app/contacts/leads/${lead.leadId}?return=/app/contacts?tab=leads`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 transition-colors hover:bg-accent"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4 transition-colors hover:bg-accent"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">

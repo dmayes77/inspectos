@@ -418,6 +418,10 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   const isSubmitting = createOrder.isPending || updateOrder.isPending;
   const primaryActionLabel = mode === "edit" ? "Save Changes" : "Create Order";
   const cancelHref = mode === "edit" && order ? `/app/orders/${order.id}` : "/app/orders";
+  const scheduleLabel = formatScheduleLabel(form.scheduled_date, form.scheduled_time);
+  const hasInspectorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.inspectorIds.length > 0);
+  const hasVendorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.vendorIds.length > 0);
+  const marginTone = costTotals.grossMargin < 0 ? "text-destructive" : "text-foreground";
 
   return (
     <div className="space-y-4">
@@ -464,8 +468,102 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-4">
-        <div className="space-y-4 lg:col-span-3">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,2.1fr)_minmax(320px,1fr)]">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                Order Workspace
+              </CardTitle>
+              <CardDescription>
+                {mode === "edit"
+                  ? "Update schedule, status, and payment in the same workspace."
+                  : "Set schedule and core order context before creation."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className={`grid gap-4 ${mode === "edit" ? "md:grid-cols-5" : "md:grid-cols-3"}`}>
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_date">Date</Label>
+                  <Input
+                    id="scheduled_date"
+                    type="date"
+                    value={form.scheduled_date}
+                    onChange={(event) => setForm((prev) => ({ ...prev, scheduled_date: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_time">Time</Label>
+                  <Input
+                    id="scheduled_time"
+                    type="time"
+                    value={form.scheduled_time}
+                    onChange={(event) => setForm((prev) => ({ ...prev, scheduled_time: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration_minutes">Duration (minutes)</Label>
+                  <Input
+                    id="duration_minutes"
+                    type="number"
+                    min={0}
+                    value={form.duration_minutes}
+                    placeholder={totals.duration ? `${totals.duration}` : "120"}
+                    onChange={(event) => setForm((prev) => ({ ...prev, duration_minutes: event.target.value }))}
+                  />
+                </div>
+                {mode === "edit" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Order Status</Label>
+                      <Select value={form.status} onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as Order["status"] }))}>
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {orderStatusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {formatStatusLabel(status)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="payment_status">Payment Status</Label>
+                      <Select
+                        value={form.payment_status}
+                        onValueChange={(value) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            payment_status: value as Order["payment_status"],
+                          }))
+                        }
+                      >
+                        <SelectTrigger id="payment_status">
+                          <SelectValue placeholder="Select payment status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentStatusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {formatStatusLabel(status)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+              </div>
+              {mode === "new" && (
+                <p className="text-xs text-muted-foreground">
+                  Order and payment statuses remain default until the order is created.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -510,7 +608,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
               <div
                 className={cn(
-                  "overflow-hidden rounded-lg border bg-muted/20 transition-all duration-300 ease-in-out",
+                  "overflow-hidden rounded-sm border bg-muted/20 transition-all duration-300 ease-in-out",
                   showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
                 )}
                 aria-hidden={!showInlinePropertyForm}
@@ -631,220 +729,124 @@ export function OrderForm({ mode, order }: OrderFormProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                Schedule
-              </CardTitle>
-              <CardDescription>Confirm date, time, and status.</CardDescription>
-            </CardHeader>
-            <CardContent className={`grid gap-4 ${mode === "edit" ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
-              <div className="space-y-2">
-                <Label htmlFor="scheduled_date">Date</Label>
-                <Input
-                  id="scheduled_date"
-                  type="date"
-                  value={form.scheduled_date}
-                  onChange={(event) => setForm((prev) => ({ ...prev, scheduled_date: event.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="scheduled_time">Time</Label>
-                <Input
-                  id="scheduled_time"
-                  type="time"
-                  value={form.scheduled_time}
-                  onChange={(event) => setForm((prev) => ({ ...prev, scheduled_time: event.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration_minutes">Duration (minutes)</Label>
-                <Input
-                  id="duration_minutes"
-                  type="number"
-                  min={0}
-                  value={form.duration_minutes}
-                  placeholder={totals.duration ? `${totals.duration}` : "120"}
-                  onChange={(event) => setForm((prev) => ({ ...prev, duration_minutes: event.target.value }))}
-                />
-              </div>
-              {mode === "edit" && (
-                <div className="space-y-2">
-                  <Label htmlFor="status">Order Status</Label>
-                  <Select value={form.status} onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as Order["status"] }))}>
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {orderStatusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {formatStatusLabel(status)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                Cost Inputs
-              </CardTitle>
-              <CardDescription>Capture estimated order costs to keep margin visibility accurate.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="space-y-2">
-                  <Label htmlFor="labor_cost">Labor</Label>
-                  <Input
-                    id="labor_cost"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.labor_cost}
-                    onChange={(event) => setForm((prev) => ({ ...prev, labor_cost: event.target.value }))}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="travel_cost">Travel</Label>
-                  <Input
-                    id="travel_cost"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.travel_cost}
-                    onChange={(event) => setForm((prev) => ({ ...prev, travel_cost: event.target.value }))}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="overhead_cost">Overhead</Label>
-                  <Input
-                    id="overhead_cost"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.overhead_cost}
-                    onChange={(event) => setForm((prev) => ({ ...prev, overhead_cost: event.target.value }))}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="other_cost">Other</Label>
-                  <Input
-                    id="other_cost"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={form.other_cost}
-                    onChange={(event) => setForm((prev) => ({ ...prev, other_cost: event.target.value }))}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 rounded-md border bg-muted/30 p-3 md:grid-cols-3">
-                <div>
-                  <p className="text-xs text-muted-foreground">Total cost</p>
-                  <p className="text-sm font-semibold">${costTotals.totalCost.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Projected gross margin</p>
-                  <p className="text-sm font-semibold">${costTotals.grossMargin.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Projected margin %</p>
-                  <p className="text-sm font-semibold">{costTotals.grossMarginPct.toFixed(1)}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {mode === "edit" && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  Payment
+                  Cost Inputs
                 </CardTitle>
-                <CardDescription>Track payment status for this order.</CardDescription>
+                <CardDescription>Capture estimated order costs to keep margin visibility accurate.</CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="payment_status">Payment Status</Label>
-                  <Select
-                    value={form.payment_status}
-                    onValueChange={(value) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        payment_status: value as Order["payment_status"],
-                      }))
-                    }
-                  >
-                    <SelectTrigger id="payment_status">
-                      <SelectValue placeholder="Select payment status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentStatusOptions.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {formatStatusLabel(status)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="labor_cost">Labor</Label>
+                    <Input
+                      id="labor_cost"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.labor_cost}
+                      onChange={(event) => setForm((prev) => ({ ...prev, labor_cost: event.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="travel_cost">Travel</Label>
+                    <Input
+                      id="travel_cost"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.travel_cost}
+                      onChange={(event) => setForm((prev) => ({ ...prev, travel_cost: event.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="overhead_cost">Overhead</Label>
+                    <Input
+                      id="overhead_cost"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.overhead_cost}
+                      onChange={(event) => setForm((prev) => ({ ...prev, overhead_cost: event.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="other_cost">Other</Label>
+                    <Input
+                      id="other_cost"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={form.other_cost}
+                      onChange={(event) => setForm((prev) => ({ ...prev, other_cost: event.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
-                <div className="rounded-md border p-3 text-sm">
-                  <p className="text-muted-foreground">Current total</p>
-                  <p className="text-lg font-semibold">${totals.subtotal.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">Taxes and discounts applied after creation.</p>
+                <div className="grid gap-3 rounded-sm border bg-muted/30 p-3 md:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total cost</p>
+                    <p className="text-sm font-semibold">${costTotals.totalCost.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Projected gross margin</p>
+                    <p className={cn("text-sm font-semibold", marginTone)}>${costTotals.grossMargin.toFixed(2)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Projected margin %</p>
+                    <p className="text-sm font-semibold">{costTotals.grossMarginPct.toFixed(1)}%</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes</CardTitle>
-              <CardDescription>Internal notes or client instructions.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="internal_notes">Internal Notes</Label>
-                <Textarea
-                  id="internal_notes"
-                  value={form.internal_notes}
-                  onChange={(event) => setForm((prev) => ({ ...prev, internal_notes: event.target.value }))}
-                  placeholder="Team-only notes..."
-                  rows={4}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client_notes">Client Notes</Label>
-                <Textarea
-                  id="client_notes"
-                  value={form.client_notes}
-                  onChange={(event) => setForm((prev) => ({ ...prev, client_notes: event.target.value }))}
-                  placeholder="Visible to client..."
-                  rows={4}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {mode === "edit" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+                <CardDescription>Internal notes or client instructions.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="internal_notes">Internal Notes</Label>
+                  <Textarea
+                    id="internal_notes"
+                    value={form.internal_notes}
+                    onChange={(event) => setForm((prev) => ({ ...prev, internal_notes: event.target.value }))}
+                    placeholder="Team-only notes..."
+                    rows={4}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="client_notes">Client Notes</Label>
+                  <Textarea
+                    id="client_notes"
+                    value={form.client_notes}
+                    onChange={(event) => setForm((prev) => ({ ...prev, client_notes: event.target.value }))}
+                    placeholder="Visible to client..."
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-                Summary
+                Live Margin Snapshot
               </CardTitle>
-              <CardDescription>Totals and required steps.</CardDescription>
+              <CardDescription>Financial signal while building the order.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between text-sm">
@@ -859,6 +861,16 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               <div className="flex items-center justify-between text-sm">
                 <span>Subtotal</span>
                 <span className="font-semibold">${totals.subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Total cost</span>
+                <span className="font-semibold">${costTotals.totalCost.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Gross margin</span>
+                <span className={cn("font-semibold", marginTone)}>
+                  ${costTotals.grossMargin.toFixed(2)} ({costTotals.grossMarginPct.toFixed(1)}%)
+                </span>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Taxes/discounts</span>
@@ -889,8 +901,12 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 Date set
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className={form.inspector_id ? "h-4 w-4 text-emerald-500" : "h-4 w-4"} />
-                Inspector assigned
+                <CheckCircle2 className={hasInspectorAssignment ? "h-4 w-4 text-emerald-500" : "h-4 w-4"} />
+                Inspector assigned to service
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className={hasVendorAssignment ? "h-4 w-4 text-emerald-500" : "h-4 w-4"} />
+                Vendor assigned (optional)
               </div>
             </CardContent>
           </Card>
@@ -906,17 +922,15 @@ export function OrderForm({ mode, order }: OrderFormProps) {
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                {form.scheduled_date || "Pick a date"}
+                {scheduleLabel ?? "Pick a date and time"}
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                {form.scheduled_time || "Pick a time"}
+                {form.duration_minutes ? `${form.duration_minutes} min` : `${totals.duration || 0} min estimate`}
               </div>
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
-                {form.inspector_id
-                  ? inspectors.find((i) => i.teamMemberId === form.inspector_id)?.name ?? "Inspector assigned"
-                  : "No inspector yet"}
+                {hasInspectorAssignment ? "Inspector(s) assigned by service" : "No inspector assignments yet"}
               </div>
             </CardContent>
           </Card>

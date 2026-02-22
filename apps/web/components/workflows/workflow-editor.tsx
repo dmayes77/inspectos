@@ -377,7 +377,7 @@ export function WorkflowEditor() {
               </div>
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground">Conditions</div>
-                <div className="rounded-md border p-3 space-y-3">
+                <div className="rounded-sm border p-3 space-y-3">
                   <div className="space-y-2">
                     <Label>Must have tags</Label>
                     <div className="space-y-2">
@@ -479,7 +479,7 @@ export function WorkflowEditor() {
                 </Button>
               </div>
               {(form.actions ?? []).length === 0 ? (
-                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+                <div className="rounded-sm border border-dashed p-3 text-sm text-muted-foreground">
                   No actions yet. Add at least one action for this workflow.
                 </div>
               ) : (
@@ -497,7 +497,7 @@ export function WorkflowEditor() {
 
                         return (
                           <SortableAction key={actionData.id} action={actionData}>
-                            <div className="rounded-lg border p-3 space-y-3">
+                            <div className="rounded-sm border p-3 space-y-3">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-2">
                                   <div className={`h-7 w-7 rounded-full flex items-center justify-center ${color}`}>
