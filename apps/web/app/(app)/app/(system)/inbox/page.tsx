@@ -218,11 +218,6 @@ export default function InboxPage() {
     setIsComposeOpen(false);
   };
 
-  const unreadCount = useMemo(
-    () => MESSAGES.filter((message) => message.folder === "inbox" && message.unread).length,
-    []
-  );
-
   const filteredMessages = useMemo(() => {
     const lowered = query.trim().toLowerCase();
     return MESSAGES.filter((message) => {
@@ -253,19 +248,6 @@ export default function InboxPage() {
           </Button>
         }
       />
-
-      <div className="rounded-2xl border bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-4 text-white shadow-lg">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-white/70">Mail Operations</p>
-            <h2 className="text-lg font-semibold">Business Inbox</h2>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <Badge color="light" className="bg-white/15 text-white">{unreadCount} unread</Badge>
-            <Badge color="light" className="bg-white/15 text-white">{filteredMessages.length} in view</Badge>
-          </div>
-        </div>
-      </div>
 
       <div
         className={cn(

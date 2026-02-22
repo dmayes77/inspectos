@@ -14,3 +14,4 @@ WHERE tm.user_id = p.id
 CREATE INDEX IF NOT EXISTS idx_profiles_is_inspector
   ON public.profiles (is_inspector)
   WHERE is_inspector = true;
+re_JYQ88LVt_JTpitLRLmjHUukjLm3fsfvxk
