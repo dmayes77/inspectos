@@ -1,0 +1,215 @@
+import { badRequest, notFound, serverError, success } from '@/lib/supabase';
+import { requirePermission, withAuth } from '@/lib/api/with-auth';
+import { formatInvoiceNumber } from '@inspectos/shared/utils/invoices';
+import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
+import { buildInvoicePayload } from '@/lib/webhooks/payloads';
+
+type RawInvoice = {
+  id: string;
+  status: string | null;
+  total: number | null;
+  issued_at: string | null;
+  due_at: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  client_id?: string | null;
+  order_id?: string | null;
+  client?: { id: string; name: string } | { id: string; name: string }[] | null;
+  order?: { id: string; order_number: string; client_id: string | null } | { id: string; order_number: string; client_id: string | null }[] | null;
+};
+
+const mapInvoice = (invoice: RawInvoice) => {
+  const client = Array.isArray(invoice.client) ? invoice.client[0] : invoice.client;
+  const order = Array.isArray(invoice.order) ? invoice.order[0] : invoice.order;
+  return {
+    invoiceId: invoice.id,
+    invoiceNumber: formatInvoiceNumber(invoice.id),
+    clientId: invoice.client_id ?? client?.id ?? null,
+    clientName: client?.name ?? "",
+    orderId: invoice.order_id ?? order?.id ?? null,
+    orderNumber: order?.order_number ?? "",
+    amount: Number(invoice.total ?? 0),
+    issuedDate: invoice.issued_at ? new Date(invoice.issued_at).toISOString().slice(0, 10) : "",
+    dueDate: invoice.due_at ? new Date(invoice.due_at).toISOString().slice(0, 10) : "",
+    status: invoice.status ?? "draft",
+    createdAt: invoice.created_at ?? null,
+    updatedAt: invoice.updated_at ?? null,
+  };
+};
+
+const normalizeDate = (value?: string | null) => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+};
+
+/**
+ * GET /api/admin/invoices/[id]
+ */
+export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, memberPermissions, params }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'view_invoices',
+    'You do not have permission to view invoices',
+    memberPermissions
+  );
+  if (permissionCheck) return permissionCheck;
+
+  const { id } = params;
+  const invoiceId = id?.trim?.() ?? "";
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('id, status, total, issued_at, due_at, created_at, updated_at, client_id, order_id, client:clients(id, name), order:orders(id, order_number, client_id)')
+    .eq('id', invoiceId)
+    .eq('tenant_id', tenant.id)
+    .single();
+
+  if (error || !data) {
+    return notFound(error?.message || 'Invoice not found');
+  }
+
+  return success(mapInvoice(data));
+});
+
+/**
+ * PATCH /api/admin/invoices/[id]
+ */
+export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, memberPermissions, params, request }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'create_invoices',
+    'You do not have permission to update invoices',
+    memberPermissions
+  );
+  if (permissionCheck) return permissionCheck;
+
+  const { id } = params;
+  const invoiceId = id?.trim?.() ?? "";
+
+  const payload = await request.json();
+
+  // Fetch current invoice status for change detection
+  const { data: currentInvoice } = await supabase
+    .from('invoices')
+    .select('status')
+    .eq('id', invoiceId)
+    .eq('tenant_id', tenant.id)
+    .single();
+
+  const orderId = payload?.order_id?.toString?.() ?? "";
+  const total = Number(payload?.total ?? 0);
+
+  if (!orderId) {
+    return badRequest('Order is required for invoices.');
+  }
+  if (!Number.isFinite(total) || total <= 0) {
+    return badRequest('Invoice total must be greater than zero.');
+  }
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id, client_id')
+    .eq('id', orderId)
+    .eq('tenant_id', tenant.id)
+    .single();
+
+  if (orderError || !order) {
+    return badRequest(orderError?.message ?? 'Order not found.');
+  }
+
+  const clientId = order.client_id ?? payload?.client_id ?? null;
+  if (!clientId) {
+    return badRequest('Invoice must be linked to a client.');
+  }
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .update({
+      client_id: clientId,
+      order_id: orderId,
+      status: payload?.status ?? "draft",
+      total,
+      issued_at: normalizeDate(payload?.issued_at),
+      due_at: normalizeDate(payload?.due_at),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', invoiceId)
+    .eq('tenant_id', tenant.id)
+    .select('id, status, total, issued_at, due_at, created_at, updated_at, client_id, order_id, client:clients(id, name), order:orders(id, order_number, client_id)')
+    .single();
+
+  if (error || !data) {
+    return serverError(error?.message || 'Failed to update invoice.', error);
+  }
+
+  // Trigger webhooks for invoice.updated and status-specific events
+  try {
+    // Fetch complete invoice data including all fields
+    const { data: completeInvoice } = await supabase
+      .from('invoices')
+      .select(`
+        id, invoice_number, order_id, status, subtotal, tax, total,
+        issued_at, due_at, paid_at, created_at,
+        client:clients(id, name, email)
+      `)
+      .eq('id', invoiceId)
+      .single();
+
+    if (completeInvoice) {
+      // Flatten client relation if it's an array
+      const clientData = Array.isArray(completeInvoice.client)
+        ? completeInvoice.client[0]
+        : completeInvoice.client;
+
+      const invoiceData = {
+        ...completeInvoice,
+        client: clientData || null
+      };
+
+      // Always trigger invoice.updated
+      triggerWebhookEvent("invoice.updated", tenant.id, buildInvoicePayload(invoiceData));
+
+      // Trigger invoice.paid when status changes to paid
+      const previousStatus = currentInvoice?.status;
+      const newStatus = payload?.status;
+
+      if (newStatus === "paid" && previousStatus !== "paid") {
+        triggerWebhookEvent("invoice.paid", tenant.id, buildInvoicePayload(invoiceData));
+      }
+    }
+  } catch (webhookError) {
+    console.error("Failed to trigger webhook:", webhookError);
+  }
+
+  return success(mapInvoice(data));
+});
+
+/**
+ * DELETE /api/admin/invoices/[id]
+ */
+export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, memberRole, memberPermissions, params }) => {
+  const permissionCheck = requirePermission(
+    memberRole,
+    'create_invoices',
+    'You do not have permission to delete invoices',
+    memberPermissions
+  );
+  if (permissionCheck) return permissionCheck;
+
+  const { id } = params;
+  const invoiceId = id?.trim?.() ?? "";
+
+  const { error } = await supabase
+    .from('invoices')
+    .delete()
+    .eq('id', invoiceId)
+    .eq('tenant_id', tenant.id);
+
+  if (error) {
+    return serverError('Failed to delete invoice', error);
+  }
+
+  return success(true);
+});

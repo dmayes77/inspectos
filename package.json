@@ -3,13 +3,17 @@
   "private": true,
   "packageManager": "pnpm@10.28.0",
   "scripts": {
-    "dev:web": "pnpm -C apps/web dev",
-    "dev:server": "pnpm -C apps/server dev --port 4000",
+    "dev:web": "pnpm -C apps/dashboard dev",
+    "dev:dashboard": "pnpm -C apps/dashboard dev",
+    "dev:public": "pnpm -C apps/public dev",
+    "dev:platform": "pnpm -C apps/platform dev",
+    "dev:api": "pnpm -C apps/api dev --port 4000",
+    "dev:server": "pnpm -C apps/api dev --port 4000",
     "dev:mobile": "pnpm -C apps/mobile dev",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint --fix",
     "typecheck": "pnpm -r exec tsc --noEmit",
-    "test": "pnpm -C apps/web test:run",
+    "test": "pnpm -C apps/dashboard test:run",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -18,13 +22,11 @@
     "next": "16.1.2"
   },
   "lint-staged": {
-    "apps/web/**/*.{ts,tsx}": [
-      "pnpm -C apps/web exec eslint --fix",
-      "pnpm -C apps/web exec tsc --noEmit"
+    "apps/dashboard/**/*.{ts,tsx}": [
+      "pnpm -C apps/dashboard exec eslint --fix"
     ],
-    "apps/server/**/*.{ts,tsx}": [
-      "pnpm -C apps/server exec eslint --fix",
-      "pnpm -C apps/server exec tsc --noEmit"
+    "apps/api/**/*.{ts,tsx}": [
+      "pnpm -C apps/api exec eslint --fix"
     ],
     "apps/mobile/**/*.{ts,tsx}": [
       "pnpm -C apps/mobile exec eslint --fix"

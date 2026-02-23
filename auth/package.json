@@ -1,0 +1,23 @@
+{
+  "name": "@inspectos/auth",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "echo 'No linting configured for auth package'",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "exports": {
+    "./client": "./client/index.ts",
+    "./client/*": "./client/*.ts",
+    "./server": "./server/index.ts",
+    "./server/*": "./server/*.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "jose": "^5.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

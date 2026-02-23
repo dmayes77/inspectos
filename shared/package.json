@@ -1,0 +1,26 @@
+{
+  "name": "@inspectos/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "echo 'No linting configured for shared package'",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit"
+  },
+  "exports": {
+    "./types": "./types/index.ts",
+    "./types/*": "./types/*.ts",
+    "./validations": "./validations/index.ts",
+    "./validations/*": "./validations/*.ts",
+    "./utils": "./utils/index.ts",
+    "./utils/*": "./utils/*.ts",
+    "./constants": "./constants/index.ts",
+    "./constants/*": "./constants/*.ts"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

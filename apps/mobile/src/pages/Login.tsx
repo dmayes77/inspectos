@@ -13,6 +13,14 @@ import {
 } from "@ionic/react";
 import { supabase } from "../lib/supabaseClient";
 
+function validatePasswordPolicy(password: string): string | null {
+  if (password.length < 10) return "Password must be at least 10 characters.";
+  if (!/[A-Z]/.test(password)) return "Password must include at least one uppercase letter.";
+  if (!/[0-9]/.test(password)) return "Password must include at least one number.";
+  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include at least one special character (for example: !).";
+  return null;
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +36,7 @@ export default function Login() {
 
   const canSignUp = useMemo(() => {
     if (!email.includes("@")) return false;
-    if (password.length < 6) return false;
+    if (validatePasswordPolicy(password)) return false;
     return password === confirmPassword;
   }, [email, password, confirmPassword]);
 
@@ -42,6 +50,12 @@ export default function Login() {
   }
 
   async function signUp() {
+    const passwordError = validatePasswordPolicy(password);
+    if (passwordError) {
+      setStatus(passwordError);
+      return;
+    }
+
     setStatus("Creating account...");
     const { error } = await supabase.auth.signUp({
       email,

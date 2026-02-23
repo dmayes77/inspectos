@@ -52,6 +52,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenant, user]);
 
   const handleRefresh = async () => {

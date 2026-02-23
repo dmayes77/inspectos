@@ -10,6 +10,10 @@ const BYPASS_AUTH = import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === 
 const DEV_TENANT_ID = "11111111-1111-1111-1111-111111111111";
 const DEV_USER_ID = "00000000-0000-0000-0000-000000000000";
 
+if (!import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === "true") {
+  throw new Error("Security misconfiguration: VITE_BYPASS_AUTH=true is forbidden outside development.");
+}
+
 if (BYPASS_AUTH) {
   console.warn("[Auth] ⚠️ Auth bypass is enabled - DO NOT use in production");
 }
@@ -311,6 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
