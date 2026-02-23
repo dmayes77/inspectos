@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { badRequest, createAnonClient, unauthorized } from "@/lib/supabase";
 import { setSessionCookies } from "@/lib/auth/session-cookies";
+import { logger } from "@/lib/logger";
 
 type LoginBody = {
   email?: string;
@@ -41,7 +42,13 @@ export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get("origin") ?? "";
   const requestHeaders = request.headers.get("access-control-request-headers");
   const response = new NextResponse(null, { status: 204 });
-  if (isAllowedOrigin(origin)) {
+  const allowed = isAllowedOrigin(origin);
+  logger.info("Auth login preflight", {
+    origin,
+    allowed,
+    requestHeaders,
+  });
+  if (allowed) {
     response.headers.set("Access-Control-Allow-Origin", origin);
     response.headers.set("Access-Control-Allow-Credentials", "true");
   }
@@ -58,8 +65,19 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as LoginBody;
     const email = body.email?.trim();
     const password = body.password;
+    logger.info("Auth login request", {
+      origin,
+      allowedOrigin: isAllowedOrigin(origin),
+      hasEmail: Boolean(email),
+      hasPassword: Boolean(password),
+    });
 
     if (!email || !password) {
+      logger.warn("Auth login validation failed", {
+        origin,
+        hasEmail: Boolean(email),
+        hasPassword: Boolean(password),
+      });
       return applyCorsHeaders(badRequest("Email and password are required."), origin);
     }
 
@@ -70,6 +88,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (error || !data.session) {
+      logger.warn("Auth login failed", {
+        origin,
+        hasSession: Boolean(data?.session),
+        reason: error?.message ?? "invalid_credentials",
+      });
       return applyCorsHeaders(unauthorized(error?.message || "Invalid email or password."), origin);
     }
 
@@ -83,6 +106,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    logger.info("Auth login succeeded", {
+      origin,
+      userId: data.user?.id ?? null,
+      email: data.user?.email ?? null,
+    });
     return applyCorsHeaders(
       setSessionCookies(response, {
         accessToken: data.session.access_token,
@@ -90,7 +118,10 @@ export async function POST(request: NextRequest) {
       }),
       origin
     );
-  } catch {
+  } catch (error) {
+    logger.error("Auth login unexpected error", {
+      origin,
+    }, error);
     return applyCorsHeaders(
       NextResponse.json(
         {
