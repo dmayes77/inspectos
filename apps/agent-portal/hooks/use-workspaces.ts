@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createWorkspacesApi } from "@inspectos/shared/api";
 import { workspacesQueryKeys } from "@inspectos/shared/query";
 import type { Workspace } from "@inspectos/shared/types/workspace";
 import { createApiClient } from "@/lib/api/client";
@@ -11,8 +10,8 @@ export function useWorkspaces() {
     queryKey: workspacesQueryKeys.list(),
     queryFn: async () => {
       const apiClient = createApiClient();
-      const workspacesApi = createWorkspacesApi(apiClient);
-      return workspacesApi.list();
+      const response = await apiClient.get<{ workspaces: Workspace[] }>("/agent-portal/workspaces");
+      return response.workspaces ?? [];
     },
     retry: false,
   });

@@ -25,8 +25,13 @@ export function createAgentsApi(apiClient: ApiClient) {
       const result = await apiClient.delete<{ deleted: boolean }>(`/admin/agents/${agentId}`);
       return result.deleted ?? true;
     },
-    sendPortalLink: async (agentId: string): Promise<{ success: boolean; expires_at: string; link?: string }> => {
-      return apiClient.post<{ success: boolean; expires_at: string; link?: string }>(`/admin/agents/${agentId}/send-portal-link`, {});
+    sendPortalLink: async (
+      agentId: string
+    ): Promise<{ success: boolean; expires_at: string; link?: string; email_sent?: boolean; warning?: string }> => {
+      return apiClient.post<{ success: boolean; expires_at: string; link?: string; email_sent?: boolean; warning?: string }>(
+        `/admin/agents/${agentId}/send-portal-link`,
+        {}
+      );
     },
   };
 }

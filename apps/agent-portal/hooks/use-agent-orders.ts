@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createOrdersApi } from "@inspectos/shared/api";
 import { ordersQueryKeys } from "@inspectos/shared/query";
 import { createApiClient } from "@/lib/api/client";
 
@@ -29,10 +28,10 @@ export function useAgentOrders(businessSlug?: string | null) {
     enabled: Boolean(businessSlug),
     queryFn: async () => {
       const apiClient = createApiClient();
-      const ordersApi = createOrdersApi(apiClient);
-      return ordersApi.list<AgentOrder>({
-        business: businessSlug ?? undefined,
-      });
+      const params = new URLSearchParams();
+      if (businessSlug) params.set("business", businessSlug);
+      const endpoint = params.toString() ? `/agent-portal/orders?${params.toString()}` : "/agent-portal/orders";
+      return apiClient.get<AgentOrder[]>(endpoint);
     },
   });
 }
@@ -44,9 +43,9 @@ export function useAgentOrder(orderId?: string, businessSlug?: string | null) {
     queryFn: async () => {
       if (!orderId) return null;
       const apiClient = createApiClient();
-      const ordersApi = createOrdersApi(apiClient);
       try {
-        return await ordersApi.getById<AgentOrder>(orderId, businessSlug ?? undefined);
+        const query = businessSlug ? `?business=${encodeURIComponent(businessSlug)}` : "";
+        return await apiClient.get<AgentOrder>(`/agent-portal/orders/${orderId}${query}`);
       } catch {
         return null;
       }
