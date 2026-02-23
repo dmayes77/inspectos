@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const publicSiteUrl = process.env.PUBLIC_SITE_URL || "https://inspectos.co";
+
 const nextConfig: NextConfig = {
   // Transpile workspace packages for Turbopack
   transpilePackages: [
@@ -23,6 +25,21 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/",
+        destination: publicSiteUrl,
+        permanent: true,
+      },
+      {
+        source: "/pricing",
+        destination: `${publicSiteUrl}/pricing`,
+        permanent: true,
+      },
+      {
+        source: "/data-charter",
+        destination: `${publicSiteUrl}/data-charter`,
+        permanent: true,
+      },
       {
         source: "/admin/contacts/clients",
         destination: "/app/contacts",

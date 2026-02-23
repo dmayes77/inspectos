@@ -4,6 +4,7 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev:web": "pnpm -C apps/web dev",
+    "dev:public": "pnpm -C apps/public dev",
     "dev:server": "pnpm -C apps/server dev --port 4000",
     "dev:mobile": "pnpm -C apps/mobile dev",
     "lint": "pnpm -r lint",

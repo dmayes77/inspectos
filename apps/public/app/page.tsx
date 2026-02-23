@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.inspectos.com";
+const appBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "";
+const registerHref = appBaseUrl ? `${appBaseUrl}/register` : "/register";
 
 export const metadata: Metadata = {
   title: "InspectOS | Home Inspection Business Software for Owners",
@@ -273,7 +275,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="md" className="h-12 px-8 text-base" asChild>
-                <Link href="/register">
+                <Link href={registerHref}>
                   Book a Demo
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -359,7 +361,7 @@ export default function LandingPage() {
 
           <div className="mt-10 text-center">
             <Button asChild>
-              <Link href="/register">
+              <Link href={registerHref}>
                 Walk Through My Scenario
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -410,7 +412,7 @@ export default function LandingPage() {
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button asChild>
-              <Link href="/register">
+              <Link href={registerHref}>
                 See The Decision Hub
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -515,7 +517,7 @@ export default function LandingPage() {
 
           <div className="mt-10 text-center">
             <Button asChild>
-              <Link href="/register">
+              <Link href={registerHref}>
                 See How InspectOS Solves Your Workflow
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -576,7 +578,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="md" variant="secondary" className="h-12 px-8 text-base" asChild>
-                <Link href="/register">
+                <Link href={registerHref}>
                   Book Your Demo
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>

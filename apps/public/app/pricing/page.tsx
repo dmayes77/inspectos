@@ -10,6 +10,9 @@ import {
   Shield,
 } from "lucide-react";
 
+const appBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "";
+const registerHref = appBaseUrl ? `${appBaseUrl}/register` : "/register";
+
 const plans = [
   {
     name: "Growth",
@@ -190,7 +193,7 @@ export default function PricingPage() {
                   size="md"
                   asChild
                 >
-                  <Link href={plan.name === "Firm" ? "/register?intent=consultation" : "/register"}>
+                  <Link href={plan.name === "Firm" ? `${registerHref}?intent=consultation` : registerHref}>
                     {plan.name === "Firm" ? "Schedule Consultation" : "Book Demo"}
                   </Link>
                 </Button>
@@ -300,10 +303,10 @@ export default function PricingPage() {
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <Button size="md" asChild>
-            <Link href="/register?intent=consultation">Schedule Consultation</Link>
+            <Link href={`${registerHref}?intent=consultation`}>Schedule Consultation</Link>
           </Button>
           <Button size="md" variant="outline" asChild>
-            <Link href="/register">Book Demo</Link>
+            <Link href={registerHref}>Book Demo</Link>
           </Button>
         </div>
       </section>
