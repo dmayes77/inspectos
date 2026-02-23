@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -11,7 +11,7 @@ function getSafeRedirectPath(nextParam: string | null, fallback = "/app/overview
   return nextParam;
 }
 
-export default function AuthCallbackPage() {
+function AuthCallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -101,5 +101,13 @@ export default function AuthCallbackPage() {
     <div className="flex min-h-[50vh] items-center justify-center px-6 text-center">
       <p className="text-sm text-muted-foreground">Completing sign in...</p>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center px-6 text-center"><p className="text-sm text-muted-foreground">Loading...</p></div>}>
+      <AuthCallbackPageContent />
+    </Suspense>
   );
 }

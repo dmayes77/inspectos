@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
@@ -10,7 +10,7 @@ function targetPathForType(type: string | null): string {
   return "/welcome";
 }
 
-export default function AuthConfirmPage() {
+function AuthConfirmPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -60,5 +60,13 @@ export default function AuthConfirmPage() {
     <div className="flex min-h-[50vh] items-center justify-center px-6 text-center">
       <p className="text-sm text-muted-foreground">Confirming your email...</p>
     </div>
+  );
+}
+
+export default function AuthConfirmPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center px-6 text-center"><p className="text-sm text-muted-foreground">Loading...</p></div>}>
+      <AuthConfirmPageContent />
+    </Suspense>
   );
 }
