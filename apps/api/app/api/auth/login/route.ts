@@ -54,36 +54,52 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin") ?? "";
-  const body = (await request.json().catch(() => ({}))) as LoginBody;
-  const email = body.email?.trim();
-  const password = body.password;
+  try {
+    const body = (await request.json().catch(() => ({}))) as LoginBody;
+    const email = body.email?.trim();
+    const password = body.password;
 
-  if (!email || !password) {
-    return applyCorsHeaders(badRequest("Email and password are required."), origin);
-  }
+    if (!email || !password) {
+      return applyCorsHeaders(badRequest("Email and password are required."), origin);
+    }
 
-  const supabase = createAnonClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    const supabase = createAnonClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-  if (error || !data.session) {
-    return applyCorsHeaders(unauthorized(error?.message || "Invalid email or password."), origin);
-  }
+    if (error || !data.session) {
+      return applyCorsHeaders(unauthorized(error?.message || "Invalid email or password."), origin);
+    }
 
-  const response = NextResponse.json({
-    success: true,
-    data: {
-      user: {
-        id: data.user?.id ?? null,
-        email: data.user?.email ?? null,
+    const response = NextResponse.json({
+      success: true,
+      data: {
+        user: {
+          id: data.user?.id ?? null,
+          email: data.user?.email ?? null,
+        },
       },
-    },
-  });
+    });
 
-  return applyCorsHeaders(setSessionCookies(response, {
-    accessToken: data.session.access_token,
-    refreshToken: data.session.refresh_token,
-  }), origin);
+    return applyCorsHeaders(
+      setSessionCookies(response, {
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+      }),
+      origin
+    );
+  } catch {
+    return applyCorsHeaders(
+      NextResponse.json(
+        {
+          success: false,
+          error: "Login request failed.",
+        },
+        { status: 500 }
+      ),
+      origin
+    );
+  }
 }
