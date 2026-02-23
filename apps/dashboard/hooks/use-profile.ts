@@ -1,5 +1,7 @@
 import { useGet, usePut } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createProfileApi } from "@inspectos/shared/api";
+import { profileQueryKeys } from "@inspectos/shared/query";
 
 export type UserProfile = {
   id: string;
@@ -27,15 +29,17 @@ export type ProfileUpdate = Partial<Omit<UserProfile, "id" | "email" | "role">>;
 
 export function useProfile() {
   const apiClient = useApiClient();
+  const profileApi = createProfileApi(apiClient);
   return useGet<UserProfile>("profile", () =>
-    apiClient.get<UserProfile>("/admin/profile")
+    profileApi.get<UserProfile>()
   );
 }
 
 export function useUpdateProfile() {
   const apiClient = useApiClient();
+  const profileApi = createProfileApi(apiClient);
   return usePut<UserProfile, ProfileUpdate>(
-    "profile",
-    (updates) => apiClient.put<UserProfile>("/admin/profile", updates)
+    profileQueryKeys.all,
+    (updates) => profileApi.update<UserProfile>(updates)
   );
 }

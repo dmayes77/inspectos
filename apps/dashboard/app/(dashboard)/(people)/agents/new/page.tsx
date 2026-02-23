@@ -43,6 +43,7 @@ const emptyForm: AgentFormValues = {
   notifyOnSchedule: true,
   notifyOnComplete: true,
   notifyOnReport: true,
+  portalAccessEnabled: true,
   notes: "",
 };
 
@@ -301,6 +302,7 @@ export default function NewAgentPage() {
       notify_on_schedule: form.notifyOnSchedule,
       notify_on_complete: form.notifyOnComplete,
       notify_on_report: form.notifyOnReport,
+      portal_access_enabled: form.portalAccessEnabled,
       notes: normalize(form.notes),
       avatar_url: form.avatarUrl ?? null,
       brand_logo_url: normalize(form.brandLogoUrl ?? ""),

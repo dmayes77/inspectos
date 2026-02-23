@@ -66,7 +66,7 @@ export function AdminSidebar({
     <aside
       data-sidebar
       className={cn(
-        "fixed mt-16 flex flex-col lg:mt-0 top-0 left-0 bg-white dark:bg-gray-900",
+        "fixed mt-14 flex flex-col lg:mt-0 top-0 left-0 bg-white dark:bg-gray-900",
         "border-r border-gray-200 dark:border-gray-800",
         "h-screen transition-all duration-300 ease-in-out z-50",
         isExpanded || isHovered ? "w-[290px]" : "w-[90px]",

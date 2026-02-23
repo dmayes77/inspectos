@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { requestAgencyLookup } from "@/lib/api/agency-lookup";
+import { createAgencyLookupApi } from "@inspectos/shared/api";
+import { agencyLookupQueryKeys } from "@inspectos/shared/query";
 import type { AgencyLookupResult } from "@/types/agency-lookup";
+import { createApiClient } from "@/lib/api/client";
 
 const MIN_QUERY_LENGTH = 2;
 
 export function useAgencyLookup(query: string) {
+  const apiClient = createApiClient();
+  const agencyLookupApi = createAgencyLookupApi(apiClient);
   const [results, setResults] = useState<AgencyLookupResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +29,10 @@ export function useAgencyLookup(query: string) {
     const controller = new AbortController();
     setIsSearching(true);
 
-    requestAgencyLookup(trimmed, controller.signal)
+    agencyLookupApi
+      .search<{ data?: AgencyLookupResult[]; meta?: { brandSearchEnabled?: boolean } }>(trimmed, controller.signal)
       .then((payload) => {
+        void agencyLookupQueryKeys.search(trimmed);
         setResults(payload.data ?? []);
         setBrandSearchEnabled(Boolean(payload.meta?.brandSearchEnabled));
         setError(null);

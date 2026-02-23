@@ -6,6 +6,8 @@ Shared application code used by web, mobile, and server.
 
 ```
 /shared/
+  /api/            - Shared API client primitives
+  /query/          - Shared query keys and defaults
   /types/          - API response/request types
   /validations/    - Zod validation schemas
   /utils/          - Pure utility functions
@@ -16,6 +18,12 @@ Shared application code used by web, mobile, and server.
 
 ### Types (`/types`)
 TypeScript interfaces for API responses and requests.
+
+### API (`/api`)
+Runtime-agnostic API client primitives (errors, retry policy, HTTP methods).
+
+### Query (`/query`)
+Shared query key factories and default TanStack query options.
 
 **Example:**
 ```typescript

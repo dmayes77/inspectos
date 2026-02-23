@@ -14,6 +14,7 @@ import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgencyById, useUpdateAgency } from "@/hooks/use-agencies";
 import { useAgents, useUpdateAgent } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAgenciesQueryKey, isAgentsQueryKey } from "@inspectos/shared/query";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
@@ -31,6 +32,12 @@ const normalizeWebsite = (value?: string | null) => {
   const sanitized = trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
   if (!sanitized) return null;
   return `https://${sanitized}`;
+};
+
+const resolveLogoForSubmit = (logoUrl?: string | null, website?: string | null) => {
+  const normalizedLogo = normalize(logoUrl ?? "");
+  if (normalizedLogo) return normalizedLogo;
+  return logoDevUrl(website ?? null, { size: 96 });
 };
 
 const mergeField = (next?: string | null, current?: string) => {
@@ -233,8 +240,8 @@ export default function EditAgencyPage() {
     const parsedAddress = parseScrubbedAddress(result.agencyAddress);
     const resolvedLogoUrl = result.logoUrl ?? logoDevUrl(result.domain ?? website ?? null, { size: 96 }) ?? null;
 
-    setForm(() => {
-      const base = toFormValues(null);
+    setForm((prev) => {
+      const base = prev;
       return {
         ...base,
         name: mergeField(agencyName, base.name),
@@ -307,7 +314,7 @@ export default function EditAgencyPage() {
         id: agency.id,
         name: form.name.trim(),
         status: form.status,
-        logo_url: normalize(form.logoUrl),
+        logo_url: resolveLogoForSubmit(form.logoUrl, form.website),
         license_number: normalize(form.licenseNumber),
         phone: normalize(form.phone),
         website: normalize(form.website),
@@ -333,8 +340,7 @@ export default function EditAgencyPage() {
 
       queryClient.invalidateQueries({
         predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === "string" && (key.startsWith("agency-") || key.startsWith("agencies-") || key.startsWith("agents-"));
+          return isAgenciesQueryKey(query.queryKey) || isAgentsQueryKey(query.queryKey);
         },
       });
 

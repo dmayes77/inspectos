@@ -23,6 +23,7 @@ interface ModernDataTableProps<TData, TValue> {
 
   // Loading state
   isLoading?: boolean;
+  loadingState?: ReactNode;
 
   // Show/hide column visibility toggle
   showColumnVisibility?: boolean;
@@ -70,6 +71,7 @@ export function ModernDataTable<TData, TValue>({
   headerActions,
   emptyState,
   isLoading = false,
+  loadingState,
   showColumnVisibility = true,
   onTableReady,
 }: ModernDataTableProps<TData, TValue>) {
@@ -86,6 +88,12 @@ export function ModernDataTable<TData, TValue>({
   const defaultEmptyState = (
     <div className="rounded-sm border border-dashed p-12 text-center">
       <p className="text-sm text-muted-foreground">No data available</p>
+    </div>
+  );
+
+  const defaultLoadingState = (
+    <div className="rounded-sm border border-dashed p-12 text-center">
+      <p className="text-sm text-muted-foreground">Loading...</p>
     </div>
   );
 
@@ -113,7 +121,9 @@ export function ModernDataTable<TData, TValue>({
         </CardHeader>
       )}
       <CardContent>
-        {!hasData && !isLoading ? (
+        {!hasData && isLoading ? (
+          loadingState || defaultLoadingState
+        ) : !hasData ? (
           emptyState || defaultEmptyState
         ) : (
           <div className="w-full overflow-auto">

@@ -1,5 +1,7 @@
 import { useGet } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createScheduleApi } from "@inspectos/shared/api";
+import { scheduleQueryKeys } from "@inspectos/shared/query";
 
 export type ScheduleItem = {
   id: string;
@@ -16,11 +18,8 @@ export type ScheduleItem = {
 
 export function useSchedule(from?: string, to?: string) {
   const apiClient = useApiClient();
-  return useGet<ScheduleItem[]>("schedule", async () => {
-    const params = new URLSearchParams();
-    if (from) params.append("from", from);
-    if (to) params.append("to", to);
-    const endpoint = params.toString() ? `/admin/schedule?${params}` : "/admin/schedule";
-    return await apiClient.get<ScheduleItem[]>(endpoint);
+  const scheduleApi = createScheduleApi(apiClient);
+  return useGet<ScheduleItem[]>(scheduleQueryKeys.list(from, to), async () => {
+    return await scheduleApi.list<ScheduleItem>(from, to);
   });
 }

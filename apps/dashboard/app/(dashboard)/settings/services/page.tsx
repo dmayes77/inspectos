@@ -78,6 +78,7 @@ const createServicesColumns = (
   {
     id: "actions",
     header: "Actions",
+    enableSorting: false,
     enableHiding: false,
     cell: ({ row }) =>
       can(userRole, "manage_billing", userPermissions) ? (

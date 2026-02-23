@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAgentById, useDeleteAgent, useSendAgentPortalLink } from "@/hooks/use-agents";
+import { useAgentById, useDeleteAgent, useSendAgentPortalLink, useUpdateAgent } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAgentsQueryKey } from "@inspectos/shared/query";
 import { formatTimestamp } from "@inspectos/shared/utils/dates";
 import { toast } from "sonner";
 import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, MapPin, type LucideIcon } from "lucide-react";
@@ -81,6 +83,7 @@ export default function AgentDetailPage() {
   const { data: agent, isLoading } = useAgentById(agentId);
   const deleteAgent = useDeleteAgent();
   const sendPortalLink = useSendAgentPortalLink();
+  const updateAgent = useUpdateAgent();
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -131,7 +134,12 @@ export default function AgentDetailPage() {
     },
   ];
 
-  const hasPortalAccess = Boolean(agent.magic_link_token && agent.magic_link_expires_at && new Date(agent.magic_link_expires_at) > new Date());
+  const hasPortalAccess = Boolean(
+    agent.portal_access_enabled &&
+    agent.magic_link_token &&
+    agent.magic_link_expires_at &&
+    new Date(agent.magic_link_expires_at) > new Date()
+  );
   const agentCode = formatAgentCode(agent.id);
   const partnerSince = agent.created_at ? formatTimestamp(agent.created_at) : null;
 
@@ -140,8 +148,7 @@ export default function AgentDetailPage() {
       onSuccess: () => {
         queryClient.invalidateQueries({
           predicate: (query) => {
-            const key = query.queryKey[0];
-            return typeof key === "string" && (key.startsWith("agents-") || key.startsWith("agent-"));
+            return isAgentsQueryKey(query.queryKey);
           },
         });
         toast.success("Agent deleted");
@@ -155,8 +162,30 @@ export default function AgentDetailPage() {
   };
 
   const handlePortalLink = () => {
+    if (!agent.portal_access_enabled) {
+      toast.error("Enable portal access before sending a link.");
+      return;
+    }
+    if (agent.status !== "active") {
+      toast.error("Only active agents can receive portal links.");
+      return;
+    }
+    if (!agent.email) {
+      toast.error("Agent needs an email before sending a portal link.");
+      return;
+    }
+
     sendPortalLink.mutate(agent.id, {
-      onSuccess: () => {
+      onSuccess: async (result) => {
+        if (result.link && typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(result.link);
+            toast.success("Portal link sent and copied");
+            return;
+          } catch {
+            // No-op: fall back to standard success message.
+          }
+        }
         toast.success("Portal link sent");
       },
       onError: (error) => {
@@ -164,6 +193,21 @@ export default function AgentDetailPage() {
         toast.error(message);
       },
     });
+  };
+
+  const handlePortalAccessToggle = (enabled: boolean) => {
+    updateAgent.mutate(
+      { id: agent.id, portal_access_enabled: enabled },
+      {
+        onSuccess: () => {
+          toast.success(enabled ? "Portal access enabled" : "Portal access revoked");
+        },
+        onError: (error) => {
+          const message = error instanceof Error ? error.message : "Failed to update portal access";
+          toast.error(message);
+        },
+      }
+    );
   };
 
   const orders = agent.orders ?? [];
@@ -392,16 +436,34 @@ export default function AgentDetailPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Portal Access</CardTitle>
-                <CardDescription>Control the Inspector Portal invite.</CardDescription>
+                <CardDescription>
+                  Control this agent&apos;s portal access and invitation link. Turning access off immediately disables future sign-ins.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{hasPortalAccess ? "Active link" : "No access"}</span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{agent.portal_access_enabled ? "Access Granted" : "Access Disabled"}</span>
+                  </div>
+                  <Switch
+                    checked={agent.portal_access_enabled}
+                    disabled={updateAgent.isPending}
+                    onCheckedChange={handlePortalAccessToggle}
+                    aria-label="Toggle portal access"
+                  />
                 </div>
+                {agent.portal_access_enabled && (
+                  <p className="text-muted-foreground">{hasPortalAccess ? "Active link available" : "No active link sent yet"}</p>
+                )}
                 {agent.magic_link_expires_at && <p className="text-muted-foreground">Expires {formatTimestamp(agent.magic_link_expires_at)}</p>}
                 {agent.last_portal_access_at && <p className="text-muted-foreground">Last access {formatTimestamp(agent.last_portal_access_at)}</p>}
-                <Button variant="outline" className="w-full justify-start" onClick={handlePortalLink} disabled={sendPortalLink.isPending}>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handlePortalLink}
+                  disabled={sendPortalLink.isPending || !agent.portal_access_enabled || agent.status !== "active" || !agent.email}
+                >
                   <Send className="mr-2 h-4 w-4" />
                   {sendPortalLink.isPending ? "Sending..." : hasPortalAccess ? "Resend link" : "Send link"}
                 </Button>

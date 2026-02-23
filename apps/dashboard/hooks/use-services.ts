@@ -1,16 +1,18 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
-import type { ServiceType as Service } from "@/types/service";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createServicesApi } from "@inspectos/shared/api";
+import { servicesQueryKeys } from "@inspectos/shared/query";
+import type { ServiceType as Service } from "@inspectos/shared/types/service";
 
 export type { Service };
 
 export function useServices() {
   const apiClient = useApiClient();
+  const servicesApi = createServicesApi(apiClient);
   return useGet<Service[]>(
-    "services",
+    servicesQueryKeys.all,
     async () => {
-      const result = await apiClient.get<Service[]>("/admin/services");
-      return result ?? [];
+      return await servicesApi.list();
     },
     { placeholderData: [] }
   );
@@ -18,25 +20,27 @@ export function useServices() {
 
 export function useCreateService() {
   const apiClient = useApiClient();
-  return usePost<Service, Partial<Service>>("services", async (data) => {
-    return await apiClient.post<Service>("/admin/services", data);
+  const servicesApi = createServicesApi(apiClient);
+  return usePost<Service, Partial<Service>>(servicesQueryKeys.all, async (data) => {
+    return await servicesApi.create(data);
   });
 }
 
 export function useUpdateService() {
   const apiClient = useApiClient();
+  const servicesApi = createServicesApi(apiClient);
   return usePut<Service | null, { serviceId: string } & Partial<Service>>(
-    "services",
+    servicesQueryKeys.all,
     async (data) => {
-      return await apiClient.put<Service>(`/admin/services/${data.serviceId}`, data);
+      return await servicesApi.update(data.serviceId, data);
     }
   );
 }
 
 export function useDeleteService() {
   const apiClient = useApiClient();
-  return useDelete<boolean>("services", async (serviceId: string) => {
-    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/services/${serviceId}`);
-    return result.deleted ?? true;
+  const servicesApi = createServicesApi(apiClient);
+  return useDelete<boolean>(servicesQueryKeys.all, async (serviceId: string) => {
+    return await servicesApi.remove(serviceId);
   });
 }

@@ -46,16 +46,16 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2.5 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none"
           suppressHydrationWarning
         >
-          <span className="overflow-hidden rounded-full h-11 w-11 shrink-0">
-            <Avatar className="h-11 w-11 rounded-full">
+          <span className="overflow-hidden rounded-full h-9 w-9 shrink-0">
+            <Avatar className="h-9 w-9 rounded-full">
               <AvatarImage src={user?.avatarUrl} className="object-cover" />
-              <AvatarFallback className="text-sm font-medium">{initials}</AvatarFallback>
+              <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
             </Avatar>
           </span>
-          <span className="hidden lg:block text-sm font-medium text-foreground mr-0.5">
+          <span className="hidden lg:block text-xs font-medium text-foreground mr-0.5">
             {user?.name?.split(" ")[0] || "Admin"}
           </span>
           <ChevronDown className="hidden lg:block h-4 w-4 text-muted-foreground/70" />

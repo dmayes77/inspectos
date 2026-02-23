@@ -37,6 +37,7 @@ export type AgentFormValues = {
   notifyOnSchedule: boolean;
   notifyOnComplete: boolean;
   notifyOnReport: boolean;
+  portalAccessEnabled: boolean;
   notes: string;
 };
 
@@ -219,6 +220,13 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex items-center justify-between gap-4 rounded-sm border p-3">
+            <div>
+              <p className="font-medium">Portal access</p>
+              <p className="text-sm text-muted-foreground">Enable sign-in and link access for this agent.</p>
+            </div>
+            <Switch checked={form.portalAccessEnabled} onCheckedChange={(checked) => handleChange("portalAccessEnabled", checked)} />
           </div>
         </CardContent>
       </Card>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getDashboardAuthHref } from "@/lib/dashboard-url";
 
 interface PublicShellProps {
   children: ReactNode;
@@ -27,9 +28,8 @@ const navigationLinks = [
   { href: "/pricing", label: "Pricing" },
 ];
 
-const appBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "";
-const signInHref = appBaseUrl ? `${appBaseUrl}/login` : "/login";
-const registerHref = appBaseUrl ? `${appBaseUrl}/register` : "/register";
+const signInHref = getDashboardAuthHref("/login");
+const registerHref = getDashboardAuthHref("/register");
 
 /**
  * PublicShell - Website-like layout for all public routes

@@ -1,10 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { requestAgentScrub, type AgentScrubOptions } from "@/lib/api/agent-scrub";
+import { createAgentScrubApi, type AgentScrubOptions } from "@inspectos/shared/api";
+import { agentScrubQueryKeys } from "@inspectos/shared/query";
 import type { AgentScrubResult } from "@/types/agent-scrub";
+import { createApiClient } from "@/lib/api/client";
 
 export function useAgentScrub() {
+  const apiClient = createApiClient();
+  const agentScrubApi = createAgentScrubApi(apiClient);
   const controllerRef = useRef<AbortController | null>(null);
   const [result, setResult] = useState<AgentScrubResult | null>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
@@ -19,7 +23,8 @@ export function useAgentScrub() {
     setError(null);
 
     try {
-      const payload = await requestAgentScrub(url, controller.signal, options);
+      const payload = await agentScrubApi.scrub<{ data: AgentScrubResult }>(url, controller.signal, options);
+      void agentScrubQueryKeys.all;
       console.log("Agent scrub result", payload.data);
       setResult(payload.data);
       return payload.data;

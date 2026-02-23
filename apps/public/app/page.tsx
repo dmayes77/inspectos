@@ -15,10 +15,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { getDashboardAuthHref } from "@/lib/dashboard-url";
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.inspectos.com";
-const appBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "";
-const registerHref = appBaseUrl ? `${appBaseUrl}/register` : "/register";
+const registerHref = getDashboardAuthHref("/register");
 
 export const metadata: Metadata = {
   title: "InspectOS | Home Inspection Business Software for Owners",

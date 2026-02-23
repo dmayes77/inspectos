@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateClient } from "@/hooks/use-clients";
+import { clientsQueryKeys } from "@inspectos/shared/query";
 
 type InlineClientDialogProps = {
   open: boolean;
@@ -50,7 +51,7 @@ export function InlineClientDialog({ open, onOpenChange, onClientCreated }: Inli
       });
       toast.success("Client created");
       onClientCreated(client.clientId);
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientsQueryKeys.all });
       onOpenChange(false);
       setForm({ name: "", email: "", phone: "", company: "" });
     } catch (error) {

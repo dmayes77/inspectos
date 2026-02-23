@@ -1,5 +1,7 @@
 import { useGet, usePost } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createOrderNotesApi } from "@inspectos/shared/api";
+import { orderNotesQueryKeys } from "@inspectos/shared/query";
 
 export type OrderNoteType = "internal" | "client";
 
@@ -26,10 +28,11 @@ export interface CreateOrderNoteInput {
 
 export function useOrderNotes(orderId: string) {
   const apiClient = useApiClient();
+  const orderNotesApi = createOrderNotesApi(apiClient);
   return useGet<OrderNote[]>(
-    `order-notes-${orderId}`,
+    orderNotesQueryKeys.list(orderId),
     async () => {
-      return await apiClient.get<OrderNote[]>(`/admin/orders/${orderId}/notes`);
+      return await orderNotesApi.list<OrderNote>(orderId);
     },
     { enabled: !!orderId }
   );
@@ -37,13 +40,11 @@ export function useOrderNotes(orderId: string) {
 
 export function useCreateOrderNote(orderId: string) {
   const apiClient = useApiClient();
+  const orderNotesApi = createOrderNotesApi(apiClient);
   return usePost<OrderNote, CreateOrderNoteInput>(
-    `order-notes-${orderId}`,
+    orderNotesQueryKeys.list(orderId),
     async (input) => {
-      return await apiClient.post<OrderNote>(`/admin/orders/${input.orderId}/notes`, {
-        note_type: input.noteType,
-        body: input.body,
-      });
+      return await orderNotesApi.create<OrderNote>(input.orderId, input.noteType, input.body);
     }
   );
 }

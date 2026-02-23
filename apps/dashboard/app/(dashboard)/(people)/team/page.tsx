@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import type { ColumnDef } from "@tanstack/react-table";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -31,6 +32,7 @@ import { can } from "@/lib/admin/permissions";
 import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
 
 const ROLE_OPTIONS: TeamMember["role"][] = ["OWNER", "ADMIN", "OFFICE_STAFF", "INSPECTOR"];
 
@@ -155,6 +157,163 @@ export default function TeamPage() {
     }
   };
 
+  const teamColumns = useMemo<ColumnDef<TeamMember>[]>(
+    () => [
+      {
+        accessorKey: "member",
+        enableSorting: false,
+        header: "Member",
+        cell: ({ row }) => {
+          const member = row.original;
+          return (
+            <div className="flex items-center gap-2.5">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={member.avatarUrl} />
+                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                  {member.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <Link href={`/admin/team/${member.memberId}`} className="text-sm font-medium leading-tight hover:underline">
+                  {member.name}
+                </Link>
+                <div className="mt-0.5 text-xs text-muted-foreground">ID# {member.memberId}</div>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "contact",
+        enableSorting: false,
+        header: "Contact",
+        cell: ({ row }) => {
+          const member = row.original;
+          return (
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Mail className="h-3 w-3" />
+                <span className="truncate">{member.email}</span>
+              </div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                <span>{member.phone || "—"}</span>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "role",
+        enableSorting: false,
+        header: "Access",
+        cell: ({ row }) => {
+          const member = row.original;
+          const canManageThisMemberRole =
+            canEditMembers && canManageRoles && canEditRoleForTarget(userRole, member.role);
+
+          if (canManageThisMemberRole) {
+            return (
+              <Select value={member.role} onValueChange={(value) => void handleRoleChange(member, value as TeamMember["role"])}>
+                <SelectTrigger className="h-8 text-xs min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignableRoles.map((role) => (
+                    <SelectItem key={`${member.memberId}-${role}`} value={role} className="text-xs">
+                      {role === "OFFICE_STAFF" ? "Office" : role.charAt(0) + role.slice(1).toLowerCase()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            );
+          }
+
+          return <div className="text-xs">{teamRoleBadge(member.role)}</div>;
+        },
+      },
+      {
+        accessorKey: "status",
+        enableSorting: false,
+        header: "Status",
+        cell: ({ row }) => <div className="text-xs">{teamStatusBadge(row.original.status)}</div>,
+      },
+      {
+        accessorKey: "color",
+        enableSorting: false,
+        header: "Color",
+        cell: ({ row }) => {
+          const member = row.original;
+          return (
+            <input
+              type="color"
+              value={member.color ?? "#CBD5E1"}
+              onChange={(event) => void handleColorChange(member, event.target.value)}
+              aria-label={`${member.name} color`}
+              className="h-7 w-7 cursor-pointer rounded-sm border border-border bg-transparent p-0"
+              disabled={!canEditMembers || !canEditRoleForTarget(userRole, member.role)}
+            />
+          );
+        },
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        header: "Actions",
+        cell: ({ row }) => {
+          const member = row.original;
+          const canResetMemberLogin = canEditMembers && canEditRoleForTarget(userRole, member.role);
+          const canDeleteMemberRow = canDeleteMembers && canEditRoleForTarget(userRole, member.role);
+
+          return (
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
+                <Link href={`/admin/team/${member.memberId}`}>
+                  <FileText className="h-3.5 w-3.5" />
+                  <span className="sr-only">Profile</span>
+                </Link>
+              </Button>
+              {canResetMemberLogin ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => openLoginDialog(member)}
+                  className="h-8 w-8 p-0"
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  <span className="sr-only">Reset Login</span>
+                </Button>
+              ) : null}
+              {canEditMembers ? (
+                <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
+                  <Link href={`/admin/team/${member.memberId}/edit`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span className="sr-only">Edit</span>
+                  </Link>
+                </Button>
+              ) : null}
+              {canDeleteMemberRow ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 w-8 p-0 text-destructive"
+                  onClick={() => void handleDelete(member)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span className="sr-only">Delete</span>
+                </Button>
+              ) : null}
+            </div>
+          );
+        },
+      },
+    ],
+    [assignableRoles, canDeleteMembers, canEditMembers, canManageRoles, handleDelete, handleRoleChange, userRole]
+  );
+
   if (isLoading) {
     return <AdminPageSkeleton listItems={8} />;
   }
@@ -183,14 +342,55 @@ export default function TeamPage() {
         <StatCard label="Total Inspections" value={inspectors.reduce((acc, i) => acc + i.inspections, 0)} />
       </div>
 
-      <Card className="card-admin">
+      <div className="hidden lg:block">
+        <ModernDataTable
+          columns={teamColumns}
+          data={filteredMembers}
+          title="Users"
+          description={`${filteredMembers.length} members`}
+          filterControls={
+            <>
+              <div className="relative w-full md:w-[280px]">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search by name or email"
+                  className="h-9 pl-9"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {roleOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={roleFilter === option.value ? "primary" : "outline"}
+                    onClick={() => setRoleFilter(option.value)}
+                    size="sm"
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </>
+          }
+          emptyState={
+            <div className="rounded-sm border border-dashed p-10 text-center">
+              <h3 className="text-lg font-semibold">No team members found</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Try a different filter or search term.</p>
+            </div>
+          }
+        />
+      </div>
+
+      <Card className="card-admin lg:hidden">
         <CardHeader className="pb-2">
           <CardTitle>Users</CardTitle>
           <CardDescription>{filteredMembers.length} members</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div className="relative w-full lg:max-w-sm">
+          <div className="flex flex-col gap-2">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
@@ -220,191 +420,61 @@ export default function TeamPage() {
               <p className="mt-2 text-sm text-muted-foreground">Try a different filter or search term.</p>
             </div>
           ) : (
-            <>
-              <div className="hidden overflow-hidden rounded-sm border lg:block">
-                <div className="grid grid-cols-[72px_minmax(0,1.3fr)_minmax(0,1.9fr)_minmax(0,1.1fr)_72px_160px] items-center gap-x-3 border-b bg-muted/40 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  <div>Avatar</div>
-                  <div>User ID</div>
-                  <div>Details</div>
-                  <div>Access</div>
-                  <div>Color</div>
-                  <div className="text-left">Actions</div>
-                </div>
-                {filteredMembers.map((member) => {
-                  const canManageThisMemberRole =
-                    canEditMembers && canManageRoles && canEditRoleForTarget(userRole, member.role);
-                  const canResetMemberLogin = canEditMembers && canEditRoleForTarget(userRole, member.role);
-                  const canDeleteMemberRow = canDeleteMembers && canEditRoleForTarget(userRole, member.role);
-                  return (
-                    <div key={member.memberId} className="border-b last:border-b-0">
-                      <div className="grid grid-cols-[72px_minmax(0,1.3fr)_minmax(0,1.9fr)_minmax(0,1.1fr)_72px_160px] items-center gap-x-3 px-3 py-2">
-                        <div>
-                          <Avatar className="h-9 w-9">
-                            <AvatarImage src={member.avatarUrl} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {member.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-
-                        <div className="min-w-0">
-                          <Link href={`/admin/team/${member.memberId}`} className="text-sm font-medium leading-tight hover:underline">
-                            {member.name}
-                          </Link>
-                          <div className="mt-0.5 text-xs text-muted-foreground">ID# {member.memberId}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {member.status === "on_leave"
-                              ? "On Leave"
-                              : member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                          </div>
-                        </div>
-
-                        <div className="min-w-0 flex items-center gap-2.5">
-                          <div className="min-w-0">
-                            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Mail className="h-3 w-3" />
-                              <span className="truncate">{member.email}</span>
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Phone className="h-3 w-3" />
-                              <span>{member.phone || "—"}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="min-w-0">
-                          {canManageThisMemberRole ? (
-                            <Select value={member.role} onValueChange={(value) => handleRoleChange(member, value as TeamMember["role"])}>
-                              <SelectTrigger className="h-9 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {assignableRoles.map((role) => (
-                                  <SelectItem key={`${member.memberId}-${role}`} value={role} className="text-sm">
-                                    {role === "OFFICE_STAFF" ? "Office" : role.charAt(0) + role.slice(1).toLowerCase()}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <div className="text-xs">{teamRoleBadge(member.role)}</div>
-                          )}
-                        </div>
-
-                        <div>
-                          <input
-                            type="color"
-                            value={member.color ?? "#CBD5E1"}
-                            onChange={(event) => void handleColorChange(member, event.target.value)}
-                            aria-label={`${member.name} color`}
-                            className="h-8 w-8 cursor-pointer rounded-sm border border-border bg-transparent p-0"
-                            disabled={!canEditMembers || !canEditRoleForTarget(userRole, member.role)}
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
-                            <Link href={`/admin/team/${member.memberId}`}>
-                              <FileText className="h-3.5 w-3.5" />
-                              <span className="sr-only">Profile</span>
-                            </Link>
-                          </Button>
-                          {canResetMemberLogin ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openLoginDialog(member)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <KeyRound className="h-3.5 w-3.5" />
-                              <span className="sr-only">Reset Login</span>
-                            </Button>
-                          ) : null}
-                          {canEditMembers ? (
-                            <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
-                              <Link href={`/admin/team/${member.memberId}/edit`}>
-                                <Pencil className="h-3.5 w-3.5" />
-                                <span className="sr-only">Edit</span>
-                              </Link>
-                            </Button>
-                          ) : null}
-                          {canDeleteMemberRow ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 w-8 p-0 text-destructive"
-                              onClick={() => handleDelete(member)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span className="sr-only">Delete</span>
-                            </Button>
-                          ) : null}
-                        </div>
+            <div className="grid gap-2">
+              {filteredMembers.map((member) => (
+                <Card key={member.memberId} className="card-admin">
+                  <CardContent className="space-y-2.5 pt-3">
+                    <div className="flex items-center gap-2.5">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={member.avatarUrl} />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {member.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <Link href={`/admin/team/${member.memberId}`} className="font-medium hover:underline">
+                          {member.name}
+                        </Link>
+                        <div className="text-xs text-muted-foreground truncate">{member.email}</div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-
-              <div className="grid gap-2 lg:hidden">
-                {filteredMembers.map((member) => (
-                  <Card key={member.memberId} className="card-admin">
-                    <CardContent className="space-y-2.5 pt-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={member.avatarUrl} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {member.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0">
-                          <Link href={`/admin/team/${member.memberId}`} className="font-medium hover:underline">
-                            {member.name}
-                          </Link>
-                          <div className="text-xs text-muted-foreground truncate">{member.email}</div>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="text-[11px] text-muted-foreground">ID# {member.memberId}</span>
-                        {teamRoleBadge(member.role)}
-                        {teamStatusBadge(member.status)}
-                        <span
-                          className="inline-block h-4 w-4 rounded-sm border border-border"
-                          style={{ backgroundColor: member.color ?? "#CBD5E1" }}
-                          aria-label="Member color"
-                        />
-                        <Badge color="light">{member.phone || "No phone"}</Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-[11px] text-muted-foreground">ID# {member.memberId}</span>
+                      {teamRoleBadge(member.role)}
+                      {teamStatusBadge(member.status)}
+                      <span
+                        className="inline-block h-4 w-4 rounded-sm border border-border"
+                        style={{ backgroundColor: member.color ?? "#CBD5E1" }}
+                        aria-label="Member color"
+                      />
+                      <Badge color="light">{member.phone || "No phone"}</Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/admin/team/${member.memberId}`}>
+                          <StickyNote className="mr-1 h-3.5 w-3.5" />Open
+                        </Link>
+                      </Button>
+                      {canEditMembers && canEditRoleForTarget(userRole, member.role) ? (
+                        <Button size="sm" variant="outline" onClick={() => openLoginDialog(member)}>
+                          <KeyRound className="mr-1 h-3.5 w-3.5" />Reset Login
+                        </Button>
+                      ) : null}
+                      {canEditMembers ? (
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/admin/team/${member.memberId}`}>
-                            <StickyNote className="mr-1 h-3.5 w-3.5" />Open
+                          <Link href={`/admin/team/${member.memberId}/edit`}>
+                            Edit
                           </Link>
                         </Button>
-                        {canEditMembers && canEditRoleForTarget(userRole, member.role) ? (
-                          <Button size="sm" variant="outline" onClick={() => openLoginDialog(member)}>
-                            <KeyRound className="mr-1 h-3.5 w-3.5" />Reset Login
-                          </Button>
-                        ) : null}
-                        {canEditMembers ? (
-                          <Button size="sm" variant="outline" asChild>
-                            <Link href={`/admin/team/${member.memberId}/edit`}>
-                              Edit
-                            </Link>
-                          </Button>
-                        ) : null}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </>
+                      ) : null}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

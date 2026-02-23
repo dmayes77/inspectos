@@ -48,6 +48,27 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   }
   const payload = validation.data;
 
+  const normalizedEmail = payload.email?.trim().toLowerCase() ?? null;
+  if (normalizedEmail) {
+    const { data: existingAgents, error: existingError } = await supabase
+      .from('agents')
+      .select('id')
+      .eq('tenant_id', tenant.id)
+      .ilike('email', normalizedEmail)
+      .neq('id', id)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (existingError) {
+      return serverError('Failed to validate agent email uniqueness', existingError);
+    }
+
+    const existingAgent = existingAgents?.[0] ?? null;
+    if (existingAgent) {
+      return badRequest('Another agent already uses this email.');
+    }
+  }
+
   // Resolve agency association if needed
   let resolvedAgencyId: string | null | undefined;
   if (payload.agency_id !== undefined || (payload.agency_name && payload.agency_name.trim().length > 0)) {
@@ -70,7 +91,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   const updateData: Record<string, unknown> = {};
   if (resolvedAgencyId !== undefined) updateData.agency_id = resolvedAgencyId;
   if (payload.name !== undefined) updateData.name = payload.name;
-  if (payload.email !== undefined) updateData.email = payload.email;
+  if (payload.email !== undefined) updateData.email = normalizedEmail;
   if (payload.phone !== undefined) updateData.phone = payload.phone;
   if (payload.role !== undefined) updateData.role = payload.role;
   if (payload.license_number !== undefined) updateData.license_number = payload.license_number;
@@ -80,9 +101,16 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (payload.notify_on_schedule !== undefined) updateData.notify_on_schedule = payload.notify_on_schedule;
   if (payload.notify_on_complete !== undefined) updateData.notify_on_complete = payload.notify_on_complete;
   if (payload.notify_on_report !== undefined) updateData.notify_on_report = payload.notify_on_report;
+  if (payload.portal_access_enabled !== undefined) updateData.portal_access_enabled = payload.portal_access_enabled;
   if (payload.avatar_url !== undefined) updateData.avatar_url = payload.avatar_url;
   if (payload.brand_logo_url !== undefined) updateData.brand_logo_url = payload.brand_logo_url;
   if (payload.agency_address !== undefined) updateData.agency_address = payload.agency_address;
+
+  // Revoking portal access must invalidate any existing link immediately.
+  if (payload.portal_access_enabled === false || payload.status === 'inactive') {
+    updateData.magic_link_token = null;
+    updateData.magic_link_expires_at = null;
+  }
 
   const { data: agent, error } = await supabase
     .from('agents')

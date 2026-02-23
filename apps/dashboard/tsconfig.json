@@ -39,6 +39,18 @@
       "@inspectos/shared/types": [
         "../../shared/types/index.ts"
       ],
+      "@inspectos/shared/api": [
+        "../../shared/api/index.ts"
+      ],
+      "@inspectos/shared/api/*": [
+        "../../shared/api/*.ts"
+      ],
+      "@inspectos/shared/query": [
+        "../../shared/query/index.ts"
+      ],
+      "@inspectos/shared/query/*": [
+        "../../shared/query/*.ts"
+      ],
       "@inspectos/shared/types/*": [
         "../../shared/types/*.ts"
       ],

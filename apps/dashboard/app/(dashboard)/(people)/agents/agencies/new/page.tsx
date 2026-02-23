@@ -48,6 +48,12 @@ const normalizeWebsite = (value?: string | null) => {
   return `https://${sanitized}`;
 };
 
+const resolveLogoForSubmit = (logoUrl?: string | null, website?: string | null) => {
+  const normalizedLogo = normalize(logoUrl ?? "");
+  if (normalizedLogo) return normalizedLogo;
+  return logoDevUrl(website ?? null, { size: 96 });
+};
+
 const mergeField = (next?: string | null, current?: string) => {
   const trimmed = next?.trim();
   if (trimmed && trimmed.length > 0) {
@@ -224,7 +230,7 @@ export default function NewAgencyPage() {
       {
         name: form.name.trim(),
         status: form.status,
-        logo_url: normalize(form.logoUrl),
+        logo_url: resolveLogoForSubmit(form.logoUrl, form.website),
         license_number: normalize(form.licenseNumber),
         phone: normalize(form.phone),
         website: normalize(form.website),

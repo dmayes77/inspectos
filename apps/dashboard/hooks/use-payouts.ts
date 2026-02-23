@@ -1,5 +1,7 @@
 import { useGet } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createPayoutsApi } from "@inspectos/shared/api";
+import { payoutsQueryKeys } from "@inspectos/shared/query";
 
 export type PayoutInspector = {
   id: string;
@@ -40,14 +42,16 @@ export type PayRule = {
 
 export function usePayouts() {
   const apiClient = useApiClient();
-  return useGet<Payout[]>("payouts", async () => {
-    return await apiClient.get<Payout[]>('/admin/payouts');
+  const payoutsApi = createPayoutsApi(apiClient);
+  return useGet<Payout[]>(payoutsQueryKeys.all, async () => {
+    return await payoutsApi.list<Payout>();
   });
 }
 
 export function usePayRules() {
   const apiClient = useApiClient();
-  return useGet<PayRule[]>("pay-rules", async () => {
-    return await apiClient.get<PayRule[]>('/admin/pay-rules');
+  const payoutsApi = createPayoutsApi(apiClient);
+  return useGet<PayRule[]>(payoutsQueryKeys.payRules(), async () => {
+    return await payoutsApi.payRules<PayRule>();
   });
 }

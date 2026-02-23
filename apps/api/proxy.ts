@@ -9,20 +9,38 @@ export function proxy(request: NextRequest) {
   // Get the origin from the request
   const origin = request.headers.get('origin') || '';
 
-  // Allowed origins (local dev + Vercel deployments)
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'https://dev.inspectos.co', // Development deployment
-    'https://inspectos.co', // Production deployment
-    process.env.NEXT_PUBLIC_WEB_URL, // Dynamic web app URL (prod or dev)
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null, // Vercel preview deployments
-  ].filter(Boolean);
+  const allowedExactOrigins = new Set(
+    [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:3001',
+      'http://127.0.0.1:3001',
+      'http://localhost:3002',
+      'http://127.0.0.1:3002',
+      'http://localhost:3003',
+      'http://127.0.0.1:3003',
+      'https://inspectos.co',
+      'https://www.inspectos.co',
+      'https://app.inspectos.co',
+      'https://platform.inspectos.co',
+      'https://agent.inspectos.co',
+      process.env.NEXT_PUBLIC_WEB_URL,
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    ].filter(Boolean)
+  );
 
-  // Check if the origin is allowed
-  const isAllowedOrigin = allowedOrigins.includes(origin);
+  const allowedPatternOrigins = [
+    /^https:\/\/(?:[a-z0-9-]+\.)*inspectos\.co$/i, // dev-app.inspectos.co, preview subdomains, etc.
+    /^https:\/\/(?:[a-z0-9-]+\.)*vercel\.app$/i,
+  ];
+
+  const isAllowedOrigin =
+    allowedExactOrigins.has(origin) ||
+    allowedPatternOrigins.some((pattern) => pattern.test(origin));
+  const requestedHeaders = request.headers.get('access-control-request-headers');
+  const allowHeaders = requestedHeaders && requestedHeaders.trim().length > 0
+    ? requestedHeaders
+    : 'Content-Type, Authorization';
 
   // Handle preflight OPTIONS request
   if (request.method === 'OPTIONS') {
@@ -32,9 +50,10 @@ export function proxy(request: NextRequest) {
       response.headers.set('Access-Control-Allow-Origin', origin);
     }
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Access-Control-Allow-Headers', allowHeaders);
     response.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
     response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Vary', 'Origin, Access-Control-Request-Headers');
 
     return response;
   }
@@ -45,6 +64,7 @@ export function proxy(request: NextRequest) {
   if (isAllowedOrigin) {
     response.headers.set('Access-Control-Allow-Origin', origin);
     response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Vary', 'Origin');
   }
 
   return response;

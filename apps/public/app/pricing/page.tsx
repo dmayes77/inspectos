@@ -9,9 +9,9 @@ import {
   Calendar,
   Shield,
 } from "lucide-react";
+import { getDashboardAuthHref } from "@/lib/dashboard-url";
 
-const appBaseUrl = process.env.NEXT_PUBLIC_DASHBOARD_URL || "";
-const registerHref = appBaseUrl ? `${appBaseUrl}/register` : "/register";
+const registerHref = getDashboardAuthHref("/register");
 
 const plans = [
   {

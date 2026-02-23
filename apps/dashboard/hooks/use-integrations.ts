@@ -1,5 +1,7 @@
 import { useGet, usePost, useDelete } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createIntegrationsApi } from "@inspectos/shared/api";
+import { integrationsQueryKeys } from "@inspectos/shared/query";
 
 export type IntegrationType = 'email' | 'sms' | 'payments' | 'accounting' | 'payroll' | 'calendar';
 export type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'pending';
@@ -19,24 +21,27 @@ export type Integration = {
 
 export function useIntegrations() {
   const apiClient = useApiClient();
-  return useGet<Integration[]>("integrations", async () => {
-    return await apiClient.get<Integration[]>('/admin/integrations');
+  const integrationsApi = createIntegrationsApi(apiClient);
+  return useGet<Integration[]>(integrationsQueryKeys.all, async () => {
+    return await integrationsApi.list<Integration>();
   });
 }
 
 export function useConnectIntegration() {
   const apiClient = useApiClient();
+  const integrationsApi = createIntegrationsApi(apiClient);
   return usePost<Integration, { type: IntegrationType; provider: string; config?: Record<string, unknown> }>(
-    "integrations",
+    integrationsQueryKeys.all,
     async ({ type, provider, config }) => {
-      return await apiClient.post<Integration>('/admin/integrations', { type, provider, config });
+      return await integrationsApi.connect<Integration>({ type, provider, config });
     }
   );
 }
 
 export function useDisconnectIntegration() {
   const apiClient = useApiClient();
-  return useDelete<void>("integrations", async (id) => {
-    await apiClient.delete(`/admin/integrations/${id}`);
+  const integrationsApi = createIntegrationsApi(apiClient);
+  return useDelete<void>(integrationsQueryKeys.all, async (id) => {
+    await integrationsApi.disconnect(id);
   });
 }

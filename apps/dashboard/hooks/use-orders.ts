@@ -2,6 +2,8 @@ import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
 import { useQueryClient } from "@tanstack/react-query";
 import type { InspectionSchedule, InspectionScheduleStatus, InspectionScheduleType } from "@/types/inspection";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createOrdersApi } from "@inspectos/shared/api";
+import { ordersQueryKeys } from "@inspectos/shared/query";
 
 export type OrderStatus = "pending" | "scheduled" | "in_progress" | "pending_report" | "delivered" | "completed" | "cancelled";
 export type PaymentStatus = "unpaid" | "partial" | "paid" | "refunded";
@@ -234,29 +236,21 @@ export interface OrderFilters {
 
 export function useOrders(tenantSlug: string = "demo", filters?: OrderFilters) {
   const apiClient = useApiClient();
-  const queryKey = ["orders", tenantSlug, filters ?? null] as const;
+  const ordersApi = createOrdersApi(apiClient);
+  const queryKey = ordersQueryKeys.list(tenantSlug, filters);
   return useGet<Order[]>(queryKey, async () => {
-    const params = new URLSearchParams();
-    if (filters?.status) params.append("status", filters.status);
-    if (filters?.payment_status) params.append("payment_status", filters.payment_status);
-    if (filters?.inspector_id) params.append("inspector_id", filters.inspector_id);
-    if (filters?.client_id) params.append("client_id", filters.client_id);
-    if (filters?.agent_id) params.append("agent_id", filters.agent_id);
-    if (filters?.from) params.append("from", filters.from);
-    if (filters?.to) params.append("to", filters.to);
-    if (filters?.search) params.append("search", filters.search);
-    const endpoint = params.toString() ? `/admin/orders?${params}` : "/admin/orders";
-    return await apiClient.get<Order[]>(endpoint);
+    return await ordersApi.list<Order>(filters);
   });
 }
 
 export function useOrderById(orderId: string) {
   const apiClient = useApiClient();
+  const ordersApi = createOrdersApi(apiClient);
   return useGet<Order | null>(
-    `order-${orderId}`,
+    ordersQueryKeys.detail(orderId),
     async () => {
       try {
-        return await apiClient.get<Order>(`/admin/orders/${orderId}`);
+        return await ordersApi.getById<Order>(orderId);
       } catch {
         return null;
       }
@@ -268,11 +262,12 @@ export function useOrderById(orderId: string) {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   const apiClient = useApiClient();
-  return usePost<Order, CreateOrderInput>("orders", async (data) => {
-    return await apiClient.post<Order>("/admin/orders", data);
+  const ordersApi = createOrdersApi(apiClient);
+  return usePost<Order, CreateOrderInput>(ordersQueryKeys.all, async (data) => {
+    return await ordersApi.create<Order, CreateOrderInput>(data);
   }, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ordersQueryKeys.all });
     },
   });
 }
@@ -280,14 +275,14 @@ export function useCreateOrder() {
 export function useUpdateOrder() {
   const queryClient = useQueryClient();
   const apiClient = useApiClient();
-  return usePut<Order, UpdateOrderInput>("orders", async (data) => {
-    const { id, ...updateData } = data;
-    return await apiClient.put<Order>(`/admin/orders/${id}`, updateData);
+  const ordersApi = createOrdersApi(apiClient);
+  return usePut<Order, UpdateOrderInput>(ordersQueryKeys.all, async (data) => {
+    return await ordersApi.update<Order, UpdateOrderInput>(data);
   }, {
     onSuccess: (updatedOrder) => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ordersQueryKeys.all });
       if (updatedOrder?.id) {
-        queryClient.invalidateQueries({ queryKey: [`order-${updatedOrder.id}`] });
+        queryClient.invalidateQueries({ queryKey: ordersQueryKeys.detail(updatedOrder.id) });
       }
     },
   });
@@ -295,8 +290,9 @@ export function useUpdateOrder() {
 
 export function useDeleteOrder() {
   const apiClient = useApiClient();
-  return useDelete<boolean>("orders", async (id: string) => {
-    await apiClient.delete(`/admin/orders/${id}`);
+  const ordersApi = createOrdersApi(apiClient);
+  return useDelete<boolean>(ordersQueryKeys.all, async (id: string) => {
+    await ordersApi.remove(id);
     return true;
   });
 }

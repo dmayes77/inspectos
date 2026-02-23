@@ -88,16 +88,25 @@ export function getUserFromToken(accessToken: string): { userId: string; email?:
 // Get access token from request headers
 export function getAccessToken(request: Request): string | null {
   const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    const cookieHeader = request.headers.get('cookie') ?? '';
-    const escapedName = ACCESS_COOKIE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${escapedName}=([^;]+)`));
-    if (!match?.[1]) {
-      return null;
-    }
-    return decodeURIComponent(match[1]);
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.slice(7);
   }
-  return authHeader.slice(7);
+
+  // Prefer framework cookie API when available (NextRequest).
+  const cookieStore = (request as { cookies?: { get: (name: string) => { value?: string } | undefined } }).cookies;
+  const cookieToken = cookieStore?.get?.(ACCESS_COOKIE_NAME)?.value;
+  if (cookieToken) {
+    return cookieToken;
+  }
+
+  // Fallback: parse Cookie header manually.
+  const cookieHeader = request.headers.get('cookie') ?? '';
+  const escapedName = ACCESS_COOKIE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${escapedName}=([^;]+)`));
+  if (!match?.[1]) {
+    return null;
+  }
+  return decodeURIComponent(match[1]);
 }
 
 // Re-export standardized error responses from api-response

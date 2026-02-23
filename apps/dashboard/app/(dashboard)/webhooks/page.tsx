@@ -1,19 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import type { ColumnDef } from "@tanstack/react-table";
 import { PageHeader } from "@/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
 
 export default function WebhooksPage() {
   const { data: webhooks = [], isLoading } = useWebhooks();
@@ -97,6 +91,129 @@ export default function WebhooksPage() {
     });
   };
 
+  const webhookColumns = useMemo<ColumnDef<(typeof webhooks)[number]>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        enableSorting: false,
+        header: "Name",
+        cell: ({ row }) => {
+          const webhook = row.original;
+          return (
+            <div>
+              <div className="font-medium">{webhook.name}</div>
+              {webhook.description && (
+                <div className="text-xs text-muted-foreground">{webhook.description}</div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "url",
+        enableSorting: false,
+        header: "URL",
+        cell: ({ row }) => {
+          const webhook = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <code className="text-xs bg-muted px-2 py-1 rounded-sm">{new URL(webhook.url).hostname}</code>
+              <a
+                href={webhook.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "events",
+        enableSorting: false,
+        header: "Events",
+        cell: ({ row }) => (
+          <Badge color="light" className="border border-border">
+            {row.original.events.length} events
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "status",
+        enableSorting: false,
+        header: "Status",
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+      {
+        accessorKey: "last_triggered_at",
+        enableSorting: false,
+        header: "Last Triggered",
+        cell: ({ row }) => {
+          const webhook = row.original;
+          return (
+            <div className="text-sm">
+              {formatDate(webhook.last_triggered_at)}
+              {webhook.failure_count > 0 && (
+                <div className="text-xs text-red-500">{webhook.failure_count} failures</div>
+              )}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        header: "",
+        cell: ({ row }) => {
+          const webhook = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setTestingWebhook(webhook.id)}>
+                  <TestTube className="mr-2 h-4 w-4" />
+                  Test Webhook
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setEditingWebhook(webhook.id)}>
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => void handleToggleStatus(webhook.id, webhook.status)}>
+                  {webhook.status === "active" ? (
+                    <>
+                      <Pause className="mr-2 h-4 w-4" />
+                      Pause
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Activate
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setDeletingWebhook(webhook.id)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [webhooks]
+  );
+
   return (
     <div className="space-y-4">
           <PageHeader
@@ -145,127 +262,18 @@ export default function WebhooksPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Configured Webhooks</CardTitle>
-              <CardDescription>
-                Manage your webhook integrations and monitor delivery status.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Loading webhooks...
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>URL</TableHead>
-                      <TableHead>Events</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Triggered</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {webhooks.map((webhook) => (
-                      <TableRow key={webhook.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{webhook.name}</div>
-                            {webhook.description && (
-                              <div className="text-xs text-muted-foreground">
-                                {webhook.description}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <code className="text-xs bg-muted px-2 py-1 rounded-sm">
-                              {new URL(webhook.url).hostname}
-                            </code>
-                            <a
-                              href={webhook.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-muted-foreground hover:text-foreground"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge color="light" className="border border-border">{webhook.events.length} events</Badge>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(webhook.status)}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {formatDate(webhook.last_triggered_at)}
-                          </div>
-                          {webhook.failure_count > 0 && (
-                            <div className="text-xs text-red-500">
-                              {webhook.failure_count} failures
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem
-                                onClick={() => setTestingWebhook(webhook.id)}
-                              >
-                                <TestTube className="mr-2 h-4 w-4" />
-                                Test Webhook
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => setEditingWebhook(webhook.id)}
-                              >
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleToggleStatus(webhook.id, webhook.status)
-                                }
-                              >
-                                {webhook.status === "active" ? (
-                                  <>
-                                    <Pause className="mr-2 h-4 w-4" />
-                                    Pause
-                                  </>
-                                ) : (
-                                  <>
-                                    <Play className="mr-2 h-4 w-4" />
-                                    Activate
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => setDeletingWebhook(webhook.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <ModernDataTable
+            columns={webhookColumns}
+            data={webhooks}
+            title="Configured Webhooks"
+            description="Manage your webhook integrations and monitor delivery status."
+            isLoading={isLoading}
+            loadingState={
+              <div className="text-center py-8 text-muted-foreground">
+                Loading webhooks...
+              </div>
+            }
+          />
         )}
 
       {editingWebhook && (

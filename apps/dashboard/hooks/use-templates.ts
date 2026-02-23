@@ -1,22 +1,26 @@
 import { useGet, usePut, usePost } from "@/hooks/crud";
 import type { Template } from "@/types/template";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createTemplatesApi } from "@inspectos/shared/api";
+import { templatesQueryKeys } from "@inspectos/shared/query";
 
 export function useTemplates() {
   const apiClient = useApiClient();
-  return useGet<Template[]>("templates", async () => {
-    return await apiClient.get<Template[]>('/admin/templates');
+  const templatesApi = createTemplatesApi(apiClient);
+  return useGet<Template[]>(templatesQueryKeys.all, async () => {
+    return await templatesApi.list<Template>();
   });
 }
 
 export function useTemplate(id: string | null) {
   const apiClient = useApiClient();
+  const templatesApi = createTemplatesApi(apiClient);
   return useGet<Template | null>(
-    id ? `template-${id}` : "template-null",
+    id ? templatesQueryKeys.detail(id) : ["templates", "detail", "null"],
     async () => {
       if (!id) return null;
       try {
-        return await apiClient.get<Template>(`/admin/templates/${id}`);
+        return await templatesApi.getById<Template>(id);
       } catch {
         return null;
       }
@@ -27,21 +31,24 @@ export function useTemplate(id: string | null) {
 
 export function useUpdateTemplate() {
   const apiClient = useApiClient();
-  return usePut<Template, { id: string; data: Partial<Template> }>("templates", async ({ id, data }) => {
-    return await apiClient.put(`/admin/templates/${id}`, data);
+  const templatesApi = createTemplatesApi(apiClient);
+  return usePut<Template, { id: string; data: Partial<Template> }>(templatesQueryKeys.all, async ({ id, data }) => {
+    return await templatesApi.update<Template>(id, data);
   });
 }
 
 export function useCreateTemplateStub() {
   const apiClient = useApiClient();
-  return usePost<Template, { name: string; description?: string }>("templates", async (payload) => {
-    return await apiClient.post('/admin/templates', { action: 'create_stub', ...payload });
+  const templatesApi = createTemplatesApi(apiClient);
+  return usePost<Template, { name: string; description?: string }>(templatesQueryKeys.all, async (payload) => {
+    return await templatesApi.createStub<Template>(payload);
   });
 }
 
 export function useDuplicateTemplate() {
   const apiClient = useApiClient();
-  return usePost<Template, string>("templates", async (id) => {
-    return await apiClient.post<Template>(`/admin/templates/${id}/duplicate`, {});
+  const templatesApi = createTemplatesApi(apiClient);
+  return usePost<Template, string>(templatesQueryKeys.all, async (id) => {
+    return await templatesApi.duplicate<Template>(id);
   });
 }

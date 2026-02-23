@@ -2,6 +2,26 @@ import { serverError, success, validationError } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { createAgencySchema } from '@inspectos/shared/validations/agency';
 
+const normalizeWebsite = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const sanitized = trimmed.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  if (!sanitized) return null;
+  return `https://${sanitized}`;
+};
+
+const normalizeDomain = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const domain = trimmed
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .split('/')[0]
+    ?.trim()
+    .toLowerCase();
+  return domain || null;
+};
+
 /**
  * GET /api/admin/agencies
  *
@@ -52,6 +72,44 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
     return validationError(validation.error.issues[0]?.message || 'Validation failed');
   }
   const payload = validation.data;
+  const normalizedWebsite = normalizeWebsite(payload.website ?? null);
+  const normalizedDomain = normalizeDomain(normalizedWebsite);
+
+  // Prevent duplicate agencies for the same tenant by website domain first, then name.
+  if (normalizedDomain) {
+    const { data: agenciesByWebsite, error: websiteLookupError } = await supabase
+      .from('agencies')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .not('website', 'is', null)
+      .order('created_at', { ascending: true });
+
+    if (websiteLookupError) {
+      return serverError('Failed to check existing agencies', websiteLookupError);
+    }
+
+    const existingByWebsite = agenciesByWebsite?.find((agency) => normalizeDomain(agency.website) === normalizedDomain) ?? null;
+    if (existingByWebsite) {
+      return success(existingByWebsite);
+    }
+  }
+
+  const { data: agenciesByName, error: nameLookupError } = await supabase
+    .from('agencies')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .ilike('name', payload.name.trim())
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  if (nameLookupError) {
+    return serverError('Failed to check existing agencies', nameLookupError);
+  }
+
+  const existingByName = agenciesByName?.[0] ?? null;
+  if (existingByName) {
+    return success(existingByName);
+  }
 
   const { data: agency, error } = await supabase
     .from('agencies')
@@ -62,7 +120,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       license_number: payload.license_number ?? null,
       email: payload.email ?? null,
       phone: payload.phone ?? null,
-      website: payload.website || null,
+      website: normalizedWebsite,
       address_line1: payload.address_line1 ?? null,
       address_line2: payload.address_line2 ?? null,
       city: payload.city ?? null,

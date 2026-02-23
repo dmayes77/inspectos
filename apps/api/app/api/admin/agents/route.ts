@@ -3,6 +3,11 @@ import { withAuth } from '@/lib/api/with-auth';
 import { createAgentSchema } from '@inspectos/shared/validations/agent';
 import { resolveAgencyAssociation } from '@/lib/agents/agency-helpers';
 
+const normalizeEmail = (value?: string | null) => {
+  const trimmed = value?.trim().toLowerCase();
+  return trimmed && trimmed.length > 0 ? trimmed : null;
+};
+
 /**
  * GET /api/admin/agents
  *
@@ -59,6 +64,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
     return validationError(validation.error.issues[0]?.message || 'Validation failed');
   }
   const payload = validation.data;
+  const normalizedEmail = normalizeEmail(payload.email);
 
   // Resolve agency association
   let agencyId: string | null;
@@ -76,13 +82,36 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
     return serverError(message, error);
   }
 
+  // Prevent duplicate agents within the current tenant by normalized email.
+  if (normalizedEmail) {
+    const { data: existingAgents, error: existingError } = await supabase
+      .from('agents')
+      .select(`
+        *,
+        agency:agencies(id, name, email, phone, website, address_line1, address_line2, city, state, zip_code)
+      `)
+      .eq('tenant_id', tenant.id)
+      .ilike('email', normalizedEmail)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (existingError) {
+      return serverError('Failed to check existing agents', existingError);
+    }
+
+    const existingAgent = existingAgents?.[0] ?? null;
+    if (existingAgent) {
+      return success(existingAgent);
+    }
+  }
+
   const { data: agent, error } = await supabase
     .from('agents')
     .insert({
       tenant_id: tenant.id,
       agency_id: agencyId,
       name: payload.name,
-      email: payload.email ?? null,
+      email: normalizedEmail,
       phone: payload.phone ?? null,
       role: payload.role ?? null,
       license_number: payload.license_number ?? null,
@@ -92,6 +121,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       notify_on_schedule: payload.notify_on_schedule ?? true,
       notify_on_complete: payload.notify_on_complete ?? true,
       notify_on_report: payload.notify_on_report ?? true,
+      portal_access_enabled: payload.portal_access_enabled ?? true,
       avatar_url: payload.avatar_url ?? null,
       brand_logo_url: payload.brand_logo_url ?? null,
       agency_address: payload.agency_address ?? null,
