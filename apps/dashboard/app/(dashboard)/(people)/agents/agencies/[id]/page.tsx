@@ -7,6 +7,7 @@ import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useAgencyById, useDeleteAgency } from "@/hooks/use-agencies";
+import { useAgents } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
 import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -27,16 +29,25 @@ const MAPS_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
 
 type Params = { id: string };
 
+const agentInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 2) || "AG";
+
 export default function AgencyDetailPage() {
   const params = useParams();
   const { id: agencyId } = params as Params;
   const router = useRouter();
   const { data: agency, isLoading } = useAgencyById(agencyId);
+  const { data: linkedAgents = [], isLoading: linkedAgentsLoading } = useAgents({ agency_id: agencyId });
   const deleteAgency = useDeleteAgency();
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  if (isLoading) {
+  if (isLoading || linkedAgentsLoading) {
     return (
       <div className="py-12 text-center text-muted-foreground">Loading agency...</div>
     );
@@ -54,7 +65,7 @@ export default function AgencyDetailPage() {
   const stats: Array<{ label: string; value: string | number; icon: LucideIcon }> = [
     { label: "Total referrals", value: agency.total_referrals, icon: ClipboardList },
     { label: "Total revenue", value: `$${agency.total_revenue.toLocaleString()}`, icon: DollarSign },
-    { label: "Agents", value: agency.agents?.length ?? agency._count?.agents ?? 0, icon: Users },
+    { label: "Agents", value: linkedAgents.length, icon: Users },
   ];
 
   const websiteDisplay = agency.website?.replace(/^https?:\/\//, "").replace(/\/$/, "") ?? null;
@@ -89,7 +100,7 @@ export default function AgencyDetailPage() {
     .join("\n");
   const officeMapHref = address ? `${MAPS_BASE_URL}${encodeURIComponent(address.replace(/\s+/g, " "))}` : null;
 
-  const agentList = agency.agents ?? [];
+  const agentList = linkedAgents;
 
   return (
     <>
@@ -258,11 +269,17 @@ export default function AgencyDetailPage() {
                 <div className="space-y-3">
                   {agentList.map((agent) => (
                     <div key={agent.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3 text-sm">
-                      <div>
-                        <Link href={`/agents/${agent.id}`} className="font-medium hover:underline">
-                          {agent.name}
-                        </Link>
-                        <p className="text-muted-foreground">{agent.email ?? "No email"}</p>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9 border">
+                          <AvatarImage src={agent.avatar_url ?? undefined} alt={agent.name} />
+                          <AvatarFallback>{agentInitials(agent.name)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <Link href={`/agents/${agent.id}`} className="font-medium hover:underline">
+                            {agent.name}
+                          </Link>
+                          <p className="text-muted-foreground">{agent.email ?? "No email"}</p>
+                        </div>
                       </div>
                       <div className="text-right">
                         <p className="text-muted-foreground">Referrals</p>

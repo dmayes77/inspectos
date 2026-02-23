@@ -6,6 +6,7 @@
     "dev:dashboard": "pnpm -C apps/dashboard dev --port 3001",
     "dev:public": "pnpm -C apps/public dev --port 3000",
     "dev:platform": "pnpm -C apps/platform dev --port 3002",
+    "dev:agent-portal": "pnpm -C apps/agent-portal dev --port 3003",
     "dev:api": "pnpm -C apps/api dev --port 4000",
     "dev:mobile": "pnpm -C apps/mobile dev",
     "lint": "pnpm -r lint",

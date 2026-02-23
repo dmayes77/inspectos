@@ -66,6 +66,15 @@ export function AgencyForm({ form, setForm }: AgencyFormProps) {
             />
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="agency-logo-url">Logo URL</Label>
+            <Input
+              id="agency-logo-url"
+              value={form.logoUrl}
+              onChange={(event) => handleChange("logoUrl", event.target.value)}
+              placeholder="https://img.logo.dev/example.com?token=pk_..."
+            />
+          </div>
+          <div className="grid gap-2">
             <Label htmlFor="agency-address-line1">Address line 1</Label>
             <Input
               id="agency-address-line1"

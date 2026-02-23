@@ -33,6 +33,12 @@ const normalizeWebsite = (value?: string | null) => {
   return `https://${sanitized}`;
 };
 
+const resolveLogoForSubmit = (logoUrl?: string | null, website?: string | null) => {
+  const normalizedLogo = normalize(logoUrl ?? "");
+  if (normalizedLogo) return normalizedLogo;
+  return logoDevUrl(website ?? null, { size: 96 });
+};
+
 const mergeField = (next?: string | null, current?: string) => {
   const trimmed = next?.trim();
   if (trimmed && trimmed.length > 0) {
@@ -233,8 +239,8 @@ export default function EditAgencyPage() {
     const parsedAddress = parseScrubbedAddress(result.agencyAddress);
     const resolvedLogoUrl = result.logoUrl ?? logoDevUrl(result.domain ?? website ?? null, { size: 96 }) ?? null;
 
-    setForm(() => {
-      const base = toFormValues(null);
+    setForm((prev) => {
+      const base = prev;
       return {
         ...base,
         name: mergeField(agencyName, base.name),
@@ -307,7 +313,7 @@ export default function EditAgencyPage() {
         id: agency.id,
         name: form.name.trim(),
         status: form.status,
-        logo_url: normalize(form.logoUrl),
+        logo_url: resolveLogoForSubmit(form.logoUrl, form.website),
         license_number: normalize(form.licenseNumber),
         phone: normalize(form.phone),
         website: normalize(form.website),

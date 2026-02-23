@@ -24,12 +24,35 @@ const STATE_REGEX = /^[A-Za-z]{2}$/;
 
 const normalize = (value?: string | null) => value?.trim() || null;
 
+const normalizeAgencyNameKey = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  return trimmed
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const normalizeWebsite = (value?: string | null) => {
   const trimmed = value?.trim();
   if (!trimmed) return null;
   const sanitized = trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
   if (!sanitized) return null;
   return `https://${sanitized}`;
+};
+
+const normalizeDomain = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const sanitized = trimmed
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .split("/")[0]
+    ?.trim()
+    .toLowerCase();
+  return sanitized || null;
 };
 
 const tokenizedAddress = (address: string) =>
@@ -113,13 +136,19 @@ const parseAddressSegments = (address?: string | null): ParsedAddress | null => 
   };
 };
 
-async function backfillAgencyAddress(tenantId: string, agencyId: string, address?: ParsedAddress | null, website?: string | null) {
-  if (!address && !website) return;
+async function backfillAgencyAddress(
+  tenantId: string,
+  agencyId: string,
+  address?: ParsedAddress | null,
+  website?: string | null,
+  brandLogoUrl?: string | null
+) {
+  if (!address && !website && !brandLogoUrl) return;
 
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("agencies")
-    .select("id, address_line1, address_line2, city, state, zip_code, website")
+    .select("id, address_line1, address_line2, city, state, zip_code, website, logo_url")
     .eq("tenant_id", tenantId)
     .eq("id", agencyId)
     .single();
@@ -128,7 +157,7 @@ async function backfillAgencyAddress(tenantId: string, agencyId: string, address
     return;
   }
 
-  const updates: Partial<ParsedAddress> & { website?: string | null } = {};
+  const updates: Partial<ParsedAddress> & { website?: string | null; logo_url?: string | null } = {};
   ADDRESS_FIELDS.forEach((field) => {
     const nextValue = address?.[field] ?? null;
     if (!data[field] && nextValue) {
@@ -138,6 +167,9 @@ async function backfillAgencyAddress(tenantId: string, agencyId: string, address
 
   if (!data.website && website) {
     updates.website = website;
+  }
+  if (!data.logo_url && brandLogoUrl) {
+    updates.logo_url = brandLogoUrl;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -150,34 +182,61 @@ async function backfillAgencyAddress(tenantId: string, agencyId: string, address
 export async function resolveAgencyAssociation(options: AgencyResolutionOptions): Promise<string | null> {
   const parsedAddress = parseAddressSegments(options.agencyAddress);
   const normalizedWebsite = normalizeWebsite(options.agencyWebsite);
+  const normalizedBrandLogoUrl = normalize(options.brandLogoUrl);
   const existingAgencyId = options.agencyId ?? null;
 
   if (existingAgencyId) {
-    await backfillAgencyAddress(options.tenantId, existingAgencyId, parsedAddress, normalizedWebsite);
+    await backfillAgencyAddress(options.tenantId, existingAgencyId, parsedAddress, normalizedWebsite, normalizedBrandLogoUrl);
     return existingAgencyId;
   }
 
   const agencyName = normalize(options.agencyName);
+  const normalizedAgencyName = normalizeAgencyNameKey(agencyName);
 
   if (!agencyName) {
     return null;
   }
 
   const supabase = createServiceClient();
-  const { data: foundAgency, error: lookupError } = await supabase
+  const normalizedDomain = normalizeDomain(normalizedWebsite);
+
+  if (normalizedDomain) {
+    const { data: websiteMatch } = await supabase
+      .from("agencies")
+      .select("id, website")
+      .eq("tenant_id", options.tenantId)
+      .not("website", "is", null)
+      .order("created_at", { ascending: true });
+
+    const foundByWebsite = websiteMatch?.find((agency) => {
+      const agencyDomain = normalizeDomain(agency.website);
+      return agencyDomain === normalizedDomain;
+    });
+
+    if (foundByWebsite?.id) {
+      await backfillAgencyAddress(options.tenantId, foundByWebsite.id, parsedAddress, normalizedWebsite, normalizedBrandLogoUrl);
+      return foundByWebsite.id;
+    }
+  }
+
+  const { data: agenciesByName, error: lookupError } = await supabase
     .from("agencies")
-    .select("id")
+    .select("id, name")
     .eq("tenant_id", options.tenantId)
-    .ilike("name", agencyName)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
   if (lookupError) {
     throw new Error(lookupError.message);
   }
 
-  if (foundAgency?.id) {
-    await backfillAgencyAddress(options.tenantId, foundAgency.id, parsedAddress, normalizedWebsite);
-    return foundAgency.id;
+  const foundByNormalizedName = agenciesByName?.find((agency) => {
+    const candidateName = normalizeAgencyNameKey(agency.name);
+    return Boolean(candidateName && normalizedAgencyName && candidateName === normalizedAgencyName);
+  });
+
+  if (foundByNormalizedName?.id) {
+    await backfillAgencyAddress(options.tenantId, foundByNormalizedName.id, parsedAddress, normalizedWebsite, normalizedBrandLogoUrl);
+    return foundByNormalizedName.id;
   }
 
   const { data: newAgency, error: createError } = await supabase
@@ -186,7 +245,7 @@ export async function resolveAgencyAssociation(options: AgencyResolutionOptions)
       tenant_id: options.tenantId,
       name: agencyName,
       status: "active",
-      logo_url: options.brandLogoUrl ?? null,
+      logo_url: normalizedBrandLogoUrl ?? null,
       website: normalizedWebsite,
       ...(parsedAddress ?? {}),
     })

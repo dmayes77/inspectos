@@ -1,0 +1,25 @@
+:root {
+  --background: #f5f7fb;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --card: #ffffff;
+  --border: #dbe2f0;
+  --accent: #0b5fff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Satoshi", "Avenir Next", "Segoe UI", sans-serif;
+  background: radial-gradient(1200px 600px at 10% -20%, #dbeafe 0%, transparent 50%), var(--background);
+  color: var(--foreground);
+}
+
+a {
+  color: inherit;
+}

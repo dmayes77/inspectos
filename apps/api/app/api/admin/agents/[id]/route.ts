@@ -48,6 +48,27 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   }
   const payload = validation.data;
 
+  const normalizedEmail = payload.email?.trim().toLowerCase() ?? null;
+  if (normalizedEmail) {
+    const { data: existingAgents, error: existingError } = await supabase
+      .from('agents')
+      .select('id')
+      .eq('tenant_id', tenant.id)
+      .ilike('email', normalizedEmail)
+      .neq('id', id)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (existingError) {
+      return serverError('Failed to validate agent email uniqueness', existingError);
+    }
+
+    const existingAgent = existingAgents?.[0] ?? null;
+    if (existingAgent) {
+      return badRequest('Another agent already uses this email.');
+    }
+  }
+
   // Resolve agency association if needed
   let resolvedAgencyId: string | null | undefined;
   if (payload.agency_id !== undefined || (payload.agency_name && payload.agency_name.trim().length > 0)) {
@@ -70,7 +91,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   const updateData: Record<string, unknown> = {};
   if (resolvedAgencyId !== undefined) updateData.agency_id = resolvedAgencyId;
   if (payload.name !== undefined) updateData.name = payload.name;
-  if (payload.email !== undefined) updateData.email = payload.email;
+  if (payload.email !== undefined) updateData.email = normalizedEmail;
   if (payload.phone !== undefined) updateData.phone = payload.phone;
   if (payload.role !== undefined) updateData.role = payload.role;
   if (payload.license_number !== undefined) updateData.license_number = payload.license_number;
