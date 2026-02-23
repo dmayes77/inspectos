@@ -180,13 +180,21 @@ export default function AgentDetailPage() {
         if (result.link && typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
           try {
             await navigator.clipboard.writeText(result.link);
-            toast.success("Portal link sent and copied");
+            if (result.email_sent === false) {
+              toast.warning(result.warning ?? "Portal link copied. Email was not sent.");
+            } else {
+              toast.success("Portal link sent and copied");
+            }
             return;
           } catch {
             // No-op: fall back to standard success message.
           }
         }
-        toast.success("Portal link sent");
+        if (result.email_sent === false) {
+          toast.warning(result.warning ?? "Portal link created. Email was not sent.");
+        } else {
+          toast.success("Portal link sent");
+        }
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to send portal link";

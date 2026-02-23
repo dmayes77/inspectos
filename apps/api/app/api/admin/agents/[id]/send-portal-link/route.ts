@@ -110,9 +110,13 @@ export const POST = withAuth<{ id: string }>(async ({ supabase, serviceClient, t
   const smtpConfig = resolveTenantSmtpConfig(tenantSettings) ?? getPlatformSmtpConfig();
 
   if (!smtpConfig) {
-    return badRequest(
-      "Portal link created, but email could not be sent because SMTP is not configured. Configure SMTP in Settings."
-    );
+    return success({
+      success: true,
+      expires_at: expiresAt,
+      link,
+      email_sent: false,
+      warning: "SMTP is not configured. Share the copied link manually or configure SMTP in Settings.",
+    });
   }
 
   try {
@@ -133,12 +137,19 @@ export const POST = withAuth<{ id: string }>(async ({ supabase, serviceClient, t
     });
   } catch (smtpError) {
     const message = smtpError instanceof Error ? smtpError.message : "Failed to send email.";
-    return serverError("Failed to send portal link email", message);
+    return success({
+      success: true,
+      expires_at: expiresAt,
+      link,
+      email_sent: false,
+      warning: `Email failed: ${message}`,
+    });
   }
 
   return success({
     success: true,
     expires_at: expiresAt,
     link,
+    email_sent: true,
   });
 });
