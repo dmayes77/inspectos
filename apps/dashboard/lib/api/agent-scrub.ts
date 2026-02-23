@@ -10,7 +10,11 @@ export async function requestAgentScrub(url: string, signal?: AbortSignal, optio
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ url, excludePhotos: options?.excludePhotos ?? [] }),
+    body: JSON.stringify({
+      url,
+      excludePhotos: options?.excludePhotos ?? [],
+      debug: process.env.NODE_ENV !== "production",
+    }),
     signal,
   });
 

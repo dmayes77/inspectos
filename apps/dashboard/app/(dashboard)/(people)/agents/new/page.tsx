@@ -13,6 +13,7 @@ import { useAgencies } from "@/hooks/use-agencies";
 import { useCreateAgent } from "@/hooks/use-agents";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
+import { logoDevUrl } from "@inspectos/shared/utils/logos";
 
 const DEFAULT_TENANT_SLUG = "demo";
 const AGENT_TIPS = [
@@ -72,7 +73,24 @@ const parseScrubbedAddress = (value?: string | null): ParsedAddress | null => {
   const trimmed = value?.trim();
   if (!trimmed) return null;
 
-  const tokens = trimmed
+  const normalizeAddressInput = (raw: string) => {
+    let normalized = raw.replace(/\s+/g, " ").trim();
+    normalized = normalized.replace(/^(?:hours?|office|address|location)\b[:\s-]*/i, "").trim();
+
+    // If scrape noise prefixes the address, start from the first street-looking segment.
+    const streetStart = normalized.match(
+      /\b\d{1,6}\s+[A-Za-z0-9#.'-]+(?:\s+[A-Za-z0-9#.'-]+){0,5}\s+(?:st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|pkwy|parkway|ct|court|pl|place|ter|terrace|cir|circle|hwy|highway)\b/i
+    );
+    if (streetStart?.index !== undefined && streetStart.index > 0) {
+      normalized = normalized.slice(streetStart.index).trim();
+    }
+
+    return normalized;
+  };
+
+  const normalizedInput = normalizeAddressInput(trimmed);
+
+  const tokens = normalizedInput
     .split(/\r?\n+/)
     .flatMap((line) => line.split(","))
     .map((token) => token.trim())
@@ -159,7 +177,7 @@ const parseScrubbedAddress = (value?: string | null): ParsedAddress | null => {
 
   const applyFallback = () => {
     if (!addressLine1) return;
-    const fallback = extractCityStateZip(addressLine1) ?? extractCityStateZip(trimmed);
+    const fallback = extractCityStateZip(addressLine1) ?? extractCityStateZip(normalizedInput);
     if (!fallback) return;
     if (fallback.street) {
       addressLine1 = fallback.street;
@@ -236,6 +254,7 @@ export default function NewAgentPage() {
     const sanitizedAgencyName = agencyNameCandidate || "";
     const sanitizedAgentName = (split.agent ?? result.name ?? "").trim();
     const website = websiteFromDomain(result.domain);
+    const resolvedLogoUrl = result.logoUrl ?? logoDevUrl(result.domain ?? website ?? null, { size: 96 }) ?? null;
     const parsedAddress = parseScrubbedAddress(result.agencyAddress);
     setForm((prev) => ({
       ...prev,
@@ -245,7 +264,7 @@ export default function NewAgentPage() {
       licenseNumber: licenseText,
       role: result.role?.trim() ?? "",
       avatarUrl: result.photoUrl ?? null,
-      brandLogoUrl: result.logoUrl ?? null,
+      brandLogoUrl: resolvedLogoUrl,
       agencyName: sanitizedAgencyName,
       agencyId: sanitizedAgencyName ? matchedAgencyId : null,
       agencyAddressLine1: parsedAddress?.addressLine1 ?? "",

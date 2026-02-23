@@ -11,7 +11,7 @@ function getEmailRedirectUrl(): string {
   const configuredBaseUrl =
     process.env.NEXT_PUBLIC_WEB_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3001");
   const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
   return `${baseUrl}/auth/callback?next=/welcome`;
 }
