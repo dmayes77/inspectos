@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center font-medium gap-2 rounded-sm transition disabled:cursor-not-allowed [&_svg]:shrink-0 cursor-pointer",
+  "inline-flex items-center justify-center font-medium gap-2 rounded-[var(--button-radius)] transition disabled:cursor-not-allowed [&_svg]:shrink-0 cursor-pointer",
   {
     variants: {
       variant: {
