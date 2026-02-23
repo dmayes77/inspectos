@@ -7,13 +7,59 @@ type LoginBody = {
   password?: string;
 };
 
+function isAllowedOrigin(origin: string) {
+  if (!origin) return false;
+  const exact = new Set([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:3003",
+    "http://127.0.0.1:3003",
+    "https://inspectos.co",
+    "https://www.inspectos.co",
+    "https://app.inspectos.co",
+    "https://dev-app.inspectos.co",
+    "https://agent.inspectos.co",
+    "https://dev-agent.inspectos.co",
+  ]);
+  if (exact.has(origin)) return true;
+  return /^https:\/\/(?:[a-z0-9-]+\.)*inspectos\.co$/i.test(origin);
+}
+
+function applyCorsHeaders(response: NextResponse, origin: string) {
+  if (!isAllowedOrigin(origin)) return response;
+  response.headers.set("Access-Control-Allow-Origin", origin);
+  response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set("Vary", "Origin, Access-Control-Request-Headers");
+  return response;
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? "";
+  const requestHeaders = request.headers.get("access-control-request-headers");
+  const response = new NextResponse(null, { status: 204 });
+  if (isAllowedOrigin(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+  }
+  response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.headers.set("Access-Control-Allow-Headers", requestHeaders || "Content-Type, Authorization");
+  response.headers.set("Access-Control-Max-Age", "86400");
+  response.headers.set("Vary", "Origin, Access-Control-Request-Headers");
+  return response;
+}
+
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? "";
   const body = (await request.json().catch(() => ({}))) as LoginBody;
   const email = body.email?.trim();
   const password = body.password;
 
   if (!email || !password) {
-    return badRequest("Email and password are required.");
+    return applyCorsHeaders(badRequest("Email and password are required."), origin);
   }
 
   const supabase = createAnonClient();
@@ -23,7 +69,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (error || !data.session) {
-    return unauthorized(error?.message || "Invalid email or password.");
+    return applyCorsHeaders(unauthorized(error?.message || "Invalid email or password."), origin);
   }
 
   const response = NextResponse.json({
@@ -36,8 +82,8 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return setSessionCookies(response, {
+  return applyCorsHeaders(setSessionCookies(response, {
     accessToken: data.session.access_token,
     refreshToken: data.session.refresh_token,
-  });
+  }), origin);
 }
