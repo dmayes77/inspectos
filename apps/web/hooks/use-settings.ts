@@ -1,6 +1,14 @@
 import { useGet, usePost, usePut } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
 
+type DeepPartial<T> = {
+  [K in keyof T]?: T[K] extends Array<infer U>
+    ? Array<DeepPartial<U>>
+    : T[K] extends object
+      ? DeepPartial<T[K]>
+      : T[K];
+};
+
 export type TenantSettings = {
   company: {
     name: string;
@@ -153,7 +161,7 @@ export function useSettings() {
 
 export function useUpdateSettings() {
   const apiClient = useApiClient();
-  return usePut<TenantSettings, Partial<TenantSettings>>(
+  return usePut<TenantSettings, DeepPartial<TenantSettings>>(
     "settings",
     async (settings) => {
       return await apiClient.put<TenantSettings>('/admin/settings', settings);
