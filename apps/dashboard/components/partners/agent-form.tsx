@@ -1,6 +1,7 @@
 "use client";
 
 import { Dispatch, SetStateAction, useState, type ChangeEvent } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ import { CompanyLogo } from "@/components/shared/company-logo";
 import type { AgentStatus, ReportFormat } from "@/hooks/use-agents";
 import type { Agency } from "@/hooks/use-agencies";
 import { toast } from "sonner";
+import { deleteAgentAvatar, uploadAgentAvatar } from "@/lib/api/media";
 
 export type AgentFormValues = {
   name: string;
@@ -61,6 +63,8 @@ const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gi
 
 export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const uploadAvatarMutation = useMutation({ mutationFn: uploadAgentAvatar });
+  const deleteAvatarMutation = useMutation({ mutationFn: deleteAgentAvatar });
 
   const handleChange = <Field extends keyof AgentFormValues>(field: Field, value: AgentFormValues[Field]) => {
     setForm((prev) => ({
@@ -118,15 +122,7 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
 
     setIsUploadingAvatar(true);
     try {
-      const response = await fetch("/api/admin/agents/avatar", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data?.avatarUrl) {
-        const message = data?.error ?? "Failed to upload profile photo.";
-        throw new Error(message);
-      }
+      const data = await uploadAvatarMutation.mutateAsync(formData);
       handleChange("avatarUrl", data.avatarUrl);
       toast.success("Profile photo updated");
     } catch (error) {
@@ -157,15 +153,7 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
 
     setIsUploadingAvatar(true);
     try {
-      const response = await fetch("/api/admin/agents/avatar", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: form.avatarUrl }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data?.error ?? "Failed to remove profile photo.");
-      }
+      await deleteAvatarMutation.mutateAsync(form.avatarUrl);
       handleChange("avatarUrl", null);
       toast.success("Profile photo removed");
     } catch (error) {

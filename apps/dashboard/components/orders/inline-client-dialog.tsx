@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useCreateClient } from "@/hooks/use-clients";
 
 type InlineClientDialogProps = {
   open: boolean;
@@ -18,6 +19,7 @@ type InlineClientDialogProps = {
 export function InlineClientDialog({ open, onOpenChange, onClientCreated }: InlineClientDialogProps) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const createClient = useCreateClient();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -35,23 +37,17 @@ export function InlineClientDialog({ open, onOpenChange, onClientCreated }: Inli
 
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          company: form.company.trim() || null,
-        }),
+      const client = await createClient.mutateAsync({
+        name: form.name.trim(),
+        email: form.email.trim() || "",
+        phone: form.phone.trim() || "",
+        type: "Homebuyer",
+        inspections: 0,
+        lastInspection: "",
+        totalSpent: 0,
+        createdAt: null,
+        updatedAt: null,
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create client");
-      }
-
-      const client = await response.json();
       toast.success("Client created");
       onClientCreated(client.clientId);
       queryClient.invalidateQueries({ queryKey: ["clients"] });

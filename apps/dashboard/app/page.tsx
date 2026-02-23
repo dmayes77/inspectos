@@ -8,7 +8,7 @@ export default async function RootPage() {
   const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value;
 
   if (accessToken) {
-    redirect("/app/overview");
+    redirect("/overview");
   }
 
   redirect("/login");

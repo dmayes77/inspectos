@@ -1,13 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useAuthSession } from "@/hooks/use-auth";
-
-const REGISTER_API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/register`;
-const CHECKOUT_API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/stripe-checkout`;
+import { createStripeCheckout, registerBusiness } from "@/lib/api/onboarding";
 
 type PlanCode = "growth" | "team";
 
@@ -40,6 +39,8 @@ function WelcomePageContent() {
   const [inspectorSeats, setInspectorSeats] = useState(PLAN_OPTIONS[0].includedInspectors);
   const [agreeToTrial, setAgreeToTrial] = useState(false);
   const [agreeToAutopay, setAgreeToAutopay] = useState(false);
+  const registerMutation = useMutation({ mutationFn: registerBusiness });
+  const checkoutMutation = useMutation({ mutationFn: createStripeCheckout });
 
   const selectedPlan = useMemo(
     () => PLAN_OPTIONS.find((plan) => plan.code === planCode) ?? PLAN_OPTIONS[0],
@@ -79,63 +80,32 @@ function WelcomePageContent() {
 
     setIsSubmitting(true);
     try {
-      const registerResponse = await fetch(REGISTER_API_URL, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+      const registerResult = await registerMutation.mutateAsync({
+        company_name: companyName.trim(),
+        allow_existing_membership: true,
+        inspector_seat_count: normalizedInspectorSeats,
+        selected_plan: {
+          code: selectedPlan.code,
+          name: selectedPlan.name,
+          baseMonthlyPrice: selectedPlan.monthly,
+          includedInspectors: selectedPlan.includedInspectors,
+          maxInspectors: selectedPlan.maxInspectors,
+          additionalInspectorPrice: selectedPlan.additionalInspectorPrice,
         },
-        body: JSON.stringify({
-          company_name: companyName.trim(),
-          allow_existing_membership: true,
-          inspector_seat_count: normalizedInspectorSeats,
-          selected_plan: {
-            code: selectedPlan.code,
-            name: selectedPlan.name,
-            baseMonthlyPrice: selectedPlan.monthly,
-            includedInspectors: selectedPlan.includedInspectors,
-            maxInspectors: selectedPlan.maxInspectors,
-            additionalInspectorPrice: selectedPlan.additionalInspectorPrice,
-          },
-          trial: {
-            enabled: true,
-            days: 30,
-            consented_to_trial: true,
-            consented_to_autopay: true,
-          },
-        }),
-      });
-
-      const registerPayload = await registerResponse.json();
-      if (!registerResponse.ok) {
-        throw new Error(registerPayload?.error || "Failed to create business.");
-      }
-
-      const tenantId = registerPayload?.data?.business?.id as string | undefined;
-      if (!tenantId) {
-        throw new Error("Business created but missing tenant reference.");
-      }
-
-      const checkoutResponse = await fetch(CHECKOUT_API_URL, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
+        trial: {
+          enabled: true,
+          days: 30,
+          consented_to_trial: true,
+          consented_to_autopay: true,
         },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          plan_code: selectedPlan.code,
-          trial_days: 30,
-          inspector_seat_count: normalizedInspectorSeats,
-        }),
       });
-
-      const checkoutPayload = await checkoutResponse.json();
-      if (!checkoutResponse.ok || !checkoutPayload?.data?.url) {
-        throw new Error(checkoutPayload?.error || "Failed to start Stripe checkout.");
-      }
-
-      window.location.href = checkoutPayload.data.url as string;
+      const checkoutResult = await checkoutMutation.mutateAsync({
+        tenant_id: registerResult.tenantId,
+        plan_code: selectedPlan.code,
+        trial_days: 30,
+        inspector_seat_count: normalizedInspectorSeats,
+      });
+      window.location.href = checkoutResult.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not continue to secure checkout.");
       setIsSubmitting(false);

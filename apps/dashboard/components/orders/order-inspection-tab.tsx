@@ -66,7 +66,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
         <CardContent className="py-12 text-center space-y-3">
           <p className="text-muted-foreground">No inspection data found.</p>
           <Button asChild>
-            <Link href={`/app/inspections/new?orderId=${orderId}`}>Add Inspection</Link>
+            <Link href={`/inspections/new?orderId=${orderId}`}>Add Inspection</Link>
           </Button>
         </CardContent>
       </Card>

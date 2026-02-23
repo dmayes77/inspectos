@@ -81,7 +81,7 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
           <li>
             <DropdownMenuItem asChild className={itemClassName}>
               <Link
-                href="/app/profile"
+                href="/profile"
                 className="flex items-center gap-3 text-sm font-medium text-inherit transition-colors cursor-pointer"
               >
                 <UserCircleIcon className="h-5 w-5 text-current opacity-70 transition-opacity group-hover:opacity-100" />
@@ -103,7 +103,7 @@ export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
           <li>
             <DropdownMenuItem asChild className={itemClassName}>
               <Link
-                href="/app/settings"
+                href="/settings"
                 className="flex items-center gap-3 text-sm font-medium text-inherit transition-colors cursor-pointer"
               >
                 <InfoCircleIcon className="h-5 w-5 text-current opacity-70 transition-opacity group-hover:opacity-100" />

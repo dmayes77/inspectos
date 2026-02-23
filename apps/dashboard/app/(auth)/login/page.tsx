@@ -7,10 +7,9 @@ import { Eye, EyeOff, ChevronLeft } from "lucide-react";
 import { useLogin } from "@/hooks/use-auth";
 
 function getSafeRedirectPath(urlParam: string | null): string {
-  if (!urlParam) return "/app/overview";
-  if (!urlParam.startsWith("/")) return "/app/overview";
-  if (urlParam.startsWith("//")) return "/app/overview";
-  if (!urlParam.startsWith("/app")) return "/app/overview";
+  if (!urlParam) return "/overview";
+  if (!urlParam.startsWith("/")) return "/overview";
+  if (urlParam.startsWith("//")) return "/overview";
   return urlParam;
 }
 

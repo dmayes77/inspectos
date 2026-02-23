@@ -287,7 +287,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         {
           onSuccess: (updated) => {
             toast.success("Order updated.");
-            router.push(`/app/orders/${updated.id}`);
+            router.push(`/orders/${updated.id}`);
           },
           onError: (error) => {
             const message = error instanceof Error ? error.message : "Failed to update order.";
@@ -301,7 +301,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     createOrder.mutate(payload, {
       onSuccess: (created) => {
         toast.success("Order created.");
-        router.push(`/app/orders/${created.id}`);
+        router.push(`/orders/${created.id}`);
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to create order.";
@@ -417,7 +417,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   const isSubmitting = createOrder.isPending || updateOrder.isPending;
   const primaryActionLabel = mode === "edit" ? "Save Changes" : "Create Order";
-  const cancelHref = mode === "edit" && order ? `/app/orders/${order.id}` : "/app/orders";
+  const cancelHref = mode === "edit" && order ? `/orders/${order.id}` : "/orders";
   const scheduleLabel = formatScheduleLabel(form.scheduled_date, form.scheduled_time);
   const hasInspectorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.inspectorIds.length > 0);
   const hasVendorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.vendorIds.length > 0);
@@ -428,11 +428,11 @@ export function OrderForm({ mode, order }: OrderFormProps) {
       <PageHeader
         breadcrumb={
           <>
-            <Link href="/app/overview" className="hover:text-foreground">
+            <Link href="/overview" className="hover:text-foreground">
               Overview
             </Link>
             <span className="text-muted-foreground">/</span>
-            <Link href="/app/orders" className="hover:text-foreground">
+            <Link href="/orders" className="hover:text-foreground">
               Orders
             </Link>
             <span className="text-muted-foreground">/</span>

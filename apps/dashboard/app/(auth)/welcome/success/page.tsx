@@ -40,7 +40,7 @@ export default function WelcomeSuccessPage() {
         </p>
         <div className="mt-8">
           <Link
-            href="/app/overview"
+            href="/overview"
             className="inline-flex items-center justify-center rounded-sm bg-brand-500 px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
           >
             Go to dashboard

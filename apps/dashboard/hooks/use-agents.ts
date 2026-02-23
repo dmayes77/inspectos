@@ -60,7 +60,7 @@ export interface Agent {
 }
 
 export interface CreateAgentInput {
-  tenant_slug: string;
+  tenant_slug?: string;
   agency_id?: string | null;
   agency_name?: string | null;
   name: string;

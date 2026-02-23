@@ -8,7 +8,7 @@ import { Property } from "@/hooks/use-properties";
 
 function PropertyAddressCell({ property }: { property: Property }) {
   return (
-    <Link href={`/app/properties/${property.id}`} className="flex items-start gap-2 font-medium hover:underline">
+    <Link href={`/properties/${property.id}`} className="flex items-start gap-2 font-medium hover:underline">
       <PropertyTypeIcon type={property.property_type} />
       <div>
         <p>{property.address_line1}</p>
@@ -35,7 +35,7 @@ function PropertyOwnerCell({ property }: { property: Property }) {
   }
 
   return (
-    <Link href={`/app/contacts/${property.client.id}`} className="flex items-center gap-2 text-sm hover:underline">
+    <Link href={`/contacts/${property.client.id}`} className="flex items-center gap-2 text-sm hover:underline">
       <User className="h-3.5 w-3.5 text-muted-foreground" />
       {property.client.name}
     </Link>

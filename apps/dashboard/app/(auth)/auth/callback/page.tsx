@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthSession, useExchangeCode, useSetSession } from "@/hooks/use-auth";
 
-function getSafeRedirectPath(nextParam: string | null, fallback = "/app/overview"): string {
+function getSafeRedirectPath(nextParam: string | null, fallback = "/overview"): string {
   if (!nextParam) return fallback;
   if (!nextParam.startsWith("/")) return fallback;
   if (nextParam.startsWith("//")) return fallback;
@@ -22,7 +22,7 @@ function AuthCallbackPageContent() {
 
   const redirectPath = useMemo(() => {
     const requested = searchParams.get("next");
-    return getSafeRedirectPath(requested, "/app/overview");
+    return getSafeRedirectPath(requested, "/overview");
   }, [searchParams]);
 
   useEffect(() => {

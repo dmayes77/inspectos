@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { useAgencies } from "@/hooks/use-agencies";
+import { useCreateAgent } from "@/hooks/use-agents";
 
 type InlineAgentDialogProps = {
   open: boolean;
@@ -16,16 +18,11 @@ type InlineAgentDialogProps = {
   onAgentCreated: (agentId: string) => void;
 };
 
-type Agency = {
-  id: string;
-  name: string;
-};
-
 export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: InlineAgentDialogProps) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
-  const [agencies, setAgencies] = useState<Agency[]>([]);
-  const [loadingAgencies, setLoadingAgencies] = useState(false);
+  const { data: agencies = [], isLoading: loadingAgencies } = useAgencies();
+  const createAgent = useCreateAgent();
   const [form, setForm] = useState({
     name: "",
     role: "",
@@ -34,27 +31,6 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
     licenseNumber: "",
     agencyId: "__none__",
   });
-
-  useEffect(() => {
-    if (open) {
-      loadAgencies();
-    }
-  }, [open]);
-
-  const loadAgencies = async () => {
-    setLoadingAgencies(true);
-    try {
-      const response = await fetch("/api/admin/agencies");
-      if (response.ok) {
-        const result = await response.json();
-        setAgencies(result.data || []);
-      }
-    } catch (error) {
-      console.error("Failed to load agencies:", error);
-    } finally {
-      setLoadingAgencies(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,27 +42,16 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
 
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/agents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          role: form.role.trim() || null,
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          license_number: form.licenseNumber.trim() || null,
-          agency_id: form.agencyId === "__none__" ? null : form.agencyId,
-        }),
+      const result = await createAgent.mutateAsync({
+        name: form.name.trim(),
+        role: form.role.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+        license_number: form.licenseNumber.trim() || null,
+        agency_id: form.agencyId === "__none__" ? null : form.agencyId,
       });
-
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error?.message || "Failed to create agent");
-      }
-
-      const result = await response.json();
       toast.success("Agent created");
-      onAgentCreated(result.data.id);
+      onAgentCreated(result.id);
       queryClient.invalidateQueries({
         predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("agents-"),
       });

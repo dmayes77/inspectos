@@ -5,9 +5,11 @@ type AgentScrubOptions = {
 };
 
 export async function requestAgentScrub(url: string, signal?: AbortSignal, options?: AgentScrubOptions): Promise<AgentScrubResponse> {
-  const response = await fetch("/api/admin/agents/scrub", {
+  const endpoint = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/admin/agents/scrub`;
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ url, excludePhotos: options?.excludePhotos ?? [] }),
     signal,
   });

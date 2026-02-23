@@ -69,7 +69,7 @@ export function TagEditor() {
         {
           onSuccess: () => {
             toast.success("Tag updated.");
-            router.push("/app/tags");
+            router.push("/tags");
           },
           onError: (error) => {
             toast.error(error instanceof Error ? error.message : "Failed to update tag.");
@@ -82,7 +82,7 @@ export function TagEditor() {
     createTag.mutate(form, {
       onSuccess: () => {
         toast.success("Tag created.");
-        router.push("/app/tags");
+        router.push("/tags");
       },
       onError: (error) => {
         toast.error(error instanceof Error ? error.message : "Failed to create tag.");

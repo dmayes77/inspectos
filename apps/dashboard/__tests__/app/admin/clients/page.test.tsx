@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import ClientsPage from "@/app/(app)/app/(people)/contacts/page";
+import ClientsPage from "@/app/(dashboard)/(people)/contacts/page";
 import type { Client } from "@/hooks/use-clients";
 
 // Mock the hooks
@@ -191,14 +191,14 @@ describe("ClientsPage", () => {
     renderWithQueryClient(<ClientsPage />);
 
     const addClientLink = screen.getByRole("link", { name: /add client/i });
-    expect(addClientLink).toHaveAttribute("href", "/app/contacts/new");
+    expect(addClientLink).toHaveAttribute("href", "/contacts/new");
   });
 
   it("links Add Lead button to correct path", () => {
     renderWithQueryClient(<ClientsPage />);
 
     const addLeadLink = screen.getByRole("link", { name: /add lead/i });
-    expect(addLeadLink).toHaveAttribute("href", "/app/contacts/leads/new");
+    expect(addLeadLink).toHaveAttribute("href", "/contacts/leads/new");
   });
 });
 

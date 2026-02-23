@@ -57,7 +57,7 @@ export function AgencyLookupCard({ tenantSlug = DEFAULT_TENANT_SLUG }: { tenantS
             description: `${result.name} has been added to your directory`,
             action: {
               label: "Open",
-              onClick: () => router.push(`/app/agents/agencies/${agency.id}`),
+              onClick: () => router.push(`/agents/agencies/${agency.id}`),
             },
           });
           setQuery("");
