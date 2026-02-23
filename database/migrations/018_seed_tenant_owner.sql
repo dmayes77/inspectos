@@ -9,10 +9,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Profile from auth.users (must exist)
 INSERT INTO profiles (id, email, full_name)
-SELECT id, email, COALESCE(raw_user_meta_data->>'full_name', email) AS full_name
+SELECT id, email, 'David Mayes' AS full_name
 FROM auth.users
 WHERE id = 'ccd639ca-8c80-437f-b5fb-f39ab126097d'
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE
+SET full_name = EXCLUDED.full_name;
 
 -- Membership
 INSERT INTO tenant_members (tenant_id, user_id, role)

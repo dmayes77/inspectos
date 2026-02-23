@@ -1,11 +1,12 @@
-import Link from "next/link";
+"use client";
 
-const MOCK_WORKSPACES = [
-  { id: "demo-company", name: "Demo Company", location: "Chattanooga, TN" },
-  { id: "home-inspections-by-david", name: "Home Inspections by David", location: "Chattanooga, TN" },
-];
+import Link from "next/link";
+import { useWorkspaces } from "@/hooks/use-workspaces";
+import { setStoredWorkspaceSlug } from "@/lib/workspace/selection";
 
 export default function AgentPortalWorkspacesPage() {
+  const { data: workspaces = [], isLoading, isError, refetch } = useWorkspaces();
+
   return (
     <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "2rem" }}>
       <section
@@ -27,7 +28,36 @@ export default function AgentPortalWorkspacesPage() {
         </p>
 
         <div style={{ marginTop: "1rem", display: "grid", gap: "0.75rem" }}>
-          {MOCK_WORKSPACES.map((workspace) => (
+          {isLoading && (
+            <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "0.9rem 1rem", color: "var(--muted)" }}>
+              Loading workspaces...
+            </div>
+          )}
+          {isError && (
+            <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "0.9rem 1rem" }}>
+              <p style={{ margin: 0, color: "var(--muted)" }}>Could not load workspaces.</p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                style={{
+                  marginTop: "0.6rem",
+                  borderRadius: "10px",
+                  padding: "0.45rem 0.7rem",
+                  border: "1px solid var(--border)",
+                  background: "transparent",
+                  cursor: "pointer",
+                }}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          {!isLoading && !isError && workspaces.length === 0 && (
+            <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "0.9rem 1rem", color: "var(--muted)" }}>
+              No workspaces found for this account.
+            </div>
+          )}
+          {workspaces.map((workspace) => (
             <div
               key={workspace.id}
               style={{
@@ -42,10 +72,14 @@ export default function AgentPortalWorkspacesPage() {
             >
               <div>
                 <p style={{ margin: 0, fontWeight: 700 }}>{workspace.name}</p>
-                <p style={{ margin: "0.2rem 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>{workspace.location}</p>
+                <p style={{ margin: "0.2rem 0 0", color: "var(--muted)", fontSize: "0.9rem" }}>
+                  {workspace.slug}
+                  {workspace.role ? ` • ${workspace.role}` : ""}
+                </p>
               </div>
               <Link
-                href="/orders"
+                href={`/orders?business=${encodeURIComponent(workspace.slug)}`}
+                onClick={() => setStoredWorkspaceSlug(workspace.slug)}
                 style={{
                   textDecoration: "none",
                   borderRadius: "10px",

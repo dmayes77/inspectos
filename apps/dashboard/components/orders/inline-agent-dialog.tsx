@@ -11,6 +11,7 @@ import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAgencies } from "@/hooks/use-agencies";
 import { useCreateAgent } from "@/hooks/use-agents";
+import { agentsQueryKeys } from "@inspectos/shared/query";
 
 type InlineAgentDialogProps = {
   open: boolean;
@@ -52,9 +53,7 @@ export function InlineAgentDialog({ open, onOpenChange, onAgentCreated }: Inline
       });
       toast.success("Agent created");
       onAgentCreated(result.id);
-      queryClient.invalidateQueries({
-        predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("agents-"),
-      });
+      queryClient.invalidateQueries({ queryKey: agentsQueryKeys.all });
       onOpenChange(false);
       setForm({
         name: "",

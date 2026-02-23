@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -8,14 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   DollarSign,
   Download,
@@ -30,6 +23,7 @@ import {
 } from "lucide-react";
 import { usePayouts, usePayRules } from "@/hooks/use-payouts";
 import { formatDate } from "@inspectos/shared/utils/dates";
+import { ModernDataTable } from "@/components/ui/modern-data-table";
 
 function getStatusBadge(status?: string | null) {
   if (!status) {
@@ -132,6 +126,145 @@ export default function PayoutsPage() {
     });
   }, [payouts, statusFilter, periodFilter, currentPeriodKey, lastPeriodKey]);
 
+  const payoutColumns = useMemo<ColumnDef<(typeof filteredPayouts)[number]>[]>(
+    () => [
+      {
+        accessorKey: "inspector",
+        enableSorting: false,
+        header: "Inspector",
+        cell: ({ row }) => {
+          const payout = row.original;
+          const inspectorName =
+            payout.inspector?.full_name ?? payout.inspector?.email ?? "Unassigned";
+          return (
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">{inspectorName}</p>
+                {payout.inspector?.email && (
+                  <p className="text-sm text-muted-foreground">{payout.inspector.email}</p>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "period",
+        enableSorting: false,
+        header: "Period",
+        cell: ({ row }) => {
+          const payout = row.original;
+          return (
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+              {formatPeriodLabel(payout.period_start, payout.period_end)}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "items_count",
+        enableSorting: false,
+        header: "Items",
+      },
+      {
+        accessorKey: "gross_amount",
+        enableSorting: false,
+        header: "Gross",
+        cell: ({ row }) => <div className="text-right">${row.original.gross_amount.toFixed(2)}</div>,
+      },
+      {
+        accessorKey: "deductions",
+        enableSorting: false,
+        header: "Deductions",
+        cell: ({ row }) => (
+          <div className="text-right text-red-600">
+            {row.original.deductions > 0 ? `-$${row.original.deductions.toFixed(2)}` : "—"}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "net_amount",
+        enableSorting: false,
+        header: "Net",
+        cell: ({ row }) => <div className="text-right font-medium">${row.original.net_amount.toFixed(2)}</div>,
+      },
+      {
+        accessorKey: "status",
+        enableSorting: false,
+        header: "Status",
+        cell: ({ row }) => getStatusBadge(row.original.status),
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        header: "",
+        cell: () => (
+          <Button variant="ghost">
+            <FileText className="h-4 w-4" />
+          </Button>
+        ),
+      },
+    ],
+    []
+  );
+
+  const payRuleColumns = useMemo<ColumnDef<(typeof payRules)[number]>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        enableSorting: false,
+        header: "Rule Name",
+        cell: ({ row }) => {
+          const rule = row.original;
+          return (
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">{rule.name}</span>
+              {rule.is_default && <Badge color="light">Default</Badge>}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "rule_type",
+        enableSorting: false,
+        header: "Type",
+        cell: ({ row }) => <span className="capitalize">{row.original.rule_type.replace("_", " ")}</span>,
+      },
+      {
+        accessorKey: "value",
+        enableSorting: false,
+        header: "Value",
+        cell: ({ row }) => formatPayRuleValue(row.original),
+      },
+      {
+        accessorKey: "applies_to",
+        enableSorting: false,
+        header: "Applies To",
+        cell: ({ row }) => <span className="capitalize">{row.original.applies_to}</span>,
+      },
+      {
+        accessorKey: "is_active",
+        enableSorting: false,
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge color={row.original.is_active ? "primary" : "light"}>
+            {row.original.is_active ? "Active" : "Inactive"}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        enableSorting: false,
+        header: "",
+        cell: () => <Button variant="ghost">Edit</Button>,
+      },
+    ],
+    [payRules]
+  );
+
   // Stats
   const pendingTotal = payouts
     .filter((p) => p.status === "pending")
@@ -207,160 +340,57 @@ export default function PayoutsPage() {
           </Card>
 
           {/* Payouts Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Inspector Payouts</CardTitle>
-              <CardDescription>
-                Review and process inspector compensation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isError ? (
+          {isError ? (
+            <Card>
+              <CardContent className="py-6">
                 <div className="text-red-500">Failed to load payouts.</div>
-              ) : isLoading ? (
-                <div className="text-sm text-muted-foreground">Loading payouts...</div>
-              ) : filteredPayouts.length === 0 ? (
+              </CardContent>
+            </Card>
+          ) : (
+            <ModernDataTable
+              columns={payoutColumns}
+              data={filteredPayouts}
+              title="Inspector Payouts"
+              description="Review and process inspector compensation"
+              isLoading={isLoading}
+              emptyState={
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   No payouts found for this period.
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Inspector</TableHead>
-                      <TableHead>Period</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead className="text-right">Gross</TableHead>
-                      <TableHead className="text-right">Deductions</TableHead>
-                      <TableHead className="text-right">Net</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayouts.map((payout) => {
-                      const inspectorName =
-                        payout.inspector?.full_name ?? payout.inspector?.email ?? "Unassigned";
-                      return (
-                        <TableRow key={payout.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <p className="font-medium">{inspectorName}</p>
-                                {payout.inspector?.email && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {payout.inspector.email}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                              {formatPeriodLabel(payout.period_start, payout.period_end)}
-                            </div>
-                          </TableCell>
-                          <TableCell>{payout.items_count}</TableCell>
-                          <TableCell className="text-right">
-                            ${payout.gross_amount.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="text-right text-red-600">
-                            {payout.deductions > 0
-                              ? `-$${payout.deductions.toFixed(2)}`
-                              : "—"}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            ${payout.net_amount.toFixed(2)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(payout.status)}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost">
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+              }
+              loadingState={<div className="text-sm text-muted-foreground">Loading payouts...</div>}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="rules" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Pay Rules</CardTitle>
-                  <CardDescription>
-                    Configure how inspector compensation is calculated
-                  </CardDescription>
-                </div>
+          {isRulesError ? (
+            <Card>
+              <CardContent className="py-6">
+                <div className="text-red-500">Failed to load pay rules.</div>
+              </CardContent>
+            </Card>
+          ) : (
+            <ModernDataTable
+              columns={payRuleColumns}
+              data={payRules}
+              title="Pay Rules"
+              description="Configure how inspector compensation is calculated"
+              isLoading={isRulesLoading}
+              headerActions={
                 <Button>
                   <Settings className="mr-2 h-4 w-4" />
                   Add Rule
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isRulesError ? (
-                <div className="text-red-500">Failed to load pay rules.</div>
-              ) : isRulesLoading ? (
-                <div className="text-sm text-muted-foreground">Loading pay rules...</div>
-              ) : payRules.length === 0 ? (
+              }
+              emptyState={
                 <div className="py-8 text-center text-sm text-muted-foreground">
                   No pay rules configured yet.
                 </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Rule Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Value</TableHead>
-                      <TableHead>Applies To</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payRules.map((rule) => (
-                      <TableRow key={rule.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{rule.name}</span>
-                            {rule.is_default && (
-                              <Badge color="light">Default</Badge>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="capitalize">
-                          {rule.rule_type.replace("_", " ")}
-                        </TableCell>
-                        <TableCell>{formatPayRuleValue(rule)}</TableCell>
-                        <TableCell className="capitalize">{rule.applies_to}</TableCell>
-                        <TableCell>
-                          <Badge color={rule.is_active ? "primary" : "light"}>
-                            {rule.is_active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost">
-                            Edit
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+              }
+              loadingState={<div className="text-sm text-muted-foreground">Loading pay rules...</div>}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

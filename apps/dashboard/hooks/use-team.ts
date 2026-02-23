@@ -1,6 +1,8 @@
 // Returns only inspectors (role === 'INSPECTOR')
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createTeamApi } from "@inspectos/shared/api";
+import { teamQueryKeys } from "@inspectos/shared/query";
 
 export type TeamMember = {
   id: string;
@@ -80,21 +82,24 @@ function defaultColorForRole(role: TeamMember["role"]): string {
 
 export function useInspectors() {
   const apiClient = useApiClient();
-  return useGet<InspectorOption[]>("inspectors", async () => {
-    return await apiClient.get<InspectorOption[]>("/admin/inspectors");
+  const teamApi = createTeamApi(apiClient);
+  return useGet<InspectorOption[]>(teamQueryKeys.inspectors(), async () => {
+    return await teamApi.inspectors<InspectorOption>();
   });
 }
 
 export function useTeamMembers() {
   const apiClient = useApiClient();
-  return useGet<TeamMember[]>("team", async () => {
-    return await apiClient.get<TeamMember[]>("/admin/team");
+  const teamApi = createTeamApi(apiClient);
+  return useGet<TeamMember[]>(teamQueryKeys.all, async () => {
+    return await teamApi.list<TeamMember>();
   });
 }
 
 export function useCreateTeamMember() {
   const apiClient = useApiClient();
-  return usePost<TeamMember, CreateTeamMemberInput>("team", async (data) => {
+  const teamApi = createTeamApi(apiClient);
+  return usePost<TeamMember, CreateTeamMemberInput>(teamQueryKeys.all, async (data) => {
     const payload = {
       name: data.name,
       email: data.email,
@@ -110,7 +115,7 @@ export function useCreateTeamMember() {
       postal_code: data.postalCode,
       country: data.country,
     };
-    const result = await apiClient.post<{ user_id: string; member_id?: string | null }>("/admin/team", payload);
+    const result = await teamApi.create<{ user_id: string; member_id?: string | null }>(payload);
     return {
       id: result.user_id ?? "",
       memberId: result.member_id ?? "",
@@ -143,7 +148,8 @@ export function useCreateTeamMember() {
 
 export function useUpdateTeamMember() {
   const apiClient = useApiClient();
-  return usePut<TeamMember | null, { memberId: string } & Partial<TeamMember>>("team", async ({ memberId, ...data }) => {
+  const teamApi = createTeamApi(apiClient);
+  return usePut<TeamMember | null, { memberId: string } & Partial<TeamMember>>(teamQueryKeys.all, async ({ memberId, ...data }) => {
     const resolvedMemberId = memberId?.trim()?.toUpperCase();
     if (!resolvedMemberId || resolvedMemberId === "UNDEFINED") {
       throw new Error("Missing team member id.");
@@ -151,16 +157,17 @@ export function useUpdateTeamMember() {
     if (!/^[A-Z0-9]{10}$/.test(resolvedMemberId)) {
       throw new Error("Invalid team member id.");
     }
-    await apiClient.put(`/admin/team/${resolvedMemberId}`, data);
+    await teamApi.update(resolvedMemberId, data);
     return { memberId: resolvedMemberId, ...data } as TeamMember;
   });
 }
 
 export function useDeleteTeamMember() {
   const apiClient = useApiClient();
+  const teamApi = createTeamApi(apiClient);
   // Soft delete: sets status to 'inactive' only
-  return useDelete<boolean>("team", async (memberId: string) => {
-    await apiClient.delete(`/admin/team/${memberId.trim().toUpperCase()}`);
+  return useDelete<boolean>(teamQueryKeys.all, async (memberId: string) => {
+    await teamApi.remove(memberId.trim().toUpperCase());
     return true;
   });
 }

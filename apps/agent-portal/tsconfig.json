@@ -18,8 +18,21 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@inspectos/shared/api": ["../../shared/api/index.ts"],
+      "@inspectos/shared/api/*": ["../../shared/api/*.ts"],
+      "@inspectos/shared/query": ["../../shared/query/index.ts"],
+      "@inspectos/shared/query/*": ["../../shared/query/*.ts"],
+      "@inspectos/shared/types": ["../../shared/types/index.ts"],
+      "@inspectos/shared/types/*": ["../../shared/types/*.ts"],
+      "@inspectos/shared/validations": ["../../shared/validations/index.ts"],
+      "@inspectos/shared/validations/*": ["../../shared/validations/*.ts"],
+      "@inspectos/shared/utils": ["../../shared/utils/index.ts"],
+      "@inspectos/shared/utils/*": ["../../shared/utils/*.ts"],
+      "@inspectos/shared/constants": ["../../shared/constants/index.ts"],
+      "@inspectos/shared/constants/*": ["../../shared/constants/*.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

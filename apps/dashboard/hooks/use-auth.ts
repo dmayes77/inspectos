@@ -1,25 +1,26 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  confirmOtp,
-  exchangeCode,
-  getSession,
-  login,
-  logout,
-  requestPasswordReset,
-  resendConfirmation,
-  resetPassword,
-  setSession,
-  signup,
-} from "@/lib/api/auth";
+import { createAuthApi } from "@inspectos/shared/api";
+import { authQueryKeys } from "@inspectos/shared/query";
+import { createApiClient } from "@/lib/api/client";
 
-export const authSessionQueryKey = ["auth", "session"] as const;
+const authSessionQueryKey = authQueryKeys.session();
+const authApi = createAuthApi(createApiClient());
 
 export function useAuthSession() {
   return useQuery({
     queryKey: authSessionQueryKey,
-    queryFn: getSession,
+    queryFn: () =>
+      authApi
+        .getSession<{ user: { id: string; email: string | null } | null }>()
+        .catch((error) => {
+          const message = error instanceof Error ? error.message : "";
+          if (message.toLowerCase().includes("not authenticated") || message.toLowerCase().includes("session expired")) {
+            return { user: null };
+          }
+          throw error;
+        }),
     retry: false,
     refetchOnWindowFocus: true,
   });
@@ -28,7 +29,8 @@ export function useAuthSession() {
 export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { email: string; password: string }) => login(payload.email, payload.password),
+    mutationFn: (payload: { email: string; password: string }) =>
+      authApi.login<{ user: { id: string | null; email: string | null } }>(payload.email, payload.password),
     onSuccess: (data) => {
       queryClient.setQueryData(authSessionQueryKey, data);
     },
@@ -38,7 +40,7 @@ export function useLogin() {
 export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: logout,
+    mutationFn: () => authApi.logout<{ loggedOut: boolean }>(),
     onSuccess: () => {
       queryClient.setQueryData(authSessionQueryKey, null);
     },
@@ -48,7 +50,16 @@ export function useLogout() {
 export function useSignup() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: signup,
+    mutationFn: (payload: {
+      email: string;
+      password: string;
+      full_name: string;
+      email_redirect_to?: string;
+    }) =>
+      authApi.signup<{
+        requires_email_confirmation: boolean;
+        user: { id: string | null; email: string | null };
+      }>(payload),
     onSuccess: (data) => {
       if (!data.requires_email_confirmation) {
         void queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
@@ -60,21 +71,22 @@ export function useSignup() {
 export function useResendConfirmation() {
   return useMutation({
     mutationFn: (payload: { email: string; emailRedirectTo?: string }) =>
-      resendConfirmation(payload.email, payload.emailRedirectTo),
+      authApi.resendConfirmation<{ sent: boolean }>(payload.email, payload.emailRedirectTo),
   });
 }
 
 export function useRequestPasswordReset() {
   return useMutation({
     mutationFn: (payload: { email: string; redirectTo: string }) =>
-      requestPasswordReset(payload.email, payload.redirectTo),
+      authApi.requestPasswordReset<{ sent: boolean }>(payload.email, payload.redirectTo),
   });
 }
 
 export function useConfirmOtp() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { tokenHash: string; type: string }) => confirmOtp(payload.tokenHash, payload.type),
+    mutationFn: (payload: { tokenHash: string; type: string }) =>
+      authApi.confirmOtp<{ redirect_to: string; type: string }>(payload.tokenHash, payload.type),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
     },
@@ -84,7 +96,8 @@ export function useConfirmOtp() {
 export function useExchangeCode() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: { code: string }) => exchangeCode(payload.code),
+    mutationFn: (payload: { code: string }) =>
+      authApi.exchangeCode<{ user: { id: string | null; email: string | null } }>(payload.code),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
     },
@@ -95,7 +108,10 @@ export function useSetSession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: { accessToken: string; refreshToken: string }) =>
-      setSession(payload.accessToken, payload.refreshToken),
+      authApi.setSession<{ user: { id: string | null; email: string | null } }>(
+        payload.accessToken,
+        payload.refreshToken
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
     },
@@ -104,6 +120,6 @@ export function useSetSession() {
 
 export function useResetPassword() {
   return useMutation({
-    mutationFn: (payload: { password: string }) => resetPassword(payload.password),
+    mutationFn: (payload: { password: string }) => authApi.resetPassword<{ updated: boolean }>(payload.password),
   });
 }

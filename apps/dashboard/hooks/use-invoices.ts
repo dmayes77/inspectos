@@ -1,64 +1,34 @@
 import { toast } from "sonner";
 import { useGet, usePost, usePatch, useDelete } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createInvoicesApi } from "@inspectos/shared/api";
+import { invoicesQueryKeys } from "@inspectos/shared/query";
+import type { CreateInvoiceInput, InvoiceDetail, InvoiceRecord, UpdateInvoiceInput } from "@inspectos/shared/types/invoice";
 
-export type InvoiceRecord = {
-  invoiceId: string;
-  invoiceNumber?: string;
-  clientName: string;
-  clientId?: string;
-  orderId?: string | null;
-  orderNumber?: string;
-  amount: number;
-  issuedDate: string;
-  dueDate: string;
-  status: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
-export type InvoiceDetail = InvoiceRecord & {
-  clientId: string | null;
-  orderId: string | null;
-};
-
-export interface CreateInvoiceInput {
-  client_id: string | null;
-  order_id: string;
-  status: string;
-  total: number;
-  issued_at?: string | null;
-  due_at?: string | null;
-}
-
-export interface UpdateInvoiceInput {
-  client_id?: string | null;
-  order_id?: string;
-  status?: string;
-  total?: number;
-  issued_at?: string | null;
-  due_at?: string | null;
-}
+export type { CreateInvoiceInput, InvoiceDetail, InvoiceRecord, UpdateInvoiceInput };
 
 export function useInvoices() {
   const apiClient = useApiClient();
-  return useGet<InvoiceRecord[]>("invoices", () => apiClient.get<InvoiceRecord[]>("/admin/invoices"));
+  const invoicesApi = createInvoicesApi(apiClient);
+  return useGet<InvoiceRecord[]>(invoicesQueryKeys.all, () => invoicesApi.list());
 }
 
 export function useInvoice(invoiceId: string) {
   const apiClient = useApiClient();
+  const invoicesApi = createInvoicesApi(apiClient);
   return useGet<InvoiceDetail>(
-    ["invoices", invoiceId],
-    () => apiClient.get<InvoiceDetail>(`/admin/invoices/${invoiceId}`),
+    invoicesQueryKeys.detail(invoiceId),
+    () => invoicesApi.getById(invoiceId),
     { enabled: !!invoiceId, refetchOnMount: "always", refetchOnWindowFocus: true },
   );
 }
 
 export function useCreateInvoice() {
   const apiClient = useApiClient();
+  const invoicesApi = createInvoicesApi(apiClient);
   return usePost<InvoiceDetail, CreateInvoiceInput>(
-    "invoices",
-    (input) => apiClient.post<InvoiceDetail>("/admin/invoices", input),
+    invoicesQueryKeys.all,
+    (input) => invoicesApi.create(input),
     {
       onSuccess: () => toast.success("Invoice created successfully"),
       onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Failed to create invoice"),
@@ -68,9 +38,10 @@ export function useCreateInvoice() {
 
 export function useUpdateInvoice(invoiceId: string) {
   const apiClient = useApiClient();
+  const invoicesApi = createInvoicesApi(apiClient);
   return usePatch<InvoiceDetail, UpdateInvoiceInput>(
-    "invoices",
-    (input) => apiClient.patch<InvoiceDetail>(`/admin/invoices/${invoiceId}`, input),
+    invoicesQueryKeys.all,
+    (input) => invoicesApi.update(invoiceId, input),
     {
       onSuccess: () => toast.success("Invoice updated successfully"),
       onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Failed to update invoice"),
@@ -80,9 +51,10 @@ export function useUpdateInvoice(invoiceId: string) {
 
 export function useDeleteInvoice() {
   const apiClient = useApiClient();
+  const invoicesApi = createInvoicesApi(apiClient);
   return useDelete<unknown>(
-    "invoices",
-    (invoiceId) => apiClient.delete(`/admin/invoices/${invoiceId}`),
+    invoicesQueryKeys.all,
+    (invoiceId) => invoicesApi.remove(invoiceId),
     {
       onSuccess: () => toast.success("Invoice deleted successfully"),
       onError: (error: unknown) => toast.error(error instanceof Error ? error.message : "Failed to delete invoice"),

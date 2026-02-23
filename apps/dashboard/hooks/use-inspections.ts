@@ -1,43 +1,47 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
-import type { Inspection } from "@/types/inspection";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createInspectionsApi } from "@inspectos/shared/api";
+import { inspectionsQueryKeys } from "@inspectos/shared/query";
+import type { Inspection } from "@inspectos/shared/types/inspection";
 
 export function useInspections() {
   const apiClient = useApiClient();
+  const inspectionsApi = createInspectionsApi(apiClient);
   return useGet<Inspection[]>(
-    "inspections",
+    inspectionsQueryKeys.all,
     async () => {
-      const result = await apiClient.get<Inspection[]>("/admin/inspections");
-      return result ?? [];
+      return await inspectionsApi.list();
     }
   );
 }
 
 export function useCreateInspection() {
   const apiClient = useApiClient();
+  const inspectionsApi = createInspectionsApi(apiClient);
   return usePost<Inspection, Record<string, unknown>>(
-    "inspections",
+    inspectionsQueryKeys.all,
     async (data) => {
-      return await apiClient.post<Inspection>("/admin/inspections", data);
+      return await inspectionsApi.create(data);
     }
   );
 }
 
 export function useUpdateInspection() {
   const apiClient = useApiClient();
+  const inspectionsApi = createInspectionsApi(apiClient);
   return usePut<Inspection | null, { inspectionId: string } & Record<string, unknown>>(
-    "inspections",
+    inspectionsQueryKeys.all,
     async (data) => {
-      return await apiClient.put<Inspection>(`/admin/inspections/${data.inspectionId}`, data);
+      return await inspectionsApi.update(data.inspectionId, data);
     }
   );
 }
 
 export function useDeleteInspection() {
   const apiClient = useApiClient();
-  return useDelete<boolean>("inspections", async (inspectionId: string) => {
-    const result = await apiClient.delete<{ deleted: boolean } | boolean>(`/admin/inspections/${inspectionId}`);
-    return typeof result === "boolean" ? result : (result.deleted ?? true);
+  const inspectionsApi = createInspectionsApi(apiClient);
+  return useDelete<boolean>(inspectionsQueryKeys.all, async (inspectionId: string) => {
+    return await inspectionsApi.remove(inspectionId);
   });
 }
 

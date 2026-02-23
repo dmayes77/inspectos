@@ -10,6 +10,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@inspectos/shared": "workspace:*",
+    "@tanstack/react-query": "^5.0.0",
     "next": "16.1.2",
     "react": "19.2.3",
     "react-dom": "19.2.3"

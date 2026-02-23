@@ -1,70 +1,55 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createClientsApi } from "@inspectos/shared/api";
+import { clientsQueryKeys } from "@inspectos/shared/query";
+import type { CRMClient as Client, CreateCRMClientInput, UpdateCRMClientInput } from "@inspectos/shared/types/crm-client";
 
-export type ClientProperty = {
-  propertyId: string;
-  addressLine1: string;
-  addressLine2: string | null;
-  city: string;
-  state: string;
-  zipCode: string;
-  propertyType: string;
-};
-
-export type Client = {
-  clientId: string;
-  name: string;
-  email: string;
-  phone: string;
-  type: "Homebuyer" | "Real Estate Agent" | "Seller" | string;
-  inspections: number;
-  lastInspection: string;
-  totalSpent: number;
-  createdAt: string | null;
-  updatedAt: string | null;
-  properties?: ClientProperty[];
-  archived?: boolean;
-};
+export type { CRMClientProperty as ClientProperty } from "@inspectos/shared/types/crm-client";
+export type { CRMClient as Client } from "@inspectos/shared/types/crm-client";
 
 export function useClients() {
   const apiClient = useApiClient();
-  return useGet<Client[]>("clients", async () => {
-    return await apiClient.get<Client[]>("/admin/clients");
+  const clientsApi = createClientsApi(apiClient);
+  return useGet<Client[]>(clientsQueryKeys.all, async () => {
+    return await clientsApi.list();
   });
 }
 
 export function useCreateClient() {
   const apiClient = useApiClient();
-  return usePost<Client, Omit<Client, "clientId" | "archived">>("clients", async (data) => {
-    return await apiClient.post<Client>("/admin/clients", data);
+  const clientsApi = createClientsApi(apiClient);
+  return usePost<Client, CreateCRMClientInput>(clientsQueryKeys.all, async (data) => {
+    return await clientsApi.create(data);
   });
 }
 
 export function useUpdateClient() {
   const apiClient = useApiClient();
-  return usePut<Client | null, { clientId: string } & Partial<Client>>(
-    "clients",
+  const clientsApi = createClientsApi(apiClient);
+  return usePut<Client | null, UpdateCRMClientInput>(
+    clientsQueryKeys.all,
     async (data) => {
-      return await apiClient.put<Client>(`/admin/clients/${data.clientId}`, data);
+      return await clientsApi.update(data);
     }
   );
 }
 
 export function useDeleteClient() {
   const apiClient = useApiClient();
-  return useDelete<boolean>("clients", async (clientId: string) => {
-    const result = await apiClient.delete<{ deleted: boolean }>(`/admin/clients/${clientId}`);
-    return result.deleted ?? true;
+  const clientsApi = createClientsApi(apiClient);
+  return useDelete<boolean>(clientsQueryKeys.all, async (clientId: string) => {
+    return await clientsApi.remove(clientId);
   });
 }
 
 export function useClientById(clientId?: string) {
   const apiClient = useApiClient();
+  const clientsApi = createClientsApi(apiClient);
   return useGet<Client | null>(
-    clientId ? `client-${clientId}` : "client-undefined",
+    clientId ? clientsQueryKeys.detail(clientId) : ["clients", "detail", "undefined"],
     async () => {
       try {
-        return await apiClient.get<Client>(`/admin/clients/${clientId ?? ""}`);
+        return await clientsApi.getById(clientId ?? "");
       } catch {
         return null;
       }

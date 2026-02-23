@@ -131,6 +131,7 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
   // Actions dropdown - Always visible
   {
     id: "actions",
+    enableSorting: false,
     enableHiding: false,
     cell: ({ row }: { row: ClientRow }) => {
       const client = row.original;

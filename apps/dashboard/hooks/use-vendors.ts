@@ -1,5 +1,7 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createVendorsApi } from "@inspectos/shared/api";
+import { vendorsQueryKeys } from "@inspectos/shared/query";
 
 export type Vendor = {
   id: string;
@@ -14,38 +16,43 @@ export type Vendor = {
 
 export function useVendors() {
   const apiClient = useApiClient();
-  return useGet<Vendor[]>("vendors", () => apiClient.get<Vendor[]>("/admin/vendors"));
+  const vendorsApi = createVendorsApi(apiClient);
+  return useGet<Vendor[]>(vendorsQueryKeys.all, () => vendorsApi.list<Vendor>());
 }
 
 export function useVendor(id: string) {
   const apiClient = useApiClient();
+  const vendorsApi = createVendorsApi(apiClient);
   return useGet<Vendor>(
-    ["vendors", id],
-    () => apiClient.get<Vendor>(`/admin/vendors/${id}`),
+    vendorsQueryKeys.detail(id),
+    () => vendorsApi.getById<Vendor>(id),
     { enabled: !!id },
   );
 }
 
 export function useCreateVendor() {
   const apiClient = useApiClient();
+  const vendorsApi = createVendorsApi(apiClient);
   return usePost<Vendor, Partial<Vendor>>(
-    "vendors",
-    (data) => apiClient.post<Vendor>("/admin/vendors", data),
+    vendorsQueryKeys.all,
+    (data) => vendorsApi.create<Vendor>(data),
   );
 }
 
 export function useUpdateVendor() {
   const apiClient = useApiClient();
+  const vendorsApi = createVendorsApi(apiClient);
   return usePut<Vendor, Partial<Vendor> & { id: string }>(
-    "vendors",
-    ({ id, ...data }) => apiClient.put<Vendor>(`/admin/vendors/${id}`, data),
+    vendorsQueryKeys.all,
+    ({ id, ...data }) => vendorsApi.update<Vendor>(id, data),
   );
 }
 
 export function useDeleteVendor() {
   const apiClient = useApiClient();
+  const vendorsApi = createVendorsApi(apiClient);
   return useDelete<boolean>(
-    "vendors",
-    (id) => apiClient.delete<boolean>(`/admin/vendors/${id}`),
+    vendorsQueryKeys.all,
+    (id) => vendorsApi.remove<boolean>(id),
   );
 }

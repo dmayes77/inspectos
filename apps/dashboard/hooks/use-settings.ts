@@ -1,5 +1,7 @@
 import { useGet, usePost, usePut } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createSettingsApi } from "@inspectos/shared/api";
+import { settingsQueryKeys } from "@inspectos/shared/query";
 
 type DeepPartial<T> = {
   [K in keyof T]?: T[K] extends Array<infer U>
@@ -153,48 +155,53 @@ const defaultSettings: TenantSettings = {
 
 export function useSettings() {
   const apiClient = useApiClient();
-  return useGet<TenantSettings>("settings", async () => {
-    const data = await apiClient.get<TenantSettings>('/admin/settings');
+  const settingsApi = createSettingsApi(apiClient);
+  return useGet<TenantSettings>(settingsQueryKeys.all, async () => {
+    const data = await settingsApi.get<TenantSettings>();
     return { ...defaultSettings, ...data };
   });
 }
 
 export function useUpdateSettings() {
   const apiClient = useApiClient();
+  const settingsApi = createSettingsApi(apiClient);
   return usePut<TenantSettings, DeepPartial<TenantSettings>>(
-    "settings",
+    settingsQueryKeys.all,
     async (settings) => {
-      return await apiClient.put<TenantSettings>('/admin/settings', settings);
+      return await settingsApi.update<TenantSettings>(settings);
     }
   );
 }
 
 export function useRegenerateApiKey() {
   const apiClient = useApiClient();
+  const settingsApi = createSettingsApi(apiClient);
   return usePost<{ apiKey: string; apiKeyPreview: string; apiKeyLastRotatedAt: string }, void>(
-    "settings",
+    settingsQueryKeys.all,
     async () => {
-      return await apiClient.post<{ apiKey: string; apiKeyPreview: string; apiKeyLastRotatedAt: string }>('/admin/settings/api-key', undefined);
+      return await settingsApi.regenerateApiKey<{ apiKey: string; apiKeyPreview: string; apiKeyLastRotatedAt: string }>();
     }
   );
 }
 
 export function useCreateBillingPortalSession() {
   const apiClient = useApiClient();
+  const settingsApi = createSettingsApi(apiClient);
   return usePost<BillingPortalResponse, void>(
-    "settings",
+    settingsQueryKeys.all,
     async () => {
-      return await apiClient.post<BillingPortalResponse>("/admin/billing/portal", undefined);
+      return await settingsApi.createBillingPortalSession<BillingPortalResponse>();
     }
   );
 }
 
 export function useChangeBillingPlan() {
   const apiClient = useApiClient();
+  const settingsApi = createSettingsApi(apiClient);
   return usePost<ChangeBillingPlanResponse, ChangeBillingPlanPayload>(
-    "settings",
+    settingsQueryKeys.all,
     async (payload) => {
-      return await apiClient.post<ChangeBillingPlanResponse>("/admin/billing/plan", payload);
+      return await settingsApi.changeBillingPlan<ChangeBillingPlanResponse>(payload);
     }
   );
 }

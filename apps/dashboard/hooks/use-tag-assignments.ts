@@ -1,6 +1,8 @@
 import { useGet, usePost } from "@/hooks/crud";
 import type { TagScope } from "@/types/tag";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createTagAssignmentsApi } from "@inspectos/shared/api";
+import { tagAssignmentsQueryKeys } from "@inspectos/shared/query";
 
 type TagAssignmentResponse = {
   tagIds: string[];
@@ -8,10 +10,11 @@ type TagAssignmentResponse = {
 
 export function useTagAssignments(scope?: TagScope, entityId?: string) {
   const apiClient = useApiClient();
+  const tagAssignmentsApi = createTagAssignmentsApi(apiClient);
   return useGet<string[]>(
-    `tag-assignments-${scope}-${entityId}`,
+    tagAssignmentsQueryKeys.list(scope ?? "unknown", entityId ?? "unknown"),
     async () => {
-      const data = await apiClient.get<TagAssignmentResponse>(`/admin/tag-assignments?scope=${scope}&entityId=${entityId}`);
+      const data = await tagAssignmentsApi.list<TagAssignmentResponse>(scope ?? "", entityId ?? "");
       return data.tagIds ?? [];
     },
     { enabled: Boolean(scope && entityId) }
@@ -20,16 +23,18 @@ export function useTagAssignments(scope?: TagScope, entityId?: string) {
 
 export function useAssignTag(scope: TagScope, entityId: string) {
   const apiClient = useApiClient();
+  const tagAssignmentsApi = createTagAssignmentsApi(apiClient);
   return usePost(
-    `tag-assignments-${scope}-${entityId}`,
-    (tagId: string) => apiClient.post("/admin/tag-assignments", { scope, entityId, tagId })
+    tagAssignmentsQueryKeys.list(scope, entityId),
+    (tagId: string) => tagAssignmentsApi.assign(scope, entityId, tagId)
   );
 }
 
 export function useRemoveTag(scope: TagScope, entityId: string) {
   const apiClient = useApiClient();
+  const tagAssignmentsApi = createTagAssignmentsApi(apiClient);
   return usePost(
-    `tag-assignments-${scope}-${entityId}`,
-    (tagId: string) => apiClient.delete(`/admin/tag-assignments?scope=${scope}&entityId=${entityId}&tagId=${tagId}`)
+    tagAssignmentsQueryKeys.list(scope, entityId),
+    (tagId: string) => tagAssignmentsApi.remove(scope, entityId, tagId)
   );
 }

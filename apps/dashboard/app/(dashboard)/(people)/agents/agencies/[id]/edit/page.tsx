@@ -14,6 +14,7 @@ import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgencyById, useUpdateAgency } from "@/hooks/use-agencies";
 import { useAgents, useUpdateAgent } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAgenciesQueryKey, isAgentsQueryKey } from "@inspectos/shared/query";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
@@ -339,8 +340,7 @@ export default function EditAgencyPage() {
 
       queryClient.invalidateQueries({
         predicate: (query) => {
-          const key = query.queryKey[0];
-          return typeof key === "string" && (key.startsWith("agency-") || key.startsWith("agencies-") || key.startsWith("agents-"));
+          return isAgenciesQueryKey(query.queryKey) || isAgentsQueryKey(query.queryKey);
         },
       });
 

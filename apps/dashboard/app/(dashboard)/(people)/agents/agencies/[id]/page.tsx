@@ -21,6 +21,7 @@ import {
 import { useAgencyById, useDeleteAgency } from "@/hooks/use-agencies";
 import { useAgents } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAgenciesQueryKey } from "@inspectos/shared/query";
 import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyLogo } from "@/components/shared/company-logo";
@@ -76,8 +77,7 @@ export default function AgencyDetailPage() {
       onSuccess: () => {
         queryClient.invalidateQueries({
           predicate: (query) => {
-            const key = query.queryKey[0];
-            return typeof key === "string" && (key.startsWith("agencies-") || key.startsWith("agency-"));
+            return isAgenciesQueryKey(query.queryKey);
           },
         });
         toast.success("Agency deleted");

@@ -1,34 +1,40 @@
 import { useGet, usePost, usePut, useDelete } from "@/hooks/crud";
 import type { EmailTemplate } from "@/types/email-template";
 import { useApiClient } from "@/lib/api/tenant-context";
+import { createEmailTemplatesApi } from "@inspectos/shared/api";
+import { emailTemplatesQueryKeys } from "@inspectos/shared/query";
 
 export function useEmailTemplates() {
   const apiClient = useApiClient();
-  return useGet<EmailTemplate[]>("email-templates", async () => {
-    return await apiClient.get<EmailTemplate[]>('/admin/email-templates');
+  const emailTemplatesApi = createEmailTemplatesApi(apiClient);
+  return useGet<EmailTemplate[]>(emailTemplatesQueryKeys.all, async () => {
+    return await emailTemplatesApi.list<EmailTemplate>();
   });
 }
 
 export function useCreateEmailTemplate() {
   const apiClient = useApiClient();
-  return usePost<EmailTemplate, Partial<EmailTemplate>>("email-templates", async (data) => {
-    return await apiClient.post<EmailTemplate>('/admin/email-templates', data);
+  const emailTemplatesApi = createEmailTemplatesApi(apiClient);
+  return usePost<EmailTemplate, Partial<EmailTemplate>>(emailTemplatesQueryKeys.all, async (data) => {
+    return await emailTemplatesApi.create<EmailTemplate>(data);
   });
 }
 
 export function useUpdateEmailTemplate() {
   const apiClient = useApiClient();
+  const emailTemplatesApi = createEmailTemplatesApi(apiClient);
   return usePut<EmailTemplate, { id: string } & Partial<EmailTemplate>>(
-    "email-templates",
+    emailTemplatesQueryKeys.all,
     async (data) => {
-      return await apiClient.put<EmailTemplate>(`/admin/email-templates/${data.id}`, data);
+      return await emailTemplatesApi.update<EmailTemplate>(data.id, data);
     }
   );
 }
 
 export function useDeleteEmailTemplate() {
   const apiClient = useApiClient();
-  return useDelete<boolean>("email-templates", async (id) => {
-    return await apiClient.delete<boolean>(`/admin/email-templates/${id}`);
+  const emailTemplatesApi = createEmailTemplatesApi(apiClient);
+  return useDelete<boolean>(emailTemplatesQueryKeys.all, async (id) => {
+    return await emailTemplatesApi.remove<boolean>(id);
   });
 }

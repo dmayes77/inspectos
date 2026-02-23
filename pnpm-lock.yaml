@@ -20,6 +20,12 @@ importers:
 
   apps/agent-portal:
     dependencies:
+      '@inspectos/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.90.19(react@19.2.3)
       next:
         specifier: 16.1.2
         version: 16.1.2(@babel/core@7.28.6)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -423,6 +429,9 @@ importers:
 
   apps/platform:
     dependencies:
+      '@inspectos/shared':
+        specifier: workspace:*
+        version: link:../../shared
       next:
         specifier: 16.1.2
         version: 16.1.2(@babel/core@7.28.6)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -541,6 +550,9 @@ importers:
 
   shared:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.0.0
+        version: 5.90.19(react@19.2.3)
       zod:
         specifier: ^3.22.4
         version: 3.25.76

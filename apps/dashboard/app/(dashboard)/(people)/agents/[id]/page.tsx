@@ -21,6 +21,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAgentById, useDeleteAgent, useSendAgentPortalLink } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
+import { isAgentsQueryKey } from "@inspectos/shared/query";
 import { formatTimestamp } from "@inspectos/shared/utils/dates";
 import { toast } from "sonner";
 import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, MapPin, type LucideIcon } from "lucide-react";
@@ -140,8 +141,7 @@ export default function AgentDetailPage() {
       onSuccess: () => {
         queryClient.invalidateQueries({
           predicate: (query) => {
-            const key = query.queryKey[0];
-            return typeof key === "string" && (key.startsWith("agents-") || key.startsWith("agent-"));
+            return isAgentsQueryKey(query.queryKey);
           },
         });
         toast.success("Agent deleted");

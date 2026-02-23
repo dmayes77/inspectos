@@ -5,8 +5,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useApiClient } from '@/lib/api/tenant-context';
-
-const INSPECTION_DATA_KEY = 'inspection-data';
+import { createInspectionDataApi } from '@inspectos/shared/api';
+import { inspectionDataQueryKeys } from '@inspectos/shared/query';
 
 export interface InspectionAnswer {
   id: string;
@@ -152,11 +152,12 @@ export interface InspectionDataResponse {
 
 export function useInspectionData(orderId: string) {
   const apiClient = useApiClient();
+  const inspectionDataApi = createInspectionDataApi(apiClient);
 
   return useQuery({
-    queryKey: [INSPECTION_DATA_KEY, orderId],
+    queryKey: inspectionDataQueryKeys.detail(orderId),
     queryFn: async () => {
-      return await apiClient.get<InspectionDataResponse>(`/admin/orders/${orderId}/data`);
+      return await inspectionDataApi.getByOrderId<InspectionDataResponse>(orderId);
     },
     enabled: !!orderId,
   });
