@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, Loader2 } from "lucide-react";
 import { useProfile, useUpdateProfile, type ProfileUpdate } from "@/hooks/use-profile";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 
 // Facebook icon
 function FacebookIcon() {
@@ -87,20 +86,39 @@ export default function ProfilePage() {
     if (!file) return;
     setAvatarUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
-      setAvatarUrl(publicUrl);
-      updateMutation.mutate({ avatar_url: publicUrl }, {
-        onSuccess: () => toast.success("Avatar updated"),
-        onError: () => toast.error("Failed to save avatar"),
+      if (!profile?.id) throw new Error("Not authenticated");
+      const endpoint = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/uploads/avatar`;
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
       });
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        data?: { avatarUrl?: string };
+        error?: { message?: string };
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error?.message || "Upload failed");
+      }
+
+      const publicUrl = payload.data?.avatarUrl;
+      if (!publicUrl) {
+        throw new Error("Upload succeeded but avatar URL was missing.");
+      }
+
+      setAvatarUrl(publicUrl);
+      updateMutation.mutate(
+        { avatar_url: publicUrl },
+        {
+          onSuccess: () => toast.success("Avatar updated"),
+          onError: () => toast.error("Failed to save avatar"),
+        }
+      );
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Upload failed");
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -10,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserCircleIcon, GearIcon, InfoCircleIcon, SignOutIcon } from "@/components/icons";
-import { supabase } from "@/lib/supabase";
+import { useLogout } from "@/hooks/use-auth";
 
 interface AdminUserMenuProps {
   user?: {
@@ -23,12 +24,14 @@ interface AdminUserMenuProps {
 }
 
 export function AdminUserMenu({ user, settingsHref }: AdminUserMenuProps) {
+  const router = useRouter();
+  const logoutMutation = useLogout();
   const itemClassName =
     "group rounded-sm px-3 py-2 data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary focus:bg-primary/10 focus:text-primary";
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    // Redirect is handled by AdminLayoutClient's onAuthStateChange listener
+    await logoutMutation.mutateAsync();
+    router.replace("/login");
   };
 
   const initials =

@@ -2,8 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { EmailOtpType } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+import { useConfirmOtp } from "@/hooks/use-auth";
 
 function targetPathForType(type: string | null): string {
   if (type === "recovery") return "/reset-password";
@@ -13,6 +12,7 @@ function targetPathForType(type: string | null): string {
 function AuthConfirmPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const confirmMutation = useConfirmOtp();
   const [error, setError] = useState<string | null>(null);
 
   const tokenHash = useMemo(() => searchParams.get("token_hash"), [searchParams]);
@@ -27,13 +27,10 @@ function AuthConfirmPageContent() {
         return;
       }
 
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: type as EmailOtpType,
-      });
-
-      if (verifyError) {
-        if (!cancelled) setError(verifyError.message);
+      try {
+        await confirmMutation.mutateAsync({ tokenHash, type });
+      } catch (verifyError) {
+        if (!cancelled) setError(verifyError instanceof Error ? verifyError.message : "Verification failed.");
         return;
       }
 

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { useAuthSession, useExchangeCode, useSetSession } from "@/hooks/use-auth";
 
 function getSafeRedirectPath(nextParam: string | null, fallback = "/app/overview"): string {
   if (!nextParam) return fallback;
@@ -14,6 +14,9 @@ function getSafeRedirectPath(nextParam: string | null, fallback = "/app/overview
 function AuthCallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const exchangeCodeMutation = useExchangeCode();
+  const setSessionMutation = useSetSession();
+  const { refetch: refetchSession } = useAuthSession();
   const [error, setError] = useState<string | null>(null);
   const hasStartedRef = useRef(false);
 
@@ -39,10 +42,11 @@ function AuthCallbackPageContent() {
 
       const code = searchParams.get("code");
       if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError) {
+        try {
+          await exchangeCodeMutation.mutateAsync({ code });
+        } catch (exchangeError) {
           if (!cancelled) {
-            setError(exchangeError.message);
+            setError(exchangeError instanceof Error ? exchangeError.message : "Could not complete sign in.");
           }
           return;
         }
@@ -55,22 +59,19 @@ function AuthCallbackPageContent() {
         const refreshToken = params.get("refresh_token");
 
         if (accessToken && refreshToken) {
-          const { error: setSessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (setSessionError) {
+          try {
+            await setSessionMutation.mutateAsync({ accessToken, refreshToken });
+          } catch (setSessionError) {
             if (!cancelled) {
-              setError(setSessionError.message);
+              setError(setSessionError instanceof Error ? setSessionError.message : "Could not restore session.");
             }
             return;
           }
         }
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const sessionResult = await refetchSession();
+      if (sessionResult.error || !sessionResult.data?.user?.id) {
         if (!cancelled) {
           setError("Authentication link is invalid or expired. Please request a new email.");
         }

@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ChevronLeft } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { useLogin } from "@/hooks/use-auth";
 
 function getSafeRedirectPath(urlParam: string | null): string {
   if (!urlParam) return "/app/overview";
@@ -17,6 +17,7 @@ function getSafeRedirectPath(urlParam: string | null): string {
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const loginMutation = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,10 +29,10 @@ function LoginPageContent() {
     setIsSubmitting(true);
     setError(null);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (authError) {
-      setError(authError.message);
+    try {
+      await loginMutation.mutateAsync({ email, password });
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "Sign in failed.");
       setIsSubmitting(false);
       return;
     }

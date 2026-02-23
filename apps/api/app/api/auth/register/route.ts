@@ -5,6 +5,7 @@ import { RateLimitPresets, rateLimitByIP } from "@/lib/rate-limit";
 import { enforceAuthBackoff, getAuthBackoffKey, recordAuthFailure, recordAuthSuccess } from "@/lib/security/auth-backoff";
 import { getRequestIp, recordAuthAuditEvent } from "@/lib/security/auth-audit";
 import { BILLING_PLAN_DEFAULTS, type PlanCode } from "@/lib/billing/plans";
+import { getAccessToken } from "@/lib/supabase";
 
 type RegisterBody = {
   email?: string;
@@ -113,10 +114,7 @@ export async function POST(request: NextRequest) {
       return fail(400, "Missing required fields.");
     }
 
-    const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-    const accessToken = authHeader?.startsWith("Bearer ")
-      ? authHeader.replace("Bearer ", "").trim()
-      : null;
+    const accessToken = getAccessToken(request);
 
     let userId: string | null = null;
     if (email) {

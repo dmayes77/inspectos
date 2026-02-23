@@ -1,39 +1,28 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
 import { AdminShell } from "@/layout/admin-shell";
 import { BrandColorProvider } from "@/context/brand-color";
 import { useGet } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
 import type { UserProfile } from "@/hooks/use-profile";
+import { useAuthSession } from "@/hooks/use-auth";
+
+type SessionUser = { id: string; email: string | null } | null | undefined;
 
 export function AdminLayoutClient({ children }: { children: ReactNode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  // undefined = still checking, null = no session, Session = authenticated
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const { data: sessionData, isLoading: isCheckingSession } = useAuthSession();
+  const sessionUser: SessionUser =
+    isCheckingSession ? undefined : (sessionData?.user ? sessionData.user : null);
   const lastUserIdRef = useRef<string | null>(null);
   const apiClient = useApiClient();
 
   useEffect(() => {
-    // Get initial session then subscribe to auth state changes
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s ?? null);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const currentUserId = session?.user?.id ?? null;
+    const currentUserId = sessionUser?.id ?? null;
 
     if (lastUserIdRef.current && lastUserIdRef.current !== currentUserId) {
       // Prevent cached tenant-scoped data from leaking between users/businesses.
@@ -45,19 +34,19 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
     }
 
     lastUserIdRef.current = currentUserId;
-  }, [queryClient, session?.user?.id]);
+  }, [queryClient, sessionUser?.id]);
 
   // Redirect to login when session is gone — rAF lets open portals clean up first
   useEffect(() => {
-    if (session === null) {
+    if (sessionUser === null) {
       const returnTo = typeof window !== "undefined"
         ? `${window.location.pathname}${window.location.search}`
         : "/app/overview";
       requestAnimationFrame(() => router.replace(`/login?url=${encodeURIComponent(returnTo)}`));
     }
-  }, [session, router]);
+  }, [sessionUser, router]);
 
-  const isAuthenticated = session != null;
+  const isAuthenticated = sessionUser != null;
 
   const { data: profile } = useGet<UserProfile>(
     "profile",

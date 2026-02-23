@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { useAuthSession, useLogout, useResetPassword } from "@/hooks/use-auth";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const { data: sessionData, isLoading: isLoadingSession } = useAuthSession();
+  const resetPasswordMutation = useResetPassword();
+  const logoutMutation = useLogout();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,32 +24,15 @@ export default function ResetPasswordPage() {
   const checks = useMemo(() => getPasswordPolicyChecks(password), [password]);
 
   useEffect(() => {
-    let mounted = true;
-
-    const initialize = async () => {
-      const { data, error: sessionError } = await supabase.auth.getSession();
-      if (!mounted) return;
-
-      if (sessionError) {
-        setError("Unable to validate reset session. Request a new link.");
-        return;
-      }
-
-      // Supabase recovery links usually establish a temporary session.
-      // If not present yet, this page is likely opened without a valid token.
-      if (!data.session) {
-        setError("This reset link is invalid or expired. Request a new one.");
-        return;
-      }
-
-      setIsReady(true);
-    };
-
-    void initialize();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (isLoadingSession) return;
+    if (!sessionData?.user?.id) {
+      setIsReady(false);
+      setError("This reset link is invalid or expired. Request a new one.");
+      return;
+    }
+    setError(null);
+    setIsReady(true);
+  }, [isLoadingSession, sessionData?.user?.id]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -70,17 +56,18 @@ export default function ResetPasswordPage() {
     }
 
     setIsSubmitting(true);
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setIsSubmitting(false);
-
-    if (updateError) {
-      setError(updateError.message);
+    try {
+      await resetPasswordMutation.mutateAsync({ password });
+    } catch (updateError) {
+      setIsSubmitting(false);
+      setError(updateError instanceof Error ? updateError.message : "Failed to update password.");
       return;
     }
+    setIsSubmitting(false);
 
     setSuccess("Password updated successfully. Redirecting to sign in...");
     setTimeout(() => {
-      void supabase.auth.signOut();
+      void logoutMutation.mutateAsync();
       router.push("/login");
     }, 1200);
   };

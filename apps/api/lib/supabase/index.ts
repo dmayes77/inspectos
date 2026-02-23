@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { assertNoProdAuthBypass } from '@/lib/security/env-guard';
+import { ACCESS_COOKIE_NAME } from '@/lib/auth/session-cookies';
 
 assertNoProdAuthBypass();
 
@@ -42,6 +43,23 @@ export function createUserClient(accessToken: string): SupabaseClient {
   });
 }
 
+// Server-side Supabase client with anon key for auth flows (sign in/up/reset/verify).
+export function createAnonClient(): SupabaseClient {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY');
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+}
+
 // Extract user ID from JWT (simple decode, not verification - Supabase verifies)
 export function getUserFromToken(accessToken: string): { userId: string; email?: string } | null {
   try {
@@ -71,7 +89,13 @@ export function getUserFromToken(accessToken: string): { userId: string; email?:
 export function getAccessToken(request: Request): string | null {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return null;
+    const cookieHeader = request.headers.get('cookie') ?? '';
+    const escapedName = ACCESS_COOKIE_NAME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${escapedName}=([^;]+)`));
+    if (!match?.[1]) {
+      return null;
+    }
+    return decodeURIComponent(match[1]);
   }
   return authHeader.slice(7);
 }

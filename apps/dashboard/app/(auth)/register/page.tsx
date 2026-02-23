@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { useResendConfirmation, useSignup } from "@/hooks/use-auth";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
 function getEmailRedirectUrl(): string {
@@ -19,6 +19,8 @@ function getEmailRedirectUrl(): string {
 function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const signupMutation = useSignup();
+  const resendMutation = useResendConfirmation();
   const [view, setView] = useState<"form" | "awaiting_confirmation">("form");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -60,25 +62,14 @@ function RegisterPageContent() {
 
     setIsSubmitting(true);
     try {
-      const signUpResult = await supabase.auth.signUp({
+      const signUpResult = await signupMutation.mutateAsync({
         email,
         password,
-        options: {
-          data: { full_name: fullName.trim() },
-          emailRedirectTo: getEmailRedirectUrl(),
-        },
+        full_name: fullName.trim(),
+        email_redirect_to: getEmailRedirectUrl(),
       });
 
-      if (signUpResult.error) {
-        if ((signUpResult.error as { status?: number }).status === 429) {
-          setCooldownSeconds(60);
-          setError("Too many signup attempts. Please wait 60 seconds and try again.");
-          return;
-        }
-        throw new Error(signUpResult.error.message);
-      }
-
-      if (signUpResult.data.session) {
+      if (!signUpResult.requires_email_confirmation) {
         router.push("/welcome");
         return;
       }
@@ -98,18 +89,7 @@ function RegisterPageContent() {
     setIsResending(true);
     setError(null);
     try {
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: pendingEmail,
-        options: { emailRedirectTo: getEmailRedirectUrl() },
-      });
-      if (resendError) {
-        if ((resendError as { status?: number }).status === 429) {
-          setCooldownSeconds(60);
-          throw new Error("Too many requests. Please wait 60 seconds before resending.");
-        }
-        throw new Error(resendError.message);
-      }
+      await resendMutation.mutateAsync({ email: pendingEmail, emailRedirectTo: getEmailRedirectUrl() });
       setNotice("Confirmation email resent.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to resend confirmation email.");

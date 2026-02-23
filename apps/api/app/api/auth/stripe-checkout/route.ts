@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { RateLimitPresets, rateLimitByIP } from "@/lib/rate-limit";
 import { getRequestIp, recordAuthAuditEvent } from "@/lib/security/auth-audit";
+import { getAccessToken } from "@/lib/supabase";
 import {
   BILLING_PLAN_DEFAULTS,
   STRIPE_BASE_PRICE_ENV_BY_PLAN,
@@ -56,8 +57,7 @@ export async function POST(request: NextRequest) {
     return rateLimitResponse;
   }
 
-  const authHeader = request.headers.get("authorization") ?? "";
-  const accessToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const accessToken = getAccessToken(request);
   if (!accessToken) {
     return Response.json({ error: "Missing bearer token" }, { status: 401 });
   }

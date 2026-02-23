@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { useAuthSession } from "@/hooks/use-auth";
 
 const REGISTER_API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/register`;
 const CHECKOUT_API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/auth/stripe-checkout`;
@@ -32,8 +32,7 @@ const PLAN_OPTIONS = [
 
 function WelcomePageContent() {
   const searchParams = useSearchParams();
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const { data: sessionData, isLoading: isLoadingSession } = useAuthSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState("");
@@ -55,27 +54,6 @@ function WelcomePageContent() {
   const monthlyTotal = selectedPlan.monthly + additionalSeatMonthlyTotal;
 
   useEffect(() => {
-    let active = true;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!active) return;
-      setAccessToken(data.session?.access_token ?? null);
-      setIsLoadingSession(false);
-    };
-    init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAccessToken(session?.access_token ?? null);
-      setIsLoadingSession(false);
-    });
-
-    return () => {
-      active = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
     setInspectorSeats((current) =>
       Math.max(selectedPlan.includedInspectors, Math.min(selectedPlan.maxInspectors, current))
     );
@@ -84,8 +62,9 @@ function WelcomePageContent() {
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    const isAuthenticated = Boolean(sessionData?.user?.id);
 
-    if (!accessToken) {
+    if (!isAuthenticated) {
       setError("Sign in from your confirmation email link to continue setup.");
       return;
     }
@@ -102,9 +81,9 @@ function WelcomePageContent() {
     try {
       const registerResponse = await fetch(REGISTER_API_URL, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           company_name: companyName.trim(),
@@ -139,9 +118,9 @@ function WelcomePageContent() {
 
       const checkoutResponse = await fetch(CHECKOUT_API_URL, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           tenant_id: tenantId,
@@ -167,7 +146,8 @@ function WelcomePageContent() {
     return <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">Loading...</div>;
   }
 
-  if (!accessToken) {
+  const isAuthenticated = Boolean(sessionData?.user?.id);
+  if (!isAuthenticated) {
     return (
       <div className="flex flex-col flex-1 w-full overflow-y-auto">
         <div className="w-full max-w-md pt-8 mx-auto px-6 mb-5">

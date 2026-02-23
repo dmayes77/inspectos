@@ -1,5 +1,3 @@
-import { supabase } from "@/lib/supabase";
-
 /**
  * Custom error class for API errors
  */
@@ -59,11 +57,7 @@ const defaultRetryConfig: RetryConfig = {
 export class ApiClient {
   private retryConfig: RetryConfig;
 
-  constructor(
-    private baseUrl: string,
-    private getAccessToken: () => Promise<string | null>,
-    retryConfig?: Partial<RetryConfig>
-  ) {
+  constructor(private baseUrl: string, retryConfig?: Partial<RetryConfig>) {
     this.retryConfig = { ...defaultRetryConfig, ...retryConfig };
   }
 
@@ -155,19 +149,13 @@ export class ApiClient {
     options: RequestInit,
     retryCount = 0
   ): Promise<T> {
-    const token = await this.getAccessToken();
-
-    if (!token) {
-      throw new ApiError(401, "UNAUTHORIZED", "No access token available");
-    }
-
     const url = `${this.baseUrl}${endpoint}`;
 
     try {
       const response = await fetch(url, {
         ...options,
+        credentials: "include",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
           ...options.headers,
         },
@@ -224,38 +212,5 @@ export class ApiClient {
  */
 export function createApiClient(): ApiClient {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-
-  const getAccessToken = async (): Promise<string | null> => {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error("Failed to get session:", error);
-      return null;
-    }
-
-    if (session?.access_token) {
-      return session.access_token;
-    }
-
-    // getSession() can return null briefly on first render before Supabase
-    // has loaded the session from localStorage. Wait for the next auth state
-    // change (INITIAL_SESSION fires for every new listener registration).
-    return new Promise<string | null>((resolve) => {
-      const timer = setTimeout(() => {
-        unsub();
-        resolve(null);
-      }, 3000);
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-        clearTimeout(timer);
-        unsub();
-        resolve(s?.access_token ?? null);
-      });
-
-      // alias so the timeout callback can call it
-      function unsub() { subscription.unsubscribe(); }
-    });
-  };
-
-  return new ApiClient(baseUrl, getAccessToken);
+  return new ApiClient(baseUrl);
 }

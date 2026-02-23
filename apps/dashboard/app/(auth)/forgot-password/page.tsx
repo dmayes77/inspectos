@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { useRequestPasswordReset } from "@/hooks/use-auth";
 
 export default function ForgotPasswordPage() {
+  const forgotPasswordMutation = useRequestPasswordReset();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
@@ -16,12 +17,13 @@ export default function ForgotPasswordPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
-
-    if (authError) {
-      setError(authError.message);
+    try {
+      await forgotPasswordMutation.mutateAsync({
+        email,
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      });
+    } catch (authError) {
+      setError(authError instanceof Error ? authError.message : "Unable to send reset link.");
       setIsSubmitting(false);
       return;
     }
