@@ -6,6 +6,7 @@
     "dev:web": "pnpm -C apps/dashboard dev",
     "dev:dashboard": "pnpm -C apps/dashboard dev",
     "dev:public": "pnpm -C apps/public dev",
+    "dev:platform": "pnpm -C apps/platform dev",
     "dev:server": "pnpm -C apps/server dev --port 4000",
     "dev:mobile": "pnpm -C apps/mobile dev",
     "lint": "pnpm -r lint",

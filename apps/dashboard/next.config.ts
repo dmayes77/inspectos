@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const publicSiteUrl = process.env.PUBLIC_SITE_URL || "https://inspectos.co";
+const platformSiteUrl = process.env.PLATFORM_SITE_URL || "https://platform.inspectos.co";
 
 const nextConfig: NextConfig = {
   // Transpile workspace packages for Turbopack
@@ -38,6 +39,16 @@ const nextConfig: NextConfig = {
       {
         source: "/data-charter",
         destination: `${publicSiteUrl}/data-charter`,
+        permanent: true,
+      },
+      {
+        source: "/platform",
+        destination: `${platformSiteUrl}/platform`,
+        permanent: true,
+      },
+      {
+        source: "/platform/:path*",
+        destination: `${platformSiteUrl}/platform/:path*`,
         permanent: true,
       },
       {
