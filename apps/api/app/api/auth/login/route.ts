@@ -29,7 +29,7 @@ function isAllowedOrigin(origin: string) {
   return /^https:\/\/(?:[a-z0-9-]+\.)*inspectos\.co$/i.test(origin);
 }
 
-function applyCorsHeaders(response: NextResponse, origin: string) {
+function applyCorsHeaders(response: Response, origin: string) {
   if (!isAllowedOrigin(origin)) return response;
   response.headers.set("Access-Control-Allow-Origin", origin);
   response.headers.set("Access-Control-Allow-Credentials", "true");
