@@ -1,5 +1,10 @@
 const LOGO_DEV_BASE = "https://img.logo.dev";
-const LOGO_DEV_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_LOGO_DEV_PUBLISHABLE_KEY ?? process.env.LOGO_DEV_PUBLISHABLE_KEY ?? "";
+const LOGO_DEV_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_LOGO_DEV_KEY ??
+  process.env.LOGO_DEV_PUBLIC_KEY ??
+  process.env.NEXT_PUBLIC_LOGO_DEV_PUBLISHABLE_KEY ??
+  process.env.LOGO_DEV_PUBLISHABLE_KEY ??
+  "";
 
 export type LogoFormat = "webp" | "png" | "jpg";
 export type LogoTheme = "light" | "dark";
@@ -8,6 +13,7 @@ export type LogoOptions = {
   size?: number;
   format?: LogoFormat;
   theme?: LogoTheme;
+  retina?: boolean;
 };
 
 const ensureProtocol = (value: string) => (value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`);
@@ -36,8 +42,10 @@ export function logoDevUrl(input?: string | null, options: LogoOptions = {}): st
   const size = Number.isFinite(options.size) && options.size ? Math.min(Math.max(options.size, 16), 640) : 160;
   const format: LogoFormat = options.format ?? "webp";
   const theme: LogoTheme = options.theme ?? "light";
+  const retina = options.retina ?? true;
 
   const params = new URLSearchParams({ size: size.toString(), format, theme });
+  params.set("retina", retina ? "true" : "false");
   if (LOGO_DEV_PUBLISHABLE_KEY) {
     params.set("token", LOGO_DEV_PUBLISHABLE_KEY);
   }

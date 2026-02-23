@@ -33,7 +33,7 @@ export function AgencyBrandSearch({ onApply }: AgencyBrandSearchProps) {
     if (isSearching) return "Searching for matching brokerages...";
     if (error) return error;
     if (results.length === 0) return "No matches yet. Try another spelling or full domain.";
-    return brandSearchEnabled ? "Select a result to prefill the form below." : "Add LOGO_DEV_SECRET_KEY to enable Logo.dev Brand Search.";
+    return brandSearchEnabled ? "Select a result to prefill the form below." : "Add LOGO_DEV_SECRET_KEY to apps/api server env to enable Logo.dev Brand Search.";
   }, [brandSearchEnabled, error, isSearching, query, results.length]);
 
   const handleApply = (result: AgencyLookupResult) => {

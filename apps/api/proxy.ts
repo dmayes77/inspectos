@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 /**
  * CORS Proxy for Central API
- * Allows the web app (localhost:3000) to make requests to the API (localhost:4000)
+ * Allows local apps (localhost:3000 / localhost:3001) to make requests to the API (localhost:4000)
  */
 export function proxy(request: NextRequest) {
   // Get the origin from the request
@@ -13,6 +13,8 @@ export function proxy(request: NextRequest) {
   const allowedOrigins = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
     'https://dev.inspectos.co', // Development deployment
     'https://inspectos.co', // Production deployment
     process.env.NEXT_PUBLIC_WEB_URL, // Dynamic web app URL (prod or dev)

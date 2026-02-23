@@ -22,7 +22,12 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
   const apiClient = useApiClient();
 
   useEffect(() => {
-    const currentUserId = sessionUser?.id ?? null;
+    // Distinguish "still loading auth" from "no authenticated user".
+    const currentUserId = sessionUser === undefined ? undefined : (sessionUser?.id ?? null);
+
+    if (currentUserId === undefined) {
+      return;
+    }
 
     if (lastUserIdRef.current && lastUserIdRef.current !== currentUserId) {
       // Prevent cached tenant-scoped data from leaking between users/businesses.
@@ -53,6 +58,10 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
     () => apiClient.get<UserProfile>("/admin/profile"),
     { enabled: isAuthenticated, retry: false }
   );
+
+  if (isCheckingSession) {
+    return <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">Loading dashboard...</div>;
+  }
 
   if (!isAuthenticated) return null;
 

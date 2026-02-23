@@ -34,9 +34,9 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
   const imageCandidates = useMemo(() => {
     const base = isAgencyVariant
       ? [...(logoDevCandidate ? [logoDevCandidate] : []), ...(result?.logoUrl ? [result.logoUrl] : []), ...(result?.photoCandidates ?? [])]
-      : [...(result?.photoCandidates ?? [])];
+      : [...seenPhotos, ...(result?.photoCandidates ?? []), ...(result?.photoUrl ? [result.photoUrl] : [])];
     return Array.from(new Set(base));
-  }, [isAgencyVariant, result?.photoCandidates, result?.logoUrl, logoDevCandidate]);
+  }, [isAgencyVariant, seenPhotos, result?.photoCandidates, result?.photoUrl, result?.logoUrl, logoDevCandidate]);
   const imageCandidatesKey = useMemo(() => imageCandidates.join("|"), [imageCandidates]);
   const activePhotoUrl = imageCandidates[photoIndex] ?? result?.photoUrl ?? result?.logoUrl ?? logoDevCandidate ?? null;
   const activePhotoPosition = activePhotoUrl ? imageCandidates.indexOf(activePhotoUrl) : -1;
@@ -120,6 +120,14 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
       recordScrubPayload(payload, false);
     } catch (_) {
       // errors handled in hook state
+    }
+  };
+
+  const handlePreviousPhoto = () => {
+    if (!result || isScrubbing) return;
+    if (photoIndex > 0) {
+      setPhotoIndex((current) => current - 1);
+      setLastAppliedUrl(null);
     }
   };
 
@@ -272,8 +280,11 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
               <Button type="button" size="sm" onClick={handleApply} disabled={isScrubbing}>
                 {lastAppliedUrl === result.url ? "Applied" : applyButtonLabel}
               </Button>
+              <Button type="button" size="sm" variant="outline" onClick={handlePreviousPhoto} disabled={isScrubbing || !result || photoIndex <= 0}>
+                Previous image
+              </Button>
               <Button type="button" size="sm" variant="outline" onClick={handleCyclePhoto} disabled={isScrubbing || !result}>
-                {cycleButtonLabel}
+                Next image
               </Button>
               <span className="text-xs text-muted-foreground">{applyHelperText}</span>
             </div>

@@ -10,7 +10,7 @@ function getWebBaseUrl(): string {
   return (
     process.env.NEXT_PUBLIC_WEB_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000"
+    "http://localhost:3001"
   ).replace(/\/+$/, "");
 }
 
@@ -75,7 +75,7 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole, memberP
     }
   }
 
-  const returnUrl = `${getWebBaseUrl()}/app/settings/billing`;
+  const returnUrl = `${getWebBaseUrl()}/settings/billing`;
   const params = new URLSearchParams({
     customer: stripeCustomerId,
     return_url: returnUrl,

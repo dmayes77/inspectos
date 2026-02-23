@@ -76,7 +76,7 @@ export function AgencyLookupCard({ tenantSlug = DEFAULT_TENANT_SLUG }: { tenantS
     if (isSearching) return "Searching for matching brokerages...";
     if (error) return error;
     if (canSearch && results.length === 0) return "No matches yet. Try a domain or brokerage name.";
-    return brandSearchEnabled ? "Powered by Logo.dev Brand Search." : "Add LOGO_DEV_SECRET_KEY to enable Logo.dev Brand Search results.";
+    return brandSearchEnabled ? "Powered by Logo.dev Brand Search." : "Add LOGO_DEV_SECRET_KEY to apps/api server env to enable Logo.dev Brand Search results.";
   }, [brandSearchEnabled, canSearch, error, isSearching, results.length]);
 
   return (
