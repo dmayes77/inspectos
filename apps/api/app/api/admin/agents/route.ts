@@ -121,6 +121,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       notify_on_schedule: payload.notify_on_schedule ?? true,
       notify_on_complete: payload.notify_on_complete ?? true,
       notify_on_report: payload.notify_on_report ?? true,
+      portal_access_enabled: payload.portal_access_enabled ?? true,
       avatar_url: payload.avatar_url ?? null,
       brand_logo_url: payload.brand_logo_url ?? null,
       agency_address: payload.agency_address ?? null,

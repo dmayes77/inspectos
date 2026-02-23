@@ -22,6 +22,7 @@ export const createAgentSchema = z.object({
   notify_on_schedule: z.boolean().optional(),
   notify_on_complete: z.boolean().optional(),
   notify_on_report: z.boolean().optional(),
+  portal_access_enabled: z.boolean().optional(),
   avatar_url: z.string().max(5_000_000, "Avatar data is too large").optional().nullable(),
   brand_logo_url: z.string().max(5000).optional().nullable(),
   agency_address: z.string().max(1000).optional().nullable(),

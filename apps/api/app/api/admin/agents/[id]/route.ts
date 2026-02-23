@@ -101,9 +101,16 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (payload.notify_on_schedule !== undefined) updateData.notify_on_schedule = payload.notify_on_schedule;
   if (payload.notify_on_complete !== undefined) updateData.notify_on_complete = payload.notify_on_complete;
   if (payload.notify_on_report !== undefined) updateData.notify_on_report = payload.notify_on_report;
+  if (payload.portal_access_enabled !== undefined) updateData.portal_access_enabled = payload.portal_access_enabled;
   if (payload.avatar_url !== undefined) updateData.avatar_url = payload.avatar_url;
   if (payload.brand_logo_url !== undefined) updateData.brand_logo_url = payload.brand_logo_url;
   if (payload.agency_address !== undefined) updateData.agency_address = payload.agency_address;
+
+  // Revoking portal access must invalidate any existing link immediately.
+  if (payload.portal_access_enabled === false || payload.status === 'inactive') {
+    updateData.magic_link_token = null;
+    updateData.magic_link_expires_at = null;
+  }
 
   const { data: agent, error } = await supabase
     .from('agents')

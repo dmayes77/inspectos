@@ -4,10 +4,10 @@ import {
   readSessionTokensFromCookies,
   setSessionCookies,
 } from "@/lib/auth/session-cookies";
-import { createAnonClient, createUserClient, unauthorized } from "@/lib/supabase";
+import { createAnonClient, createServiceClient, unauthorized } from "@/lib/supabase";
 
-type WorkspaceMembership = {
-  role: string | null;
+type AgentWorkspaceRow = {
+  id: string;
   tenant:
     | {
         id: string;
@@ -24,28 +24,31 @@ type WorkspaceMembership = {
     | null;
 };
 
-async function fetchWorkspaces(accessToken: string, userId: string) {
-  const userClient = createUserClient(accessToken);
-  const { data, error } = await userClient
-    .from("tenant_members")
-    .select("role, tenant:tenants(id, name, slug, business_id)")
-    .eq("user_id", userId);
+async function fetchWorkspaces(email: string) {
+  const serviceClient = createServiceClient();
+  const normalizedEmail = email.trim().toLowerCase();
+  const { data, error } = await serviceClient
+    .from("agents")
+    .select("id, tenant:tenants(id, name, slug, business_id)")
+    .ilike("email", normalizedEmail)
+    .eq("status", "active")
+    .eq("portal_access_enabled", true);
 
   if (error) {
     throw error;
   }
 
-  const memberships = (data ?? []) as WorkspaceMembership[];
-  return memberships
-    .map((membership) => {
-      const tenantData = Array.isArray(membership.tenant) ? membership.tenant[0] : membership.tenant;
+  const workspaces = (data ?? []) as AgentWorkspaceRow[];
+  return workspaces
+    .map((workspace) => {
+      const tenantData = Array.isArray(workspace.tenant) ? workspace.tenant[0] : workspace.tenant;
       if (!tenantData) return null;
       return {
         id: tenantData.id,
         name: tenantData.name,
         slug: tenantData.slug,
         businessId: tenantData.business_id,
-        role: membership.role,
+        role: "agent",
       };
     })
     .filter((workspace): workspace is NonNullable<typeof workspace> => workspace !== null);
@@ -62,7 +65,11 @@ export async function GET(request: NextRequest) {
   if (accessToken) {
     const { data, error } = await supabase.auth.getUser(accessToken);
     if (!error && data.user) {
-      const workspaces = await fetchWorkspaces(accessToken, data.user.id);
+      const email = data.user.email?.trim().toLowerCase();
+      if (!email) {
+        return unauthorized("No email associated with account");
+      }
+      const workspaces = await fetchWorkspaces(email);
       return NextResponse.json({
         success: true,
         data: { workspaces },
@@ -90,7 +97,16 @@ export async function GET(request: NextRequest) {
     return clearSessionCookies(response);
   }
 
-  const workspaces = await fetchWorkspaces(refreshed.session.access_token, refreshed.user.id);
+  const email = refreshed.user.email?.trim().toLowerCase();
+  if (!email) {
+    const response = NextResponse.json(
+      { success: false, error: { code: "UNAUTHORIZED", message: "No email associated with account" } },
+      { status: 401 }
+    );
+    return clearSessionCookies(response);
+  }
+
+  const workspaces = await fetchWorkspaces(email);
   const response = NextResponse.json({
     success: true,
     data: {

@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd ../.. && pnpm -C apps/agent-portal build",
+  "outputDirectory": ".next",
+  "installCommand": "cd ../.. && pnpm install",
+  "git": {
+    "deploymentEnabled": {
+      "main": false,
+      "dev": true
+    }
+  }
+}

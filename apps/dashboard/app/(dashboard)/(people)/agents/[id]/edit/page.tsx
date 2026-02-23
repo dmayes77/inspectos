@@ -217,6 +217,7 @@ const toFormValues = (agent?: Agent | null): AgentFormValues => {
     notifyOnSchedule: agent?.notify_on_schedule ?? true,
     notifyOnComplete: agent?.notify_on_complete ?? true,
     notifyOnReport: agent?.notify_on_report ?? true,
+    portalAccessEnabled: agent?.portal_access_enabled ?? true,
     notes: agent?.notes ?? "",
   };
 };
@@ -330,6 +331,7 @@ export default function EditAgentPage() {
       notify_on_schedule: form.notifyOnSchedule,
       notify_on_complete: form.notifyOnComplete,
       notify_on_report: form.notifyOnReport,
+      portal_access_enabled: form.portalAccessEnabled,
       notes: normalize(form.notes),
       avatar_url: form.avatarUrl ?? null,
       brand_logo_url: normalize(form.brandLogoUrl ?? ""),

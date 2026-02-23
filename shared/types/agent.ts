@@ -13,6 +13,7 @@ export interface Agent {
   magic_link_token: string | null;
   magic_link_expires_at: string | null;
   last_portal_access_at: string | null;
+  portal_access_enabled: boolean;
   status: AgentStatus;
   notes: string | null;
   preferred_report_format: ReportFormat;
@@ -71,6 +72,7 @@ export interface CreateAgentInput {
   notify_on_schedule?: boolean;
   notify_on_complete?: boolean;
   notify_on_report?: boolean;
+  portal_access_enabled?: boolean;
   avatar_url?: string | null;
   brand_logo_url?: string | null;
   agency_address?: string | null;
@@ -92,6 +94,7 @@ export interface UpdateAgentInput {
   notify_on_schedule?: boolean;
   notify_on_complete?: boolean;
   notify_on_report?: boolean;
+  portal_access_enabled?: boolean;
   avatar_url?: string | null;
   brand_logo_url?: string | null;
   agency_address?: string | null;

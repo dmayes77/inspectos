@@ -67,7 +67,7 @@ export function useDeleteAgent() {
 export function useSendAgentPortalLink() {
   const apiClient = useApiClient();
   const agentsApi = createAgentsApi(apiClient);
-  return usePost<{ success: boolean; expires_at: string }, string>(
+  return usePost<{ success: boolean; expires_at: string; link?: string }, string>(
     agentsQueryKeys.all,
     async (agentId) => {
       return await agentsApi.sendPortalLink(agentId);
