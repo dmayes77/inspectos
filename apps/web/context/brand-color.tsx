@@ -115,6 +115,19 @@ export function applyBrandColor(hex: string) {
   root.style.setProperty("--ring", hex);
 }
 
+const BRAND_SHADES = [25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
+
+export function resetBrandColor() {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  for (const shade of BRAND_SHADES) {
+    root.style.removeProperty(`--color-brand-${shade}`);
+  }
+  root.style.removeProperty("--primary");
+  root.style.removeProperty("--brand");
+  root.style.removeProperty("--ring");
+}
+
 // ─── Provider ──────────────────────────────────────────────────────────────
 
 export function BrandColorProvider() {
@@ -122,8 +135,16 @@ export function BrandColorProvider() {
   const primaryColor = settings?.branding?.primaryColor;
 
   useEffect(() => {
-    if (!primaryColor) return;
+    if (!primaryColor) {
+      resetBrandColor();
+      return;
+    }
+
     applyBrandColor(primaryColor);
+
+    return () => {
+      resetBrandColor();
+    };
   }, [primaryColor]);
 
   return null;

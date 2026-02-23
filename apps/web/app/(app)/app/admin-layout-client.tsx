@@ -1,8 +1,9 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { AdminShell } from "@/layout/admin-shell";
 import { BrandColorProvider } from "@/context/brand-color";
@@ -12,8 +13,10 @@ import type { UserProfile } from "@/hooks/use-profile";
 
 export function AdminLayoutClient({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   // undefined = still checking, null = no session, Session = authenticated
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const lastUserIdRef = useRef<string | null>(null);
   const apiClient = useApiClient();
 
   useEffect(() => {
@@ -28,6 +31,21 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const currentUserId = session?.user?.id ?? null;
+
+    if (lastUserIdRef.current && lastUserIdRef.current !== currentUserId) {
+      // Prevent cached tenant-scoped data from leaking between users/businesses.
+      queryClient.clear();
+    }
+
+    if (currentUserId === null) {
+      queryClient.clear();
+    }
+
+    lastUserIdRef.current = currentUserId;
+  }, [queryClient, session?.user?.id]);
 
   // Redirect to login when session is gone — rAF lets open portals clean up first
   useEffect(() => {

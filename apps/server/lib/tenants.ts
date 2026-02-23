@@ -23,6 +23,23 @@ export async function resolveTenant(
   userId: string,
   tenantIdentifier?: string | null,
 ): Promise<{ tenant: TenantRecord | null; role?: TenantMemberRole; error?: Error }> {
+  const { data: memberships, error: membershipCountError } = await supabase
+    .from("tenant_members")
+    .select("tenant_id")
+    .eq("user_id", userId)
+    .limit(2);
+
+  if (membershipCountError) {
+    return { tenant: null, error: membershipCountError };
+  }
+
+  if ((memberships?.length ?? 0) > 1) {
+    return {
+      tenant: null,
+      error: new Error("Account is linked to multiple businesses. Tenant isolation violation."),
+    };
+  }
+
   const requestedIdentifier = tenantIdentifier?.trim();
 
   if (requestedIdentifier) {
@@ -62,6 +79,7 @@ export async function resolveTenant(
     .from("tenant_members")
     .select("role, tenant:tenants(id, name, slug, business_id)")
     .eq("user_id", userId)
+    .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
 

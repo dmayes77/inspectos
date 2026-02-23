@@ -178,6 +178,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     setServiceAssignments(assignments);
   }, [order?.id, order?.services, serviceNameMap]);
 
+  const selectedServices = useMemo(() => {
+    const selectedIds = serviceAssignments.filter((a) => a.selected).map((a) => a.serviceId);
+    return services.filter((service) => selectedIds.includes(service.serviceId));
+  }, [services, serviceAssignments]);
+
   const handleStatusChange = (newStatus: string) => {
     if (!order) return;
     updateOrder.mutate(
@@ -334,11 +339,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       }
     );
   };
-
-  const selectedServices = useMemo(() => {
-    const selectedIds = serviceAssignments.filter((a) => a.selected).map((a) => a.serviceId);
-    return services.filter((service) => selectedIds.includes(service.serviceId));
-  }, [services, serviceAssignments]);
 
   const handleServiceToggle = (serviceId: string, checked: boolean) => {
     setServiceAssignments((prev) => {

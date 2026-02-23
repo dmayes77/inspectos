@@ -201,6 +201,33 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
     return badRequest('Invalid email format');
   }
 
+  // Strict tenant isolation by email: one email can only belong to one business.
+  const { data: existingEmailProfile, error: existingEmailProfileError } = await serviceClient
+    .from('profiles')
+    .select('id')
+    .ilike('email', email)
+    .maybeSingle();
+
+  if (existingEmailProfileError) {
+    return serverError('Failed to verify existing email membership', existingEmailProfileError);
+  }
+
+  if (existingEmailProfile?.id) {
+    const { data: existingEmailMembership, error: existingEmailMembershipError } = await serviceClient
+      .from('tenant_members')
+      .select('tenant_id')
+      .eq('user_id', existingEmailProfile.id)
+      .maybeSingle();
+
+    if (existingEmailMembershipError) {
+      return serverError('Failed to verify existing email membership', existingEmailMembershipError);
+    }
+
+    if (existingEmailMembership && existingEmailMembership.tenant_id !== tenant.id) {
+      return badRequest('Email already belongs to another business');
+    }
+  }
+
   if (!rawRole || !nextMemberRole) {
     return badRequest('Role is required before sending an invite');
   }

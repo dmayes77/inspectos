@@ -160,6 +160,11 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
         memberRole = tenantResult.role;
 
         if (tenantResult.error || !tenant) {
+          const isolationViolation = tenantResult.error?.message?.includes("Tenant isolation violation");
+          if (isolationViolation) {
+            audit(403, 'authz_denied', 'tenant_isolation_violation', { userId: tokenUser.userId });
+            return badRequest('Account is linked to multiple businesses. Contact support to resolve membership.');
+          }
           audit(401, 'auth_failure', 'tenant_membership_missing', { userId: tokenUser.userId });
           return unauthorized('Business membership not found', { logContext: { route, method, ip, userId: tokenUser.userId } });
         }
