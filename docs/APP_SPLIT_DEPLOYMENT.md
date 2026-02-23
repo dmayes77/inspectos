@@ -3,7 +3,7 @@
 This repo now supports operational separation:
 
 - `apps/public` = marketing/public website
-- `apps/web` = authenticated dashboard app
+- `apps/dashboard` = authenticated dashboard app
 - `apps/server` = API
 - `apps/mobile` = mobile client
 
@@ -16,18 +16,18 @@ This repo now supports operational separation:
 ## Vercel project roots
 
 - Public project root: `apps/public`
-- Dashboard project root: `apps/web`
+- Dashboard project root: `apps/dashboard`
 - API project root: `apps/server`
 
 ## Environment variables
 
-### apps/web (dashboard)
+### apps/dashboard (dashboard)
 
 - `PUBLIC_SITE_URL=https://inspectos.co`
 - Existing app variables (`NEXT_PUBLIC_API_URL`, Supabase keys, etc.)
 
 Notes:
-- `apps/web` redirects `/`, `/pricing`, and `/data-charter` to `PUBLIC_SITE_URL`.
+- `apps/dashboard` redirects `/`, `/pricing`, and `/data-charter` to `PUBLIC_SITE_URL`.
 
 ### apps/public (marketing)
 
@@ -41,4 +41,3 @@ Notes:
 - Dashboard: `pnpm dev:web` (port 3000)
 - Public: `pnpm dev:public` (port 3001)
 - API: `pnpm dev:server` (port 4000)
-
