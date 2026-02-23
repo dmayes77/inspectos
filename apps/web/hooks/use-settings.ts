@@ -30,16 +30,25 @@ export type TenantSettings = {
     currency: string;
     baseMonthlyPrice: number;
     includedInspectors: number;
+    inspectorSeatCount: number;
     maxInspectors: number;
     additionalInspectorPrice: number;
+    subscriptionStatus?: string;
+    trialEndsAt?: string | null;
+    stripeCurrentPeriodStart?: string | null;
+    stripeCurrentPeriodEnd?: string | null;
+    stripeCancelAtPeriodEnd?: boolean;
   };
   onboarding: {
     dashboardWelcomeDismissedAt: string | null;
   };
   business: {
     businessId: string;
-    inspectorSeatCount: number;
+    inspectorSeatCount: number; // seats currently assigned/in use
     inspectorBilling: {
+      selectedInspectorSeats: number;
+      usedInspectorSeats: number;
+      remainingInspectorSeats: number;
       includedInspectors: number;
       maxInspectors: number;
       additionalInspectorPrice: number;
@@ -47,11 +56,29 @@ export type TenantSettings = {
       additionalSeatsMonthlyCharge: number;
       estimatedMonthlyTotal: number;
       overSeatLimitBy: number;
+      overAssignedSeats: number;
       currency: string;
     };
     apiKeyPreview: string;
     apiKeyLastRotatedAt: string | null;
   };
+};
+
+type BillingPortalResponse = {
+  url: string;
+};
+
+type ChangeBillingPlanPayload = {
+  planCode: "growth" | "team";
+};
+
+type ChangeBillingPlanResponse = {
+  changed: boolean;
+  planCode?: string;
+  planName?: string;
+  selectedInspectorSeats?: number;
+  seatQuantity?: number;
+  message?: string;
 };
 
 const defaultSettings: TenantSettings = {
@@ -82,8 +109,14 @@ const defaultSettings: TenantSettings = {
     currency: "USD",
     baseMonthlyPrice: 499,
     includedInspectors: 1,
+    inspectorSeatCount: 1,
     maxInspectors: 5,
     additionalInspectorPrice: 99,
+    subscriptionStatus: "trialing",
+    trialEndsAt: null,
+    stripeCurrentPeriodStart: null,
+    stripeCurrentPeriodEnd: null,
+    stripeCancelAtPeriodEnd: false,
   },
   onboarding: {
     dashboardWelcomeDismissedAt: null,
@@ -92,6 +125,9 @@ const defaultSettings: TenantSettings = {
     businessId: "",
     inspectorSeatCount: 0,
     inspectorBilling: {
+      selectedInspectorSeats: 1,
+      usedInspectorSeats: 0,
+      remainingInspectorSeats: 1,
       includedInspectors: 1,
       maxInspectors: 5,
       additionalInspectorPrice: 99,
@@ -99,6 +135,7 @@ const defaultSettings: TenantSettings = {
       additionalSeatsMonthlyCharge: 0,
       estimatedMonthlyTotal: 499,
       overSeatLimitBy: 0,
+      overAssignedSeats: 0,
       currency: "USD",
     },
     apiKeyPreview: "",
@@ -130,6 +167,26 @@ export function useRegenerateApiKey() {
     "settings",
     async () => {
       return await apiClient.post<{ apiKey: string; apiKeyPreview: string; apiKeyLastRotatedAt: string }>('/admin/settings/api-key', undefined);
+    }
+  );
+}
+
+export function useCreateBillingPortalSession() {
+  const apiClient = useApiClient();
+  return usePost<BillingPortalResponse, void>(
+    "settings",
+    async () => {
+      return await apiClient.post<BillingPortalResponse>("/admin/billing/portal", undefined);
+    }
+  );
+}
+
+export function useChangeBillingPlan() {
+  const apiClient = useApiClient();
+  return usePost<ChangeBillingPlanResponse, ChangeBillingPlanPayload>(
+    "settings",
+    async (payload) => {
+      return await apiClient.post<ChangeBillingPlanResponse>("/admin/billing/plan", payload);
     }
   );
 }

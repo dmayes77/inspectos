@@ -23,7 +23,7 @@ type StripeListItem = {
 };
 
 type SeatSyncResult =
-  | { status: "synced"; inspectorSeatCount: number; seatQuantity: number }
+  | { status: "synced"; inspectorSeatCount: number; usedInspectorSeatCount: number; seatQuantity: number }
   | { status: "skipped"; reason: string }
   | { status: "failed"; error: string };
 
@@ -159,7 +159,7 @@ export async function syncStripeSeatQuantityForTenant(
       throw new Error(`Missing ${seatPriceEnv} for plan ${planCode}`);
     }
 
-    const inspectorSeatCount = await countInspectorSeats(serviceClient, tenantId);
+    const usedInspectorSeatCount = await countInspectorSeats(serviceClient, tenantId);
     const includedInspectors = Math.max(
       0,
       Number(
@@ -167,6 +167,17 @@ export async function syncStripeSeatQuantityForTenant(
           BILLING_PLAN_DEFAULTS[planCode].includedInspectors
       )
     );
+    const maxInspectors = Math.max(
+      includedInspectors,
+      Number(
+        billing.maxInspectors ??
+          BILLING_PLAN_DEFAULTS[planCode].maxInspectors
+      )
+    );
+    const configuredInspectorSeatCount = Number(billing.inspectorSeatCount);
+    const inspectorSeatCount = Number.isFinite(configuredInspectorSeatCount)
+      ? Math.max(includedInspectors, Math.min(maxInspectors, configuredInspectorSeatCount))
+      : Math.max(includedInspectors, usedInspectorSeatCount);
     const seatQuantity = Math.max(0, inspectorSeatCount - includedInspectors);
 
     const subscription = await stripeRequest({
@@ -214,12 +225,13 @@ export async function syncStripeSeatQuantityForTenant(
 
     await updateTenantBillingSettings(serviceClient, tenantId, {
       stripeSeatQuantity: seatQuantity,
-      stripeInspectorSeatCount: inspectorSeatCount,
+      stripeInspectorSeatCount: usedInspectorSeatCount,
+      stripePurchasedInspectorSeatCount: inspectorSeatCount,
       stripeSeatSyncedAt: new Date().toISOString(),
       stripeSeatSyncLastError: null,
     });
 
-    return { status: "synced", inspectorSeatCount, seatQuantity };
+    return { status: "synced", inspectorSeatCount, usedInspectorSeatCount, seatQuantity };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown seat sync error";
     try {

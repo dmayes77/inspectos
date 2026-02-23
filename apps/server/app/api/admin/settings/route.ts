@@ -1,6 +1,7 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
 
 // Default settings structure
 const defaultSettings = {
@@ -28,8 +29,14 @@ const defaultSettings = {
     currency: 'USD',
     baseMonthlyPrice: 499,
     includedInspectors: 1,
+    inspectorSeatCount: 1,
     maxInspectors: 5,
     additionalInspectorPrice: 99,
+    subscriptionStatus: 'trialing',
+    trialEndsAt: null as string | null,
+    stripeCurrentPeriodStart: null as string | null,
+    stripeCurrentPeriodEnd: null as string | null,
+    stripeCancelAtPeriodEnd: false,
   },
   onboarding: {
     dashboardWelcomeDismissedAt: null as string | null,
@@ -40,8 +47,11 @@ type TenantSettings = typeof defaultSettings;
 type SettingsResponse = TenantSettings & {
   business: {
     businessId: string;
-    inspectorSeatCount: number;
+    inspectorSeatCount: number; // seats currently assigned/in use
     inspectorBilling: {
+      selectedInspectorSeats: number; // seats purchased/configured for billing
+      usedInspectorSeats: number;
+      remainingInspectorSeats: number;
       includedInspectors: number;
       maxInspectors: number;
       additionalInspectorPrice: number;
@@ -49,10 +59,15 @@ type SettingsResponse = TenantSettings & {
       additionalSeatsMonthlyCharge: number;
       estimatedMonthlyTotal: number;
       overSeatLimitBy: number;
+      overAssignedSeats: number;
       currency: string;
     };
     apiKeyPreview: string;
     apiKeyLastRotatedAt: string | null;
+  };
+  billingSeatSync?: {
+    status: string;
+    [key: string]: unknown;
   };
 };
 
@@ -62,10 +77,21 @@ function getBillingConfig(settings: Partial<TenantSettings> | null | undefined) 
   const maxInspectors = Math.max(includedInspectors, Number((source as { maxInspectors?: number }).maxInspectors ?? 5));
   const additionalInspectorPrice = Math.max(0, Number((source as { additionalInspectorPrice?: number }).additionalInspectorPrice ?? 99));
   const baseMonthlyPrice = Math.max(0, Number((source as { baseMonthlyPrice?: number }).baseMonthlyPrice ?? 499));
+  const configuredInspectorSeats = Math.max(
+    includedInspectors,
+    Number((source as { inspectorSeatCount?: number }).inspectorSeatCount ?? Number.NaN)
+  );
+  const stripeSeatQuantity = Math.max(0, Number((source as { stripeSeatQuantity?: number }).stripeSeatQuantity ?? Number.NaN));
+  const selectedInspectorSeats = Number.isFinite(configuredInspectorSeats)
+    ? configuredInspectorSeats
+    : Number.isFinite(stripeSeatQuantity)
+      ? includedInspectors + stripeSeatQuantity
+      : includedInspectors;
   const currency = typeof (source as { currency?: string }).currency === 'string' && (source as { currency?: string }).currency
     ? (source as { currency: string }).currency
     : 'USD';
   return {
+    selectedInspectorSeats,
     includedInspectors,
     maxInspectors,
     additionalInspectorPrice,
@@ -75,15 +101,21 @@ function getBillingConfig(settings: Partial<TenantSettings> | null | undefined) 
 }
 
 function computeInspectorBilling(
-  inspectorSeatCount: number,
+  usedInspectorSeats: number,
   config: ReturnType<typeof getBillingConfig>
 ) {
-  const billableAdditionalSeats = Math.max(0, inspectorSeatCount - config.includedInspectors);
+  const selectedInspectorSeats = Math.max(config.includedInspectors, config.selectedInspectorSeats);
+  const remainingInspectorSeats = Math.max(0, selectedInspectorSeats - usedInspectorSeats);
+  const overAssignedSeats = Math.max(0, usedInspectorSeats - selectedInspectorSeats);
+  const billableAdditionalSeats = Math.max(0, selectedInspectorSeats - config.includedInspectors);
   const additionalSeatsMonthlyCharge = billableAdditionalSeats * config.additionalInspectorPrice;
   const estimatedMonthlyTotal = config.baseMonthlyPrice + additionalSeatsMonthlyCharge;
-  const overSeatLimitBy = Math.max(0, inspectorSeatCount - config.maxInspectors);
+  const overSeatLimitBy = Math.max(0, selectedInspectorSeats - config.maxInspectors);
 
   return {
+    selectedInspectorSeats,
+    usedInspectorSeats,
+    remainingInspectorSeats,
     includedInspectors: config.includedInspectors,
     maxInspectors: config.maxInspectors,
     additionalInspectorPrice: config.additionalInspectorPrice,
@@ -91,6 +123,7 @@ function computeInspectorBilling(
     additionalSeatsMonthlyCharge,
     estimatedMonthlyTotal,
     overSeatLimitBy,
+    overAssignedSeats,
     currency: config.currency,
   };
 }
@@ -186,6 +219,10 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
 
   const body = await request.json();
   const updates = body as Partial<TenantSettings>;
+  const { inspectorSeatCount: usedInspectorSeatCount, error: usedSeatCountError } = await countInspectorSeats(serviceClient, tenant.id);
+  if (usedSeatCountError) {
+    return serverError('Failed to fetch inspector seat count', usedSeatCountError);
+  }
 
   // Get current settings
   const { data: current, error: fetchError } = await serviceClient
@@ -204,6 +241,7 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
 
   // Deep merge settings
   const currentSettings = (current?.settings as Partial<TenantSettings>) || {};
+  const currentBilling = (currentSettings.billing ?? defaultSettings.billing) as Partial<TenantSettings['billing']>;
   const newSettings: TenantSettings = {
     company: { ...defaultSettings.company, ...currentSettings.company, ...updates.company },
     branding: { ...defaultSettings.branding, ...currentSettings.branding, ...updates.branding },
@@ -211,6 +249,29 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
     billing: { ...defaultSettings.billing, ...currentSettings.billing, ...updates.billing },
     onboarding: { ...defaultSettings.onboarding, ...currentSettings.onboarding, ...updates.onboarding },
   };
+
+  const requestedSeatCount = updates.billing
+    ? Number((updates.billing as Partial<TenantSettings['billing']>).inspectorSeatCount)
+    : Number.NaN;
+
+  if (Number.isFinite(requestedSeatCount)) {
+    const normalizedSeatCount = Math.round(requestedSeatCount);
+    const includedInspectors = Math.max(0, Number(newSettings.billing.includedInspectors ?? defaultSettings.billing.includedInspectors));
+    const maxInspectors = Math.max(includedInspectors, Number(newSettings.billing.maxInspectors ?? defaultSettings.billing.maxInspectors));
+
+    if (normalizedSeatCount < includedInspectors || normalizedSeatCount > maxInspectors) {
+      return badRequest(`Inspector seats must be between ${includedInspectors} and ${maxInspectors} for this plan.`);
+    }
+
+    if (normalizedSeatCount < usedInspectorSeatCount) {
+      return badRequest(`Cannot set purchased seats below active inspector assignments (${usedInspectorSeatCount}).`);
+    }
+
+    newSettings.billing = {
+      ...newSettings.billing,
+      inspectorSeatCount: normalizedSeatCount,
+    };
+  }
 
   // Update tenant settings
   const { data, error } = await serviceClient
@@ -228,6 +289,19 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
     return badRequest('Business not found');
   }
 
+  const nextBilling = (newSettings.billing ?? defaultSettings.billing) as Partial<TenantSettings['billing']>;
+  const previousPurchasedSeats = Number(currentBilling.inspectorSeatCount ?? Number.NaN);
+  const nextPurchasedSeats = Number(nextBilling.inspectorSeatCount ?? Number.NaN);
+  const shouldSyncSeats =
+    previousPurchasedSeats !== nextPurchasedSeats ||
+    currentBilling.planCode !== nextBilling.planCode ||
+    currentBilling.stripePlanCode !== nextBilling.stripePlanCode ||
+    currentBilling.includedInspectors !== nextBilling.includedInspectors;
+
+  const seatSync = shouldSyncSeats
+    ? await syncStripeSeatQuantityForTenant(serviceClient, tenant.id)
+    : { status: 'skipped', reason: 'No billing seat changes detected' };
+
   const { data: keyData } = await serviceClient
     .from('business_api_keys')
     .select('key_prefix, created_at')
@@ -237,22 +311,19 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
     .limit(1)
     .maybeSingle();
 
-  const { inspectorSeatCount, error: seatCountError } = await countInspectorSeats(serviceClient, tenant.id);
-  if (seatCountError) {
-    return serverError('Failed to fetch inspector seat count', seatCountError);
-  }
   const billingConfig = getBillingConfig(newSettings);
-  const inspectorBilling = computeInspectorBilling(inspectorSeatCount, billingConfig);
+  const inspectorBilling = computeInspectorBilling(usedInspectorSeatCount, billingConfig);
 
   const response: SettingsResponse = {
     ...newSettings,
     business: {
       businessId: data?.business_id ?? '',
-      inspectorSeatCount,
+      inspectorSeatCount: usedInspectorSeatCount,
       inspectorBilling,
       apiKeyPreview: keyData?.key_prefix ? `${keyData.key_prefix}••••••••` : '',
       apiKeyLastRotatedAt: keyData?.created_at ?? null,
     },
+    billingSeatSync: seatSync,
   };
 
   return success(response);

@@ -116,11 +116,13 @@ export async function POST(request: NextRequest) {
   const includedInspectors = BILLING_PLAN_DEFAULTS[planCode].includedInspectors;
   const maxInspectors = BILLING_PLAN_DEFAULTS[planCode].maxInspectors;
   let additionalSeatQuantity = 0;
+  let selectedInspectorSeatCount = includedInspectors;
   try {
     const requestedInspectorSeatCount = Number(body.inspector_seat_count);
     const inspectorSeatCount = Number.isFinite(requestedInspectorSeatCount)
       ? Math.max(1, Math.min(maxInspectors, requestedInspectorSeatCount))
       : await countInspectorSeats(tenantId);
+    selectedInspectorSeatCount = inspectorSeatCount;
     additionalSeatQuantity = Math.max(0, inspectorSeatCount - includedInspectors);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to resolve inspector seats";
@@ -196,6 +198,7 @@ export async function POST(request: NextRequest) {
     ...currentSettings,
     billing: {
       ...currentSettings.billing,
+      inspectorSeatCount: selectedInspectorSeatCount,
       stripeCheckoutSessionId: stripePayload.id,
       stripeCheckoutCreatedAt: new Date().toISOString(),
       stripePlanCode: planCode,

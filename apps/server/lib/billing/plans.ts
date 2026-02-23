@@ -29,13 +29,13 @@ export const BILLING_PLAN_DEFAULTS: Record<PlanCode, PlanDefaults> = {
 };
 
 export const STRIPE_BASE_PRICE_ENV_BY_PLAN: Record<PlanCode, string> = {
-  growth: "STRIPE_PRICE_ID_GROWTH",
-  team: "STRIPE_PRICE_ID_TEAM",
+  growth: "STRIPE_BASE_PRICE_GROWTH",
+  team: "STRIPE_BASE_PRICE_TEAM",
 };
 
 export const STRIPE_SEAT_PRICE_ENV_BY_PLAN: Record<PlanCode, string> = {
-  growth: "STRIPE_PRICE_ID_GROWTH_SEAT",
-  team: "STRIPE_PRICE_ID_TEAM_SEAT",
+  growth: "STRIPE_SEAT_PRICE_GROWTH",
+  team: "STRIPE_SEAT_PRICE_TEAM",
 };
 
 export function normalizePlanCode(value: unknown): PlanCode | null {
