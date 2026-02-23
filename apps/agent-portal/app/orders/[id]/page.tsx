@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useAgentOrder } from "@/hooks/use-agent-orders";
 import { getStoredWorkspaceSlug, setStoredWorkspaceSlug } from "@/lib/workspace/selection";
 
-export default function AgentPortalOrderDetailPage() {
+function AgentPortalOrderDetailContent() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const queryBusiness = searchParams.get("business");
@@ -133,5 +133,13 @@ export default function AgentPortalOrderDetailPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function AgentPortalOrderDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <AgentPortalOrderDetailContent />
+    </Suspense>
   );
 }
