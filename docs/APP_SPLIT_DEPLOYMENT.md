@@ -5,7 +5,7 @@ This repo now supports operational separation:
 - `apps/public` = marketing/public website
 - `apps/dashboard` = authenticated dashboard app
 - `apps/platform` = internal platform administration app
-- `apps/server` = API
+- `apps/api` = API
 - `apps/mobile` = mobile client
 
 ## Recommended domains
@@ -20,7 +20,7 @@ This repo now supports operational separation:
 - Public project root: `apps/public`
 - Dashboard project root: `apps/dashboard`
 - Platform project root: `apps/platform`
-- API project root: `apps/server`
+- API project root: `apps/api`
 
 ## Environment variables
 
@@ -51,4 +51,4 @@ Notes:
 - Dashboard: `pnpm dev:web` (port 3000)
 - Public: `pnpm dev:public` (port 3001)
 - Platform: `pnpm dev:platform` (port 3002)
-- API: `pnpm dev:server` (port 4000)
+- API: `pnpm dev:api` (port 4000)

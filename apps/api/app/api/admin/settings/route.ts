@@ -295,7 +295,6 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
   const shouldSyncSeats =
     previousPurchasedSeats !== nextPurchasedSeats ||
     currentBilling.planCode !== nextBilling.planCode ||
-    currentBilling.stripePlanCode !== nextBilling.stripePlanCode ||
     currentBilling.includedInspectors !== nextBilling.includedInspectors;
 
   const seatSync = shouldSyncSeats

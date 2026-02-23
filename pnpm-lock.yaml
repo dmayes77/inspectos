@@ -18,6 +18,55 @@ importers:
         specifier: 16.1.2
         version: 16.1.2(@babel/core@7.28.6)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
 
+  apps/api:
+    dependencies:
+      '@inspectos/auth':
+        specifier: workspace:*
+        version: link:../../auth
+      '@inspectos/database':
+        specifier: workspace:*
+        version: link:../../database
+      '@inspectos/shared':
+        specifier: workspace:*
+        version: link:../../shared
+      '@supabase/supabase-js':
+        specifier: ^2.90.1
+        version: 2.91.0
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
+      next:
+        specifier: 16.1.2
+        version: 16.1.2(@babel/core@7.28.6)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+      zod:
+        specifier: ^4.3.5
+        version: 4.3.5
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.30
+      '@types/react':
+        specifier: ^19
+        version: 19.2.9
+      '@types/react-dom':
+        specifier: ^19
+        version: 19.2.3(@types/react@19.2.9)
+      eslint:
+        specifier: ^9
+        version: 9.39.2(jiti@2.6.1)
+      eslint-config-next:
+        specifier: 16.1.2
+        version: 16.1.2(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+
   apps/dashboard:
     dependencies:
       '@dnd-kit/core':
@@ -426,55 +475,6 @@ importers:
       tailwindcss:
         specifier: 4.1.18
         version: 4.1.18
-      typescript:
-        specifier: ^5
-        version: 5.9.3
-
-  apps/server:
-    dependencies:
-      '@inspectos/auth':
-        specifier: workspace:*
-        version: link:../../auth
-      '@inspectos/database':
-        specifier: workspace:*
-        version: link:../../database
-      '@inspectos/shared':
-        specifier: workspace:*
-        version: link:../../shared
-      '@supabase/supabase-js':
-        specifier: ^2.90.1
-        version: 2.91.0
-      date-fns:
-        specifier: ^4.1.0
-        version: 4.1.0
-      next:
-        specifier: 16.1.2
-        version: 16.1.2(@babel/core@7.28.6)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      react:
-        specifier: 19.2.3
-        version: 19.2.3
-      react-dom:
-        specifier: 19.2.3
-        version: 19.2.3(react@19.2.3)
-      zod:
-        specifier: ^4.3.5
-        version: 4.3.5
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.30
-      '@types/react':
-        specifier: ^19
-        version: 19.2.9
-      '@types/react-dom':
-        specifier: ^19
-        version: 19.2.3(@types/react@19.2.9)
-      eslint:
-        specifier: ^9
-        version: 9.39.2(jiti@2.6.1)
-      eslint-config-next:
-        specifier: 16.1.2
-        version: 16.1.2(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       typescript:
         specifier: ^5
         version: 5.9.3
