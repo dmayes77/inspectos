@@ -10,7 +10,10 @@ function AgentPortalLoginContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
   const agentId = searchParams.get("agent")?.trim() ?? "";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInviteSubmitting, setIsInviteSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const apiBase = useMemo(() => {
@@ -19,28 +22,58 @@ function AgentPortalLoginContent() {
 
   const canConsumeInvite = Boolean(token && agentId);
 
-  const handleSignIn = async () => {
+  const handleInviteContinue = async () => {
     if (!canConsumeInvite) return;
 
-    setIsSubmitting(true);
+    setIsInviteSubmitting(true);
     setError(null);
     try {
       const response = await fetch(`${apiBase}/agent-portal/auth/consume-link`, {
         method: "POST",
         credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          token,
-          agent_id: agentId,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, agent_id: agentId }),
       });
 
       const payload = await response.json().catch(() => null);
       if (!response.ok || !payload?.success) {
-        const message = payload?.error?.message ?? "Sign-in link is invalid or expired.";
-        setError(message);
+        setError(payload?.error?.message ?? "Sign-in link is invalid or expired.");
+        return;
+      }
+
+      const workspaceSlug = payload?.data?.workspace?.slug;
+      if (workspaceSlug) {
+        setStoredWorkspaceSlug(workspaceSlug);
+      }
+
+      if (payload?.data?.onboarding_required) {
+        router.replace(`/onboarding?token=${encodeURIComponent(token)}&agent=${encodeURIComponent(agentId)}`);
+        return;
+      }
+
+      router.replace(workspaceSlug ? `/orders?business=${encodeURIComponent(workspaceSlug)}` : "/workspaces");
+    } catch {
+      setError("Unable to validate invite link. Please try again.");
+    } finally {
+      setIsInviteSubmitting(false);
+    }
+  };
+
+  const handlePasswordLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`${apiBase}/agent-portal/auth/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.success) {
+        setError(payload?.error?.message ?? "Invalid email or password.");
         return;
       }
 
@@ -50,7 +83,7 @@ function AgentPortalLoginContent() {
       }
       router.replace(workspaceSlug ? `/orders?business=${encodeURIComponent(workspaceSlug)}` : "/workspaces");
     } catch {
-      setError("Unable to complete sign in. Please try again.");
+      setError("Unable to sign in. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,49 +99,104 @@ function AgentPortalLoginContent() {
           borderRadius: "16px",
           padding: "2rem",
           boxShadow: "0 12px 40px rgba(15, 23, 42, 0.06)",
+          display: "grid",
+          gap: "1rem",
         }}
       >
         <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.85rem", letterSpacing: "0.08em", textTransform: "uppercase" }}>
           InspectOS Agent Portal
         </p>
-        <h1 style={{ marginTop: "0.5rem", marginBottom: "0.75rem", fontSize: "1.8rem", lineHeight: 1.2 }}>Sign in</h1>
+        <h1 style={{ margin: 0, fontSize: "1.8rem", lineHeight: 1.2 }}>Sign in</h1>
         <p style={{ marginTop: 0, color: "var(--muted)", lineHeight: 1.6 }}>
-          Access to this portal is managed by your tenant admin. Use your invite link to continue.
+          Use your email/password after setup. Invite links are for first-time access and onboarding.
         </p>
 
-        {canConsumeInvite ? (
-          <div style={{ display: "grid", gap: "0.75rem", marginTop: "1rem" }}>
+        {canConsumeInvite && (
+          <div style={{ border: "1px solid var(--border)", borderRadius: "12px", padding: "0.9rem" }}>
+            <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.9rem" }}>
+              First time here? Continue with your invite link to verify your profile and set a password.
+            </p>
             <button
               type="button"
-              onClick={handleSignIn}
-              disabled={isSubmitting}
+              onClick={handleInviteContinue}
+              disabled={isInviteSubmitting}
               style={{
-                marginTop: "0.25rem",
+                marginTop: "0.75rem",
+                width: "100%",
                 border: "none",
                 borderRadius: "10px",
                 padding: "0.75rem 0.9rem",
                 fontWeight: 600,
                 background: "var(--accent)",
                 color: "white",
-                cursor: isSubmitting ? "default" : "pointer",
-                opacity: isSubmitting ? 0.8 : 1,
+                cursor: isInviteSubmitting ? "default" : "pointer",
+                opacity: isInviteSubmitting ? 0.8 : 1,
               }}
             >
-              {isSubmitting ? "Signing in..." : "Sign in"}
+              {isInviteSubmitting ? "Checking invite..." : "Continue with invite link"}
             </button>
-            {error && (
-              <p style={{ margin: 0, color: "#b42318", fontSize: "0.9rem" }}>
-                {error}
-              </p>
-            )}
           </div>
-        ) : (
-          <p style={{ marginTop: "1rem", color: "var(--muted)", fontSize: "0.9rem" }}>
-            Invite link missing. Ask your tenant admin to send a new portal invite.
+        )}
+
+        <form onSubmit={handlePasswordLogin} style={{ display: "grid", gap: "0.75rem" }}>
+          <label style={{ display: "grid", gap: "0.35rem", fontSize: "0.9rem" }}>
+            Email
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "10px",
+                padding: "0.7rem 0.75rem",
+                background: "transparent",
+                color: "inherit",
+              }}
+            />
+          </label>
+          <label style={{ display: "grid", gap: "0.35rem", fontSize: "0.9rem" }}>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "10px",
+                padding: "0.7rem 0.75rem",
+                background: "transparent",
+                color: "inherit",
+              }}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              marginTop: "0.25rem",
+              border: "none",
+              borderRadius: "10px",
+              padding: "0.75rem 0.9rem",
+              fontWeight: 600,
+              background: "var(--accent)",
+              color: "white",
+              cursor: isSubmitting ? "default" : "pointer",
+              opacity: isSubmitting ? 0.8 : 1,
+            }}
+          >
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+
+        {error && (
+          <p style={{ margin: 0, color: "#b42318", fontSize: "0.9rem" }}>
+            {error}
           </p>
         )}
 
-        <p style={{ marginTop: "1rem", color: "var(--muted)", fontSize: "0.9rem" }}>
+        <p style={{ margin: 0, color: "var(--muted)", fontSize: "0.9rem" }}>
           Need access? <Link href="/register">Request access</Link>
         </p>
       </section>

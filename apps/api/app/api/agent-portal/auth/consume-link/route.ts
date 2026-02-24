@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { badRequest, createServiceClient, unauthorized } from "@/lib/supabase";
-import {
-  AGENT_PORTAL_AGENT_COOKIE,
-  AGENT_PORTAL_TOKEN_COOKIE,
-} from "@/lib/agent-portal/session";
+import { setAgentPortalSessionCookies } from "@/lib/agent-portal/session";
 
 type ConsumeLinkBody = {
   token?: string;
@@ -22,7 +19,7 @@ export async function POST(request: NextRequest) {
   const serviceClient = createServiceClient();
   const { data: agent, error } = await serviceClient
     .from("agents")
-    .select("id, tenant:tenants(id, name, slug, business_id), status, portal_access_enabled, magic_link_expires_at")
+    .select("id, name, email, phone, portal_password_hash, tenant:tenants(id, name, slug, business_id), status, portal_access_enabled, magic_link_expires_at")
     .eq("id", agentId)
     .eq("magic_link_token", token)
     .maybeSingle();
@@ -44,42 +41,37 @@ export async function POST(request: NextRequest) {
     return unauthorized("Tenant not found for this invite.");
   }
 
+  const onboardingRequired = !agent.portal_password_hash;
   await serviceClient
     .from("agents")
-    .update({ last_portal_access_at: new Date().toISOString() })
+    .update({
+      last_portal_access_at: new Date().toISOString(),
+      portal_invite_consumed_at: onboardingRequired ? new Date().toISOString() : undefined,
+    })
     .eq("id", agentId);
 
-  const response = NextResponse.json({
-    success: true,
-    data: {
-      workspace: {
-        id: tenantData.id,
-        name: tenantData.name,
-        slug: tenantData.slug,
-        businessId: tenantData.business_id,
-        role: "agent",
+  const response = setAgentPortalSessionCookies(
+    NextResponse.json({
+      success: true,
+      data: {
+        onboarding_required: onboardingRequired,
+        profile: {
+          name: agent.name,
+          email: agent.email,
+          phone: agent.phone,
+        },
+        workspace: {
+          id: tenantData.id,
+          name: tenantData.name,
+          slug: tenantData.slug,
+          businessId: tenantData.business_id,
+          role: "agent",
+        },
       },
-    },
-  });
-
-  response.cookies.set({
-    name: AGENT_PORTAL_TOKEN_COOKIE,
-    value: token,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-  response.cookies.set({
-    name: AGENT_PORTAL_AGENT_COOKIE,
-    value: agentId,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+    }),
+    token,
+    agentId
+  );
 
   return response;
 }

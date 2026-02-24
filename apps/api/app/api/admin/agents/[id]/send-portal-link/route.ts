@@ -123,11 +123,12 @@ export const POST = withAuth<{ id: string }>(async ({ supabase, serviceClient, t
     await sendSmtpTestEmail({
       config: smtpConfig,
       toEmail: agent.email,
-      subject: `${tenant.name} invited you to the InspectOS Agent Portal`,
+      subject: `${tenant.name} invited you to set up InspectOS Agent Portal access`,
       text: [
         `Hi ${agent.name},`,
         "",
         `${tenant.name} granted you access to the InspectOS Agent Portal.`,
+        "Use this link to verify your profile and set your password for future sign-ins.",
         "",
         `Sign in link: ${link}`,
         `This link expires on ${new Date(expiresAt).toLocaleString()}.`,

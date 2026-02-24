@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { createServiceClient, success, unauthorized } from "@/lib/supabase";
-import { resolveAgentPortalSession } from "@/lib/agent-portal/session";
+import { createServiceClient, forbidden, success, unauthorized } from "@/lib/supabase";
+import { isAgentPortalOnboardingRequired, resolveAgentPortalSession } from "@/lib/agent-portal/session";
 
 type WorkspaceRow = {
   id: string;
@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
   const agentSession = await resolveAgentPortalSession(request);
   if (!agentSession) {
     return unauthorized("Not authenticated");
+  }
+  if (isAgentPortalOnboardingRequired(agentSession)) {
+    return forbidden("Complete onboarding before accessing workspaces.");
   }
 
   const serviceClient = createServiceClient();
