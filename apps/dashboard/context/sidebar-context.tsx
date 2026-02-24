@@ -8,6 +8,7 @@ interface SidebarContextType {
   isHovered: boolean;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
   setIsHovered: (value: boolean) => void;
 }
 
@@ -31,6 +32,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
 
   const toggleSidebar = () => setIsExpanded((prev) => !prev);
   const toggleMobileSidebar = () => setIsMobileOpen((prev) => !prev);
+  const closeMobileSidebar = () => setIsMobileOpen(false);
 
   return (
     <SidebarContext.Provider
@@ -40,6 +42,7 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
         isHovered,
         toggleSidebar,
         toggleMobileSidebar,
+        closeMobileSidebar,
         setIsHovered,
       }}
     >

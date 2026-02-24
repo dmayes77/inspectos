@@ -25,13 +25,18 @@ function SidebarNavItem({
   label,
 }: NavItem) {
   const pathname = usePathname();
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { isExpanded, isHovered, isMobileOpen, closeMobileSidebar } = useSidebar();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
   const showLabel = isExpanded || isHovered || isMobileOpen;
 
   return (
     <Link
       href={href}
+      onClick={() => {
+        if (isMobileOpen) {
+          closeMobileSidebar();
+        }
+      }}
       className={cn(
         "menu-item group",
         !showLabel && "lg:justify-center",
@@ -59,16 +64,16 @@ export function AdminSidebar({
   businessName,
   businessLogo,
 }: AdminSidebarProps) {
-  const { isExpanded, isHovered, isMobileOpen, setIsHovered } = useSidebar();
+  const { isExpanded, isHovered, isMobileOpen, setIsHovered, closeMobileSidebar } = useSidebar();
   const showFull = isExpanded || isHovered || isMobileOpen;
 
   return (
     <aside
       data-sidebar
       className={cn(
-        "fixed mt-14 flex flex-col lg:mt-0 top-0 left-0 bg-white dark:bg-gray-900",
+        "fixed top-14 left-0 flex h-[calc(100dvh-56px)] flex-col bg-white dark:bg-gray-900 lg:top-0 lg:h-screen",
         "border-r border-gray-200 dark:border-gray-800",
-        "h-screen transition-all duration-300 ease-in-out z-50",
+        "transition-all duration-300 ease-in-out z-50",
         isExpanded || isHovered ? "w-[290px]" : "w-[90px]",
         isMobileOpen ? "translate-x-0" : "-translate-x-full",
         "lg:translate-x-0"
@@ -85,6 +90,11 @@ export function AdminSidebar({
       >
         <Link
           href={homeHref}
+          onClick={() => {
+            if (isMobileOpen) {
+              closeMobileSidebar();
+            }
+          }}
           className={cn("flex items-center gap-3 min-w-0", !showFull ? "lg:justify-center" : "flex-1")}
         >
           <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-sm overflow-hidden">

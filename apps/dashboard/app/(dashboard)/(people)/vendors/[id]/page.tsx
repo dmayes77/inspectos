@@ -1,12 +1,18 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useVendor, useDeleteVendor } from "@/hooks/use-vendors";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import EditVendorPage from "./edit/page";
 
 export default function VendorDetailPage() {
   const { id } = useParams() as { id: string };
+  const searchParams = useSearchParams();
+  const isEditing = searchParams.get("edit") === "1";
+  if (isEditing) {
+    return <EditVendorPage />;
+  }
   const router = useRouter();
   const { data: vendor, isLoading } = useVendor(id);
   const { mutate: deleteVendor } = useDeleteVendor();
@@ -29,7 +35,7 @@ export default function VendorDetailPage() {
         </CardContent>
       </Card>
       <div className="flex gap-2">
-        <Button onClick={() => router.push(`/vendors/${id}/edit`)} variant="outline">
+        <Button onClick={() => router.push(`/vendors/${id}?edit=1`)} variant="outline">
           Edit
         </Button>
         <Button

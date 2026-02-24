@@ -9,11 +9,12 @@ import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-
 
 function getEmailRedirectUrl(): string {
   const configuredBaseUrl =
+    (typeof window !== "undefined" ? window.location.origin : null) ||
     process.env.NEXT_PUBLIC_WEB_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3001");
+    "http://localhost:3001";
   const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
-  return `${baseUrl}/auth/callback?next=/welcome`;
+  return `${baseUrl}/auth/confirm`;
 }
 
 function RegisterPageContent() {

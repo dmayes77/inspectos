@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { formatTimestamp } from "@inspectos/shared/utils/dates";
 import { toast } from "sonner";
 import { UserCheck, Mail, Phone, Building2, ClipboardList, DollarSign, FileText, Send, ShieldCheck, Edit, Trash2, MapPin, type LucideIcon } from "lucide-react";
 import { CompanyLogo } from "@/components/shared/company-logo";
+import EditAgentPage from "./edit/page";
 
 const MAPS_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
 
@@ -78,7 +79,12 @@ function formatAgencyAddress(agency: AgencyAddressFields | null | undefined, fal
 
 export default function AgentDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { id: agentId } = params as Params;
+  const isEditing = searchParams.get("edit") === "1";
+  if (isEditing) {
+    return <EditAgentPage />;
+  }
   const router = useRouter();
   const { data: agent, isLoading } = useAgentById(agentId);
   const deleteAgent = useDeleteAgent();
@@ -283,7 +289,7 @@ export default function AgentDetailPage() {
               </Button>
             ) : null}
             <Button className="w-full sm:w-auto" asChild>
-              <Link href={`/agents/agents/${agent.id}/edit`}>
+              <Link href={`/agents/agents/${agent.id}?edit=1`}>
                 <Edit className="mr-2 h-4 w-4" /> Edit
               </Link>
             </Button>

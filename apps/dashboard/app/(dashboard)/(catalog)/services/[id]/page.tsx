@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/layout/page-header";
+import EditServicePage from "./edit/page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,13 @@ const formatDuration = (minutes?: number) => {
 export default function ServiceDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const serviceId = params.id;
+  const isEditing = searchParams.get("edit") === "1";
+
+  if (isEditing) {
+    return <EditServicePage />;
+  }
 
   const { data: allServices = [], isLoading, isError, error } = useServices();
   const service = allServices.find((svc) => svc.serviceId === serviceId);
@@ -112,7 +119,7 @@ export default function ServiceDetailPage() {
           can(userRole, "manage_billing", userPermissions) ? (
             <div className="flex flex-wrap gap-2 sm:flex-nowrap">
               <Button asChild variant="outline">
-                <Link href={`/services/${service.serviceId}/edit`}>
+                <Link href={`/services/${service.serviceId}?edit=1`}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>

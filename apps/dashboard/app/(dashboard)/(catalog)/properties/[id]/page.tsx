@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import EditPropertyPage from "./edit/page";
 import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,13 @@ import type { PropertyOwner } from "@/hooks/use-properties";
 export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const propertyId = params.id as string;
+  const isEditing = searchParams.get("edit") === "1";
+
+  if (isEditing) {
+    return <EditPropertyPage />;
+  }
 
   const { data: property, isLoading, isError } = useProperty(propertyId);
   const deleteProperty = useDeleteProperty();
@@ -115,7 +122,7 @@ export default function PropertyDetailPage() {
 
   const headerActions = (
     <Button asChild variant="outline">
-      <Link href={`/properties/${propertyId}/edit`}>
+      <Link href={`/properties/${propertyId}?edit=1`}>
         <Edit className="mr-2 h-4 w-4" />
         Edit Property
       </Link>
@@ -132,7 +139,7 @@ export default function PropertyDetailPage() {
         typeBadge={typeBadge}
         emptyLabel="No owner/contact assigned"
         emptyActionLabel="Assign Contact"
-        emptyActionHref={`/properties/${propertyId}/edit`}
+        emptyActionHref={`/properties/${propertyId}?edit=1`}
       />
 
       <Card>

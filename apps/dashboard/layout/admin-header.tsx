@@ -4,8 +4,7 @@ import { ReactNode, useState, useEffect, useRef } from "react";
 import { AdminUserMenu } from "@/layout/admin-user-menu";
 import { ThemeToggleButton } from "@/layout/theme-toggle-button";
 import { useSidebar } from "@/context/sidebar-context";
-import { cn } from "@/lib/utils";
-import { HamburgerIcon, CloseXIcon, DotsMenuIcon, SearchIcon, BellIcon } from "@/components/icons";
+import { HamburgerIcon, CloseXIcon, SearchIcon, BellIcon } from "@/components/icons";
 
 interface AdminHeaderProps {
   headerActions?: ReactNode;
@@ -29,7 +28,6 @@ export function AdminHeader({
   onOpenNotifications,
 }: AdminHeaderProps) {
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
-  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
   const inputRef = useRef<HTMLButtonElement>(null);
 
@@ -57,13 +55,13 @@ export function AdminHeader({
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-4">
 
         {/* Top bar row — always visible */}
-        <div className="flex items-center justify-between w-full gap-2 px-2.5 py-2 border-b border-gray-200 dark:border-gray-800 sm:gap-3 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-2.5">
+        <div className="flex min-h-16 items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-3 lg:min-h-0 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-2.5">
 
           {/* Sidebar / hamburger toggle */}
           <button
             type="button"
             onClick={handleToggle}
-            className="flex items-center justify-center w-9 h-9 text-gray-500 border border-gray-200 rounded-sm dark:border-gray-800 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+            className="flex items-center justify-center h-11 w-11 text-gray-500 rounded-sm dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors lg:h-9 lg:w-9"
             aria-label="Toggle sidebar"
           >
             {isMobileOpen ? (
@@ -71,15 +69,6 @@ export function AdminHeader({
             ) : (
               <HamburgerIcon />
             )}
-          </button>
-
-          {/* Mobile app menu toggle (3 dots) */}
-          <button
-            type="button"
-            onClick={() => setApplicationMenuOpen(!isApplicationMenuOpen)}
-            className="flex items-center justify-center w-9 h-9 text-gray-700 rounded-sm hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 lg:hidden"
-          >
-            <DotsMenuIcon />
           </button>
 
           {/* Search input — desktop only */}
@@ -105,25 +94,17 @@ export function AdminHeader({
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Right section — theme, notifications, user */}
-        <div
-          className={cn(
-            "items-center justify-between w-full gap-3 px-4 py-2.5 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:py-2 lg:shadow-none",
-            isApplicationMenuOpen ? "flex" : "hidden"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {headerActions}
+          {/* Right section — always visible on mobile and desktop */}
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden sm:flex sm:items-center sm:gap-2">{headerActions}</div>
             <ThemeToggleButton />
 
-            {/* Notifications */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => { setNotifying(false); onOpenNotifications(); }}
-                className="relative flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-white/5"
+                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-white/5 lg:h-9 lg:w-9"
                 aria-label="Notifications"
               >
                 {notifying && (
@@ -134,10 +115,9 @@ export function AdminHeader({
                 <BellIcon />
               </button>
             </div>
-          </div>
 
-          {/* User dropdown */}
-          <AdminUserMenu user={user} contextLabel={contextLabel} settingsHref={settingsHref} />
+            <AdminUserMenu user={user} contextLabel={contextLabel} settingsHref={settingsHref} />
+          </div>
         </div>
 
       </div>

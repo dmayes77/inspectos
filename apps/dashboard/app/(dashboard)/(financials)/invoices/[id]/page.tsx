@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
+import EditInvoicePage from "./edit/page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +42,13 @@ function getStatusBadgeClasses(status: string) {
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const invoiceId = params.id as string;
+  const isEditing = searchParams.get("edit") === "1";
+
+  if (isEditing) {
+    return <EditInvoicePage />;
+  }
 
   const { data: invoice, isLoading, isError } = useInvoice(invoiceId);
   const { data: order } = useOrderById(invoice?.orderId ?? "");
@@ -94,7 +101,7 @@ export default function InvoiceDetailPage() {
         }
         actions={
           <Button asChild variant="outline">
-            <Link href={`/invoices/${invoice.invoiceId}/edit`}>
+            <Link href={`/invoices/${invoice.invoiceId}?edit=1`}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Link>
@@ -109,7 +116,7 @@ export default function InvoiceDetailPage() {
         actionHref={invoice.clientId ? `/contacts/${invoice.clientId}` : undefined}
         emptyLabel="No client assigned"
         emptyActionLabel="Assign Client"
-        emptyActionHref={`/invoices/${invoice.invoiceId}/edit`}
+        emptyActionHref={`/invoices/${invoice.invoiceId}?edit=1`}
       />
 
       <Card>

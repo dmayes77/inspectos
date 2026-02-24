@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Edit, Trash2, DollarSign, ClipboardList, Calendar, Mail, Phone } from "
 import { useClientById, useDeleteClient } from "@/hooks/use-clients";
 import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
+import EditContactPage from "./edit/page";
 
 const formatPropertyAddress = (property: { addressLine1: string; addressLine2?: string | null; city: string; state: string; zipCode: string }) => {
   const parts = [property.addressLine1];
@@ -38,9 +39,14 @@ const formatPropertyType = (propertyType: string) => {
 export default function ContactDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { id } = params as { id: string };
+  const isEditing = searchParams.get("edit") === "1";
+  if (isEditing) {
+    return <EditContactPage />;
+  }
   const { data: client, isLoading } = useClientById(id);
   const deleteClient = useDeleteClient();
 
@@ -172,7 +178,7 @@ export default function ContactDetailPage() {
 
   const headerActions = (
     <Button variant="outline" asChild>
-      <Link href={`/contacts/${client.clientId}/edit`}>
+      <Link href={`/contacts/${client.clientId}?edit=1`}>
         <Edit className="mr-2 h-4 w-4" />
         Edit Contact
       </Link>

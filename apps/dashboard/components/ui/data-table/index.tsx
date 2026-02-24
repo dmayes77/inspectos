@@ -34,6 +34,12 @@ interface DataTableProps<TData, TValue> {
   onTableReady?: (table: Table<TData>) => void;
 }
 
+function formatColumnLabel(columnId: string): string {
+  return columnId
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -128,8 +134,8 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      {/* Table */}
-      <div className="relative overflow-x-auto">
+      {/* Desktop table */}
+      <div className="relative hidden overflow-x-auto md:block">
         <table className="w-full">
           <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -185,6 +191,36 @@ export function DataTable<TData, TValue>({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {table.getRowModel().rows?.length ? (
+          table.getRowModel().rows.map((row) => (
+            <div
+              key={row.id}
+              className="rounded-sm border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
+            >
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                {row.getVisibleCells().map((cell) => {
+                  const label = formatColumnLabel(cell.column.id);
+                  return (
+                    <div key={cell.id} className="min-w-0">
+                      <p className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                      <div className="mt-0.5 text-sm text-foreground break-words">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
+            No results.
+          </div>
+        )}
       </div>
 
       {/* Pagination */}

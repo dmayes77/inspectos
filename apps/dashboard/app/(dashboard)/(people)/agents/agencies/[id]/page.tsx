@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { isAgenciesQueryKey } from "@inspectos/shared/query";
 import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyLogo } from "@/components/shared/company-logo";
+import EditAgencyPage from "./edit/page";
 
 const MAPS_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
 
@@ -40,7 +41,12 @@ const agentInitials = (name: string) =>
 
 export default function AgencyDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { id: agencyId } = params as Params;
+  const isEditing = searchParams.get("edit") === "1";
+  if (isEditing) {
+    return <EditAgencyPage />;
+  }
   const router = useRouter();
   const { data: agency, isLoading } = useAgencyById(agencyId);
   const { data: linkedAgents = [], isLoading: linkedAgentsLoading } = useAgents({ agency_id: agencyId });
@@ -158,7 +164,7 @@ export default function AgencyDetailPage() {
               </Button>
             )}
             <Button className="w-full sm:w-auto" asChild>
-              <Link href={`/agents/agencies/${agency.id}/edit`}>
+              <Link href={`/agents/agencies/${agency.id}?edit=1`}>
                 <Edit className="mr-2 h-4 w-4" /> Edit
               </Link>
             </Button>
