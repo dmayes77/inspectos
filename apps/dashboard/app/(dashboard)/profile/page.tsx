@@ -51,7 +51,7 @@ function SocialLink({ icon, href }: { icon: React.ReactNode; href?: string | nul
       target={href ? "_blank" : undefined}
       rel="noreferrer"
       onClick={!href ? (e) => e.preventDefault() : undefined}
-      className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+      className="flex h-11 w-11 items-center justify-center gap-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
     >
       {icon}
     </a>
@@ -161,14 +161,14 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <div className="rounded-sm border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+      <div className="rounded-md border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <h3 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">
           Profile
         </h3>
 
         <div className="space-y-6">
           {/* ── Meta card ── */}
-          <div className="p-5 border border-gray-200 rounded-sm dark:border-gray-800 lg:p-6">
+          <div className="p-5 border border-gray-200 rounded-md dark:border-gray-800 lg:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
                 <div className="relative w-20 h-20 shrink-0">
@@ -182,7 +182,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={avatarUploading}
-                    className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-brand-500 text-white shadow-md hover:bg-brand-600 disabled:opacity-60 transition-colors"
+                    className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-md bg-brand-500 text-white shadow-md hover:bg-brand-600 disabled:opacity-60 transition-colors"
                   >
                     {avatarUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
                   </button>
@@ -226,7 +226,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Personal Information ── */}
-          <div className="p-5 border border-gray-200 rounded-sm dark:border-gray-800 lg:p-6">
+          <div className="p-5 border border-gray-200 rounded-md dark:border-gray-800 lg:p-6">
             <h4 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
               Personal Information
             </h4>
@@ -247,7 +247,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Social Links ── */}
-          <div className="p-5 border border-gray-200 rounded-sm dark:border-gray-800 lg:p-6">
+          <div className="p-5 border border-gray-200 rounded-md dark:border-gray-800 lg:p-6">
             <h4 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
               Social Links
             </h4>
@@ -268,7 +268,7 @@ export default function ProfilePage() {
           </div>
 
           {/* ── Address ── */}
-          <div className="p-5 border border-gray-200 rounded-sm dark:border-gray-800 lg:p-6">
+          <div className="p-5 border border-gray-200 rounded-md dark:border-gray-800 lg:p-6">
             <h4 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
               Address
             </h4>

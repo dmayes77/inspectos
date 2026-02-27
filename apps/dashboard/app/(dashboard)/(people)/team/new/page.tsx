@@ -377,7 +377,7 @@ export default function NewTeamMemberPage() {
             <CardContent className="space-y-3">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {certifications.map((cert) => (
-                  <div key={cert} className="flex items-center space-x-2 rounded-sm border px-2 py-1.5">
+                  <div key={cert} className="flex items-center space-x-2 rounded-md border px-2 py-1.5">
                     <Checkbox
                       id={cert}
                       checked={selectedCertifications.includes(cert)}

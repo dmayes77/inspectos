@@ -122,6 +122,7 @@ type PropertyFormSectionsProps = {
   setErrors?: Dispatch<SetStateAction<PropertyFormErrors>>;
   clients?: ClientOption[];
   onOpenClientDialog?: () => void;
+  onOpenAgentDialog?: () => void;
   showOwnerSection?: boolean;
 };
 
@@ -132,6 +133,7 @@ export function PropertyFormSections({
   setErrors,
   clients = [],
   onOpenClientDialog,
+  onOpenAgentDialog,
   showOwnerSection = true,
 }: PropertyFormSectionsProps) {
   const residentialTypes = new Set<string>(RESIDENTIAL_PROPERTY_TYPES);
@@ -622,9 +624,9 @@ export function PropertyFormSections({
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="client">Client (Optional)</Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Select value={form.clientId || undefined} onValueChange={(value) => setForm((prev) => ({ ...prev, clientId: value }))}>
-                  <SelectTrigger id="client" className="flex-1">
+                  <SelectTrigger id="client" className="min-w-[220px] flex-1">
                     <SelectValue placeholder="Select a client..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -643,14 +645,20 @@ export function PropertyFormSections({
                     <span className="sr-only">Clear client</span>×
                   </Button>
                 ) : null}
+                {onOpenClientDialog ? (
+                  <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onOpenClientDialog}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create New Client
+                  </Button>
+                ) : null}
+                {onOpenAgentDialog ? (
+                  <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={onOpenAgentDialog}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create New Agent
+                  </Button>
+                ) : null}
               </div>
             </div>
-            {onOpenClientDialog ? (
-              <Button type="button" variant="outline" size="sm" className="w-full" onClick={onOpenClientDialog}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Client
-              </Button>
-            ) : null}
           </CardContent>
         </Card>
       )}

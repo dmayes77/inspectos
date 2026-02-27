@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { PageHeader } from "@/layout/page-header";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { SaveButton } from "@/components/shared/action-buttons";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 import { useProperty, useUpdateProperty } from "@/hooks/use-properties";
 import { useClients } from "@/hooks/use-clients";
+import { useOrders } from "@/hooks/use-orders";
+import { useAgents } from "@/hooks/use-agents";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { COOLING_OPTIONS, FOUNDATION_OPTIONS, GARAGE_OPTIONS, HEATING_OPTIONS, ROOF_OPTIONS } from "@inspectos/shared/constants/property-options";
-import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
-import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import {
   PropertyFormErrors,
   PropertyFormSections,
@@ -22,12 +25,15 @@ import {
 
 export default function EditPropertyPage() {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
   const propertyId = params.id as string;
 
   const { data: property, isLoading } = useProperty(propertyId);
   const updateProperty = useUpdateProperty(propertyId);
   const { data: clientsData } = useClients();
+  const { data: agents = [] } = useAgents();
+  const { data: allOrders = [] } = useOrders();
   const clients = clientsData ?? [];
   const allowedPropertyTypes = new Set(["single-family", "condo-townhome", "multi-family", "manufactured", "commercial"]);
   const basementOptions = ["none", "unfinished", "finished", "partial"] as const;
@@ -45,6 +51,105 @@ export default function EditPropertyPage() {
   const [errors, setErrors] = useState<PropertyFormErrors>({});
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [formInitialized, setFormInitialized] = useState(false);
+
+  const propertyOrders = useMemo(() => {
+    if (!property) return [];
+    return allOrders
+      .filter((order) => order.property_id === property.id)
+      .sort((a, b) => {
+        const aDate = new Date(a.scheduled_date ?? a.created_at).getTime();
+        const bDate = new Date(b.scheduled_date ?? b.created_at).getTime();
+        return bDate - aDate;
+      })
+      .slice(0, 5);
+  }, [allOrders, property]);
+
+  const ownerHistory = useMemo(() => {
+    return [...(property?.owners ?? [])].sort((a, b) => {
+      const aTime = new Date(a.startDate).getTime();
+      const bTime = new Date(b.startDate).getTime();
+      return bTime - aTime;
+    });
+  }, [property?.owners]);
+
+  const currentPrimaryOwner =
+    ownerHistory.find((owner) => owner.isPrimary && owner.endDate === null) ??
+    ownerHistory.find((owner) => owner.endDate === null) ??
+    null;
+
+  const recentOrderWithContact = useMemo(() => {
+    return propertyOrders.find((order) => order.agent_id || order.client_id || order.agent || order.client) ?? null;
+  }, [propertyOrders]);
+
+  const primaryContact = useMemo(() => {
+    if (currentPrimaryOwner?.client) {
+      return {
+        kind: "client" as const,
+        source: "Property owner record",
+        name: currentPrimaryOwner.client.name,
+        email: currentPrimaryOwner.client.email,
+        phone: currentPrimaryOwner.client.phone,
+      };
+    }
+
+    const propertyClientId = form.clientId || property?.client_id || null;
+    if (propertyClientId) {
+      const propertyClient = clients.find((client) => client.clientId === propertyClientId);
+      if (propertyClient) {
+        return {
+          kind: "client" as const,
+          source: "Property contact",
+          name: propertyClient.name,
+          email: propertyClient.email,
+          phone: propertyClient.phone,
+        };
+      }
+    }
+
+    if (recentOrderWithContact?.agent_id || recentOrderWithContact?.agent) {
+      const orderAgent =
+        recentOrderWithContact.agent ??
+        agents.find((agent) => agent.id === recentOrderWithContact.agent_id) ??
+        null;
+      if (orderAgent) {
+        return {
+          kind: "agent" as const,
+          source: "Most recent order",
+          name: orderAgent.name,
+          email: orderAgent.email ?? null,
+          phone: orderAgent.phone ?? null,
+        };
+      }
+    }
+
+    if (recentOrderWithContact?.client_id || recentOrderWithContact?.client) {
+      const orderClient =
+        recentOrderWithContact.client ??
+        clients.find((client) => client.clientId === recentOrderWithContact.client_id) ??
+        null;
+      if (orderClient) {
+        return {
+          kind: "client" as const,
+          source: "Most recent order",
+          name: orderClient.name,
+          email: orderClient.email ?? null,
+          phone: orderClient.phone ?? null,
+        };
+      }
+    }
+
+    return null;
+  }, [agents, clients, currentPrimaryOwner, form.clientId, property?.client_id, recentOrderWithContact]);
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   const handleClientCreated = (clientId: string) => {
     setForm((prev) => ({ ...prev, clientId }));
@@ -156,9 +261,10 @@ export default function EditPropertyPage() {
   if (!property) {
     return (
       <div className="space-y-6">
-        <PageHeader
+        <IdPageLayout
           title="Property Not Found"
           description="The property you're looking for doesn't exist or you don't have access."
+          left={null}
         />
       </div>
     );
@@ -172,66 +278,175 @@ export default function EditPropertyPage() {
     );
   }
 
+  const orderCreateHref = `/orders/new?propertyId=${property.id}${form.clientId ? `&clientId=${form.clientId}` : ""}`;
+
   return (
     <>
-    <div className="space-y-6">
-      <PageHeader
-        title="Edit Property"
-        description="Update the property details to keep inspections accurate."
-      />
-
       <form onSubmit={handleSubmit}>
-        <ResourceFormLayout
+        <IdPageLayout
+          title={property.address_line1}
+          description={`${property.city}, ${property.state} ${property.zip_code} • Property workspace`}
+          breadcrumb={
+            <>
+              <Link href="/properties" className="text-muted-foreground transition hover:text-foreground">
+                Properties
+              </Link>
+              <span className="text-muted-foreground">{">"}</span>
+              <span className="max-w-[20rem] truncate font-medium">{property.address_line1}</span>
+            </>
+          }
           left={
-            <PropertyFormSections
-              form={form}
-              setForm={setForm}
-              errors={errors}
-              setErrors={setErrors}
-              clients={clients}
-              onOpenClientDialog={() => setShowClientDialog(true)}
-            />
+            <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Property Details</CardTitle>
+              <CardDescription>Manage the core property information for future orders.</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <PropertyFormSections
+            form={form}
+            setForm={setForm}
+            errors={errors}
+            setErrors={setErrors}
+            clients={clients}
+            showOwnerSection={false}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Primary Contact</CardTitle>
+              <CardDescription>Select the main contact tied to this property.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Property Contact</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={form.clientId || ""}
+                    onChange={(event) => setForm((prev) => ({ ...prev, clientId: event.target.value }))}
+                    className="h-9 min-w-[220px] flex-1 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">No client selected</option>
+                    {clients.map((client) => (
+                      <option key={client.clientId} value={client.clientId}>
+                        {client.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowClientDialog(true)}>
+                    Create New Client
+                  </Button>
+                </div>
+              </div>
+              {!form.clientId ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Primary contact is recommended before launching a new order.
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+            </>
           }
           right={
-            <ResourceFormSidebar
-              actions={
-                <>
-                  <Button type="submit" className="w-full" disabled={updateProperty.isPending}>
-                    {updateProperty.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => router.push(`/properties/${propertyId}`)}
-                    disabled={updateProperty.isPending}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              }
-              tips={[
-                "• Required fields are marked with an asterisk (*)",
-                "• Changes will be saved immediately",
-                "• You can change the owner/contact anytime",
-              ]}
-            />
+            <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <SaveButton type="submit" className="w-full" isSaving={updateProperty.isPending} label="Save Property" />
+              <Button type="button" variant="outline" className="w-full" asChild>
+                <Link href={orderCreateHref}>Create New Order</Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push(`/properties/${propertyId}`)}
+                disabled={updateProperty.isPending}
+              >
+                Cancel
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>Required fields are marked with an asterisk (*).</p>
+              <p>Keep primary contact current to speed order creation.</p>
+              <p>Use recent orders to duplicate proven job setups.</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Primary Contact</CardTitle>
+              <CardDescription>Active contact for this property context.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {primaryContact ? (
+                <div className="rounded-md border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{primaryContact.name}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge color="light">{primaryContact.kind === "agent" ? "Agent" : "Client"}</Badge>
+                      <Badge color="light">Primary</Badge>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{primaryContact.source}</p>
+                  {primaryContact.email ? <p className="text-sm text-muted-foreground">{primaryContact.email}</p> : null}
+                  {primaryContact.phone ? <p className="text-sm text-muted-foreground">{primaryContact.phone}</p> : null}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No primary contact attached yet.</p>
+              )}
+
+              {ownerHistory.length > 1 ? (
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Contact History</p>
+                  {ownerHistory.slice(0, 4).map((owner) => (
+                    <div key={owner.propertyOwnerId} className="flex items-center justify-between rounded-md border p-2 text-sm">
+                      <span className="truncate">{owner.client?.name ?? "Unknown contact"}</span>
+                      <span className="text-xs text-muted-foreground">{owner.endDate ? "Past" : "Current"}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Orders</CardTitle>
+              <CardDescription>Latest activity tied to this property.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {propertyOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No orders yet for this property.</p>
+              ) : (
+                propertyOrders.map((order) => (
+                  <Link key={order.id} href={`/orders/${order.order_number ?? order.id}`} className="block rounded-md border p-3 transition hover:bg-accent">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{order.order_number}</p>
+                      <Badge color="light" className="capitalize">{order.status.replaceAll("_", " ")}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {order.scheduled_date ?? "Unscheduled"}{order.scheduled_time ? ` at ${order.scheduled_time}` : ""}
+                    </p>
+                  </Link>
+                ))
+              )}
+            </CardContent>
+          </Card>
+            </>
           }
         />
       </form>
-
       <InlineClientDialog open={showClientDialog} onOpenChange={setShowClientDialog} onClientCreated={handleClientCreated} />
-    </div>
     </>
   );
 }

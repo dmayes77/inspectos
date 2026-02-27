@@ -66,6 +66,11 @@ type OrderFormState = {
 type OrderFormProps = {
   mode: "new" | "edit";
   order?: Order;
+  initialValues?: {
+    property_id?: string;
+    client_id?: string | null;
+    agent_id?: string | null;
+  };
 };
 
 function getPropertyLabel(property: Property) {
@@ -120,7 +125,7 @@ function parseCostInput(value: string) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-export function OrderForm({ mode, order }: OrderFormProps) {
+export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
   const router = useRouter();
   const createOrder = useCreateOrder();
   const updateOrder = useUpdateOrder();
@@ -141,10 +146,10 @@ export function OrderForm({ mode, order }: OrderFormProps) {
   const [propertyFormErrors, setPropertyFormErrors] = useState<PropertyFormErrors>({});
 
   const [form, setForm] = useState<OrderFormState>(() => ({
-    client_id: order?.client_id ?? null,
-    agent_id: order?.agent_id ?? null,
+    client_id: order?.client_id ?? initialValues?.client_id ?? null,
+    agent_id: order?.agent_id ?? initialValues?.agent_id ?? null,
     inspector_id: order?.inspector_id ?? null,
-    property_id: order?.property_id ?? "",
+    property_id: order?.property_id ?? initialValues?.property_id ?? "",
     scheduled_date: order?.scheduled_date ?? "",
     scheduled_time: order?.scheduled_time ?? "",
     duration_minutes: order?.duration_minutes ? String(order.duration_minutes) : "",
@@ -158,6 +163,17 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     internal_notes: order?.internal_notes ?? "",
     client_notes: order?.client_notes ?? "",
   }));
+
+  useEffect(() => {
+    if (mode !== "new" || order) return;
+    if (!initialValues) return;
+    setForm((prev) => ({
+      ...prev,
+      property_id: prev.property_id || initialValues.property_id || "",
+      client_id: prev.client_id ?? initialValues.client_id ?? null,
+      agent_id: prev.agent_id ?? initialValues.agent_id ?? null,
+    }));
+  }, [initialValues, mode, order]);
 
   const serviceNameMap = useMemo(() => {
     return new Map(services.map((service) => [service.name.toLowerCase(), service.serviceId]));
@@ -287,7 +303,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
         {
           onSuccess: (updated) => {
             toast.success("Order updated.");
-            router.push(`/orders/${updated.id}`);
+            router.push(`/orders/${updated.order_number ?? updated.id}`);
           },
           onError: (error) => {
             const message = error instanceof Error ? error.message : "Failed to update order.";
@@ -301,7 +317,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
     createOrder.mutate(payload, {
       onSuccess: (created) => {
         toast.success("Order created.");
-        router.push(`/orders/${created.id}`);
+        router.push(`/orders/${created.order_number ?? created.id}`);
       },
       onError: (error) => {
         const message = error instanceof Error ? error.message : "Failed to create order.";
@@ -417,11 +433,12 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
   const isSubmitting = createOrder.isPending || updateOrder.isPending;
   const primaryActionLabel = mode === "edit" ? "Save Changes" : "Create Order";
-  const cancelHref = mode === "edit" && order ? `/orders/${order.id}` : "/orders";
+  const cancelHref = mode === "edit" && order ? `/orders/${order.order_number ?? order.id}` : "/orders";
   const scheduleLabel = formatScheduleLabel(form.scheduled_date, form.scheduled_time);
   const hasInspectorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.inspectorIds.length > 0);
   const hasVendorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.vendorIds.length > 0);
   const marginTone = costTotals.grossMargin < 0 ? "text-destructive" : "text-foreground";
+  const isDirectClientOrder = !form.agent_id;
 
   return (
     <div className="space-y-4">
@@ -608,7 +625,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
 
               <div
                 className={cn(
-                  "overflow-hidden rounded-sm border bg-muted/20 transition-all duration-300 ease-in-out",
+                  "overflow-hidden rounded-md border bg-muted/20 transition-all duration-300 ease-in-out",
                   showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
                 )}
                 aria-hidden={!showInlinePropertyForm}
@@ -654,7 +671,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                 <User className="h-4 w-4 text-muted-foreground" />
                 People
               </CardTitle>
-              <CardDescription>Link the client and referring agent.</CardDescription>
+              <CardDescription>Link the client and optional referring agent.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -681,7 +698,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="agent_id">Referring Agent</Label>
+                <Label htmlFor="agent_id">Referring Agent (optional)</Label>
                 <Select value={form.agent_id ?? "__none__"} onValueChange={handleAgentSelect}>
                   <SelectTrigger id="agent_id">
                     <SelectValue placeholder="Select agent" />
@@ -693,7 +710,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                         Add new agent
                       </span>
                     </SelectItem>
-                    <SelectItem value="__none__">No agent</SelectItem>
+                    <SelectItem value="__none__">Direct client (no agent)</SelectItem>
                     {agents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id}>
                         {agent.name}
@@ -701,6 +718,9 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {isDirectClientOrder ? (
+                  <p className="text-xs text-muted-foreground">This order will be tracked as direct client (no agent).</p>
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -789,7 +809,7 @@ export function OrderForm({ mode, order }: OrderFormProps) {
                     />
                   </div>
                 </div>
-                <div className="grid gap-3 rounded-sm border bg-muted/30 p-3 md:grid-cols-3">
+                <div className="grid gap-3 rounded-md border bg-muted/30 p-3 md:grid-cols-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Total cost</p>
                     <p className="text-sm font-semibold">${costTotals.totalCost.toFixed(2)}</p>
@@ -931,6 +951,10 @@ export function OrderForm({ mode, order }: OrderFormProps) {
               <div className="flex items-center gap-2">
                 <UserCheck className="h-4 w-4" />
                 {hasInspectorAssignment ? "Inspector(s) assigned by service" : "No inspector assignments yet"}
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                {isDirectClientOrder ? "Direct client order" : "Agent-referred order"}
               </div>
             </CardContent>
           </Card>

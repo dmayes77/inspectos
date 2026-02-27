@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import EditPropertyPage from "./edit/page";
-import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, FileText, Loader2 } from "lucide-react";
+import { Trash2, FileText, Loader2 } from "lucide-react";
 import { useProperty, useDeleteProperty, formatPropertyAddress } from "@/hooks/use-properties";
 import { useClientById } from "@/hooks/use-clients";
 import { PropertyTypeIcon } from "@/components/properties/property-type-icon";
@@ -27,13 +27,13 @@ import { ClientInfoCard } from "@/components/shared/client-info-card";
 import { RESIDENTIAL_PROPERTY_TYPES } from "@inspectos/shared/constants/property-options";
 import { getContactTypeBadge } from "@/components/contacts/contacts-table-columns";
 import type { PropertyOwner } from "@/hooks/use-properties";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const propertyId = params.id as string;
-  const isEditing = searchParams.get("edit") === "1";
+  const isEditing = true;
 
   if (isEditing) {
     return <EditPropertyPage />;
@@ -105,7 +105,7 @@ export default function PropertyDetailPage() {
 
   const isAgentContact = ownerDetails?.type === "Real Estate Agent";
   const contactActionLabel = isAgentContact ? "View Agent Profile" : "View Client Profile";
-  const contactActionHref = ownerClient ? `/contacts/${ownerClient.id}` : undefined;
+  const contactActionHref = ownerClient ? `/contacts/${toSlugIdSegment(ownerClient.name, ownerClient.public_id ?? ownerClient.id)}` : undefined;
   const typeBadge = ownerDetails?.type ? getContactTypeBadge(ownerDetails.type) : undefined;
 
   const headerMeta = (
@@ -120,15 +120,6 @@ export default function PropertyDetailPage() {
     </>
   );
 
-  const headerActions = (
-    <Button asChild variant="outline">
-      <Link href={`/properties/${propertyId}?edit=1`}>
-        <Edit className="mr-2 h-4 w-4" />
-        Edit Property
-      </Link>
-    </Button>
-  );
-
   const mainContent = (
     <div className="space-y-6">
       <ClientInfoCard
@@ -139,7 +130,7 @@ export default function PropertyDetailPage() {
         typeBadge={typeBadge}
         emptyLabel="No owner/contact assigned"
         emptyActionLabel="Assign Contact"
-        emptyActionHref={`/properties/${propertyId}?edit=1`}
+        emptyActionHref={`/properties/${propertyId}`}
       />
 
       <Card>
@@ -152,11 +143,11 @@ export default function PropertyDetailPage() {
             <p className="text-sm text-muted-foreground">No ownership history recorded.</p>
           ) : (
             ownerHistory.map((owner) => (
-              <div key={owner.propertyOwnerId} className="flex items-start gap-3 rounded-sm border p-3">
+              <div key={owner.propertyOwnerId} className="flex items-start gap-3 rounded-md border p-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     {owner.client ? (
-                      <Link href={`/contacts/${owner.client.id}`} className="font-medium hover:underline">
+                      <Link href={`/contacts/${toSlugIdSegment(owner.client.name, owner.client.public_id ?? owner.client.id)}`} className="font-medium hover:underline">
                         {owner.client.name}
                       </Link>
                     ) : (
@@ -381,14 +372,14 @@ export default function PropertyDetailPage() {
           <CardDescription>Inspection orders for this property</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-sm border border-dashed p-8 text-center">
+          <div className="rounded-md border border-dashed p-8 text-center">
             <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
             <p className="mt-3 text-sm text-muted-foreground">Orders feature coming soon</p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Delete property</p>
           <p className="text-xs text-muted-foreground">Permanently remove this property record.</p>
@@ -403,12 +394,11 @@ export default function PropertyDetailPage() {
 
   return (
     <>
-    <ResourceDetailLayout
+    <IdPageLayout
       title="Property Details"
       description={formatPropertyAddress(property)}
       meta={headerMeta}
-      headerActions={headerActions}
-      main={mainContent}
+      left={mainContent}
     />
 
     {/* Delete Confirmation Dialog */}
@@ -430,7 +420,7 @@ export default function PropertyDetailPage() {
                 Deleting...
               </>
             ) : (
-              "Delete Property"
+              "Delete Anyway"
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

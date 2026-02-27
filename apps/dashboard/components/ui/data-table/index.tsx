@@ -199,7 +199,7 @@ export function DataTable<TData, TValue>({
           table.getRowModel().rows.map((row) => (
             <div
               key={row.id}
-              className="rounded-sm border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
+              className="rounded-md border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
             >
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 {row.getVisibleCells().map((cell) => {
@@ -217,7 +217,7 @@ export function DataTable<TData, TValue>({
             </div>
           ))
         ) : (
-          <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
             No results.
           </div>
         )}

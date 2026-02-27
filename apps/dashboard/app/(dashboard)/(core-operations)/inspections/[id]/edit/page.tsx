@@ -1,6 +1,6 @@
 "use client";
-import { useState, useMemo, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ import { Loader2, Save } from "lucide-react";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { InspectionVendorSection } from "@/components/inspections/inspection-vendor-section";
+import { parseSlugIdSegment, toSlugIdSegment } from "@/lib/routing/slug-id";
 
 // Helper function to safely extract string from FormData (defined outside component for performance)
 const getString = (value: FormDataEntryValue | undefined): string | undefined => {
@@ -52,6 +53,7 @@ const ServiceCheckbox = ({ service, checked, onToggle }: { service: ServiceType;
 
 export default function EditInspectionPage(props: { isNew?: boolean; orderId?: string } = {}) {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
   const apiClient = useApiClient();
   const { data: services = [] } = useServices();
@@ -63,8 +65,18 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
   const { orderId, isNew } = props;
   const { data: linkedOrder } = useOrderById(orderId ?? "");
 
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
+
   // Get inspection by ID
-  const inspectionId = typeof params.id === "string" ? params.id : undefined;
+  const inspectionId = typeof params.id === "string" ? parseSlugIdSegment(params.id) : undefined;
   const { data: inspection } = useGet<Inspection | null>(inspectionId ? `inspection-${inspectionId}` : "inspection-new", async () => {
     if (!inspectionId || isNew) return null;
     try {
@@ -143,8 +155,13 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         return;
       }
 
-      // Build payload with proper typing (no type assertions needed)
+      // Tenant app can only manage non-execution statuses; execution happens in Inspector App.
       const statusValue = getString(raw.status) || "draft";
+      const tenantAllowedStatuses = new Set<InspectionStatusValue>(["draft", "submitted", inspection?.status || "draft"]);
+      if (!tenantAllowedStatuses.has(statusValue as InspectionStatusValue)) {
+        toast.info("Start/perform inspection updates are managed in the Inspector App.");
+        return;
+      }
       const payload: Partial<Inspection> & { orderId?: string } = {
         selected_type_ids: resolvedTypeIds,
         inspector_id: resolvedInspectorId,
@@ -161,7 +178,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
           {
             onSuccess: () => {
               toast.success("Inspection updated successfully");
-              router.push(`/inspections/${inspection.id}`);
+              router.push(`/inspections/${toSlugIdSegment("inspection", inspection.id)}`);
             },
             onError: (error) => {
               const errorMessage = error instanceof Error ? error.message : "Failed to update inspection";
@@ -173,7 +190,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         createMutation.mutate(payload, {
           onSuccess: (data) => {
             toast.success("Inspection created successfully");
-            router.push(data?.id ? `/inspections/${data.id}` : "/inspections");
+            router.push(data?.id ? `/inspections/${toSlugIdSegment("inspection", data.id)}` : "/inspections");
           },
           onError: (error) => {
             const errorMessage = error instanceof Error ? error.message : "Failed to create inspection";
@@ -529,11 +546,12 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
+                        {inspection?.status === "in_progress" ? <SelectItem value="in_progress">In Progress</SelectItem> : null}
+                        {inspection?.status === "completed" ? <SelectItem value="completed">Completed</SelectItem> : null}
                         <SelectItem value="submitted">Submitted</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">Start/perform inspection statuses are managed in the Inspector App.</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="price">Price ($)</Label>
@@ -571,7 +589,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                     )}
                   </Button>
                   <Button type="button" variant="outline" asChild>
-                    <Link href={inspection ? `/inspections/${inspection.id}` : "/inspections"}>Cancel</Link>
+                    <Link href={inspection ? `/inspections/${toSlugIdSegment("inspection", inspection.id)}` : "/inspections"}>Cancel</Link>
                   </Button>
                 </>
               }

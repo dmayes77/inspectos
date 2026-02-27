@@ -3,6 +3,7 @@ import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import { formatInvoiceNumber } from '@inspectos/shared/utils/invoices';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildInvoicePayload } from '@/lib/webhooks/payloads';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 type RawInvoice = {
   id: string;
@@ -57,7 +58,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, memberRol
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;
-  const invoiceId = id?.trim?.() ?? "";
+  const invoiceId = parseRouteIdentifier(id ?? "");
 
   const { data, error } = await supabase
     .from('invoices')
@@ -86,7 +87,7 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, memberR
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;
-  const invoiceId = id?.trim?.() ?? "";
+  const invoiceId = parseRouteIdentifier(id ?? "");
 
   const payload = await request.json();
 
@@ -199,7 +200,7 @@ export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, member
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;
-  const invoiceId = id?.trim?.() ?? "";
+  const invoiceId = parseRouteIdentifier(id ?? "");
 
   const { error } = await supabase
     .from('invoices')

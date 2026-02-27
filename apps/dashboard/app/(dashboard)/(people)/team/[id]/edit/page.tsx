@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +18,7 @@ import { useTeamMembers, useUpdateTeamMember } from "@/hooks/use-team";
 import { useProfile } from "@/hooks/use-profile";
 import { Shield } from "lucide-react";
 import { Save } from "lucide-react";
+import { parseSlugIdSegment, toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const roles = [
   {
@@ -56,12 +57,13 @@ function getAssignableRoles(currentRole: string) {
 
 export default function EditTeamMemberPage() {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: teamMembers = [] } = useTeamMembers();
   const updateMember = useUpdateTeamMember();
   const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const memberId = parseSlugIdSegment(rawMemberId ? String(rawMemberId) : "");
   const member = teamMembers.find((m) => m.memberId.toLowerCase() === memberId.toLowerCase());
 
   // Parse name into first/last for editing
@@ -84,6 +86,16 @@ export default function EditTeamMemberPage() {
   const userRole = (profile?.role ?? "").toUpperCase();
   const canManageTeam = userRole === "OWNER" || userRole === "ADMIN";
   const assignableRoles = getAssignableRoles(userRole);
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   useEffect(() => {
     if (!member) return;
@@ -118,7 +130,7 @@ export default function EditTeamMemberPage() {
     return (
       <div className="space-y-6 max-w-3xl">
         <AdminPageHeader
-          title="Edit Team Member"
+          title="Team Member"
           description="Only owners and admins can edit team members."
         />
         <Alert
@@ -175,7 +187,7 @@ export default function EditTeamMemberPage() {
       rating: member.rating,
       joinedDate: member.joinedDate,
     });
-    router.push(`/team/${member.memberId}`);
+    router.push(`/team/${toSlugIdSegment(member.name, member.memberId)}`);
   };
 
   const toggleCertification = (cert: string) => {
@@ -358,7 +370,7 @@ export default function EditTeamMemberPage() {
             <CardContent className="space-y-3">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {certificationsList.map((cert) => (
-                  <div key={cert} className="flex items-center space-x-2 rounded-sm border px-2 py-1.5">
+                  <div key={cert} className="flex items-center space-x-2 rounded-md border px-2 py-1.5">
                     <Checkbox id={cert} checked={selectedCertifications.includes(cert)} onCheckedChange={() => toggleCertification(cert)} />
                     <Label htmlFor={cert} className="text-sm font-normal cursor-pointer">
                       {cert}
@@ -391,7 +403,7 @@ export default function EditTeamMemberPage() {
         {/* Actions */}
         <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
           <Button type="button" variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-            <Link href={`/team/${params.id}`}>Cancel</Link>
+            <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`}>Cancel</Link>
           </Button>
           <Button type="submit" size="sm" className="w-full sm:w-auto" disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />

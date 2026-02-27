@@ -127,7 +127,7 @@ export default function CompanySettingsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Business ID</Label>
-                <div className="rounded-sm border bg-muted/30 px-3 py-2 text-sm font-mono tracking-wide">
+                <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-mono tracking-wide">
                   {settings?.business?.businessId ?? "—"}
                 </div>
               </div>
@@ -135,7 +135,7 @@ export default function CompanySettingsPage() {
               <div className="space-y-2">
                 <Label>API Key</Label>
                 <div className="flex gap-2">
-                  <div className="min-w-0 flex-1 rounded-sm border bg-muted/30 px-3 py-2 text-sm font-mono break-all">
+                  <div className="min-w-0 flex-1 rounded-md border bg-muted/30 px-3 py-2 text-sm font-mono break-all">
                     {newApiKey ?? settings?.business?.apiKeyPreview ?? "—"}
                   </div>
                   <Button type="button" variant="outline" onClick={handleCopyApiKey} disabled={!newApiKey}>

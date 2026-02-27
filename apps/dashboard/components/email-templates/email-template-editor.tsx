@@ -11,11 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateEmailTemplate, useEmailTemplates, useUpdateEmailTemplate } from "@/hooks/use-email-templates";
 import type { EmailTemplate } from "@/types/email-template";
 import { toast } from "sonner";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 export function EmailTemplateEditor() {
   const params = useParams();
   const router = useRouter();
-  const templateId = typeof params.id === "string" ? params.id : null;
+  const templateId = typeof params.id === "string" ? parseSlugIdSegment(params.id) : null;
   const isNew = !templateId;
 
   const { data: templates = [] } = useEmailTemplates();

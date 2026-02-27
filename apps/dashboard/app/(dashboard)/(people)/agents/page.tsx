@@ -17,6 +17,7 @@ import { useAgents, type Agent } from "@/hooks/use-agents";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CompanyLogo } from "@/components/shared/company-logo";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 type AgencyRow = { original: Agency };
 type AgentRow = { original: Agent };
@@ -43,7 +44,7 @@ const agencyColumns: ColumnDef<Agency>[] = [
         <div className="flex items-center gap-3">
           <CompanyLogo name={agency.name} logoUrl={agency.logo_url} website={agency.website ?? undefined} size={40} className="h-10 w-10 shrink-0" />
           <div className="flex flex-col gap-0.5">
-            <Link href={`/agents/agencies/${agency.id}`} className="font-medium hover:underline">
+            <Link href={`/agents/agencies/${toSlugIdSegment(agency.name, agency.id)}`} className="font-medium hover:underline">
               {agency.name}
             </Link>
             {getAgencyDomain(agency) && (
@@ -121,7 +122,7 @@ const agentColumns: ColumnDef<Agent>[] = [
             )}
           </Avatar>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <Link href={`/agents/${agent.id}`} className="font-medium hover:underline">
+            <Link href={`/agents/${toSlugIdSegment(agent.name, agent.public_id ?? agent.id)}`} className="font-medium hover:underline">
               {agent.name}
             </Link>
             {agent.email && (
@@ -146,7 +147,7 @@ const agentColumns: ColumnDef<Agent>[] = [
     header: "Agency",
     cell: ({ row }: { row: AgentRow }) =>
       row.original.agency ? (
-        <Link href={`/agents/agencies/${row.original.agency.id}`} className="flex items-center gap-2 text-sm hover:underline">
+        <Link href={`/agents/agencies/${toSlugIdSegment(row.original.agency.name, row.original.agency.id)}`} className="flex items-center gap-2 text-sm hover:underline">
           <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
           {row.original.agency.name}
         </Link>

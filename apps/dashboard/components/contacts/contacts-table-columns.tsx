@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { Client } from "@/hooks/use-clients";
 import { formatDistanceToNow } from "date-fns";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 export function getContactTypeBadge(type: string) {
   const variants: Record<string, { color: "primary" | "light", className?: string }> = {
@@ -64,7 +65,7 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
       const client = row.original;
       return (
         <Link
-          href={`/contacts/${client.clientId}`}
+          href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`}
           className="flex flex-col gap-0.5 hover:opacity-80 transition-opacity py-2"
         >
           <span className="font-medium">{client.name}</span>
@@ -147,13 +148,13 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
           <DropdownMenuContent align="end" className="w-[200px]">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem asChild>
-              <Link href={`/contacts/${client.clientId}`}>
+              <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/contacts/${client.clientId}/edit`}>
+              <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit client
               </Link>

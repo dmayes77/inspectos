@@ -29,7 +29,7 @@ export function AdminNavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 rounded-sm transition-colors duration-150 focus-visible:outline-none",
+        "flex items-center gap-3 rounded-md transition-colors duration-150 focus-visible:outline-none",
         size === "sm" ? "px-3 py-2 text-[13px]" : "px-3 py-2 text-sm",
         theme === "dark"
           ? isActive

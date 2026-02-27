@@ -153,7 +153,7 @@ function ClientsPageContent() {
               className="border-brand-300 text-brand-700 hover:bg-brand-50 hover:text-brand-800 dark:border-brand-700 dark:text-brand-300 dark:hover:bg-brand-900/20"
               asChild
             >
-              <Link href="/contacts/leads/new">
+              <Link href="/leads/new">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Lead
               </Link>
@@ -295,7 +295,7 @@ function ClientsPageContent() {
             }
             emptyState={
               filteredClients.length === 0 && !searchQuery && typeFilter === "all" ? (
-                <div className="rounded-sm border border-dashed p-12 text-center">
+                <div className="rounded-md border border-dashed p-12 text-center">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -311,7 +311,7 @@ function ClientsPageContent() {
                   )}
                 </div>
               ) : (
-                <div className="rounded-sm border border-dashed p-12 text-center">
+                <div className="rounded-md border border-dashed p-12 text-center">
                   <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">No results found</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
@@ -331,18 +331,18 @@ function ClientsPageContent() {
             </CardHeader>
             <CardContent>
               {leadsLoading ? (
-                <div className="rounded-sm border border-dashed p-12 text-center">
+                <div className="rounded-md border border-dashed p-12 text-center">
                   <p className="text-sm text-muted-foreground">Loading leads...</p>
                 </div>
               ) : leads.length === 0 ? (
-                <div className="rounded-sm border border-dashed p-12 text-center">
+                <div className="rounded-md border border-dashed p-12 text-center">
                   <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground/50" />
                   <h3 className="mt-4 text-lg font-semibold">No leads yet</h3>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Capture inquiries from your website or add them manually.
                   </p>
                   <Button asChild className="mt-6">
-                    <Link href="/contacts/leads/new">
+                    <Link href="/leads/new">
                       <UserPlus className="mr-2 h-4 w-4" />
                       Add lead
                     </Link>
@@ -353,11 +353,11 @@ function ClientsPageContent() {
                   {leads.map((lead: Lead) => (
                     <Link
                       key={lead.leadId}
-                      href={`/contacts/leads/${lead.leadId}?return=/contacts?tab=leads`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-4 transition-colors hover:bg-accent"
+                      href={`/leads/${lead.leadId}`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-4 transition-colors hover:bg-accent"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
                           <span className="text-sm font-semibold text-primary">
                             {lead.name
                               .split(" ")

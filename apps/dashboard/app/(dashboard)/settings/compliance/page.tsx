@@ -21,7 +21,7 @@ export default function ComplianceSettingsPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="rounded-sm border border-dashed p-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
             Audit events will appear here once activity is recorded.
           </div>
         </CardContent>

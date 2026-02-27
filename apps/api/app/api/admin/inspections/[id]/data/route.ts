@@ -1,5 +1,6 @@
 import { createServiceClient, serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/inspections/[id]/data
@@ -7,7 +8,7 @@ import { withAuth } from '@/lib/api/with-auth';
  * Uses separate flat queries instead of nested joins to avoid PostgREST ambiguity errors.
  */
 export const GET = withAuth<{ id: string }>(async ({ tenant, params }) => {
-  const { id: inspectionId } = params;
+  const inspectionId = parseRouteIdentifier(params.id);
   const supabase = createServiceClient();
 
   // 1. Fetch the inspection row

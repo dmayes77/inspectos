@@ -58,7 +58,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select...
     <div ref={containerRef} className={cn("relative", className)}>
       <div
         className={cn(
-          "flex min-h-9 flex-wrap items-center gap-1 rounded-sm border bg-transparent px-2 py-1 text-sm cursor-text",
+          "flex min-h-9 flex-wrap items-center gap-1 rounded-md border bg-transparent px-2 py-1 text-sm cursor-text",
           "focus-within:outline-none focus-within:ring-1 focus-within:ring-ring",
           open && "ring-1 ring-ring",
         )}
@@ -73,7 +73,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select...
             {opt.meta && <span className="text-muted-foreground">· {opt.meta}</span>}
             <button
               type="button"
-              className="ml-0.5 rounded-sm opacity-60 hover:opacity-100 focus:outline-none"
+              className="ml-0.5 rounded-md opacity-60 hover:opacity-100 focus:outline-none"
               onClick={(e) => handleRemove(opt.value, e)}
               tabIndex={-1}
             >
@@ -98,7 +98,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select...
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-sm border bg-popover shadow-md">
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
           <div className="max-h-48 overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
               <div className="px-2 py-3 text-center text-xs text-muted-foreground">
@@ -109,7 +109,7 @@ export function MultiSelect({ options, value, onChange, placeholder = "Select...
                 <button
                   key={opt.value}
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
                   onMouseDown={(e) => {
                     e.preventDefault(); // prevent input blur
                     handleSelect(opt.value);

@@ -37,7 +37,7 @@ export default function AccountingPage() {
           <CardDescription>Sync categories and map revenue/expenses.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-sm border border-dashed p-10 text-center text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
             Connect accounting to unlock ledger and reporting.
           </div>
         </CardContent>

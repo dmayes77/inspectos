@@ -10,23 +10,38 @@ import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Check, Clock, DollarSign, Mail, MapPin, Phone, Send, Tag, Trash2, User } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Calendar, Check, Clock, DollarSign, Mail, MapPin, Phone, Send, Tag, User } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
 import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
 import { useClients } from "@/hooks/use-clients";
 import { useAgents } from "@/hooks/use-agents";
-import { useProperties } from "@/hooks/use-properties";
+import { useCreateProperty, useProperties, useUpdateProperty } from "@/hooks/use-properties";
 import { useServices } from "@/hooks/use-services";
 import { useInspectors } from "@/hooks/use-team";
 import { useVendors } from "@/hooks/use-vendors";
 import { cn } from "@/lib/utils";
 import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@inspectos/shared/utils/dates";
 import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
-import { RESIDENTIAL_PROPERTY_TYPES } from "@inspectos/shared/constants/property-options";
-import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
+import { COOLING_OPTIONS, FOUNDATION_OPTIONS, GARAGE_OPTIONS, HEATING_OPTIONS, RESIDENTIAL_PROPERTY_TYPES, ROOF_OPTIONS } from "@inspectos/shared/constants/property-options";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { DeleteButton } from "@/components/shared/action-buttons";
 import { OrderInspectionTab } from "@/components/orders/order-inspection-tab";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ServiceAssignmentsSection, type ServiceAssignment } from "@/components/orders/service-assignments-section";
+import { PropertyFormErrors, PropertyFormSections, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
+import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
+import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {
@@ -83,15 +98,17 @@ function parseCostInput(value: string) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
-const orderStatusOptions = [
-  "pending",
-  "scheduled",
-  "in_progress",
-  "pending_report",
-  "delivered",
-  "completed",
-  "cancelled",
-] as const;
+const basementOptions = ["none", "unfinished", "finished", "partial"] as const;
+const buildingClassOptions = ["A", "B", "C"] as const;
+const laundryOptions = ["in-unit", "shared", "none"] as const;
+
+const normalizeOptionValue = <T extends string>(value: string | null | undefined, options: readonly T[]): T | null => {
+  if (!value) return null;
+  const normalized = value.trim().toLowerCase();
+  return options.find((option) => option.toLowerCase() === normalized) ?? null;
+};
+
+const tenantEditableOrderStatuses = ["pending", "scheduled", "cancelled"] as const;
 
 const paymentStatusOptions = ["unpaid", "partial", "paid", "refunded"] as const;
 
@@ -107,6 +124,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const { data: inspectors = [] } = useInspectors();
   const { data: vendors = [] } = useVendors();
   const updateOrder = useUpdateOrder();
+  const createProperty = useCreateProperty();
   const deleteOrder = useDeleteOrder();
   const [internalNotes, setInternalNotes] = useState("");
   const [scheduleForm, setScheduleForm] = useState({
@@ -118,6 +136,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     property_id: "",
     client_id: "__none__",
     agent_id: "__none__",
+    primary_contact_type: "__none__" as "__none__" | "agent" | "client",
   });
   const [costForm, setCostForm] = useState({
     labor_cost: "",
@@ -127,6 +146,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   });
   const [serviceAssignments, setServiceAssignments] = useState<ServiceAssignment[]>([]);
   const [serviceSearch, setServiceSearch] = useState("");
+  const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [agentDialogOpen, setAgentDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [showCreatePropertyForm, setShowCreatePropertyForm] = useState(false);
+  const [showEditPropertyForm, setShowEditPropertyForm] = useState(false);
+  const [propertyForm, setPropertyForm] = useState(() => createEmptyPropertyFormState());
+  const [propertyFormErrors, setPropertyFormErrors] = useState<PropertyFormErrors>({});
+  const updateProperty = useUpdateProperty(assignmentForm.property_id || order?.property_id || "");
   const { data: orderNotes = [] } = useOrderNotes(id);
   const createOrderNote = useCreateOrderNote(id);
 
@@ -135,12 +162,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }, [services]);
 
   useEffect(() => {
+    const hasAgent = Boolean(order?.agent_id);
+    const hasClient = Boolean(order?.client_id);
+    const fallbackPrimary: "__none__" | "agent" | "client" =
+      hasAgent ? "agent" : hasClient ? "client" : "__none__";
+
     setAssignmentForm({
       property_id: order?.property_id ?? "",
       client_id: order?.client_id ?? "__none__",
       agent_id: order?.agent_id ?? "__none__",
+      primary_contact_type: order?.primary_contact_type ?? fallbackPrimary,
     });
-  }, [order?.id, order?.property_id, order?.client_id, order?.agent_id]);
+  }, [order?.id, order?.property_id, order?.client_id, order?.agent_id, order?.primary_contact_type]);
+
+  useEffect(() => {
+    setAssignmentForm((prev) => {
+      const hasAgent = prev.agent_id !== "__none__";
+      const hasClient = prev.client_id !== "__none__";
+      if (!hasAgent && !hasClient) return { ...prev, primary_contact_type: "__none__" };
+      if (prev.primary_contact_type === "agent" && !hasAgent) return { ...prev, primary_contact_type: hasClient ? "client" : "__none__" };
+      if (prev.primary_contact_type === "client" && !hasClient) return { ...prev, primary_contact_type: hasAgent ? "agent" : "__none__" };
+      if (prev.primary_contact_type === "__none__") return { ...prev, primary_contact_type: hasAgent ? "agent" : "client" };
+      return prev;
+    });
+  }, [assignmentForm.agent_id, assignmentForm.client_id]);
 
   useEffect(() => {
     setScheduleForm({
@@ -182,9 +227,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     const selectedIds = serviceAssignments.filter((a) => a.selected).map((a) => a.serviceId);
     return services.filter((service) => selectedIds.includes(service.serviceId));
   }, [services, serviceAssignments]);
+  const tenantVisibleStatusOptions = useMemo(() => {
+    const editable = [...tenantEditableOrderStatuses];
+    if (order?.status && !editable.includes(order.status as (typeof tenantEditableOrderStatuses)[number])) {
+      return [order.status, ...editable];
+    }
+    return editable;
+  }, [order?.status]);
 
   const handleStatusChange = (newStatus: string) => {
     if (!order) return;
+    if (!tenantEditableOrderStatuses.includes(newStatus as (typeof tenantEditableOrderStatuses)[number])) {
+      toast.info("Inspection execution status is managed in the Inspector App.");
+      return;
+    }
     updateOrder.mutate(
       { id: order.id, status: newStatus as typeof order.status },
       {
@@ -215,11 +271,63 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   const handleDelete = () => {
     if (!order) return;
-    if (confirm("Are you sure you want to delete this order?")) {
-      deleteOrder.mutate(order.id, {
-        onSuccess: () => router.push("/orders"),
-      });
+    deleteOrder.mutate(order.id, {
+      onSuccess: () => {
+        setDeleteDialogOpen(false);
+        router.push("/orders");
+      },
+    });
+  };
+
+  const propertyFromOrder = order?.property;
+  const client = order?.client ?? null;
+  const agent = order?.agent ?? null;
+  const residentialTypes = new Set<string>(RESIDENTIAL_PROPERTY_TYPES);
+  const attachedProperty = useMemo(
+    () => properties.find((candidate) => candidate.id === assignmentForm.property_id) ?? propertyFromOrder,
+    [assignmentForm.property_id, properties, propertyFromOrder]
+  );
+
+  const hydratePropertyForm = (source: typeof attachedProperty) => {
+    if (!source) {
+      setPropertyForm(createEmptyPropertyFormState());
+      setPropertyFormErrors({});
+      return;
     }
+    setPropertyForm({
+      addressLine1: source.address_line1 ?? "",
+      addressLine2: source.address_line2 ?? "",
+      city: source.city ?? "",
+      state: source.state ?? "",
+      zipCode: source.zip_code ?? "",
+      propertyType: source.property_type ?? "single-family",
+      yearBuilt: source.year_built?.toString() ?? "",
+      squareFeet: source.square_feet?.toString() ?? "",
+      notes: "",
+      clientId: assignmentForm.client_id !== "__none__" ? assignmentForm.client_id : "",
+      bedrooms: source.bedrooms?.toString() ?? "",
+      bathrooms: source.bathrooms?.toString() ?? "",
+      stories: source.stories ?? "",
+      foundation: normalizeOptionValue(source.foundation, FOUNDATION_OPTIONS) ?? "",
+      garage: normalizeOptionValue(source.garage, GARAGE_OPTIONS) ?? "",
+      pool: source.pool ?? false,
+      basement: normalizeOptionValue(source.basement, basementOptions) ?? "",
+      lotSizeAcres: source.lot_size_acres?.toString() ?? "",
+      heatingType: normalizeOptionValue(source.heating_type, HEATING_OPTIONS) ?? "",
+      coolingType: normalizeOptionValue(source.cooling_type, COOLING_OPTIONS) ?? "",
+      roofType: normalizeOptionValue(source.roof_type, ROOF_OPTIONS) ?? "",
+      buildingClass: normalizeOptionValue(source.building_class, buildingClassOptions) ?? "",
+      loadingDocks: source.loading_docks?.toString() ?? "",
+      zoning: source.zoning ?? "",
+      occupancyType: source.occupancy_type ?? "",
+      ceilingHeight: source.ceiling_height?.toString() ?? "",
+      numberOfUnits: source.number_of_units?.toString() ?? "",
+      unitMix: source.unit_mix ?? "",
+      laundryType: normalizeOptionValue(source.laundry_type, laundryOptions) ?? "",
+      parkingSpaces: source.parking_spaces?.toString() ?? "",
+      elevator: source.elevator ?? false,
+    });
+    setPropertyFormErrors({});
   };
 
   if (isLoading) {
@@ -240,11 +348,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </div>
     );
   }
-
-  const property = order.property;
-  const client = order.client;
-  const agent = order.agent;
-  const residentialTypes = new Set<string>(RESIDENTIAL_PROPERTY_TYPES);
 
   const renderPropertyValue = (value?: string | number | boolean | null) => {
     if (value === null || value === undefined || value === "") return "—";
@@ -328,16 +431,110 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         property_id: assignmentForm.property_id,
         client_id: assignmentForm.client_id === "__none__" ? null : assignmentForm.client_id,
         agent_id: assignmentForm.agent_id === "__none__" ? null : assignmentForm.agent_id,
+        primary_contact_type:
+          assignmentForm.primary_contact_type === "__none__" ? null : assignmentForm.primary_contact_type,
       },
       {
         onSuccess: () => {
-          toast.success("Property and people updated.");
+          toast.success("Property, people, and primary contact updated.");
         },
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "Failed to update assignments.");
         },
       }
     );
+  };
+
+  const handleClientCreated = (clientId: string) => {
+    setAssignmentForm((prev) => ({ ...prev, client_id: clientId }));
+  };
+
+  const handleAgentCreated = (agentId: string) => {
+    setAssignmentForm((prev) => ({ ...prev, agent_id: agentId }));
+  };
+
+  const handlePropertySelect = (value: string) => {
+    if (value === "__add_new_property__") {
+      setShowCreatePropertyForm(true);
+      setShowEditPropertyForm(false);
+      hydratePropertyForm(attachedProperty);
+      return;
+    }
+    setShowCreatePropertyForm(false);
+    setShowEditPropertyForm(false);
+    setPropertyFormErrors({});
+    setAssignmentForm((prev) => ({ ...prev, property_id: value }));
+  };
+
+  const handleCreatePropertyForOrder = async () => {
+    if (!order) return;
+    const validationErrors = validatePropertyForm(propertyForm);
+    setPropertyFormErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    try {
+      const created = await createProperty.mutateAsync({
+        address_line1: propertyForm.addressLine1.trim(),
+        address_line2: propertyForm.addressLine2.trim() || null,
+        city: propertyForm.city.trim(),
+        state: propertyForm.state.trim(),
+        zip_code: propertyForm.zipCode.trim(),
+        property_type: propertyForm.propertyType as "single-family" | "condo-townhome" | "multi-family" | "manufactured" | "commercial",
+        year_built: propertyForm.yearBuilt ? parseInt(propertyForm.yearBuilt, 10) : null,
+        square_feet: propertyForm.squareFeet ? parseInt(propertyForm.squareFeet, 10) : null,
+        notes: propertyForm.notes.trim() || null,
+        client_id: assignmentForm.client_id !== "__none__" ? assignmentForm.client_id : propertyForm.clientId || null,
+      });
+
+      setAssignmentForm((prev) => ({ ...prev, property_id: created.id }));
+      setShowCreatePropertyForm(false);
+
+      updateOrder.mutate(
+        { id: order.id, property_id: created.id },
+        {
+          onSuccess: () => toast.success("New property created and attached to this order."),
+          onError: (error) => toast.error(error instanceof Error ? error.message : "Property created, but order attach failed."),
+        }
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create property.");
+    }
+  };
+
+  const handleStartEditAttachedProperty = () => {
+    if (!attachedProperty) {
+      toast.error("Select a property first.");
+      return;
+    }
+    hydratePropertyForm(attachedProperty);
+    setShowEditPropertyForm(true);
+    setShowCreatePropertyForm(false);
+  };
+
+  const handleSaveAttachedProperty = async () => {
+    if (!attachedProperty) return;
+    const validationErrors = validatePropertyForm(propertyForm);
+    setPropertyFormErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    try {
+      await updateProperty.mutateAsync({
+        address_line1: propertyForm.addressLine1.trim(),
+        address_line2: propertyForm.addressLine2.trim() || null,
+        city: propertyForm.city.trim(),
+        state: propertyForm.state.trim(),
+        zip_code: propertyForm.zipCode.trim(),
+        property_type: propertyForm.propertyType as "single-family" | "condo-townhome" | "multi-family" | "manufactured" | "commercial",
+        year_built: propertyForm.yearBuilt ? parseInt(propertyForm.yearBuilt, 10) : null,
+        square_feet: propertyForm.squareFeet ? parseInt(propertyForm.squareFeet, 10) : null,
+        notes: propertyForm.notes.trim() || null,
+        client_id: propertyForm.clientId || null,
+      });
+      toast.success("Attached property updated.");
+      setShowEditPropertyForm(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update property.");
+    }
   };
 
   const handleServiceToggle = (serviceId: string, checked: boolean) => {
@@ -405,17 +602,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     </>
   );
 
-  const headerActions = (
-    <div className="flex flex-wrap gap-2">
-      <Button variant="outline" onClick={() => toast("Invoice creation is coming soon.")}>
-        Create Invoice
-      </Button>
-      <Button variant="outline" onClick={() => toast("Payment recording is coming soon.")}>
-        Record Payment
-      </Button>
-    </div>
-  );
-
   const totalCost =
     typeof order.total_cost === "number" ? order.total_cost : (order.labor_cost ?? 0) + (order.travel_cost ?? 0) + (order.overhead_cost ?? 0) + (order.other_cost ?? 0);
   const totalRevenue = typeof order.total === "number" ? order.total : 0;
@@ -430,19 +616,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const draftTotalCost = costDraft.labor + costDraft.travel + costDraft.overhead + costDraft.other;
   const draftGrossMargin = totalRevenue - draftTotalCost;
   const draftGrossMarginPct = totalRevenue > 0 ? (draftGrossMargin / totalRevenue) * 100 : null;
-  const nextAction =
-    order.status === "pending"
-      ? { label: "Mark Scheduled", status: "scheduled" }
-      : order.status === "scheduled"
-        ? { label: "Start Inspection", status: "in_progress" }
-        : order.status === "in_progress"
-          ? { label: "Mark Pending Report", status: "pending_report" }
-          : order.status === "pending_report"
-            ? { label: "Mark Delivered", status: "delivered" }
-            : order.status === "delivered"
-              ? { label: "Mark Completed", status: "completed" }
-              : null;
-
   const workspaceCard = (
     <Card>
       <CardHeader className="pb-3">
@@ -464,15 +637,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </CardHeader>
       <CardContent className="space-y-4 pt-0">
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-sm border bg-muted/20 p-3">
+          <div className="rounded-md border bg-muted/20 p-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Revenue</p>
             <p className="text-xl font-semibold">{formatMoney(totalRevenue)}</p>
           </div>
-          <div className="rounded-sm border bg-muted/20 p-3">
+          <div className="rounded-md border bg-muted/20 p-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total Cost</p>
             <p className="text-xl font-semibold">{formatMoney(totalCost)}</p>
           </div>
-          <div className="rounded-sm border bg-muted/20 p-3">
+          <div className="rounded-md border bg-muted/20 p-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Gross Margin</p>
             <p className={cn("text-xl font-semibold", grossMargin < 0 ? "text-destructive" : "")}>
               {formatMoney(grossMargin)}
@@ -480,7 +653,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </p>
           </div>
         </div>
-        <div className="grid gap-3 lg:grid-cols-[1fr_1fr_auto]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Order Status</p>
             <Select value={order.status} onValueChange={handleStatusChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
@@ -488,13 +661,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {orderStatusOptions.map((status) => (
+                {tenantVisibleStatusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
                     {formatStatusLabel(status)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">Start/perform inspection updates happen in the Inspector App.</p>
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Payment Status</p>
@@ -510,20 +684,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide">Next Step</p>
-            <Button
-              className="w-full lg:min-w-44"
-              variant={nextAction ? "primary" : "outline"}
-              disabled={!nextAction || updateOrder.isPending || deleteOrder.isPending}
-              onClick={() => {
-                if (!nextAction) return;
-                handleStatusChange(nextAction.status);
-              }}
-            >
-              {nextAction ? nextAction.label : "No Pending Step"}
-            </Button>
           </div>
         </div>
         <div className="grid gap-2 md:grid-cols-4">
@@ -603,29 +763,29 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <CardDescription>Location and key property details.</CardDescription>
         </CardHeader>
         <CardContent>
-          {property ? (
+          {attachedProperty ? (
             <div className="space-y-3">
               <div>
-                <p className="font-medium">{property.address_line1}</p>
-                {property.address_line2 && <p className="text-sm text-muted-foreground">{property.address_line2}</p>}
+                <p className="font-medium">{attachedProperty.address_line1}</p>
+                {attachedProperty.address_line2 && <p className="text-sm text-muted-foreground">{attachedProperty.address_line2}</p>}
                 <p className="text-sm text-muted-foreground">
-                  {property.city}, {property.state} {property.zip_code}
+                  {attachedProperty.city}, {attachedProperty.state} {attachedProperty.zip_code}
                 </p>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                <Badge color="light" className="text-xs">{property.property_type.replace("-", " ")}</Badge>
-                {property.year_built && <Badge color="light" className="text-xs">Built {property.year_built}</Badge>}
-                {property.square_feet && <Badge color="light" className="text-xs">{property.square_feet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} sqft</Badge>}
+                <Badge color="light" className="text-xs">{attachedProperty.property_type.replace("-", " ")}</Badge>
+                {attachedProperty.year_built && <Badge color="light" className="text-xs">Built {attachedProperty.year_built}</Badge>}
+                {attachedProperty.square_feet && <Badge color="light" className="text-xs">{attachedProperty.square_feet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")} sqft</Badge>}
               </div>
-              {(residentialTypes.has(property.property_type) || property.property_type === "multi-family") && (
+              {(residentialTypes.has(attachedProperty.property_type) || attachedProperty.property_type === "multi-family") && (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm pt-1">
                   {[
-                    ["Bedrooms", renderPropertyValue(property.bedrooms)],
-                    ["Bathrooms", renderPropertyValue(property.bathrooms)],
-                    ["Stories", renderPropertyValue(property.stories)],
-                    ["Foundation", renderPropertyValue(property.foundation)],
-                    ["Garage", renderPropertyValue(property.garage)],
-                    ["Pool", renderPropertyValue(property.pool)],
+                    ["Bedrooms", renderPropertyValue(attachedProperty.bedrooms)],
+                    ["Bathrooms", renderPropertyValue(attachedProperty.bathrooms)],
+                    ["Stories", renderPropertyValue(attachedProperty.stories)],
+                    ["Foundation", renderPropertyValue(attachedProperty.foundation)],
+                    ["Garage", renderPropertyValue(attachedProperty.garage)],
+                    ["Pool", renderPropertyValue(attachedProperty.pool)],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <p className="text-xs text-muted-foreground">{label}</p>
@@ -634,14 +794,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   ))}
                 </div>
               )}
-              {residentialTypes.has(property.property_type) && (
+              {residentialTypes.has(attachedProperty.property_type) && (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   {[
-                    ["Basement", renderPropertyValue(property.basement?.replace("-", " "))],
-                    ["Lot Size", property.lot_size_acres ? `${property.lot_size_acres} acres` : "—"],
-                    ["Heating", renderPropertyValue(property.heating_type)],
-                    ["Cooling", renderPropertyValue(property.cooling_type)],
-                    ["Roof", renderPropertyValue(property.roof_type)],
+                    ["Basement", renderPropertyValue(attachedProperty.basement?.replace("-", " "))],
+                    ["Lot Size", attachedProperty.lot_size_acres ? `${attachedProperty.lot_size_acres} acres` : "—"],
+                    ["Heating", renderPropertyValue(attachedProperty.heating_type)],
+                    ["Cooling", renderPropertyValue(attachedProperty.cooling_type)],
+                    ["Roof", renderPropertyValue(attachedProperty.roof_type)],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <p className="text-xs text-muted-foreground">{label}</p>
@@ -650,16 +810,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   ))}
                 </div>
               )}
-              {property.property_type === "commercial" && (
+              {attachedProperty.property_type === "commercial" && (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   {[
-                    ["Class", renderPropertyValue(property.building_class)],
-                    ["Occupancy", renderPropertyValue(property.occupancy_type)],
-                    ["Zoning", renderPropertyValue(property.zoning)],
-                    ["Ceiling", property.ceiling_height ? `${property.ceiling_height} ft` : "—"],
-                    ["Loading Docks", renderPropertyValue(property.loading_docks)],
-                    ["Parking", renderPropertyValue(property.parking_spaces)],
-                    ["Elevator", renderPropertyValue(property.elevator)],
+                    ["Class", renderPropertyValue(attachedProperty.building_class)],
+                    ["Occupancy", renderPropertyValue(attachedProperty.occupancy_type)],
+                    ["Zoning", renderPropertyValue(attachedProperty.zoning)],
+                    ["Ceiling", attachedProperty.ceiling_height ? `${attachedProperty.ceiling_height} ft` : "—"],
+                    ["Loading Docks", renderPropertyValue(attachedProperty.loading_docks)],
+                    ["Parking", renderPropertyValue(attachedProperty.parking_spaces)],
+                    ["Elevator", renderPropertyValue(attachedProperty.elevator)],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <p className="text-xs text-muted-foreground">{label}</p>
@@ -668,14 +828,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   ))}
                 </div>
               )}
-              {property.property_type === "multi-family" && (
+              {attachedProperty.property_type === "multi-family" && (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                   {[
-                    ["Units", renderPropertyValue(property.number_of_units)],
-                    ["Unit Mix", renderPropertyValue(property.unit_mix)],
-                    ["Laundry", renderPropertyValue(property.laundry_type?.replace("-", " "))],
-                    ["Parking", renderPropertyValue(property.parking_spaces)],
-                    ["Elevator", renderPropertyValue(property.elevator)],
+                    ["Units", renderPropertyValue(attachedProperty.number_of_units)],
+                    ["Unit Mix", renderPropertyValue(attachedProperty.unit_mix)],
+                    ["Laundry", renderPropertyValue(attachedProperty.laundry_type?.replace("-", " "))],
+                    ["Parking", renderPropertyValue(attachedProperty.parking_spaces)],
+                    ["Elevator", renderPropertyValue(attachedProperty.elevator)],
                   ].map(([label, value]) => (
                     <div key={label}>
                       <p className="text-xs text-muted-foreground">{label}</p>
@@ -691,13 +851,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <Label htmlFor="order-property-select">Property</Label>
                   <Select
                     value={assignmentForm.property_id}
-                    onValueChange={(value) => setAssignmentForm((prev) => ({ ...prev, property_id: value }))}
+                    onValueChange={handlePropertySelect}
                     disabled={updateOrder.isPending || deleteOrder.isPending}
                   >
                     <SelectTrigger id="order-property-select">
                       <SelectValue placeholder="Select property" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="__add_new_property__">+ Create New Property</SelectItem>
                       {properties.map((option) => (
                         <SelectItem key={option.id} value={option.id}>
                           {[option.address_line1, option.city, option.state].filter(Boolean).join(", ")}
@@ -706,6 +867,73 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={handleStartEditAttachedProperty} disabled={updateOrder.isPending || deleteOrder.isPending}>
+                    Edit Attached Property
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreatePropertyForm((prev) => !prev);
+                      setShowEditPropertyForm(false);
+                      if (!showCreatePropertyForm) {
+                        hydratePropertyForm(attachedProperty);
+                      }
+                    }}
+                    disabled={updateOrder.isPending || deleteOrder.isPending}
+                  >
+                    {showCreatePropertyForm ? "Hide New Property Form" : "Create New Property"}
+                  </Button>
+                </div>
+
+                {showCreatePropertyForm && (
+                  <div className="space-y-3 rounded-md border p-3">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Create and Attach Property</p>
+                    <PropertyFormSections
+                      form={propertyForm}
+                      setForm={setPropertyForm}
+                      errors={propertyFormErrors}
+                      setErrors={setPropertyFormErrors}
+                      showOwnerSection={false}
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        onClick={handleCreatePropertyForOrder}
+                        disabled={createProperty.isPending || updateOrder.isPending || deleteOrder.isPending}
+                      >
+                        {createProperty.isPending ? "Creating..." : "Save New Property & Attach"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {showEditPropertyForm && attachedProperty && (
+                  <div className="space-y-3 rounded-md border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Edit Attached Property</p>
+                      <Button size="sm" variant="ghost" onClick={() => setShowEditPropertyForm(false)}>
+                        Close
+                      </Button>
+                    </div>
+                    <PropertyFormSections
+                      form={propertyForm}
+                      setForm={setPropertyForm}
+                      errors={propertyFormErrors}
+                      setErrors={setPropertyFormErrors}
+                      showOwnerSection={false}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setShowEditPropertyForm(false)}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveAttachedProperty} disabled={updateProperty.isPending}>
+                        {updateProperty.isPending ? "Saving..." : "Save Property Changes"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -722,14 +950,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <User className="h-4 w-4 text-muted-foreground" />
             People
           </CardTitle>
-          <CardDescription>Client and agent contacts.</CardDescription>
+          <CardDescription>Client contact plus optional referring agent.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Client</p>
             {client ? (
               <div className="space-y-1.5">
-                <Link href={`/contacts/${client.id}`} className="font-medium hover:underline text-sm">{client.name}</Link>
+                <Link href={`/contacts/${toSlugIdSegment(client.name, client.public_id ?? client.id)}`} className="font-medium hover:underline text-sm">{client.name}</Link>
                 {client.email && (
                   <a className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground" href={`mailto:${client.email}`}>
                     <Mail className="h-3.5 w-3.5" />{client.email}
@@ -763,7 +991,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No agent assigned</p>
+              <div className="space-y-1.5">
+                <p className="text-sm text-muted-foreground">Direct client order (no agent assigned)</p>
+                <Badge color="light" className="text-xs w-fit">Direct Client</Badge>
+              </div>
             )}
           </div>
           <div className="md:col-span-2">
@@ -775,13 +1006,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <Label htmlFor="order-client-select">Client</Label>
                   <Select
                     value={assignmentForm.client_id}
-                    onValueChange={(value) => setAssignmentForm((prev) => ({ ...prev, client_id: value }))}
+                    onValueChange={(value) => {
+                      if (value === "__add_new_client__") {
+                        setClientDialogOpen(true);
+                        return;
+                      }
+                      setAssignmentForm((prev) => ({ ...prev, client_id: value }));
+                    }}
                     disabled={updateOrder.isPending || deleteOrder.isPending}
                   >
                     <SelectTrigger id="order-client-select">
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="__add_new_client__">+ Add new client</SelectItem>
                       <SelectItem value="__none__">No client</SelectItem>
                       {clients.map((option) => (
                         <SelectItem key={option.clientId} value={option.clientId}>
@@ -792,17 +1030,24 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="order-agent-select">Agent</Label>
+                  <Label htmlFor="order-agent-select">Agent (optional)</Label>
                   <Select
                     value={assignmentForm.agent_id}
-                    onValueChange={(value) => setAssignmentForm((prev) => ({ ...prev, agent_id: value }))}
+                    onValueChange={(value) => {
+                      if (value === "__add_new_agent__") {
+                        setAgentDialogOpen(true);
+                        return;
+                      }
+                      setAssignmentForm((prev) => ({ ...prev, agent_id: value }));
+                    }}
                     disabled={updateOrder.isPending || deleteOrder.isPending}
                   >
                     <SelectTrigger id="order-agent-select">
                       <SelectValue placeholder="Select agent" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">No agent</SelectItem>
+                      <SelectItem value="__add_new_agent__">+ Add new agent</SelectItem>
+                      <SelectItem value="__none__">Direct client (no agent)</SelectItem>
                       {agents.map((option) => (
                         <SelectItem key={option.id} value={option.id}>
                           {option.name}
@@ -811,6 +1056,32 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="order-primary-contact-select">Primary Contact</Label>
+                <Select
+                  value={assignmentForm.primary_contact_type}
+                  onValueChange={(value) => setAssignmentForm((prev) => ({ ...prev, primary_contact_type: value as "__none__" | "agent" | "client" }))}
+                  disabled={
+                    (assignmentForm.client_id === "__none__" && assignmentForm.agent_id === "__none__") ||
+                    updateOrder.isPending ||
+                    deleteOrder.isPending
+                  }
+                >
+                  <SelectTrigger id="order-primary-contact-select">
+                    <SelectValue placeholder="Select primary contact" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assignmentForm.agent_id !== "__none__" ? <SelectItem value="agent">Agent</SelectItem> : null}
+                    {assignmentForm.client_id !== "__none__" ? <SelectItem value="client">Client</SelectItem> : null}
+                    {assignmentForm.agent_id === "__none__" && assignmentForm.client_id === "__none__" ? (
+                      <SelectItem value="__none__">No primary contact</SelectItem>
+                    ) : null}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Defaults to Agent when both are attached. You can switch it to Client for this order.
+                </p>
               </div>
               <div className="flex justify-end">
                 <Button size="sm" variant="outline" onClick={handleSaveAssignments} disabled={updateOrder.isPending || deleteOrder.isPending}>
@@ -896,17 +1167,21 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       </Card>
   );
 
-  const dangerZone = (
-    <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium">Delete order</p>
-        <p className="text-xs text-muted-foreground">Permanently remove this order and all associated data.</p>
-      </div>
-      <Button variant="destructive" size="sm" onClick={handleDelete}>
-        <Trash2 className="mr-2 h-4 w-4" />
-        Delete
-      </Button>
-    </div>
+  const actionsCard = (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Actions</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Button className="w-full" onClick={() => toast("Invoice creation is coming soon.")}>
+          Create Invoice
+        </Button>
+        <Button variant="outline" className="w-full" onClick={() => toast("Payment recording is coming soon.")}>
+          Record Payment
+        </Button>
+        <DeleteButton className="w-full" label="Delete Order" onClick={() => setDeleteDialogOpen(true)} />
+      </CardContent>
+    </Card>
   );
 
   const financialsCard = (
@@ -1012,18 +1287,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </Button>
           </div>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button size="sm" variant="outline" className="w-full" onClick={() => toast("Invoice creation is coming soon.")}>
-            Create Invoice
-          </Button>
-          <Button size="sm" className="w-full" onClick={() => toast("Payment recording is coming soon.")}>Record Payment</Button>
-        </div>
         {order.invoices && order.invoices.length > 0 && (
           <div className="space-y-2 pt-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Invoices</p>
             {order.invoices.map((invoice) => (
               <div key={invoice.id} className="flex items-center justify-between text-sm border-l-2 border-border pl-3">
-                <Link href={`/invoices/${invoice.id}`} className="hover:underline font-medium">
+                <Link href={`/invoices/${toSlugIdSegment("invoice", invoice.id)}`} className="hover:underline font-medium">
                   {formatInvoiceNumber(invoice.id)}
                 </Link>
                 <span className="text-muted-foreground">{formatMoney(invoice.total)}</span>
@@ -1048,7 +1317,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </label>
           <textarea
             id="order-internal-notes"
-            className="w-full min-h-30 rounded-sm border bg-background px-3 py-2 text-sm"
+            className="w-full min-h-30 rounded-md border bg-background px-3 py-2 text-sm"
             value={internalNotes}
             onChange={(event) => setInternalNotes(event.target.value)}
             placeholder="Add internal notes..."
@@ -1077,32 +1346,64 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     </Card>
   );
 
-  const mainContent = (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,2.1fr)_minmax(320px,1fr)]">
-      <div className="space-y-4">
-        {workspaceCard}
-        <div className="space-y-4">
-          {propertyCard}
-          {peopleCard}
-          {servicesCard}
-        </div>
-        <OrderInspectionTab orderId={order.id} />
-      </div>
-      <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
-        {financialsCard}
-        {notesCard}
-        {activityCard}
-        {dangerZone}
-      </div>
-    </div>
+  const leftContent = (
+    <>
+      {workspaceCard}
+      {propertyCard}
+      {peopleCard}
+      {servicesCard}
+      {financialsCard}
+      {notesCard}
+      <OrderInspectionTab orderId={order.id} />
+    </>
+  );
+
+  const rightContent = (
+    <>
+      {actionsCard}
+      {activityCard}
+    </>
   );
 
   return (
-    <ResourceDetailLayout
-      title={order.order_number}
-      meta={headerMeta}
-      headerActions={headerActions}
-      main={mainContent}
-    />
+    <>
+      <IdPageLayout
+        title={order.order_number}
+        meta={headerMeta}
+        breadcrumb={
+          <>
+            <Link href="/orders" className="text-muted-foreground transition hover:text-foreground">
+              Orders
+            </Link>
+            <span className="text-muted-foreground">{">"}</span>
+            <span className="max-w-[20rem] truncate font-medium">{order.order_number}</span>
+          </>
+        }
+        left={leftContent}
+        right={rightContent}
+      />
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Are you sure you want to delete this order?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteOrder.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteOrder.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteOrder.isPending ? "Deleting..." : "Delete Anyway"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <InlineClientDialog open={clientDialogOpen} onOpenChange={setClientDialogOpen} onClientCreated={handleClientCreated} />
+      <InlineAgentDialog open={agentDialogOpen} onOpenChange={setAgentDialogOpen} onAgentCreated={handleAgentCreated} />
+    </>
   );
 }

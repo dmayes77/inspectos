@@ -17,6 +17,7 @@ import { PROPERTY_TYPE_FILTER_OPTIONS } from "@inspectos/shared/constants/proper
 import { ResourceListLayout } from "@/components/shared/resource-list-layout";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
 import { formatTimestamp } from "@inspectos/shared/utils/dates";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const createPropertiesColumns = (): ColumnDef<Property>[] => [
   {
@@ -26,7 +27,10 @@ const createPropertiesColumns = (): ColumnDef<Property>[] => [
     enableSorting: true,
     cell: ({ row }) => (
       <Link
-        href={`/properties/${row.original.id}`}
+        href={`/properties/${toSlugIdSegment(
+          `${row.original.address_line1} ${row.original.city} ${row.original.state}`,
+          row.original.public_id
+        )}`}
         className="flex items-start gap-2 hover:underline"
       >
         <PropertyTypeIcon type={row.original.property_type} className="text-xs" />
@@ -60,7 +64,10 @@ const createPropertiesColumns = (): ColumnDef<Property>[] => [
       }
       return (
         <Link
-          href={`/contacts/${row.original.client.id}`}
+          href={`/contacts/${toSlugIdSegment(
+            row.original.client.name,
+            row.original.client.public_id ?? row.original.client.id
+          )}`}
           className="text-xs hover:underline"
         >
           {row.original.client.name}
@@ -201,11 +208,11 @@ export default function PropertiesPage() {
           }
           emptyState={
             isError ? (
-              <div className="rounded-sm border border-dashed p-10 text-center text-red-500">
+              <div className="rounded-md border border-dashed p-10 text-center text-red-500">
                 Failed to load properties.
               </div>
             ) : properties.length === 0 ? (
-              <div className="rounded-sm border border-dashed p-10 text-center">
+              <div className="rounded-md border border-dashed p-10 text-center">
                 <MapPin className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">No properties yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -216,7 +223,7 @@ export default function PropertiesPage() {
                 </Button>
               </div>
             ) : (
-              <div className="rounded-sm border border-dashed p-10 text-center">
+              <div className="rounded-md border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No properties match your filters</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Adjust your search or type filter to find the property you need.

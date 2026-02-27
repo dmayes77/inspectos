@@ -3,6 +3,7 @@ export type ReportFormat = "pdf" | "html" | "both";
 
 export interface Agent {
   id: string;
+  public_id: string;
   tenant_id: string;
   agency_id: string | null;
   name: string;

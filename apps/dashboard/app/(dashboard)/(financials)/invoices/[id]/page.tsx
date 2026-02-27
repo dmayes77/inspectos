@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import EditInvoicePage from "./edit/page";
@@ -18,12 +18,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useInvoice, useDeleteInvoice } from "@/hooks/use-invoices";
 import { useOrderById } from "@/hooks/use-orders";
 import type { InspectionService } from "@/hooks/use-orders";
 import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
 import { ClientInfoCard } from "@/components/shared/client-info-card";
+import { parseSlugIdSegment, toSlugIdSegment } from "@/lib/routing/slug-id";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {
@@ -42,9 +43,8 @@ function getStatusBadgeClasses(status: string) {
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const invoiceId = params.id as string;
-  const isEditing = searchParams.get("edit") === "1";
+  const invoiceId = parseSlugIdSegment(params.id as string);
+  const isEditing = true;
 
   if (isEditing) {
     return <EditInvoicePage />;
@@ -99,14 +99,6 @@ export default function InvoiceDetailPage() {
             <span className="text-xs text-muted-foreground">${invoice.amount.toFixed(2)}</span>
           </>
         }
-        actions={
-          <Button asChild variant="outline">
-            <Link href={`/invoices/${invoice.invoiceId}?edit=1`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
-        }
       />
 
       <ClientInfoCard
@@ -116,7 +108,7 @@ export default function InvoiceDetailPage() {
         actionHref={invoice.clientId ? `/contacts/${invoice.clientId}` : undefined}
         emptyLabel="No client assigned"
         emptyActionLabel="Assign Client"
-        emptyActionHref={`/invoices/${invoice.invoiceId}?edit=1`}
+        emptyActionHref={`/invoices/${toSlugIdSegment(invoice.invoiceNumber ?? invoice.invoiceId, invoice.invoiceId)}`}
       />
 
       <Card>
@@ -139,7 +131,7 @@ export default function InvoiceDetailPage() {
             <div>
               <p className="text-sm text-muted-foreground mb-1">Order</p>
               {invoice.orderId ? (
-                <Link href={`/orders/${invoice.orderId}`} className="font-medium hover:underline">
+                <Link href={`/orders/${invoice.orderNumber || invoice.orderId}`} className="font-medium hover:underline">
                   {invoice.orderNumber || "View order"}
                 </Link>
               ) : (
@@ -173,7 +165,7 @@ export default function InvoiceDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Delete invoice</p>
           <p className="text-xs text-muted-foreground">Permanently remove this invoice and all associated data.</p>
@@ -200,7 +192,7 @@ export default function InvoiceDetailPage() {
                 Deleting...
               </>
             ) : (
-              "Delete Invoice"
+              "Delete Anyway"
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

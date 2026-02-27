@@ -9,6 +9,7 @@ import { validateRequestBody } from '@/lib/api/validate';
 import { updateOrderSchema } from '@inspectos/shared/validations/order';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
+import { resolveIdLookup } from '@/lib/identifiers/lookup';
 import {
   buildOrderUpdatedPayload,
   buildOrderCompletedPayload,
@@ -28,17 +29,23 @@ const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: 
   }
 };
 
+const derivePrimaryContactType = (clientId?: string | null, agentId?: string | null): "agent" | "client" | null => {
+  if (agentId) return "agent";
+  if (clientId) return "client";
+  return null;
+};
+
 const ORDER_DETAIL_SELECT = `
   *,
   property:properties(
-    id, address_line1, address_line2, city, state, zip_code, property_type,
+    id, public_id, address_line1, address_line2, city, state, zip_code, property_type,
     year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool,
     basement, lot_size_acres, heating_type, cooling_type, roof_type,
     building_class, loading_docks, zoning, occupancy_type, ceiling_height,
     number_of_units, unit_mix, laundry_type, parking_spaces, elevator
   ),
-  client:clients(id, name, email, phone, company, notes),
-  agent:agents(id, name, email, phone, license_number, agency:agencies(id, name, email, phone)),
+  client:clients(id, public_id, name, email, phone, company, notes),
+  agent:agents(id, public_id, name, email, phone, license_number, agency:agencies(id, name, email, phone)),
   inspector:profiles(id, full_name, email, avatar_url),
   schedules:order_schedules(
     id, tenant_id, order_id, schedule_type, label, service_id, package_id,
@@ -61,13 +68,15 @@ const ORDER_DETAIL_SELECT = `
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id, { publicColumn: "order_number", transformPublicValue: (value) => value.toUpperCase() });
 
   const { data, error } = await supabase
     .from("orders")
     .select(ORDER_DETAIL_SELECT)
     .eq("tenant_id", tenant.id)
-    .eq("id", id)
-    .single();
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
 
   if (error || !data) return notFound(error?.message ?? "Order not found.");
   return success(data);
@@ -78,6 +87,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id, { publicColumn: "order_number", transformPublicValue: (value) => value.toUpperCase() });
 
   const validation = await validateRequestBody(request, updateOrderSchema);
   if (validation.error) return validation.error;
@@ -85,10 +95,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 
   const { data: currentOrder } = await supabase
     .from("orders")
-    .select("status")
+    .select("id, status, client_id, agent_id, primary_contact_type")
     .eq("tenant_id", tenant.id)
-    .eq("id", id)
-    .single();
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (!currentOrder?.id) return notFound("Order not found.");
 
   const previousStatus = currentOrder?.status;
 
@@ -123,6 +136,22 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (payload.source !== undefined) updateData.source = payload.source;
   if (payload.internal_notes !== undefined) updateData.internal_notes = payload.internal_notes;
   if (payload.client_notes !== undefined) updateData.client_notes = payload.client_notes;
+  if (payload.primary_contact_type !== undefined) {
+    updateData.primary_contact_type = payload.primary_contact_type;
+  } else if (payload.client_id !== undefined || payload.agent_id !== undefined) {
+    const effectiveClientId = payload.client_id !== undefined ? payload.client_id : (currentOrder?.client_id ?? null);
+    const effectiveAgentId = payload.agent_id !== undefined ? payload.agent_id : (currentOrder?.agent_id ?? null);
+    const existingPrimary = currentOrder?.primary_contact_type ?? null;
+
+    const nextPrimary =
+      existingPrimary === "agent" && !effectiveAgentId
+        ? derivePrimaryContactType(effectiveClientId, effectiveAgentId)
+        : existingPrimary === "client" && !effectiveClientId
+          ? derivePrimaryContactType(effectiveClientId, effectiveAgentId)
+          : existingPrimary ?? derivePrimaryContactType(effectiveClientId, effectiveAgentId);
+
+    updateData.primary_contact_type = nextPrimary;
+  }
 
   if (payload.status === "completed" && !updateData.completed_at) {
     updateData.completed_at = new Date().toISOString();
@@ -132,7 +161,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from("orders")
     .update(updateData)
     .eq("tenant_id", tenant.id)
-    .eq("id", id)
+    .eq("id", currentOrder.id)
     .select(ORDER_DETAIL_SELECT)
     .single();
 
@@ -284,13 +313,21 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id, { publicColumn: "order_number", transformPublicValue: (value) => value.toUpperCase() });
 
-  const { data: order } = await supabase.from("orders").select("status").eq("tenant_id", tenant.id).eq("id", id).single();
+  const { data: order } = await supabase
+    .from("orders")
+    .select("id, status")
+    .eq("tenant_id", tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
   if (order && ["completed", "in_progress"].includes(order.status)) {
     return badRequest("Cannot delete an order that is in progress or completed.");
   }
+  if (!order?.id) return notFound("Order not found.");
 
-  const { error } = await supabase.from("orders").delete().eq("tenant_id", tenant.id).eq("id", id);
+  const { error } = await supabase.from("orders").delete().eq("tenant_id", tenant.id).eq("id", order.id);
   if (error) return serverError('Failed to delete order', error);
   return success(true);
 });

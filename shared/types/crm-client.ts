@@ -1,5 +1,6 @@
 export type CRMClientProperty = {
   propertyId: string;
+  propertyPublicId?: string;
   addressLine1: string;
   addressLine2: string | null;
   city: string;
@@ -10,6 +11,7 @@ export type CRMClientProperty = {
 
 export type CRMClient = {
   clientId: string;
+  publicId?: string;
   name: string;
   email: string;
   phone: string;

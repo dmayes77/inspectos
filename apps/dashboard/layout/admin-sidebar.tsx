@@ -97,17 +97,17 @@ export function AdminSidebar({
           }}
           className={cn("flex items-center gap-3 min-w-0", !showFull ? "lg:justify-center" : "flex-1")}
         >
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-sm overflow-hidden">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md overflow-hidden">
             {businessLogo ? (
               <Image
                 src={businessLogo}
                 alt={businessName || "Logo"}
                 fill
                 sizes="36px"
-                className="object-contain rounded-sm"
+                className="object-contain rounded-md"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center rounded-sm bg-brand-500 text-white font-bold text-sm">
+              <div className="flex h-full w-full items-center justify-center rounded-md bg-brand-500 text-white font-bold text-sm">
                 {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
               </div>
             )}

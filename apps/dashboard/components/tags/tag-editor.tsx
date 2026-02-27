@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateTag, useTags, useUpdateTag } from "@/hooks/use-tags";
 import type { Tag, TagScope, TagType } from "@/types/tag";
 import { toast } from "sonner";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 const scopeOptions: { value: TagScope; label: string }[] = [
   { value: "lead", label: "Lead" },
@@ -36,7 +37,7 @@ const typeOptions: { value: TagType; label: string }[] = [
 export function TagEditor() {
   const params = useParams();
   const router = useRouter();
-  const tagId = typeof params.id === "string" ? params.id : null;
+  const tagId = typeof params.id === "string" ? parseSlugIdSegment(params.id) : null;
   const isNew = !tagId;
 
   const { data: tags = [] } = useTags();

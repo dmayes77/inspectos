@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { PageHeader } from "@/layout/page-header";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { SaveButton } from "@/components/shared/action-buttons";
 import { Button } from "@/components/ui/button";
-import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
-import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AgentForm, type AgentFormValues } from "@/components/partners/agent-form";
 import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgentById, useUpdateAgent } from "@/hooks/use-agents";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import type { Agent } from "@/hooks/use-agents";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 type Params = { id: string };
 
@@ -230,12 +231,23 @@ const AGENT_TIPS = [
 
 export default function EditAgentPage() {
   const params = useParams();
+  const pathname = usePathname();
   const { id: agentId } = params as Params;
   const router = useRouter();
   const { data: agent, isLoading } = useAgentById(agentId);
   const { data: agencies = [] } = useAgencies();
   const updateAgent = useUpdateAgent();
   const [form, setForm] = useState<AgentFormValues>(toFormValues());
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   const splitNameAndAgency = (value?: string | null) => {
     if (!value) return { agent: null, agency: null };
@@ -303,9 +315,10 @@ export default function EditAgentPage() {
 
   if (!agent) {
     return (
-      <PageHeader
+      <IdPageLayout
         title="Agent Not Found"
         description="We couldn't locate that agent record."
+        left={null}
       />
     );
   }
@@ -344,7 +357,7 @@ export default function EditAgentPage() {
     try {
       await updateAgent.mutateAsync(payload);
       toast.success("Agent updated");
-      router.push(`/agents/${agent.id}`);
+      router.push(`/agents/${toSlugIdSegment(agent.name, agent.public_id ?? agent.id)}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update agent";
       toast.error(message);
@@ -353,38 +366,53 @@ export default function EditAgentPage() {
 
   return (
     <>
-    <div className="space-y-6">
-      <PageHeader
-        title="Edit Agent"
-        description="Adjust relationship details and portal settings"
-      />
-
       <form onSubmit={handleSubmit}>
-        <ResourceFormLayout
+        <IdPageLayout
+          title="Agent"
+          description="Adjust relationship details and portal settings"
+          breadcrumb={
+            <>
+              <Link href="/agents" className="text-muted-foreground transition hover:text-foreground">
+                Agents
+              </Link>
+              <span className="text-muted-foreground">{">"}</span>
+              <span className="max-w-[20rem] truncate font-medium">{agent.name}</span>
+            </>
+          }
           left={
-            <div className="space-y-6">
+            <div className="space-y-4">
               <AgentInternetScrub onApply={applyScrubResult} urlRequired={false} />
               <AgentForm form={form} setForm={setForm} agencies={agencies} agentId={agent.id} />
             </div>
           }
           right={
-            <ResourceFormSidebar
-              actions={
-                <>
-                  <Button type="submit" className="w-full" disabled={updateAgent.isPending}>
-                    {updateAgent.isPending ? "Saving..." : "Save Changes"}
-                  </Button>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <SaveButton type="submit" className="w-full" isSaving={updateAgent.isPending} />
                   <Button type="button" variant="outline" className="w-full" asChild>
-                    <Link href={`/agents/${agent.id}`}>Cancel</Link>
+                    <Link href={`/agents/${toSlugIdSegment(agent.name, agent.public_id ?? agent.id)}`}>Cancel</Link>
                   </Button>
-                </>
-              }
-              tips={AGENT_TIPS}
-            />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Tips</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  {AGENT_TIPS.map((tip) => (
+                    <p key={tip}>{tip}</p>
+                  ))}
+                </CardContent>
+              </Card>
+            </>
           }
         />
       </form>
-    </div>
     </>
   );
 }

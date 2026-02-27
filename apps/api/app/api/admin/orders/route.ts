@@ -27,17 +27,23 @@ const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: 
   }
 };
 
+const derivePrimaryContactType = (clientId?: string | null, agentId?: string | null): "agent" | "client" | null => {
+  if (agentId) return "agent";
+  if (clientId) return "client";
+  return null;
+};
+
 const ORDER_SELECT = `
   *,
   property:properties(
-    id, address_line1, address_line2, city, state, zip_code, property_type,
+    id, public_id, address_line1, address_line2, city, state, zip_code, property_type,
     year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool,
     basement, lot_size_acres, heating_type, cooling_type, roof_type,
     building_class, loading_docks, zoning, occupancy_type, ceiling_height,
     number_of_units, unit_mix, laundry_type, parking_spaces, elevator
   ),
-  client:clients(id, name, email, phone, company),
-  agent:agents(id, name, email, phone, agency:agencies(id, name)),
+  client:clients(id, public_id, name, email, phone, company),
+  agent:agents(id, public_id, name, email, phone, agency:agencies(id, name)),
   inspector:profiles(id, full_name, email, avatar_url),
   schedules:order_schedules(
     id, tenant_id, order_id, schedule_type, label, service_id, package_id,
@@ -129,6 +135,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       source: payload.source ?? null,
       internal_notes: payload.internal_notes ?? null,
       client_notes: payload.client_notes ?? null,
+      primary_contact_type: payload.primary_contact_type ?? derivePrimaryContactType(payload.client_id ?? null, payload.agent_id ?? null),
       template_id: payload.services[0]?.template_id ?? null,
       template_version: 1,
     })
@@ -215,9 +222,9 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
     .from("orders")
     .select(`
       *,
-      property:properties(id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool, basement, lot_size_acres, heating_type, cooling_type, roof_type, building_class, loading_docks, zoning, occupancy_type, ceiling_height, number_of_units, unit_mix, laundry_type, parking_spaces, elevator),
-      client:clients(id, name, email, phone),
-      agent:agents(id, name, email, phone),
+      property:properties(id, public_id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet, bedrooms, bathrooms, stories, foundation, garage, pool, basement, lot_size_acres, heating_type, cooling_type, roof_type, building_class, loading_docks, zoning, occupancy_type, ceiling_height, number_of_units, unit_mix, laundry_type, parking_spaces, elevator),
+      client:clients(id, public_id, name, email, phone),
+      agent:agents(id, public_id, name, email, phone),
       inspector:profiles(id, full_name, email),
       schedules:order_schedules(id, tenant_id, order_id, schedule_type, label, service_id, package_id, inspector_id, slot_date, slot_start, slot_end, duration_minutes, status, notes),
       services:order_services(id, service_id, name, status, price, duration_minutes, template_id, sort_order, notes, inspector_id, vendor_id, inspector:profiles!inspection_services_inspector_id_fkey(id, full_name, email, avatar_url), vendor:vendors!inspection_services_vendor_id_fkey(id, name, vendor_type, email, phone))

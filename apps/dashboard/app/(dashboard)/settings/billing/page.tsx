@@ -132,7 +132,7 @@ export default function BillingPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-sm border p-4">
+            <div className="rounded-md border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Base monthly</span>
                 <span className="text-lg font-semibold">{money(base, currency)}</span>
@@ -217,7 +217,7 @@ export default function BillingPage() {
             <CardDescription>Owner/admin can switch plans and keep seat assignments in sync.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-sm border p-4">
+            <div className="rounded-md border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Current plan</span>
                 <span className="font-medium">{settings.billing.planName}</span>
@@ -256,7 +256,7 @@ export default function BillingPage() {
             <CardDescription>Usage, monthly total, and payment method access.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-sm border p-4">
+            <div className="rounded-md border p-4">
               <div className="mt-2 flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Purchased seats</span>
                 <span className="font-medium">{billing.selectedInspectorSeats}</span>

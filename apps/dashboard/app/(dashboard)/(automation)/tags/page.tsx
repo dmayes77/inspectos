@@ -5,12 +5,23 @@ import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Tag as TagIcon, Pencil } from "lucide-react";
 import { useDeleteTag, useTags } from "@/hooks/use-tags";
 import type { TagScope } from "@/types/tag";
 import { toast } from "sonner";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const scopeOptions: { value: TagScope; label: string }[] = [
   { value: "lead", label: "Lead" },
@@ -28,6 +39,19 @@ export default function TagsPage() {
   const deleteTagMutation = useDeleteTag();
 
   const [scopeFilter, setScopeFilter] = useState<TagScope | "all">("all");
+  const [deleteTagId, setDeleteTagId] = useState<string | null>(null);
+
+  const handleConfirmDeleteTag = () => {
+    if (!deleteTagId) return;
+    deleteTagMutation.mutate(deleteTagId, {
+      onSuccess: () => {
+        toast.success("Tag archived.");
+        setDeleteTagId(null);
+      },
+      onError: (error) =>
+        toast.error(error instanceof Error ? error.message : "Failed to delete tag."),
+    });
+  };
 
   const filteredTags = useMemo(() => {
     if (scopeFilter === "all") return tags;
@@ -74,14 +98,14 @@ export default function TagsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {filteredTags.length === 0 ? (
-              <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                 No tags yet. Create your first tag.
               </div>
             ) : (
               filteredTags.map((tag) => (
-                <div key={tag.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3">
+                <div key={tag.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted">
                       <TagIcon className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
@@ -97,22 +121,12 @@ export default function TagsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" asChild>
-                      <Link href={`/tags/${tag.id}`}>
+                      <Link href={`/tags/${toSlugIdSegment(tag.name, tag.id)}`}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </Link>
                     </Button>
-                    <Button
-                     
-                      variant="ghost"
-                      onClick={() =>
-                        deleteTagMutation.mutate(tag.id, {
-                          onSuccess: () => toast.success("Tag archived."),
-                          onError: (error) =>
-                            toast.error(error instanceof Error ? error.message : "Failed to delete tag."),
-                        })
-                      }
-                    >
+                    <Button variant="ghost" onClick={() => setDeleteTagId(tag.id)}>
                       <Trash2 className="mr-2 h-4 w-4 text-destructive" />
                       Archive
                     </Button>
@@ -123,6 +137,26 @@ export default function TagsPage() {
           </CardContent>
         </Card>
     </div>
+    <AlertDialog open={Boolean(deleteTagId)} onOpenChange={(open) => (!open ? setDeleteTagId(null) : undefined)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Archive this tag?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure? This removes the tag from active use and cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleteTagMutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDeleteTag}
+            disabled={deleteTagMutation.isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleteTagMutation.isPending ? "Archiving..." : "Delete Anyway"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

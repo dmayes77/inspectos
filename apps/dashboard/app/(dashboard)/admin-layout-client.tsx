@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { AdminShell } from "@/layout/admin-shell";
+import { AppShell } from "@/layout/app-shell";
 import { BrandColorProvider } from "@/context/brand-color";
 import { useGet } from "@/hooks/crud";
 import { useApiClient } from "@/lib/api/tenant-context";
@@ -74,9 +74,9 @@ export function AdminLayoutClient({ children }: { children: ReactNode }) {
     : undefined;
 
   return (
-    <AdminShell user={user}>
+    <AppShell user={user}>
       <BrandColorProvider />
       {children}
-    </AdminShell>
+    </AppShell>
   );
 }

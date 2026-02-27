@@ -13,6 +13,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Alert } from "@/components/ui/alert";
 import {
   Plus,
@@ -33,6 +43,7 @@ import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 import { ModernDataTable } from "@/components/ui/modern-data-table";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const ROLE_OPTIONS: TeamMember["role"][] = ["OWNER", "ADMIN", "OFFICE_STAFF", "INSPECTOR"];
 
@@ -58,6 +69,7 @@ export default function TeamPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [loginDialogMember, setLoginDialogMember] = useState<TeamMember | null>(null);
+  const [deleteDialogMember, setDeleteDialogMember] = useState<TeamMember | null>(null);
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isSavingLogin, setIsSavingLogin] = useState(false);
@@ -112,6 +124,7 @@ export default function TeamPage() {
     if (!canDeleteMembers) return;
     if (!canEditRoleForTarget(userRole, member.role)) return;
     await deleteMember.mutateAsync(member.memberId);
+    setDeleteDialogMember(null);
   };
 
   const openLoginDialog = (member: TeamMember) => {
@@ -177,7 +190,7 @@ export default function TeamPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <Link href={`/admin/team/${member.memberId}`} className="text-sm font-medium leading-tight hover:underline">
+                <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`} className="text-sm font-medium leading-tight hover:underline">
                   {member.name}
                 </Link>
                 <div className="mt-0.5 text-xs text-muted-foreground">ID# {member.memberId}</div>
@@ -253,7 +266,7 @@ export default function TeamPage() {
               value={member.color ?? "#CBD5E1"}
               onChange={(event) => void handleColorChange(member, event.target.value)}
               aria-label={`${member.name} color`}
-              className="h-7 w-7 cursor-pointer rounded-sm border border-border bg-transparent p-0"
+              className="h-7 w-7 cursor-pointer rounded-md border border-border bg-transparent p-0"
               disabled={!canEditMembers || !canEditRoleForTarget(userRole, member.role)}
             />
           );
@@ -271,7 +284,7 @@ export default function TeamPage() {
           return (
             <div className="flex items-center gap-1">
               <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
-                <Link href={`/admin/team/${member.memberId}`}>
+                <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`}>
                   <FileText className="h-3.5 w-3.5" />
                   <span className="sr-only">Profile</span>
                 </Link>
@@ -289,7 +302,7 @@ export default function TeamPage() {
               ) : null}
               {canEditMembers ? (
                 <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
-                  <Link href={`/admin/team/${member.memberId}/edit`}>
+                  <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`}>
                     <Pencil className="h-3.5 w-3.5" />
                     <span className="sr-only">Edit</span>
                   </Link>
@@ -300,7 +313,7 @@ export default function TeamPage() {
                   size="sm"
                   variant="outline"
                   className="h-8 w-8 p-0 text-destructive"
-                  onClick={() => void handleDelete(member)}
+                  onClick={() => setDeleteDialogMember(member)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   <span className="sr-only">Delete</span>
@@ -375,7 +388,7 @@ export default function TeamPage() {
             </>
           }
           emptyState={
-            <div className="rounded-sm border border-dashed p-10 text-center">
+            <div className="rounded-md border border-dashed p-10 text-center">
               <h3 className="text-lg font-semibold">No team members found</h3>
               <p className="mt-2 text-sm text-muted-foreground">Try a different filter or search term.</p>
             </div>
@@ -415,7 +428,7 @@ export default function TeamPage() {
           </div>
 
           {filteredMembers.length === 0 ? (
-            <div className="rounded-sm border border-dashed p-10 text-center">
+            <div className="rounded-md border border-dashed p-10 text-center">
               <h3 className="text-lg font-semibold">No team members found</h3>
               <p className="mt-2 text-sm text-muted-foreground">Try a different filter or search term.</p>
             </div>
@@ -435,7 +448,7 @@ export default function TeamPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <Link href={`/admin/team/${member.memberId}`} className="font-medium hover:underline">
+                        <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`} className="font-medium hover:underline">
                           {member.name}
                         </Link>
                         <div className="text-xs text-muted-foreground truncate">{member.email}</div>
@@ -446,7 +459,7 @@ export default function TeamPage() {
                       {teamRoleBadge(member.role)}
                       {teamStatusBadge(member.status)}
                       <span
-                        className="inline-block h-4 w-4 rounded-sm border border-border"
+                        className="inline-block h-4 w-4 rounded-md border border-border"
                         style={{ backgroundColor: member.color ?? "#CBD5E1" }}
                         aria-label="Member color"
                       />
@@ -454,7 +467,7 @@ export default function TeamPage() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/team/${member.memberId}`}>
+                        <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`}>
                           <StickyNote className="mr-1 h-3.5 w-3.5" />Open
                         </Link>
                       </Button>
@@ -465,7 +478,7 @@ export default function TeamPage() {
                       ) : null}
                       {canEditMembers ? (
                         <Button size="sm" variant="outline" asChild>
-                          <Link href={`/admin/team/${member.memberId}/edit`}>
+                          <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`}>
                             Edit
                           </Link>
                         </Button>
@@ -528,6 +541,27 @@ export default function TeamPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(deleteDialogMember)} onOpenChange={(open) => (!open ? setDeleteDialogMember(null) : undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete team member?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {deleteDialogMember?.name ?? "this member"}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMember.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => (deleteDialogMember ? void handleDelete(deleteDialogMember) : undefined)}
+              disabled={deleteMember.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMember.isPending ? "Deleting..." : "Delete Anyway"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

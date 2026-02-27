@@ -16,7 +16,7 @@ export default function WelcomeSuccessPage() {
           return (
             <span
               key={index}
-              className="confetti-piece absolute top-[-10%] h-2 w-2 rounded-sm"
+              className="confetti-piece absolute top-[-10%] h-2 w-2 rounded-md"
               style={{
                 left,
                 animationDelay: delay,
@@ -28,7 +28,7 @@ export default function WelcomeSuccessPage() {
         })}
       </div>
 
-      <div className="relative z-10 w-full max-w-xl rounded-sm border border-gray-200 bg-white p-10 text-center shadow-lg dark:border-gray-800 dark:bg-gray-900">
+      <div className="relative z-10 w-full max-w-xl rounded-md border border-gray-200 bg-white p-10 text-center shadow-lg dark:border-gray-800 dark:bg-gray-900">
         <p className="text-sm font-medium uppercase tracking-wide text-brand-600 dark:text-brand-400">
           Setup Complete
         </p>
@@ -41,7 +41,7 @@ export default function WelcomeSuccessPage() {
         <div className="mt-8">
           <Link
             href="/overview"
-            className="inline-flex items-center justify-center rounded-sm bg-brand-500 px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
+            className="inline-flex items-center justify-center rounded-md bg-brand-500 px-6 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600"
           >
             Go to dashboard
           </Link>

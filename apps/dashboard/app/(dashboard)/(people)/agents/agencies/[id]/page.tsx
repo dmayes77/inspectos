@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/layout/admin-page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,11 @@ import { useAgencyById, useDeleteAgency } from "@/hooks/use-agencies";
 import { useAgents } from "@/hooks/use-agents";
 import { useQueryClient } from "@tanstack/react-query";
 import { isAgenciesQueryKey } from "@inspectos/shared/query";
-import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Edit, Trash2, type LucideIcon } from "lucide-react";
+import { Building2, Users, Phone, Globe, MapPin, DollarSign, ClipboardList, Trash2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyLogo } from "@/components/shared/company-logo";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 import EditAgencyPage from "./edit/page";
 
 const MAPS_BASE_URL = "https://www.google.com/maps/search/?api=1&query=";
@@ -41,9 +43,9 @@ const agentInitials = (name: string) =>
 
 export default function AgencyDetailPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const { id: agencyId } = params as Params;
-  const isEditing = searchParams.get("edit") === "1";
+  const { id: agencyRouteId } = params as Params;
+  const agencyId = parseSlugIdSegment(agencyRouteId);
+  const isEditing = true;
   if (isEditing) {
     return <EditAgencyPage />;
   }
@@ -121,7 +123,7 @@ export default function AgencyDetailPage() {
               website={agency.website}
               domain={agency.website}
               size={96}
-              className="h-24 w-24 rounded-sm"
+              className="h-24 w-24 rounded-md"
             />
             <div className="flex-1">
               <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
@@ -163,11 +165,6 @@ export default function AgencyDetailPage() {
                 </Link>
               </Button>
             )}
-            <Button className="w-full sm:w-auto" asChild>
-              <Link href={`/agents/agencies/${agency.id}?edit=1`}>
-                <Edit className="mr-2 h-4 w-4" /> Edit
-              </Link>
-            </Button>
             <Button
               variant="outline"
               className="w-full text-destructive hover:bg-destructive/5 hover:text-destructive sm:w-auto"
@@ -189,7 +186,7 @@ export default function AgencyDetailPage() {
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               {stats.map((stat) => (
-                <div key={stat.label} className="rounded-sm border p-4">
+                <div key={stat.label} className="rounded-md border p-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <stat.icon className="h-4 w-4" />
                     {stat.label}
@@ -274,14 +271,14 @@ export default function AgencyDetailPage() {
               ) : (
                 <div className="space-y-3">
                   {agentList.map((agent) => (
-                    <div key={agent.id} className="flex flex-wrap items-center justify-between gap-3 rounded-sm border p-3 text-sm">
+                    <div key={agent.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 text-sm">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border">
                           <AvatarImage src={agent.avatar_url ?? undefined} alt={agent.name} />
                           <AvatarFallback>{agentInitials(agent.name)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <Link href={`/agents/${agent.id}`} className="font-medium hover:underline">
+                          <Link href={`/agents/${toSlugIdSegment(agent.name, agent.public_id ?? agent.id)}`} className="font-medium hover:underline">
                             {agent.name}
                           </Link>
                           <p className="text-muted-foreground">{agent.email ?? "No email"}</p>
@@ -309,7 +306,7 @@ export default function AgencyDetailPage() {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            Delete Anyway
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,5 +1,6 @@
 export interface Property {
   id: string;
+  public_id: string;
   tenant_id: string;
   client_id: string | null;
   address_line1: string;
@@ -36,6 +37,7 @@ export interface Property {
   updated_at: string;
   client?: {
     id: string;
+    public_id?: string;
     name: string;
     email: string | null;
     phone: string | null;
@@ -52,6 +54,7 @@ export type PropertyOwner = {
   isPrimary: boolean;
   client?: {
     id: string;
+    public_id?: string;
     name: string;
     email: string | null;
     phone: string | null;

@@ -19,6 +19,7 @@ import { useCreateWorkflow, useUpdateWorkflow, useWorkflows } from "@/hooks/use-
 import { useEmailTemplates } from "@/hooks/use-email-templates";
 import type { Workflow, WorkflowScope, WorkflowTriggerType } from "@/types/workflow";
 import { toast } from "sonner";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 const scopeOptions: { value: WorkflowScope; label: string }[] = [
   { value: "lead", label: "Lead" },
@@ -92,7 +93,7 @@ function SortableAction({
 export function WorkflowEditor() {
   const params = useParams();
   const router = useRouter();
-  const workflowId = typeof params.id === "string" ? params.id : null;
+  const workflowId = typeof params.id === "string" ? parseSlugIdSegment(params.id) : null;
 
   const { data: workflows = [] } = useWorkflows();
   const { data: tags = [] } = useTags();
@@ -377,7 +378,7 @@ export function WorkflowEditor() {
               </div>
               <div className="space-y-3">
                 <div className="text-sm font-medium text-muted-foreground">Conditions</div>
-                <div className="rounded-sm border p-3 space-y-3">
+                <div className="rounded-md border p-3 space-y-3">
                   <div className="space-y-2">
                     <Label>Must have tags</Label>
                     <div className="space-y-2">
@@ -479,7 +480,7 @@ export function WorkflowEditor() {
                 </Button>
               </div>
               {(form.actions ?? []).length === 0 ? (
-                <div className="rounded-sm border border-dashed p-3 text-sm text-muted-foreground">
+                <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
                   No actions yet. Add at least one action for this workflow.
                 </div>
               ) : (
@@ -497,10 +498,10 @@ export function WorkflowEditor() {
 
                         return (
                           <SortableAction key={actionData.id} action={actionData}>
-                            <div className="rounded-sm border p-3 space-y-3">
+                            <div className="rounded-md border p-3 space-y-3">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex items-center gap-2">
-                                  <div className={`h-7 w-7 rounded-full flex items-center justify-center ${color}`}>
+                                  <div className={`h-7 w-7 rounded-md flex items-center justify-center ${color}`}>
                                     <Icon className="h-3.5 w-3.5" />
                                   </div>
                                   <span className="text-sm font-medium">{meta?.label ?? actionData.type}</span>

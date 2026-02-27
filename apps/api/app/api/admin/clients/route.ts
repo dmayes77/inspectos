@@ -45,6 +45,7 @@ export const GET = withAuth(async ({ supabase, tenant }) => {
     const stats = jobStats.get(client.id) || { inspections: 0, lastInspection: '' };
     return {
       clientId: client.id,
+      publicId: client.public_id,
       name: client.name,
       email: client.email || '',
       phone: client.phone || '',
@@ -102,6 +103,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
 
   return success({
     clientId: client.id,
+    publicId: client.public_id,
     name: client.name,
     email: client.email || '',
     phone: client.phone || '',

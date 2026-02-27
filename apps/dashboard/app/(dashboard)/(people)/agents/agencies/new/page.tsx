@@ -12,6 +12,7 @@ import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useCreateAgency } from "@/hooks/use-agencies";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 
 const AGENCY_TIPS = [
@@ -244,7 +245,7 @@ export default function NewAgencyPage() {
       {
         onSuccess: (agency) => {
           toast.success("Agency created");
-          router.push(`/agents/agencies/${agency.id}`);
+          router.push(`/agents/agencies/${toSlugIdSegment(agency.name, agency.id)}`);
         },
         onError: (error) => {
           const message = error instanceof Error ? error.message : "Failed to create agency";

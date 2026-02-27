@@ -85,7 +85,7 @@
   --z-index-99999: 99999;
   --z-index-999999: 999999;
 
-  /* Border radius (Apple-inspired: subtle, not too rounded-sm) */
+  /* Border radius (Apple-inspired: subtle, not too rounded-md) */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -606,6 +606,7 @@
 
   p {
     @apply leading-relaxed;
+    margin: 0;
   }
 
   /* Small text for labels, captions */
@@ -700,7 +701,7 @@
 
   /* Status indicators */
   .status-dot {
-    @apply inline-block h-2 w-2 rounded-full;
+    @apply inline-block h-2 w-2 rounded-md;
   }
 
   .status-dot-success {
@@ -828,7 +829,7 @@
    ============================================================================= */
 
 @utility menu-item {
-  @apply relative flex items-center w-full gap-2.5 px-3 py-1.5 font-medium rounded-sm;
+  @apply relative flex items-center w-full gap-2.5 px-3 py-1.5 font-medium rounded-md;
   font-size: 0.8125rem;
 }
 
@@ -1060,4 +1061,8 @@
 /* Prevent min-height override */
 .custom-calendar .fc.fc-media-screen {
   min-height: unset;
+}
+
+[data-slot="button"] {
+  border-radius: var(--radius-md);
 }

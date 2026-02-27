@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { PageHeader } from "@/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { isAgenciesQueryKey, isAgentsQueryKey } from "@inspectos/shared/query";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
+import { parseSlugIdSegment, toSlugIdSegment } from "@/lib/routing/slug-id";
 
 type Params = { id: string };
 
@@ -218,7 +219,9 @@ const AGENCY_TIPS = [
 
 export default function EditAgencyPage() {
   const params = useParams();
-  const { id: agencyId } = params as Params;
+  const pathname = usePathname();
+  const { id: agencyRouteId } = params as Params;
+  const agencyId = parseSlugIdSegment(agencyRouteId);
   const router = useRouter();
   const { data: agency, isLoading } = useAgencyById(agencyId);
   const updateAgency = useUpdateAgency();
@@ -233,6 +236,16 @@ export default function EditAgencyPage() {
   const [hasInitializedAgents, setHasInitializedAgents] = useState(false);
   const isSaving = updateAgency.isPending || updateAgent.isPending;
   const selectableAgents = agents.filter((agent) => !agent.agency_id || agent.agency_id === agency?.id);
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   const applyScrubResult = (result: AgentScrubResult) => {
     const agencyName = result.agencyName ?? result.name;
@@ -345,7 +358,7 @@ export default function EditAgencyPage() {
       });
 
       toast.success("Agency updated");
-      router.push(`/agents/agencies/${agency.id}`);
+      router.push(`/agents/agencies/${toSlugIdSegment(agency.name, agency.id)}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update agency";
       toast.error(message);
@@ -355,7 +368,7 @@ export default function EditAgencyPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Edit Agency"
+        title="Agency"
         description="Update contact, address, or notes"
       />
 
@@ -380,7 +393,7 @@ export default function EditAgencyPage() {
                       {selectableAgents.map((agent) => {
                         const checked = linkedAgentIds.includes(agent.id);
                         return (
-                          <label key={agent.id} className="flex items-start gap-3 rounded-sm border p-3">
+                          <label key={agent.id} className="flex items-start gap-3 rounded-md border p-3">
                             <Checkbox checked={checked} onCheckedChange={(value) => toggleAgentLink(agent.id, value === true)} />
                             <div className="flex-1 space-y-1">
                               <p className="text-sm font-medium">{agent.name}</p>
@@ -403,7 +416,7 @@ export default function EditAgencyPage() {
                     {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
                   <Button type="button" variant="outline" className="w-full" asChild>
-                    <Link href={`/agents/agencies/${agency.id}`}>Cancel</Link>
+                    <Link href={`/agents/agencies/${toSlugIdSegment(agency.name, agency.id)}`}>Cancel</Link>
                   </Button>
                 </>
               }

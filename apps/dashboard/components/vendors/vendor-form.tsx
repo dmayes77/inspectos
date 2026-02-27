@@ -7,35 +7,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Vendor } from "@/hooks/use-vendors";
+import { SaveButton } from "@/components/shared/action-buttons";
 
 const vendorTypes = ["Pest", "HVAC", "Roof", "Plumbing", "Electrical", "Other"];
-const statusOptions = ["active", "inactive", "pending"];
+const statusOptions = ["active", "inactive"] as const;
 
 interface VendorFormData {
   name: string;
-  type: string;
-  contact: string;
-  specialties: string;
+  contactPerson: string;
+  vendorType: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  stateRegion: string;
+  postalCode: string;
+  country: string;
   status: string;
   notes: string;
 }
 
 interface VendorFormProps {
   mode: "new" | "edit";
-  initialData?: Partial<VendorFormData> | Record<string, string | undefined>;
-  onSubmit: (data: VendorFormData) => void | Promise<void>;
+  initialData?: Partial<Vendor>;
+  onSubmit: (data: Partial<Vendor>) => void | Promise<void>;
   onCancel: () => void;
 }
 
 export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorFormProps) {
   const [form, setForm] = useState<VendorFormData>(
     {
-      name: (initialData?.name as string) || "",
-      type: (initialData?.type as string) || "Pest",
-      contact: (initialData?.contact as string) || "",
-      specialties: (initialData?.specialties as string) || "",
-      status: (initialData?.status as string) || "active",
-      notes: (initialData?.notes as string) || "",
+      name: initialData?.name ?? "",
+      contactPerson: initialData?.contactPerson ?? "",
+      vendorType: initialData?.vendorType ?? "Pest",
+      email: initialData?.email ?? "",
+      phone: initialData?.phone ?? "",
+      addressLine1: initialData?.addressLine1 ?? "",
+      addressLine2: initialData?.addressLine2 ?? "",
+      city: initialData?.city ?? "",
+      stateRegion: initialData?.stateRegion ?? "",
+      postalCode: initialData?.postalCode ?? "",
+      country: initialData?.country ?? "",
+      status: initialData?.status ?? "active",
+      notes: initialData?.notes ?? "",
     }
   );
   const [isSaving, setIsSaving] = useState(false);
@@ -47,7 +63,21 @@ export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorForm
       onSubmit={async (e) => {
         e.preventDefault();
         setIsSaving(true);
-        await onSubmit(form);
+        await onSubmit({
+          name: form.name,
+          contactPerson: form.contactPerson,
+          vendorType: form.vendorType,
+          email: form.email,
+          phone: form.phone,
+          addressLine1: form.addressLine1,
+          addressLine2: form.addressLine2,
+          city: form.city,
+          stateRegion: form.stateRegion,
+          postalCode: form.postalCode,
+          country: form.country,
+          status: form.status,
+          notes: form.notes,
+        });
         setIsSaving(false);
       }}
       className="space-y-6 max-w-xl mx-auto"
@@ -62,8 +92,17 @@ export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorForm
             <Input id="name" value={form.name} onChange={(e) => handleChange("name", e.target.value)} required />
           </div>
           <div className="space-y-2">
+            <Label htmlFor="vendor-contact-person">Contact Person</Label>
+            <Input
+              id="vendor-contact-person"
+              value={form.contactPerson}
+              onChange={(e) => handleChange("contactPerson", e.target.value)}
+              placeholder="Primary contact name"
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="type">Type *</Label>
-            <Select value={form.type} onValueChange={(v) => handleChange("type", v)}>
+            <Select value={form.vendorType} onValueChange={(v) => handleChange("vendorType", v)}>
               <SelectTrigger id="type">
                 <SelectValue />
               </SelectTrigger>
@@ -77,12 +116,38 @@ export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorForm
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="contact">Contact Info *</Label>
-            <Input id="contact" value={form.contact} onChange={(e) => handleChange("contact", e.target.value)} required />
+            <Label htmlFor="vendor-email">Email</Label>
+            <Input id="vendor-email" type="email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="specialties">Specialties</Label>
-            <Input id="specialties" value={form.specialties} onChange={(e) => handleChange("specialties", e.target.value)} />
+            <Label htmlFor="vendor-phone">Phone</Label>
+            <Input id="vendor-phone" value={form.phone} onChange={(e) => handleChange("phone", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vendor-address-1">Address Line 1</Label>
+            <Input id="vendor-address-1" value={form.addressLine1} onChange={(e) => handleChange("addressLine1", e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vendor-address-2">Address Line 2</Label>
+            <Input id="vendor-address-2" value={form.addressLine2} onChange={(e) => handleChange("addressLine2", e.target.value)} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="vendor-city">City</Label>
+              <Input id="vendor-city" value={form.city} onChange={(e) => handleChange("city", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vendor-state-region">State</Label>
+              <Input id="vendor-state-region" value={form.stateRegion} onChange={(e) => handleChange("stateRegion", e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vendor-postal-code">Postal</Label>
+              <Input id="vendor-postal-code" value={form.postalCode} onChange={(e) => handleChange("postalCode", e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="vendor-country">Country</Label>
+            <Input id="vendor-country" value={form.country} onChange={(e) => handleChange("country", e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status *</Label>
@@ -109,9 +174,7 @@ export function VendorForm({ mode, initialData, onSubmit, onCancel }: VendorForm
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving}>
-          {isSaving ? "Saving..." : mode === "edit" ? "Save Changes" : "Create Vendor"}
-        </Button>
+        <SaveButton type="submit" isSaving={isSaving} label={mode === "edit" ? "Save Changes" : "Create Vendor"} />
       </div>
     </form>
   );

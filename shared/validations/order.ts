@@ -30,6 +30,7 @@ export const createOrderSchema = z.object({
   other_cost: z.number().min(0).optional(),
   internal_notes: z.string().max(5000).optional().nullable(),
   client_notes: z.string().max(5000).optional().nullable(),
+  primary_contact_type: z.enum(["agent", "client"]).optional().nullable(),
 });
 
 export const updateOrderSchema = z.object({
@@ -63,6 +64,7 @@ export const updateOrderSchema = z.object({
   source: z.string().max(100).optional().nullable(),
   internal_notes: z.string().max(5000).optional().nullable(),
   client_notes: z.string().max(5000).optional().nullable(),
+  primary_contact_type: z.enum(["agent", "client"]).optional().nullable(),
 });
 
 export const scheduleOrderSchema = z.object({

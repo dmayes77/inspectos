@@ -12,6 +12,7 @@ import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const basementOptions = ["none", "unfinished", "finished", "partial"] as const;
 const buildingClassOptions = ["A", "B", "C"] as const;
@@ -89,7 +90,12 @@ export default function NewPropertyPage() {
         elevator: form.elevator,
       });
 
-      router.push(`/properties/${result.id}`);
+      router.push(
+        `/properties/${toSlugIdSegment(
+          `${result.address_line1 ?? form.addressLine1} ${result.city ?? form.city} ${result.state ?? form.state}`,
+          result.public_id ?? result.id
+        )}`
+      );
     } catch (error) {
       // Error handled by mutation
     }

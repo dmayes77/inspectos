@@ -2,6 +2,7 @@ import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import { validatePasswordPolicy } from '@/lib/security/password-policy';
 import { isValidPublicId } from '@/lib/identifiers/public-id';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * PUT /api/admin/team/[id]/login
@@ -17,7 +18,7 @@ export const PUT = withAuth<{ id: string }>(async ({ serviceClient, tenant, memb
   if (permissionCheck) return permissionCheck;
 
   const { id } = params;
-  const memberId = id?.trim?.().toUpperCase() ?? '';
+  const memberId = parseRouteIdentifier(id ?? "").trim().toUpperCase();
   if (!isValidPublicId(memberId)) {
     return badRequest('Invalid team member id');
   }

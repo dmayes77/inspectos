@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Calendar, Plus, Edit, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useTeamMembers, type TeamMember } from "@/hooks/use-team";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 const timeOffRequests = [
   {
@@ -117,7 +118,7 @@ export default function TeamMemberAvailabilityPage() {
   const params = useParams();
   const { data: teamMembers = [] } = useTeamMembers();
   const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const memberId = parseSlugIdSegment(rawMemberId ? String(rawMemberId) : "");
   const member = teamMembers.find(
     (m: TeamMember) => m.memberId.toLowerCase() === memberId.toLowerCase()
   );
@@ -220,7 +221,7 @@ export default function TeamMemberAvailabilityPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           {Object.entries(recurringAvailability).map(([day, schedule]) => (
-            <div key={day} className="flex items-center gap-3 rounded-sm border px-2.5 py-2">
+            <div key={day} className="flex items-center gap-3 rounded-md border px-2.5 py-2">
               <div className="w-32">
                 <p className="text-sm font-medium capitalize">{day}</p>
               </div>
@@ -259,7 +260,7 @@ export default function TeamMemberAvailabilityPage() {
             </div>
           ) : (
             timeOffRequests.map((request) => (
-              <div key={request.id} className="flex items-start justify-between rounded-sm border p-3">
+              <div key={request.id} className="flex items-start justify-between rounded-md border p-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="font-medium">{getTypeLabel(request.type)}</h4>

@@ -2,12 +2,13 @@ import { serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
 import { updateEmailTemplateSchema } from '@inspectos/shared/validations/email-template';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * PUT /api/admin/email-templates/[id]
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
-  const { id } = params;
+  const templateId = parseRouteIdentifier(params.id);
 
   const validation = await validateRequestBody(request, updateEmailTemplateSchema);
   if (validation.error) {
@@ -26,7 +27,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('email_templates')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', templateId)
     .select('id, name, subject, body, category, description, is_system')
     .single();
 
@@ -49,13 +50,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  * DELETE /api/admin/email-templates/[id]
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const templateId = parseRouteIdentifier(params.id);
 
   const { data, error } = await supabase
     .from('email_templates')
     .delete()
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', templateId)
     .select('id')
     .single();
 

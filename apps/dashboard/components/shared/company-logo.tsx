@@ -63,7 +63,7 @@ export function CompanyLogo({
   if (shouldShowFallback) {
     return (
       <div
-        className={cn("flex items-center justify-center rounded-full bg-muted text-xs font-semibold uppercase text-muted-foreground", className)}
+        className={cn("flex items-center justify-center rounded-md bg-muted text-xs font-semibold uppercase text-muted-foreground", className)}
         style={{ width: size, height: size }}
         aria-label={`${name} logo placeholder`}
       >
@@ -76,7 +76,7 @@ export function CompanyLogo({
   const pictureSources = sources.filter((source): source is { format: LogoFormat; url: string } => source.format !== "custom");
 
   return (
-    <div className={cn("relative overflow-hidden rounded-full", className)} style={{ width: size, height: size }}>
+    <div className={cn("relative overflow-hidden rounded-md", className)} style={{ width: size, height: size }}>
       <picture>
         {pictureSources.map((source) => (
           <source key={source.format} srcSet={source.url} type={`image/${source.format === "jpg" ? "jpeg" : source.format}`} />

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, DollarSign, ClipboardList, Calendar, Mail, Phone } from "lucide-react";
+import { Trash2, DollarSign, ClipboardList, Calendar, Mail, Phone } from "lucide-react";
 import { useClientById, useDeleteClient } from "@/hooks/use-clients";
-import { ResourceDetailLayout } from "@/components/shared/resource-detail-layout";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import EditContactPage from "./edit/page";
 
@@ -39,11 +39,10 @@ const formatPropertyType = (propertyType: string) => {
 export default function ContactDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const { id } = params as { id: string };
-  const isEditing = searchParams.get("edit") === "1";
+  const isEditing = true;
   if (isEditing) {
     return <EditContactPage />;
   }
@@ -136,8 +135,8 @@ export default function ContactDetailPage() {
             client.properties.map((property) => (
               <Link
                 key={property.propertyId}
-                href={`/properties/${property.propertyId}`}
-                className="flex items-center justify-between gap-4 rounded-sm border border-border/70 px-4 py-3 transition hover:border-primary hover:bg-primary/10"
+                href={`/properties/${property.propertyPublicId ?? property.propertyId}`}
+                className="flex items-center justify-between gap-4 rounded-md border border-border/70 px-4 py-3 transition hover:border-primary hover:bg-primary/10"
               >
                 <div>
                   <p className="text-sm font-medium">{formatPropertyAddress(property)}</p>
@@ -163,7 +162,7 @@ export default function ContactDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="rounded-sm border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+      <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Delete contact</p>
           <p className="text-xs text-muted-foreground">Permanently remove this contact and all associated data.</p>
@@ -176,22 +175,12 @@ export default function ContactDetailPage() {
     </div>
   );
 
-  const headerActions = (
-    <Button variant="outline" asChild>
-      <Link href={`/contacts/${client.clientId}?edit=1`}>
-        <Edit className="mr-2 h-4 w-4" />
-        Edit Contact
-      </Link>
-    </Button>
-  );
-
   return (
     <>
-    <ResourceDetailLayout
+    <IdPageLayout
       title={client.name}
       description={`Client • ${client.type}`}
-      main={mainContent}
-      headerActions={headerActions}
+      left={mainContent}
     />
 
     <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -203,7 +192,7 @@ export default function ContactDetailPage() {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete
+            Delete Anyway
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

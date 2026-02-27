@@ -1,22 +1,25 @@
 import { serverError, success, validationError } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { updatePropertySchema } from '@inspectos/shared/validations/property';
+import { resolveIdLookup } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/properties/[id]
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
 
   const { data: property, error } = await supabase
     .from('properties')
     .select(`
       *,
-      client:clients(id, name, email, phone)
+      client:clients(id, public_id, name, email, phone)
     `)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
-    .single();
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
 
   if (error || !property) {
     return serverError('Property not found', error);
@@ -30,6 +33,19 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  */
 export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
+
+  const { data: existingProperty, error: existingPropertyError } = await supabase
+    .from('properties')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPropertyError || !existingProperty?.id) {
+    return serverError('Property not found', existingPropertyError);
+  }
 
   const body = await request.json();
 
@@ -78,10 +94,10 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, params,
     .from('properties')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', existingProperty.id)
     .select(`
       *,
-      client:clients(id, name, email, phone)
+      client:clients(id, public_id, name, email, phone)
     `)
     .single();
 
@@ -97,12 +113,25 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, tenant, params,
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
+
+  const { data: existingProperty, error: existingPropertyError } = await supabase
+    .from('properties')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingPropertyError || !existingProperty?.id) {
+    return serverError('Property not found', existingPropertyError);
+  }
 
   const { error } = await supabase
     .from('properties')
     .delete()
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', existingProperty.id);
 
   if (error) {
     return serverError('Failed to delete property', error);

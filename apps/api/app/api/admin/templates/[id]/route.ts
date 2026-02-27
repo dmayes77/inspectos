@@ -4,6 +4,7 @@ import {
   success
 } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 const normalizeOptions = (options: unknown): string[] | undefined => {
   if (!Array.isArray(options)) return undefined;
@@ -14,13 +15,13 @@ const normalizeOptions = (options: unknown): string[] | undefined => {
  * GET /api/admin/templates/[id]
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const templateId = parseRouteIdentifier(params.id);
 
   const { data: template, error: templateError } = await supabase
     .from('templates')
     .select('id, name, description, type, standard, is_default, usage_count, updated_at, template_sections(id, template_id, name, description, sort_order, template_items(id, section_id, name, description, item_type, options, is_required, sort_order))')
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', templateId)
     .single();
 
   if (templateError || !template) return notFound('Template not found');
@@ -29,7 +30,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
     .from('services')
     .select('id, name, price, category')
     .eq('tenant_id', tenant.id)
-    .eq('template_id', id)
+    .eq('template_id', templateId)
     .order('name');
 
   const sections = (template.template_sections ?? [])
@@ -73,7 +74,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  * PUT /api/admin/templates/[id]
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
-  const { id } = params;
+  const templateId = parseRouteIdentifier(params.id);
 
   const body = await request.json();
 
@@ -88,7 +89,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('templates')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', templateId)
     .select()
     .single();
 
@@ -101,13 +102,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  * DELETE /api/admin/templates/[id]
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const templateId = parseRouteIdentifier(params.id);
 
   const { error } = await supabase
     .from('templates')
     .update({ is_active: false })
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', templateId);
 
   if (error) return serverError('Failed to delete template', error);
 

@@ -8,12 +8,14 @@ import {
 import { withAuth } from '@/lib/api/with-auth';
 import { updateAgentSchema } from '@inspectos/shared/validations/agent';
 import { resolveAgencyAssociation } from '@/lib/agents/agency-helpers';
+import { resolveIdLookup } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/agents/[id]
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
 
   const { data: agent, error } = await supabase
     .from('agents')
@@ -23,8 +25,9 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
       orders(id, order_number, status, scheduled_date, total, property:properties(address_line1, city, state))
     `)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
-    .single();
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
 
   if (error || !agent) {
     return serverError('Agent not found', error);
@@ -38,6 +41,19 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
+
+  const { data: existingAgent, error: existingAgentError } = await supabase
+    .from('agents')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingAgentError || !existingAgent?.id) {
+    return serverError('Agent not found', existingAgentError);
+  }
 
   const body = await request.json();
 
@@ -55,7 +71,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
       .select('id')
       .eq('tenant_id', tenant.id)
       .ilike('email', normalizedEmail)
-      .neq('id', id)
+      .neq('id', existingAgent.id)
       .order('created_at', { ascending: true })
       .limit(1);
 
@@ -63,8 +79,8 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
       return serverError('Failed to validate agent email uniqueness', existingError);
     }
 
-    const existingAgent = existingAgents?.[0] ?? null;
-    if (existingAgent) {
+    const duplicateAgent = existingAgents?.[0] ?? null;
+    if (duplicateAgent) {
       return badRequest('Another agent already uses this email.');
     }
   }
@@ -116,7 +132,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('agents')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', existingAgent.id)
     .select(`
       *,
       agency:agencies(id, name, email, phone, website, address_line1, address_line2, city, state, zip_code)
@@ -135,13 +151,26 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
+
+  const { data: existingAgent, error: existingAgentError } = await supabase
+    .from('agents')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingAgentError || !existingAgent?.id) {
+    return serverError('Agent not found', existingAgentError);
+  }
 
   // Check if agent has active orders using service client
   const serviceClient = createServiceClient();
   const { count } = await serviceClient
     .from('orders')
     .select('*', { count: 'exact', head: true })
-    .eq('agent_id', id)
+    .eq('agent_id', existingAgent.id)
     .in('status', ['pending', 'scheduled', 'in_progress']);
 
   if (count && count > 0) {
@@ -152,7 +181,7 @@ export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params
     .from('agents')
     .delete()
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', existingAgent.id);
 
   if (error) {
     return serverError('Failed to delete agent', error);

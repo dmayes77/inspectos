@@ -413,7 +413,7 @@ export default function OverviewPage() {
         </div>
 
         <div className="grid gap-2.5 lg:grid-cols-2">
-          <Card className="rounded-sm">
+          <Card className="rounded-md">
             <CardHeader className="flex flex-row items-center justify-between pb-1.5">
               <div>
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -435,8 +435,8 @@ export default function OverviewPage() {
               {operationalOverview.scheduledToday.slice(0, 6).map((order) => (
                 <Link
                   key={order.id}
-                  href={`/orders/${order.id}`}
-                  className="flex items-center justify-between gap-2 rounded-sm border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
+                  href={`/orders/${order.order_number}`}
+                  className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-medium truncate">{getOrderAddress(order)}</p>
@@ -446,14 +446,14 @@ export default function OverviewPage() {
                 </Link>
               ))}
               {operationalOverview.scheduledToday.length === 0 && (
-                <div className="rounded-sm border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
+                <div className="rounded-md border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
                   No orders scheduled today.
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="rounded-sm">
+          <Card className="rounded-md">
             <CardHeader className="pb-1.5">
               <CardTitle className="text-sm font-semibold">Upcoming (Next 7 Days)</CardTitle>
               <CardDescription>Role-scoped schedule preview</CardDescription>
@@ -462,8 +462,8 @@ export default function OverviewPage() {
               {operationalOverview.upcoming.map((order) => (
                 <Link
                   key={order.id}
-                  href={`/orders/${order.id}`}
-                  className="flex items-center justify-between gap-2 rounded-sm border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
+                  href={`/orders/${order.order_number}`}
+                  className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-medium truncate">{order.order_number || "Order"}</p>
@@ -473,7 +473,7 @@ export default function OverviewPage() {
                 </Link>
               ))}
               {operationalOverview.upcoming.length === 0 && (
-                <div className="rounded-sm border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
+                <div className="rounded-md border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
                   No upcoming orders in the next 7 days.
                 </div>
               )}
@@ -494,7 +494,7 @@ export default function OverviewPage() {
     <div className="space-y-2.5">
       {showWelcome && billing && inspectorBilling ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-6">
-          <div className="w-full max-w-2xl rounded-sm border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900">
+          <div className="w-full max-w-2xl rounded-md border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-800 dark:bg-gray-900">
             <p className="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
               Welcome to InspectOS
             </p>
@@ -506,29 +506,29 @@ export default function OverviewPage() {
             </p>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-sm border p-3 dark:border-gray-700">
+              <div className="rounded-md border p-3 dark:border-gray-700">
                 <p className="text-xs text-muted-foreground">Base monthly</p>
                 <p className="text-lg font-semibold">
                   {formatCurrency(billing.baseMonthlyPrice, billing.currency)}
                 </p>
               </div>
-              <div className="rounded-sm border p-3 dark:border-gray-700">
+              <div className="rounded-md border p-3 dark:border-gray-700">
                 <p className="text-xs text-muted-foreground">Estimated monthly total</p>
                 <p className="text-lg font-semibold">
                   {formatCurrency(inspectorBilling.estimatedMonthlyTotal, inspectorBilling.currency)}
                 </p>
               </div>
-              <div className="rounded-sm border p-3 dark:border-gray-700">
+              <div className="rounded-md border p-3 dark:border-gray-700">
                 <p className="text-xs text-muted-foreground">Included inspectors</p>
                 <p className="text-lg font-semibold">{inspectorBilling.includedInspectors}</p>
               </div>
-              <div className="rounded-sm border p-3 dark:border-gray-700">
+              <div className="rounded-md border p-3 dark:border-gray-700">
                 <p className="text-xs text-muted-foreground">Current inspector seats</p>
                 <p className="text-lg font-semibold">{settings.business.inspectorSeatCount}</p>
               </div>
             </div>
 
-            <div className="mt-5 rounded-sm border border-dashed p-3 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300">
+            <div className="mt-5 rounded-md border border-dashed p-3 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-300">
               <p>Expectations:</p>
               <p>1. Billing runs monthly after your trial period ends.</p>
               <p>2. Additional inspectors are billed per your plan seat price.</p>
@@ -607,7 +607,7 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid gap-2.5 lg:grid-cols-5">
-        <Card className="rounded-sm lg:col-span-3">
+        <Card className="rounded-md lg:col-span-3">
           <CardHeader className="pb-1.5">
             <CardTitle className="text-sm font-semibold">Margin vs Cost Trend</CardTitle>
             <CardDescription>Weekly margin dollars against average cost per inspection</CardDescription>
@@ -633,7 +633,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-sm lg:col-span-2">
+        <Card className="rounded-md lg:col-span-2">
           <CardHeader className="pb-1.5">
             <CardTitle className="text-sm font-semibold">Referral Value (30d)</CardTitle>
             <CardDescription>Margin contribution by source</CardDescription>
@@ -663,7 +663,7 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid gap-2.5 lg:grid-cols-5">
-        <Card className="rounded-sm lg:col-span-3">
+        <Card className="rounded-md lg:col-span-3">
           <CardHeader className="pb-1.5">
             <CardTitle className="text-sm font-semibold">Service Margin Leaderboard</CardTitle>
             <CardDescription>Highest and lowest margin services in the last 30 days</CardDescription>
@@ -672,7 +672,7 @@ export default function OverviewPage() {
             <div className="space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top Margin Services</p>
               {decisionData.topServices.map((service) => (
-                <div key={`top-${service.service}`} className="rounded-sm border px-2.5 py-1.5">
+                <div key={`top-${service.service}`} className="rounded-md border px-2.5 py-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium truncate">{service.service}</p>
                     <Badge color="success">{service.marginPct.toFixed(1)}%</Badge>
@@ -690,7 +690,7 @@ export default function OverviewPage() {
             <div className="space-y-1.5">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Margin Risk Services</p>
               {decisionData.bottomServices.map((service) => (
-                <div key={`bottom-${service.service}`} className="rounded-sm border px-2.5 py-1.5">
+                <div key={`bottom-${service.service}`} className="rounded-md border px-2.5 py-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium truncate">{service.service}</p>
                     <Badge color={service.marginPct < 15 ? "error" : "warning"}>{service.marginPct.toFixed(1)}%</Badge>
@@ -707,7 +707,7 @@ export default function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-sm lg:col-span-2">
+        <Card className="rounded-md lg:col-span-2">
           <CardHeader className="pb-1.5">
             <CardTitle className="text-sm font-semibold">Margin Leak Alerts</CardTitle>
             <CardDescription>Orders below 25% gross margin</CardDescription>
@@ -716,8 +716,8 @@ export default function OverviewPage() {
             {decisionData.lowMarginOrders.map((order) => (
               <Link
                 key={order.id}
-                href={`/orders/${order.id}`}
-                className="flex items-center justify-between gap-2 rounded-sm border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
+                href={`/orders/${order.orderNumber}`}
+                className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{order.orderNumber || "Order"} · {order.address}</p>
@@ -742,7 +742,7 @@ export default function OverviewPage() {
         </Card>
       </div>
 
-      <Card className="rounded-sm">
+      <Card className="rounded-md">
         <CardHeader className="flex flex-row items-center justify-between pb-1.5">
           <div>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -762,8 +762,8 @@ export default function OverviewPage() {
           {todayOrders.slice(0, 4).map((order) => (
             <Link
               key={order.id}
-              href={`/orders/${order.id}`}
-              className="flex items-center justify-between gap-2 rounded-sm border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
+              href={`/orders/${order.order_number}`}
+              className="flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 hover:bg-muted/50 transition-colors"
             >
               <div className="min-w-0">
                 <p className="text-xs font-medium truncate">{getOrderAddress(order)}</p>
@@ -773,7 +773,7 @@ export default function OverviewPage() {
             </Link>
           ))}
           {todayOrders.length === 0 && (
-            <div className="rounded-sm border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed px-3 py-5 text-center text-sm text-muted-foreground">
               No orders scheduled today.
             </div>
           )}

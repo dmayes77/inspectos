@@ -1,17 +1,18 @@
 import { notFound, serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/workflows/[id]
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const workflowId = parseRouteIdentifier(params.id);
 
   const { data, error } = await supabase
     .from('workflows')
     .select('*')
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', workflowId)
     .single();
 
   if (error) return notFound('Workflow not found');
@@ -23,7 +24,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  * PUT /api/admin/workflows/[id]
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
-  const { id } = params;
+  const workflowId = parseRouteIdentifier(params.id);
 
   const body = await request.json();
 
@@ -38,7 +39,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('workflows')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', workflowId)
     .select()
     .single();
 
@@ -51,13 +52,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  * DELETE /api/admin/workflows/[id]
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const workflowId = parseRouteIdentifier(params.id);
 
   const { error } = await supabase
     .from('workflows')
     .update({ is_active: false })
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', workflowId);
 
   if (error) return serverError('Failed to delete workflow', error);
 

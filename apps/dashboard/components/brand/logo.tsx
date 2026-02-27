@@ -42,7 +42,7 @@ export function Logo({
       {/* Icon Mark */}
       <div
         className={cn(
-          "flex items-center justify-center rounded-sm font-bold",
+          "flex items-center justify-center rounded-md font-bold",
           sizeConfig.icon,
           iconBg
         )}
@@ -79,7 +79,7 @@ export function LogoSvg({
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      {/* Background rounded-sm rectangle */}
+      {/* Background rounded-md rectangle */}
       <rect width="32" height="32" rx="6" fill="#ea580c" />
 
       {/* IO text */}

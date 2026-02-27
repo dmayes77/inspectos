@@ -261,7 +261,7 @@ export function ServiceForm({
                   <>
                     <div className="space-y-2">
                       <Label>Included Services (select at least one)</Label>
-                      <div className="grid grid-cols-2 gap-2 border rounded-sm p-3">
+                      <div className="grid grid-cols-2 gap-2 border rounded-md p-3">
                         {services.map((svc) => (
                           <label key={svc.serviceId} className="flex items-center gap-2">
                             <Checkbox
@@ -287,7 +287,7 @@ export function ServiceForm({
                           {[0, 5, 10, 15, 20].map((percent) => (
                             <label
                               key={percent}
-                              className={`flex items-center gap-2 px-4 py-2 border rounded-sm cursor-pointer transition-colors ${
+                              className={`flex items-center gap-2 px-4 py-2 border rounded-md cursor-pointer transition-colors ${
                                 discountPercent === percent
                                   ? "bg-primary text-primary-foreground border-primary"
                                   : "bg-background hover:bg-accent"
@@ -344,7 +344,7 @@ export function ServiceForm({
                       />
                       <p className="text-xs text-muted-foreground">Total duration: {formatDuration(form.durationMinutes)}</p>
                       {selectedServiceIds.length > 0 && form.price && (
-                        <div className="text-sm space-y-1 mt-2 p-3 bg-muted/50 rounded-sm">
+                        <div className="text-sm space-y-1 mt-2 p-3 bg-muted/50 rounded-md">
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Individual services total:</span>
                             <span className="font-medium">${packageDiscount.totalIndividualPrice.toFixed(2)}</span>

@@ -26,7 +26,7 @@ export default function InventoryPage() {
           <CardDescription>Monitor usage and reorder thresholds.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed p-10 text-center">
             <ClipboardList className="h-10 w-10 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">No inventory items yet</p>

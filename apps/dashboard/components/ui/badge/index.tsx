@@ -60,7 +60,7 @@ function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 justify-center gap-1 rounded-full font-medium",
+        "inline-flex items-center px-2.5 py-0.5 justify-center gap-1 rounded-md font-medium",
         sizeStyles[size],
         variantStyles[variant][color],
         className

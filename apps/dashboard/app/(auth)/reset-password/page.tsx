@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a new password"
                 required
-                className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
               />
               <button
                 type="button"
@@ -136,7 +136,7 @@ export default function ResetPasswordPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm your new password"
                 required
-                className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
               />
               <button
                 type="button"
@@ -154,7 +154,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={isSubmitting || !isReady}
-            className="flex w-full items-center justify-center rounded-sm bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex w-full items-center justify-center rounded-md bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Updating..." : "Update Password"}
           </button>

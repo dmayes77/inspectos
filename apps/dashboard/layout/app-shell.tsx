@@ -11,7 +11,7 @@ import { SidebarProvider, useSidebar } from "@/context/sidebar-context";
 import { useSettings } from "@/hooks/use-settings";
 import { cn } from "@/lib/utils";
 
-interface AdminShellProps {
+interface AppShellProps {
   children: ReactNode;
   headerActions?: ReactNode;
   user?: {
@@ -22,7 +22,7 @@ interface AdminShellProps {
   };
 }
 
-function AdminShellContent({ children, headerActions, user }: AdminShellProps) {
+function AppShellContent({ children, headerActions, user }: AppShellProps) {
   const pathname = usePathname();
   const { isExpanded, isHovered } = useSidebar();
   const [commandOpen, setCommandOpen] = useState(false);
@@ -142,10 +142,10 @@ function AdminShellContent({ children, headerActions, user }: AdminShellProps) {
   );
 }
 
-export function AdminShell(props: AdminShellProps) {
+export function AppShell(props: AppShellProps) {
   return (
     <SidebarProvider>
-      <AdminShellContent {...props} />
+      <AppShellContent {...props} />
     </SidebarProvider>
   );
 }

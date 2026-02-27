@@ -17,6 +17,7 @@ export default function SchedulePage() {
     () =>
       scheduleItems.map((item) => ({
         id: item.id,
+        orderNumber: item.orderNumber,
         title: item.address,
         date: item.date,
         time: item.time,
@@ -45,7 +46,7 @@ export default function SchedulePage() {
 
       <AdminCalendar
         events={events}
-        onEventClick={(ev) => router.push(`/orders/${ev.id}`)}
+        onEventClick={(ev) => router.push(`/orders/${ev.orderNumber ?? ev.id}`)}
       />
     </div>
   );

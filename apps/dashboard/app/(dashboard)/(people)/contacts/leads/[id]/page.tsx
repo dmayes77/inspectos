@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Mail, Phone, ClipboardList } from "lucide-react";
+import { Trash2, Mail, Phone, ClipboardList } from "lucide-react";
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import { useDeleteLead, useLeadById, useUpdateLead } from "@/hooks/use-leads";
 import { toast } from "sonner";
@@ -34,12 +34,11 @@ function LeadDetailPageContent() {
   const router = useRouter();
   const { id } = params as { id: string };
   const searchParams = useSearchParams();
-  const returnTo = searchParams.get("return") || "/contacts?tab=leads";
+  const returnTo = searchParams.get("return") || "/leads";
 
   const { data: lead, isLoading } = useLeadById(id);
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
-  const [editing, setEditing] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [form, setForm] = useState<LeadFormValues>(createEmptyLeadForm());
   const [errors, setErrors] = useState<LeadFormErrors>({});
@@ -92,7 +91,6 @@ function LeadDetailPageContent() {
         source: form.source,
       });
       toast.success("Lead updated.");
-      setEditing(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update lead.");
     }
@@ -117,10 +115,6 @@ function LeadDetailPageContent() {
         description="Lead details and status"
         actions={
           <>
-            <Button variant="outline" onClick={() => setEditing((prev) => !prev)}>
-              <Edit className="mr-2 h-4 w-4" />
-              {editing ? "Cancel" : "Edit"}
-            </Button>
             <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
@@ -162,7 +156,7 @@ function LeadDetailPageContent() {
             setForm={setForm}
             errors={errors}
             setErrors={setErrors}
-            disabled={!editing}
+            disabled={false}
             title="Lead Details"
             description="Update lead details and stage."
           />
@@ -174,17 +168,8 @@ function LeadDetailPageContent() {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" onClick={handleSave} disabled={!editing}>
+                <Button className="w-full" onClick={handleSave}>
                   Save Changes
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setEditing(false)}
-                  disabled={!editing}
-                >
-                  Cancel
                 </Button>
               </CardContent>
             </Card>
@@ -221,7 +206,7 @@ function LeadDetailPageContent() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Delete Anyway
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

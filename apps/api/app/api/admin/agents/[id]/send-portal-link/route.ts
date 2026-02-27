@@ -4,6 +4,7 @@ import { withAuth } from "@/lib/api/with-auth";
 import { decryptTenantSecret } from "@/lib/security/tenant-secret";
 import { sendSmtpTestEmail, type TenantSmtpConfig } from "@/lib/email/smtp-transport";
 import { getPlatformSmtpConfig } from "@/lib/email/platform-smtp";
+import { resolveIdLookup } from "@/lib/identifiers/lookup";
 
 const DEFAULT_LINK_TTL_HOURS = 72;
 
@@ -54,11 +55,12 @@ function resolveTenantSmtpConfig(settings: { smtp?: StoredSmtpSettings }): Tenan
  */
 export const POST = withAuth<{ id: string }>(async ({ supabase, serviceClient, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
   const { data: agent, error: agentError } = await supabase
     .from("agents")
     .select("id, name, email, status, portal_access_enabled")
     .eq("tenant_id", tenant.id)
-    .eq("id", id)
+    .eq(lookup.column, lookup.value)
     .maybeSingle();
 
   if (agentError || !agent) {
@@ -87,14 +89,14 @@ export const POST = withAuth<{ id: string }>(async ({ supabase, serviceClient, t
       magic_link_expires_at: expiresAt,
     })
     .eq("tenant_id", tenant.id)
-    .eq("id", id);
+    .eq("id", agent.id);
 
   if (updateError) {
     return serverError("Failed to generate portal link", updateError);
   }
 
   const portalBaseUrl = resolveAgentPortalBaseUrl();
-  const link = `${portalBaseUrl}/login?token=${token}&agent=${id}`;
+  const link = `${portalBaseUrl}/login?token=${token}&agent=${agent.id}`;
 
   const { data: tenantData, error: tenantError } = await serviceClient
     .from("tenants")

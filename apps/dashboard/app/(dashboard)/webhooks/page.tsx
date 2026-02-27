@@ -117,7 +117,7 @@ export default function WebhooksPage() {
           const webhook = row.original;
           return (
             <div className="flex items-center gap-2">
-              <code className="text-xs bg-muted px-2 py-1 rounded-sm">{new URL(webhook.url).hostname}</code>
+              <code className="text-xs bg-muted px-2 py-1 rounded-md">{new URL(webhook.url).hostname}</code>
               <a
                 href={webhook.url}
                 target="_blank"
@@ -245,7 +245,7 @@ export default function WebhooksPage() {
         {webhooks.length === 0 && !isLoading ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="rounded-full bg-muted p-4 mb-4">
+              <div className="rounded-md bg-muted p-4 mb-4">
                 <Webhook className="h-8 w-8 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">No webhooks configured</h3>
@@ -304,8 +304,8 @@ export default function WebhooksPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Anyway
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

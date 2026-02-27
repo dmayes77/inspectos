@@ -56,7 +56,7 @@ function Alert({
   linkText = "Learn more",
 }: AlertProps) {
   return (
-    <div className={`rounded-sm border p-4 ${containerStyles[variant]}`}>
+    <div className={`rounded-md border p-4 ${containerStyles[variant]}`}>
       <div className="flex items-start gap-3">
         <div className={`-mt-0.5 ${iconStyles[variant]}`}>
           {icons[variant]}

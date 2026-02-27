@@ -7,6 +7,16 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModernDataTable } from "@/components/ui/modern-data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -101,6 +111,7 @@ export default function ServicesAdminPage() {
   const { data: profile } = useProfile();
   const deleteService = useDeleteService();
   const [typeFilter, setTypeFilter] = useState<FilterValue>("all");
+  const [archiveServiceId, setArchiveServiceId] = useState<string | null>(null);
   const userRole = (profile?.role ?? "").toUpperCase();
   const userPermissions = profile?.permissions ?? [];
 
@@ -132,15 +143,18 @@ export default function ServicesAdminPage() {
   const hasNoMatches = filteredByType.length === 0 && allServices.length > 0 && !isLoading;
 
   const handleArchive = (id: string) => {
-    if (!window.confirm("Archive this service? This will deactivate it but not permanently delete it.")) {
-      return;
-    }
-    deleteService.mutate(id, {
+    setArchiveServiceId(id);
+  };
+
+  const handleConfirmArchive = () => {
+    if (!archiveServiceId) return;
+    deleteService.mutate(archiveServiceId, {
       onSuccess: () => toast.success("Service archived"),
       onError: (error: unknown) => {
         const message = error instanceof Error ? error.message : "Failed to archive service";
         toast.error(message);
       },
+      onSettled: () => setArchiveServiceId(null),
     });
   };
 
@@ -157,8 +171,9 @@ export default function ServicesAdminPage() {
   ));
 
   return (
-    <ResourceListLayout
-      header={
+    <>
+      <ResourceListLayout
+        header={
         <AdminPageHeader
           title="Services & Packages"
           description="Define individual services and bundle them into packages."
@@ -179,16 +194,16 @@ export default function ServicesAdminPage() {
             ) : null
           }
         />
-      }
-      stats={
+        }
+        stats={
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="Total" value={stats.total} />
           <StatCard label="Services" value={stats.services} />
           <StatCard label="Add-ons" value={stats.addOns} />
           <StatCard label="Packages" value={stats.packages} />
         </div>
-      }
-      table={
+        }
+        table={
         <ModernDataTable
           columns={createServicesColumns(userRole, userPermissions, handleArchive)}
           data={filteredByType}
@@ -199,14 +214,14 @@ export default function ServicesAdminPage() {
           }
           emptyState={
             isError ? (
-              <div className="rounded-sm border border-dashed p-10 text-center text-red-500">
+              <div className="rounded-md border border-dashed p-10 text-center text-red-500">
                 Failed to load services.
                 {error instanceof Error && (
                   <span className="ml-2 text-xs text-muted-foreground">{error.message}</span>
                 )}
               </div>
             ) : hasNoServices ? (
-              <div className="rounded-sm border border-dashed p-10 text-center">
+              <div className="rounded-md border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No services yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Create your first service or package to get started.
@@ -218,7 +233,7 @@ export default function ServicesAdminPage() {
                 )}
               </div>
             ) : (
-              <div className="rounded-sm border border-dashed p-10 text-center">
+              <div className="rounded-md border border-dashed p-10 text-center">
                 <h3 className="text-lg font-semibold">No services match your filters</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Adjust your search or type filter to find the service you need.
@@ -227,7 +242,29 @@ export default function ServicesAdminPage() {
             )
           }
         />
-      }
-    />
+        }
+      />
+
+      <AlertDialog open={Boolean(archiveServiceId)} onOpenChange={(open) => (!open ? setArchiveServiceId(null) : undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive this service?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure? This deactivates the service and keeps historical records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteService.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmArchive}
+              disabled={deleteService.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteService.isPending ? "Archiving..." : "Delete Anyway"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

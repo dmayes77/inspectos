@@ -179,7 +179,7 @@ function WelcomePageContent() {
               onChange={(event) => setCompanyName(event.target.value)}
               placeholder="Acme Inspections"
               required
-              className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
@@ -188,7 +188,7 @@ function WelcomePageContent() {
             {PLAN_OPTIONS.map((plan) => (
               <label
                 key={plan.code}
-                className={`flex cursor-pointer items-start gap-3 rounded-sm border px-4 py-3 ${
+                className={`flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3 ${
                   planCode === plan.code
                     ? "border-brand-500 bg-brand-50/50 dark:border-brand-700 dark:bg-brand-950/20"
                     : "border-gray-300 dark:border-gray-700"
@@ -224,14 +224,14 @@ function WelcomePageContent() {
               max={selectedPlan.maxInspectors}
               value={inspectorSeats}
               onChange={(event) => setInspectorSeats(Number(event.target.value))}
-              className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+              className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Allowed range for {selectedPlan.name}: {selectedPlan.includedInspectors} to {selectedPlan.maxInspectors}.
             </p>
           </div>
 
-          <div className="rounded-sm border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/40">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Invoice Preview</p>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               30-day free trial today, then monthly billing.
@@ -291,7 +291,7 @@ function WelcomePageContent() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex w-full items-center justify-center rounded-sm bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center rounded-md bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Preparing secure checkout..." : "Continue to secure checkout"}
           </button>

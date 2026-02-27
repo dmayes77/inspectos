@@ -86,13 +86,13 @@ export function ModernDataTable<TData, TValue>({
 
   // Default empty state
   const defaultEmptyState = (
-    <div className="rounded-sm border border-dashed p-12 text-center">
+    <div className="rounded-md border border-dashed p-12 text-center">
       <p className="text-sm text-muted-foreground">No data available</p>
     </div>
   );
 
   const defaultLoadingState = (
-    <div className="rounded-sm border border-dashed p-12 text-center">
+    <div className="rounded-md border border-dashed p-12 text-center">
       <p className="text-sm text-muted-foreground">Loading...</p>
     </div>
   );

@@ -233,7 +233,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
             inspectionData.findings.map((finding) => (
               <div
                 key={finding.id}
-                className={`border border-l-4 rounded-r-sm pl-4 pr-3 py-3 ${severityBorderClass(finding.severity)}`}
+                className={`border border-l-4 rounded-md pl-4 pr-3 py-3 ${severityBorderClass(finding.severity)}`}
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
@@ -264,7 +264,7 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
                     <p className="text-xs font-medium text-muted-foreground mb-1.5">Photos</p>
                     <div className="flex gap-2 flex-wrap">
                       {finding.media.map((m) => (
-                        <div key={m.id} className="relative w-16 h-16 rounded-sm overflow-hidden bg-muted border">
+                        <div key={m.id} className="relative w-16 h-16 rounded-md overflow-hidden bg-muted border">
                           <ImageIcon className="absolute inset-0 m-auto h-6 w-6 text-muted-foreground" />
                         </div>
                       ))}
@@ -291,12 +291,12 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
           {inspectionData.signatures.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {inspectionData.signatures.map((sig) => (
-                <div key={sig.id} className="rounded-sm border p-3 space-y-2">
+                <div key={sig.id} className="rounded-md border p-3 space-y-2">
                   <div>
                     <p className="text-sm font-medium">{sig.signer_name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{sig.signer_type}</p>
                   </div>
-                  <div className="aspect-3/1 bg-muted rounded-sm flex items-center justify-center border">
+                  <div className="aspect-3/1 bg-muted rounded-md flex items-center justify-center border">
                     {sig.signature_data ? (
                       <Image
                         src={sig.signature_data.startsWith("data:") ? sig.signature_data : `data:image/png;base64,${sig.signature_data}`}

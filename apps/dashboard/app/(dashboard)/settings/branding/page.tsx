@@ -123,26 +123,26 @@ export default function BrandingSettingsPage() {
                     key={preset.color}
                     type="button"
                     onClick={() => setColor(preset.color)}
-                    className={`group flex flex-col items-center gap-1.5 rounded-sm border-2 p-2 transition-all hover:scale-105 ${
+                    className={`group flex flex-col items-center gap-1.5 rounded-md border-2 p-2 transition-all hover:scale-105 ${
                       branding.primaryColor === preset.color
                         ? "border-foreground bg-muted"
                         : "border-transparent hover:border-muted-foreground/20"
                     }`}
                   >
-                    <div className="h-8 w-8 rounded-sm shadow-sm" style={{ backgroundColor: preset.color }} />
+                    <div className="h-8 w-8 rounded-md shadow-sm" style={{ backgroundColor: preset.color }} />
                     <span className="text-[10px] text-muted-foreground">{preset.label}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="rounded-sm border p-3 space-y-2">
+              <div className="rounded-md border p-3 space-y-2">
                 <Label className="text-xs text-muted-foreground">Custom hex</Label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={branding.primaryColor}
                     onChange={(e) => setColor(e.target.value)}
-                    className="h-9 w-9 cursor-pointer rounded-sm border-0 bg-transparent p-0"
+                    className="h-9 w-9 cursor-pointer rounded-md border-0 bg-transparent p-0"
                   />
                   <Input
                     value={branding.primaryColor}
@@ -166,7 +166,7 @@ export default function BrandingSettingsPage() {
             {/* Live preview */}
             <div className="space-y-4">
               <Label className="text-sm font-medium">Live preview</Label>
-              <div className="rounded-sm border bg-muted/30 p-4 space-y-4">
+              <div className="rounded-md border bg-muted/30 p-4 space-y-4">
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">Buttons</p>
                   <div className="flex flex-wrap gap-2">
@@ -181,7 +181,7 @@ export default function BrandingSettingsPage() {
                   <p className="text-xs font-medium text-muted-foreground">Badge & link</p>
                   <div className="flex items-center gap-3">
                     <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      className="inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium"
                       style={{ backgroundColor: `${branding.primaryColor}20`, color: branding.primaryColor }}
                     >
                       Active
@@ -193,14 +193,14 @@ export default function BrandingSettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">Sidebar item</p>
-                  <div className="rounded-sm border bg-background p-2 w-40">
+                  <div className="rounded-md border bg-background p-2 w-40">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-medium" style={{ backgroundColor: `${branding.primaryColor}15`, color: branding.primaryColor }}>
-                        <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: branding.primaryColor }} />
+                      <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium" style={{ backgroundColor: `${branding.primaryColor}15`, color: branding.primaryColor }}>
+                        <div className="h-1.5 w-1.5 rounded-md" style={{ backgroundColor: branding.primaryColor }} />
                         Dashboard
                       </div>
-                      <div className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-muted-foreground">
-                        <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />Orders
+                      <div className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground">
+                        <div className="h-1.5 w-1.5 rounded-md bg-muted-foreground/30" />Orders
                       </div>
                     </div>
                   </div>
@@ -225,7 +225,7 @@ export default function BrandingSettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-5">
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-sm border-2 border-dashed bg-muted overflow-hidden group">
+            <div className="relative flex h-20 w-20 items-center justify-center rounded-md border-2 border-dashed bg-muted overflow-hidden group">
               {branding.logoUrl ? (
                 <>
                   <Image src={branding.logoUrl} alt="Logo" fill sizes="80px" className="object-contain p-1" />

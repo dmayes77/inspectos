@@ -1,19 +1,21 @@
 import { badRequest, serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { resolveIdLookup } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/orders/[id]/notes
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id: orderId } = params;
+  const lookup = resolveIdLookup(params.id, { publicColumn: "order_number", transformPublicValue: (value) => value.toUpperCase() });
 
   // Verify order belongs to tenant
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .select('id, tenant_id')
-    .eq('id', orderId)
+    .eq(lookup.column, lookup.value)
     .eq('tenant_id', tenant.id)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (orderError || !order) {
     return badRequest('Order not found');
@@ -23,7 +25,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
   const { data: notes, error: notesError } = await supabase
     .from('order_notes')
     .select('*, created_by:profiles(id, full_name, email, avatar_url)')
-    .eq('order_id', orderId)
+    .eq('order_id', order.id)
     .eq('tenant_id', tenant.id)
     .order('created_at', { ascending: true });
 
@@ -38,7 +40,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  * POST /api/admin/orders/[id]/notes
  */
 export const POST = withAuth<{ id: string }>(async ({ supabase, tenant, user, params, request }) => {
-  const { id: orderId } = params;
+  const lookup = resolveIdLookup(params.id, { publicColumn: "order_number", transformPublicValue: (value) => value.toUpperCase() });
 
   const body = await request.json();
   const { note_type, body: noteBody } = body;
@@ -55,9 +57,10 @@ export const POST = withAuth<{ id: string }>(async ({ supabase, tenant, user, pa
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .select('id, tenant_id')
-    .eq('id', orderId)
+    .eq(lookup.column, lookup.value)
     .eq('tenant_id', tenant.id)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (orderError || !order) {
     return badRequest('Order not found');
@@ -67,7 +70,7 @@ export const POST = withAuth<{ id: string }>(async ({ supabase, tenant, user, pa
   const { data: note, error: noteError } = await supabase
     .from('order_notes')
     .insert({
-      order_id: orderId,
+      order_id: order.id,
       tenant_id: tenant.id,
       note_type,
       body: noteBody,

@@ -2,12 +2,13 @@ import { serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
 import { updateTagSchema } from '@inspectos/shared/validations/tag';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * PUT /api/admin/tags/[id]
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
-  const { id } = params;
+  const tagId = parseRouteIdentifier(params.id);
 
   const validation = await validateRequestBody(request, updateTagSchema);
   if (validation.error) {
@@ -25,7 +26,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
       color: payload.color ?? null,
     })
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', tagId)
     .select('id, name, scope, tag_type, description, color, is_active')
     .single();
 
@@ -49,13 +50,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  * Soft delete by setting is_active to false
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const tagId = parseRouteIdentifier(params.id);
 
   const { data, error } = await supabase
     .from('tags')
     .update({ is_active: false })
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', tagId)
     .select('id')
     .single();
 

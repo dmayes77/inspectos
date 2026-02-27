@@ -15,6 +15,7 @@ const INSPECTOR_COLORS = [
 
 export interface CalendarEvent {
   id: string;
+  orderNumber?: string;
   title: string;
   date: string; // "YYYY-MM-DD"
   time?: string; // "HH:MM"
@@ -112,14 +113,14 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6">
       {/* ── Month grid ── */}
-      <div className="rounded-sm border border-border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-md border border-border bg-card shadow-sm overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={prevMonth}
-              className="flex h-9 w-9 items-center justify-center rounded-sm border border-border text-muted-foreground hover:bg-muted transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -129,7 +130,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
             <button
               type="button"
               onClick={nextMonth}
-              className="flex h-9 w-9 items-center justify-center rounded-sm border border-border text-muted-foreground hover:bg-muted transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -139,7 +140,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
             <button
               type="button"
               onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelectedDate(todayStr); }}
-              className="h-9 rounded-sm border border-border px-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              className="h-9 rounded-md border border-border px-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             >
               Today
             </button>
@@ -184,7 +185,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
               >
                 <span
                   className={cn(
-                    "inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium mb-1",
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md text-sm font-medium mb-1",
                     isToday
                       ? "bg-brand-500 text-white"
                       : "text-foreground hover:bg-muted"
@@ -201,11 +202,11 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
                         key={ev.id}
                         onClick={(e) => { e.stopPropagation(); onEventClick?.(ev); }}
                         className={cn(
-                          "flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-xs font-medium truncate cursor-pointer",
+                          "flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs font-medium truncate cursor-pointer",
                           c.light, c.text
                         )}
                       >
-                        <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", c.dot)} />
+                        <span className={cn("h-1.5 w-1.5 rounded-md shrink-0", c.dot)} />
                         <span className="truncate">{ev.title}</span>
                       </div>
                     );
@@ -226,7 +227,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
       <div className="flex flex-col gap-5">
         {/* Selected day */}
         {selectedDate && (
-          <div className="rounded-sm border border-border bg-card shadow-sm">
+          <div className="rounded-md border border-border bg-card shadow-sm">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
                 <p className="text-sm font-semibold text-foreground">
@@ -244,7 +245,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
 
             {selectedEvents.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center px-5">
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center mb-3">
                   <Clock className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">No inspections scheduled</p>
@@ -259,7 +260,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
                       onClick={() => onEventClick?.(ev)}
                       className="flex items-start gap-3 px-5 py-3.5 hover:bg-muted/40 cursor-pointer transition-colors"
                     >
-                      <div className={cn("mt-0.5 h-2.5 w-2.5 rounded-full shrink-0", c.bg)} />
+                      <div className={cn("mt-0.5 h-2.5 w-2.5 rounded-md shrink-0", c.bg)} />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
                         {ev.time && (
@@ -284,7 +285,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
         )}
 
         {/* Upcoming events */}
-        <div className="rounded-sm border border-border bg-card shadow-sm">
+        <div className="rounded-md border border-border bg-card shadow-sm">
           <div className="px-5 py-4 border-b border-border">
             <p className="text-sm font-semibold text-foreground">Upcoming</p>
             <p className="text-xs text-muted-foreground mt-0.5">Next inspections</p>
@@ -305,7 +306,7 @@ export function AdminCalendar({ events, onEventClick, onAddEvent }: AdminCalenda
                     onClick={() => onEventClick?.(ev)}
                     className="flex items-start gap-3 px-5 py-3.5 hover:bg-muted/40 cursor-pointer transition-colors"
                   >
-                    <div className={cn("mt-0.5 h-2.5 w-2.5 rounded-full shrink-0", c.bg)} />
+                    <div className={cn("mt-0.5 h-2.5 w-2.5 rounded-md shrink-0", c.bg)} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground truncate">{ev.title}</p>
                       <div className="flex items-center gap-1 mt-0.5 flex-wrap">

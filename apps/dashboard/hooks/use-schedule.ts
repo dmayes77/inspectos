@@ -5,6 +5,7 @@ import { scheduleQueryKeys } from "@inspectos/shared/query";
 
 export type ScheduleItem = {
   id: string;
+  orderNumber?: string;
   date: string;
   time: string;
   address: string;

@@ -68,6 +68,7 @@ export interface Order {
   order_number: string;
   client_id: string | null;
   agent_id: string | null;
+  primary_contact_type: "agent" | "client" | null;
   inspector_id: string | null;
   property_id: string;
   status: OrderStatus;
@@ -104,6 +105,7 @@ export interface Order {
   updated_at: string;
   property?: {
     id: string;
+    public_id?: string;
     address_line1: string;
     address_line2: string | null;
     city: string;
@@ -136,6 +138,7 @@ export interface Order {
   };
   client?: {
     id: string;
+    public_id?: string;
     name: string;
     email: string | null;
     phone: string | null;
@@ -143,6 +146,7 @@ export interface Order {
   } | null;
   agent?: {
     id: string;
+    public_id?: string;
     name: string;
     email: string | null;
     phone: string | null;
@@ -195,6 +199,7 @@ export interface CreateOrderInput {
   source?: string;
   internal_notes?: string | null;
   client_notes?: string | null;
+  primary_contact_type?: "agent" | "client" | null;
 }
 
 export interface UpdateOrderInput {
@@ -221,6 +226,7 @@ export interface UpdateOrderInput {
   source?: string;
   internal_notes?: string | null;
   client_notes?: string | null;
+  primary_contact_type?: "agent" | "client" | null;
 }
 
 export interface OrderFilters {

@@ -173,7 +173,7 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Avatar className="h-16 w-16">
+            <Avatar className="h-24 w-24">
               <AvatarImage src={form.avatarUrl ?? undefined} alt={form.name || "Agent avatar"} />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
@@ -221,7 +221,7 @@ export function AgentForm({ form, setForm, agencies, agentId }: AgentFormProps) 
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center justify-between gap-4 rounded-sm border p-3">
+          <div className="flex items-center justify-between gap-4 rounded-md border p-3">
             <div>
               <p className="font-medium">Portal access</p>
               <p className="text-sm text-muted-foreground">Enable sign-in and link access for this agent.</p>

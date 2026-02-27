@@ -14,6 +14,7 @@ import { useCreateAgent } from "@/hooks/use-agents";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 import { logoDevUrl } from "@inspectos/shared/utils/logos";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const DEFAULT_TENANT_SLUG = "demo";
 const AGENT_TIPS = [
@@ -315,7 +316,7 @@ export default function NewAgentPage() {
     try {
       const agent = await createAgent.mutateAsync(payload);
       toast.success("Agent created");
-      router.push(`/agents/${agent.id}`);
+      router.push(`/agents/${toSlugIdSegment(agent.name, agent.public_id ?? agent.id)}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create agent";
       toast.error(message);

@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { PageHeader } from "@/layout/page-header";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ const PACKAGE_TIPS = [
 export default function EditServicePage() {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const serviceId = params.id;
 
   const { data: allServices = [] } = useServices();
@@ -44,6 +45,16 @@ export default function EditServicePage() {
   const [templateMode, setTemplateMode] = useState<"existing" | "new">("existing");
   const [templateSelection, setTemplateSelection] = useState("none");
   const [templateName, setTemplateName] = useState("");
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   useEffect(() => {
     if (!service) return;

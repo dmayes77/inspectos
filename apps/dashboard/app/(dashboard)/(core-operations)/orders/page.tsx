@@ -114,7 +114,7 @@ const columns: ColumnDef<Order>[] = [
     header: "Order",
     enableHiding: false,
     cell: ({ row }) => (
-      <Link href={`/orders/${row.original.id}`} className="font-medium hover:underline text-xs">
+      <Link href={`/orders/${row.original.order_number}`} className="font-medium hover:underline text-xs">
         {row.original.order_number}
       </Link>
     ),
@@ -123,7 +123,7 @@ const columns: ColumnDef<Order>[] = [
     id: "property",
     header: "Property",
     cell: ({ row }) => (
-      <Link href={`/orders/${row.original.id}`} className="text-xs max-w-xs hover:underline">
+      <Link href={`/orders/${row.original.order_number}`} className="text-xs max-w-xs hover:underline">
         {getOrderAddress(row.original)}
       </Link>
     ),
@@ -249,11 +249,11 @@ export default function OrdersPage() {
       {/* Mobile View - Custom Cards */}
       <div className="md:hidden space-y-4">
         {isError ? (
-          <div className="rounded-sm border border-dashed p-6 text-center">
+          <div className="rounded-md border border-dashed p-6 text-center">
             <p className="text-sm text-red-500">Failed to load orders.</p>
           </div>
         ) : filteredOrders.length === 0 && !isLoading ? (
-          <div className="rounded-sm border border-dashed p-6 text-center">
+          <div className="rounded-md border border-dashed p-6 text-center">
             <p className="text-sm text-muted-foreground">No orders found.</p>
           </div>
         ) : (
@@ -261,8 +261,8 @@ export default function OrdersPage() {
             return (
               <Link
                 key={order.id}
-                href={`/orders/${order.id}`}
-                className="block rounded-sm border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
+                href={`/orders/${order.order_number}`}
+                className="block rounded-md border bg-card p-4 shadow-sm transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -288,8 +288,8 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
-                  <span className="rounded-full border px-2 py-0.5">Agent: {order.agent?.name ?? "Unassigned"}</span>
-                  <span className="rounded-full border px-2 py-0.5">Services: {order.services?.length ?? 0}</span>
+                  <span className="rounded-md border px-2 py-0.5">Agent: {order.agent?.name ?? "Unassigned"}</span>
+                  <span className="rounded-md border px-2 py-0.5">Services: {order.services?.length ?? 0}</span>
                 </div>
 
                 <div className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
@@ -364,13 +364,13 @@ export default function OrdersPage() {
           }
           emptyState={
             isError ? (
-              <div className="rounded-sm border border-dashed p-10 text-center">
+              <div className="rounded-md border border-dashed p-10 text-center">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold text-red-500">Failed to load orders</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Please try refreshing the page.</p>
               </div>
             ) : (
-              <div className="rounded-sm border border-dashed p-10 text-center">
+              <div className="rounded-md border border-dashed p-10 text-center">
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold">No orders yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Create your first order to start managing inspections.</p>

@@ -1,5 +1,6 @@
 import { createServiceClient, serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { resolveIdLookup } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/orders/[id]/data
@@ -8,7 +9,8 @@ import { withAuth } from '@/lib/api/with-auth';
  * now stored directly against the order after migration 043.
  */
 export const GET = withAuth<{ id: string }>(async ({ tenant, params }) => {
-  const { id: orderId } = params;
+  const { id } = params;
+  const lookup = resolveIdLookup(id, { publicColumn: "order_number", transformPublicValue: (value) => value.toUpperCase() });
   const supabase = createServiceClient();
 
   // 1. Fetch the order with related data
@@ -16,9 +18,9 @@ export const GET = withAuth<{ id: string }>(async ({ tenant, params }) => {
     .from('orders')
     .select(`
       *,
-      property:properties(id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet),
-      client:clients(id, name, email, phone, company),
-      agent:agents(id, name, email, phone),
+      property:properties(id, public_id, address_line1, address_line2, city, state, zip_code, property_type, year_built, square_feet),
+      client:clients(id, public_id, name, email, phone, company),
+      agent:agents(id, public_id, name, email, phone),
       inspector:profiles(id, full_name, email, avatar_url),
       services:order_services(
         id, service_id, name, status, price, duration_minutes, template_id, sort_order, notes, inspector_id, vendor_id,
@@ -26,13 +28,16 @@ export const GET = withAuth<{ id: string }>(async ({ tenant, params }) => {
         vendor:vendors!inspection_services_vendor_id_fkey(id, name, vendor_type, email, phone)
       )
     `)
-    .eq('id', orderId)
+    .eq(lookup.column, lookup.value)
     .eq('tenant_id', tenant.id)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
   if (orderError || !order) {
     return serverError('Failed to fetch order', orderError);
   }
+
+  const orderId = order.id;
 
   // 2. Fetch template with sections/items if assigned
   let templateData = null;

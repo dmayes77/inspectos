@@ -3,9 +3,11 @@ import { withAuth } from '@/lib/api/with-auth';
 import { updateClientSchema } from '@inspectos/shared/validations/client';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildClientPayload } from '@/lib/webhooks/payloads';
+import { resolveIdLookup } from '@/lib/identifiers/lookup';
 
 const mapClient = (client: Record<string, unknown>) => ({
   clientId: client.id,
+  publicId: client.public_id,
   name: client.name,
   email: client.email || '',
   phone: client.phone || '',
@@ -24,13 +26,15 @@ const mapClient = (client: Record<string, unknown>) => ({
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
 
   const { data: client, error } = await supabase
     .from('clients')
     .select('*')
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
-    .single();
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
 
   if (error || !client) return notFound('Client not found');
 
@@ -42,6 +46,17 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
+
+  const { data: existingClient, error: existingClientError } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingClientError || !existingClient?.id) return notFound('Client not found');
 
   const body = await request.json();
 
@@ -63,7 +78,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('clients')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', existingClient.id)
     .select('*')
     .single();
 
@@ -84,12 +99,23 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
   const { id } = params;
+  const lookup = resolveIdLookup(id);
+
+  const { data: existingClient, error: existingClientError } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .eq(lookup.column, lookup.value)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingClientError || !existingClient?.id) return notFound('Client not found');
 
   const { error } = await supabase
     .from('clients')
     .delete()
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', existingClient.id);
 
   if (error) return serverError('Failed to delete client', error);
 

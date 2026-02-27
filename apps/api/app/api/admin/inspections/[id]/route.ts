@@ -1,5 +1,6 @@
 import { notFound, serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 interface OrderWithJoins {
   id: string;
@@ -16,7 +17,7 @@ interface OrderWithJoins {
  * GET /api/admin/inspections/[id]
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const inspectionId = parseRouteIdentifier(params.id);
 
   const { data: inspection, error } = await supabase
     .from('inspections')
@@ -52,7 +53,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
       )
     `)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', inspectionId)
     .single();
 
   if (error) {
@@ -84,7 +85,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  * PUT /api/admin/inspections/[id]
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
-  const { id } = params;
+  const inspectionId = parseRouteIdentifier(params.id);
 
   const body = await request.json();
   const {
@@ -110,7 +111,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('inspections')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', inspectionId)
     .select('*')
     .single();
 
@@ -132,13 +133,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  * DELETE /api/admin/inspections/[id]
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const inspectionId = parseRouteIdentifier(params.id);
 
   const { error } = await supabase
     .from('inspections')
     .delete()
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', inspectionId);
 
   if (error) {
     return serverError('Failed to delete inspection', error);

@@ -32,7 +32,7 @@ export default function TeamSettingsPage() {
           <CardContent className="pt-5">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-brand-50 dark:bg-brand-500/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 dark:bg-brand-500/10">
                   <Users className="h-5 w-5 text-brand-500" />
                 </div>
                 <div>
@@ -51,7 +51,7 @@ export default function TeamSettingsPage() {
           <CardContent className="pt-5">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-brand-50 dark:bg-brand-500/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 dark:bg-brand-500/10">
                   <Shield className="h-5 w-5 text-brand-500" />
                 </div>
                 <div>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@inspectos/shared/utils/dates";
 import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
 import type { InvoiceRecord } from "@/hooks/use-invoices";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 export const invoiceStatusOptions = [
   { value: "all", label: "All Statuses" },
@@ -28,7 +29,7 @@ export const invoiceTableColumns: ColumnDef<InvoiceRecord>[] = [
     enableHiding: false,
     cell: ({ row }) => (
       <Link
-        href={`/invoices/${row.original.invoiceId}`}
+        href={`/invoices/${toSlugIdSegment(row.original.invoiceNumber ?? row.original.invoiceId, row.original.invoiceId)}`}
         className="text-xs font-medium hover:underline"
       >
         {row.original.invoiceNumber || formatInvoiceNumber(row.original.invoiceId)}

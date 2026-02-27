@@ -19,6 +19,7 @@ export const GET = withAuth(async ({ supabase, tenant, request }) => {
     .select(
       `
       id,
+      order_number,
       scheduled_date,
       scheduled_time,
       status,
@@ -62,6 +63,7 @@ export const GET = withAuth(async ({ supabase, tenant, request }) => {
 
     return {
       id: order.id,
+      orderNumber: order.order_number,
       date: order.scheduled_date,
       time: order.scheduled_time || "09:00",
       address,

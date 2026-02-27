@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageHeader } from "@/layout/page-header";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/invoices/invoice-form";
 import { useCreateInvoice } from "@/hooks/use-invoices";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const initialValues: InvoiceFormValues = {
   orderId: "",
@@ -29,7 +30,7 @@ export default function NewInvoicePage() {
       due_at: values.dueDate || null,
     });
 
-    router.push(`/invoices/${created.invoiceId}`);
+    router.push(`/invoices/${toSlugIdSegment(created.invoiceNumber ?? created.invoiceId, created.invoiceId)}`);
   };
 
   return (

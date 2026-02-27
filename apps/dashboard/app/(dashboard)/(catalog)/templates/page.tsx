@@ -17,6 +17,7 @@ import { can } from "@/lib/admin/permissions";
 import { useTemplates, useDuplicateTemplate, useUpdateTemplate, useCreateTemplateStub } from "@/hooks/use-templates";
 import { toast } from "sonner";
 import Link from "next/link";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 function getTypeBadge(type: string) {
   switch (type) {
@@ -98,7 +99,7 @@ export default function TemplatesPage() {
           setShowNewDialog(false);
           setNewTemplateName("");
           setNewTemplateDescription("");
-          router.push(`/templates/${newTemplate.id}`);
+          router.push(`/templates/${toSlugIdSegment(newTemplate.name, newTemplate.id)}`);
         },
         onError: () => {
           toast.error("Failed to create template");
@@ -155,7 +156,7 @@ export default function TemplatesPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem asChild>
-                      <Link href={`/templates/${template.id}`}>
+                      <Link href={`/templates/${toSlugIdSegment(template.name, template.id)}`}>
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
                       </Link>

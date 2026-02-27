@@ -32,17 +32,17 @@ export type NavSection = {
 
 export const companyPinnedNav: NavItem[] = [
   { href: "/overview", icon: LayoutDashboard, label: "Overview" },
-  { href: "/orders", icon: Folders, label: "Orders" },
   { href: "/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/contacts", icon: Users, label: "Contacts" },
+  { href: "/orders", icon: Folders, label: "Orders" },
+  { href: "/properties", icon: MapPin, label: "Properties" },
   { href: "/agents", icon: IdCard, label: "Agents" },
+  { href: "/leads", icon: Users, label: "Leads" },
 ];
 
 export const companyNavSections: NavSection[] = [
   {
     label: "Operations",
     items: [
-      { href: "/properties", icon: MapPin, label: "Properties" },
       { href: "/templates", icon: FileText, label: "Inspection Templates" },
       { href: "/tags", icon: Tag, label: "Tags" },
     ],
@@ -99,10 +99,12 @@ export const platformMainNav: NavItem[] = [
 export const platformSystemNav: NavItem[] = [{ href: "/platform/content", icon: FileText, label: "Content" }];
 
 export const companyMobileNav: NavItem[] = [
-  { href: "/overview", icon: LayoutDashboard, label: "Home" },
-  { href: "/orders", icon: Folders, label: "Orders" },
+  { href: "/overview", icon: LayoutDashboard, label: "Overview" },
   { href: "/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/contacts", icon: Users, label: "Contacts" },
+  { href: "/orders", icon: Folders, label: "Orders" },
+  { href: "/properties", icon: MapPin, label: "Properties" },
+  { href: "/agents", icon: IdCard, label: "Agents" },
+  { href: "/leads", icon: Users, label: "Leads" },
   { href: "/invoices", icon: Receipt, label: "Invoices" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
   { href: "/settings", icon: Settings, label: "Settings" },

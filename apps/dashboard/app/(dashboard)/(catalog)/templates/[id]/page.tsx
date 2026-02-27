@@ -9,6 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, ArrowUp, ArrowDown, X, Pencil } from "lucide-react";
 import { useTemplate, useUpdateTemplate } from "@/hooks/use-templates";
@@ -17,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
 import type { Template, TemplateItemType, TemplateSection } from "@/types/template";
 import { toast } from "sonner";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 const itemTypeOptions: { value: TemplateItemType; label: string }[] = [
   { value: "checkbox", label: "Checkbox" },
@@ -30,7 +41,7 @@ const itemTypeOptions: { value: TemplateItemType; label: string }[] = [
 export default function TemplateEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const id = typeof params.id === "string" ? params.id : "";
+  const id = parseSlugIdSegment(typeof params.id === "string" ? params.id : "");
   const { data: template, isLoading } = useTemplate(id || null);
   const updateMutation = useUpdateTemplate();
 
@@ -40,6 +51,11 @@ export default function TemplateEditorPage() {
   const [templateType, setTemplateType] = useState<Template["type"]>("inspection");
   const [standard, setStandard] = useState("Custom");
   const [sections, setSections] = useState<TemplateSection[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<
+    | { kind: "section"; sectionId: string }
+    | { kind: "item"; sectionId: string; itemId: string }
+    | null
+  >(null);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [serviceSearch, setServiceSearch] = useState("");
 
@@ -164,6 +180,16 @@ export default function TemplateEditorPage() {
     );
   };
 
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "section") {
+      deleteSection(pendingDelete.sectionId);
+    } else {
+      deleteItem(pendingDelete.sectionId, pendingDelete.itemId);
+    }
+    setPendingDelete(null);
+  };
+
   const handleSave = () => {
     const normalizedSections = sections.map((section, sectionIndex) => ({
       ...section,
@@ -265,7 +291,7 @@ export default function TemplateEditorPage() {
                       onChange={(e) => setServiceSearch(e.target.value)}
                       placeholder="Search services..."
                     />
-                    <div className="max-h-64 overflow-y-auto space-y-2 rounded-sm border p-3">
+                    <div className="max-h-64 overflow-y-auto space-y-2 rounded-md border p-3">
                       {filteredServices.length === 0 ? (
                         <div className="text-sm text-muted-foreground">No services match your search.</div>
                       ) : (
@@ -373,7 +399,7 @@ export default function TemplateEditorPage() {
                   <Button variant="ghost" size="icon" onClick={() => moveSection(section.id, "down")}>
                     <ArrowDown className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => deleteSection(section.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => setPendingDelete({ kind: "section", sectionId: section.id })}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -389,12 +415,12 @@ export default function TemplateEditorPage() {
               </div>
               <div className="space-y-3">
                 {section.items.length === 0 ? (
-                  <div className="rounded-sm border border-dashed p-4 text-sm text-muted-foreground">
+                  <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
                     No items yet. Add your first checklist item.
                   </div>
                 ) : (
                   section.items.map((item) => (
-                    <div key={item.id} className="rounded-sm border p-3">
+                    <div key={item.id} className="rounded-md border p-3">
                       <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_0.5fr_auto] items-center">
                         <Input
                           value={item.name}
@@ -424,7 +450,11 @@ export default function TemplateEditorPage() {
                           />
                           Required
                         </label>
-                        <Button variant="ghost" size="icon" onClick={() => deleteItem(section.id, item.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setPendingDelete({ kind: "item", sectionId: section.id, itemId: item.id })}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -436,6 +466,28 @@ export default function TemplateEditorPage() {
           </Card>
         ))}
       </div>
+
+      <AlertDialog open={Boolean(pendingDelete)} onOpenChange={(open) => (!open ? setPendingDelete(null) : undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === "section" ? "Delete section?" : "Delete item?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

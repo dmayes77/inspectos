@@ -1,18 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useEffect } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { PageHeader } from "@/layout/page-header";
 import { InvoiceForm, type InvoiceFormValues } from "@/components/invoices/invoice-form";
 import { useInvoice, useUpdateInvoice } from "@/hooks/use-invoices";
 import { Loader2 } from "lucide-react";
 import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 export default function EditInvoicePage() {
   const params = useParams();
-  const invoiceId = params.id as string;
+  const pathname = usePathname();
+  const router = useRouter();
+  const invoiceId = parseSlugIdSegment(params.id as string);
   const { data: invoice, isLoading, isError } = useInvoice(invoiceId);
   const updateInvoice = useUpdateInvoice(invoiceId);
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -57,7 +71,7 @@ export default function EditInvoicePage() {
     <>
     <div className="space-y-6">
       <PageHeader
-        title="Edit Invoice"
+        title="Invoice"
         description="Adjust invoice details, status, and due dates."
       />
 

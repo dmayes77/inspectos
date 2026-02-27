@@ -26,7 +26,7 @@ export const GET = withAuth(async ({ supabase, tenant, request }) => {
     .from('properties')
     .select(`
       *,
-      client:clients(id, name, email, phone)
+      client:clients(id, public_id, name, email, phone)
     `)
     .eq('tenant_id', tenant.id)
     .order('created_at', { ascending: false });
@@ -105,7 +105,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
     })
     .select(`
       *,
-      client:clients(id, name, email, phone)
+      client:clients(id, public_id, name, email, phone)
     `)
     .single();
 

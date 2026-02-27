@@ -13,6 +13,7 @@ import { inspectionStatusBadge } from "@/lib/admin/badges";
 import { formatDateShort, formatTime12 } from "@inspectos/shared/utils/dates";
 
 import { useTeamMembers } from "@/hooks/use-team";
+import { parseSlugIdSegment, toSlugIdSegment } from "@/lib/routing/slug-id";
 
 const upcomingInspections = [
   {
@@ -102,7 +103,7 @@ export default function TeamMemberSchedulePage() {
   const params = useParams();
   const { data: teamMembers = [] } = useTeamMembers();
   const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const memberId = parseSlugIdSegment(rawMemberId ? String(rawMemberId) : "");
   const member = teamMembers.find((m) => m.memberId.toLowerCase() === memberId.toLowerCase());
 
   if (!member) {
@@ -217,7 +218,7 @@ export default function TeamMemberSchedulePage() {
                     <div className="text-sm text-muted-foreground">Client: {inspection.client}</div>
                   </div>
                   <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-                    <Link href={`/inspections/${inspection.id}`}>View Details</Link>
+                    <Link href={`/inspections/${toSlugIdSegment("inspection", inspection.id)}`}>View Details</Link>
                   </Button>
                 </div>
               </CardContent>
@@ -259,7 +260,7 @@ export default function TeamMemberSchedulePage() {
                     <div className="text-sm text-muted-foreground">Client: {inspection.client}</div>
                   </div>
                   <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-                    <Link href={`/inspections/${inspection.id}`}>View Report</Link>
+                    <Link href={`/inspections/${toSlugIdSegment("inspection", inspection.id)}`}>View Report</Link>
                   </Button>
                 </div>
               </CardContent>

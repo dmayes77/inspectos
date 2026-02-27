@@ -24,7 +24,7 @@ export default function AdminError({
     <div className="flex min-h-[60vh] items-center justify-center p-4">
       <Card className="mx-auto max-w-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-md bg-destructive/10">
             <AlertTriangle className="h-7 w-7 text-destructive" />
           </div>
           <CardTitle className="text-xl">Something went wrong</CardTitle>

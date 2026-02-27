@@ -108,16 +108,16 @@ export default function PaymentsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {paymentsLoading || invoicesLoading ? (
-            <div className="rounded-sm border border-dashed p-10 text-center text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
               Loading payments...
             </div>
           ) : payments.length === 0 ? (
-            <div className="rounded-sm border border-dashed p-10 text-center text-sm text-muted-foreground">
+            <div className="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
               No payments yet. Payments will appear as orders are paid.
             </div>
           ) : (
             payments.map((payment) => (
-              <div key={payment.paymentId} className="flex flex-wrap items-start justify-between gap-3 rounded-sm border p-4 text-sm">
+              <div key={payment.paymentId} className="flex flex-wrap items-start justify-between gap-3 rounded-md border p-4 text-sm">
                 <div className="space-y-2">
                   <div>
                     <p className="font-medium">{payment.clientName || "Unknown client"}</p>

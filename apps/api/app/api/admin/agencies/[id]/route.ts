@@ -1,12 +1,13 @@
 import { serverError, success, validationError } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { updateAgencySchema } from '@inspectos/shared/validations/agency';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * GET /api/admin/agencies/[id]
  */
 export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const agencyId = parseRouteIdentifier(params.id);
 
   const { data: agency, error } = await supabase
     .from('agencies')
@@ -15,7 +16,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
       agents:agents(id, name, email, phone, status, total_referrals, total_revenue)
     `)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', agencyId)
     .single();
 
   if (error || !agency) {
@@ -29,7 +30,7 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
  * PUT /api/admin/agencies/[id]
  */
 export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, request }) => {
-  const { id } = params;
+  const agencyId = parseRouteIdentifier(params.id);
 
   const body = await request.json();
 
@@ -60,7 +61,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .from('agencies')
     .update(updateData)
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', agencyId)
     .select()
     .single();
 
@@ -75,13 +76,13 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
  * DELETE /api/admin/agencies/[id]
  */
 export const DELETE = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const agencyId = parseRouteIdentifier(params.id);
 
   const { error } = await supabase
     .from('agencies')
     .delete()
     .eq('tenant_id', tenant.id)
-    .eq('id', id);
+    .eq('id', agencyId);
 
   if (error) {
     return serverError('Failed to delete agency', error);

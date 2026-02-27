@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { PageHeader } from "@/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { useClientById, useUpdateClient, type Client } from "@/hooks/use-clients";
 import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
 import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { ContactFormErrors, ContactFormSections, ContactFormValues, validateContactForm } from "@/components/contacts/contact-form-sections";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 export default function EditContactPage() {
   const params = useParams();
+  const pathname = usePathname();
   const router = useRouter();
   const { id } = params as { id: string };
 
@@ -26,6 +28,16 @@ export default function EditContactPage() {
   });
   const [errors, setErrors] = useState<ContactFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (pathname.endsWith("/edit")) {
+      router.replace(pathname.slice(0, -5));
+    }
+  }, [pathname, router]);
+
+  if (pathname.endsWith("/edit")) {
+    return null;
+  }
 
   const initializeForm = (nextClient: Client) => {
     setForm({
@@ -75,14 +87,14 @@ export default function EditContactPage() {
     });
 
     setIsSaving(false);
-    router.push(`/contacts/${client.clientId}`);
+    router.push(`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`);
   };
 
   return (
     <>
     <div className="space-y-6">
       <PageHeader
-        title="Edit Client"
+        title="Client"
         description="Update client information"
       />
 
@@ -106,7 +118,7 @@ export default function EditContactPage() {
                     {isSaving ? "Saving..." : "Save Changes"}
                   </Button>
                   <Button type="button" variant="outline" className="w-full" asChild>
-                    <Link href={`/contacts/${client.clientId}`}>Cancel</Link>
+                    <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`}>Cancel</Link>
                   </Button>
                 </>
               }

@@ -251,7 +251,7 @@ export default function InboxPage() {
 
       <div
         className={cn(
-          "overflow-hidden rounded-sm border bg-card shadow-sm transition-all duration-300",
+          "overflow-hidden rounded-md border bg-card shadow-sm transition-all duration-300",
           isComposeOpen ? "max-h-[680px] opacity-100" : "max-h-0 border-transparent opacity-0"
         )}
       >
@@ -270,7 +270,7 @@ export default function InboxPage() {
               onChange={(event) => setComposeSubject(event.target.value)}
             />
           </div>
-          <div className="rounded-sm border">
+          <div className="rounded-md border">
             <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-2">
               <Button
                 type="button"
@@ -370,7 +370,7 @@ export default function InboxPage() {
       </div>
 
       <div className="grid gap-4 xl:h-[calc(100vh-13rem)] xl:grid-cols-[240px_360px_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-3 rounded-sm border bg-card p-3 shadow-sm xl:overflow-y-auto">
+        <div className="min-w-0 space-y-3 rounded-md border bg-card p-3 shadow-sm xl:overflow-y-auto">
           <div className="px-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Folders</p>
           </div>
@@ -387,7 +387,7 @@ export default function InboxPage() {
                   type="button"
                   onClick={() => setFolder(item.key)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-sm px-3 py-2 text-sm transition-colors",
+                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors",
                     folder === item.key
                       ? "bg-brand-500 text-white"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -407,7 +407,7 @@ export default function InboxPage() {
 
         </div>
 
-        <div className="min-w-0 h-[70vh] rounded-sm border bg-card p-3 shadow-sm xl:h-full xl:min-h-0 xl:overflow-hidden xl:flex xl:flex-col">
+        <div className="min-w-0 h-[70vh] rounded-md border bg-card p-3 shadow-sm xl:h-full xl:min-h-0 xl:overflow-hidden xl:flex xl:flex-col">
           <div className="mb-3 relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -426,7 +426,7 @@ export default function InboxPage() {
                   type="button"
                   onClick={() => setSelectedId(message.id)}
                   className={cn(
-                    "block w-full max-w-full overflow-hidden rounded-sm border p-3 text-left transition-all hover:shadow-sm",
+                    "block w-full max-w-full overflow-hidden rounded-md border p-3 text-left transition-all hover:shadow-sm",
                     selectedMessage?.id === message.id
                       ? "border-brand-500 bg-brand-50/70 dark:bg-brand-900/20"
                       : "border-border bg-background"
@@ -447,7 +447,7 @@ export default function InboxPage() {
                 </button>
               ))}
               {filteredMessages.length === 0 ? (
-                <div className="rounded-sm border border-dashed p-6 text-center text-sm text-muted-foreground">
+                <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                   No messages found.
                 </div>
               ) : null}
@@ -455,7 +455,7 @@ export default function InboxPage() {
           </div>
         </div>
 
-        <div className="rounded-sm border bg-card shadow-sm xl:min-h-0 xl:overflow-hidden">
+        <div className="rounded-md border bg-card shadow-sm xl:min-h-0 xl:overflow-hidden">
           {selectedMessage ? (
             <div className="flex h-full min-h-[60vh] flex-col">
               <div className="border-b px-5 py-4">

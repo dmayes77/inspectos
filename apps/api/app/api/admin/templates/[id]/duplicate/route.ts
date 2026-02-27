@@ -4,19 +4,20 @@ import {
   success
 } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 /**
  * POST /api/admin/templates/[id]/duplicate
  */
 export const POST = withAuth<{ id: string }>(async ({ supabase, tenant, params }) => {
-  const { id } = params;
+  const templateId = parseRouteIdentifier(params.id);
 
   // Fetch original template with sections and items
   const { data: original, error: fetchError } = await supabase
     .from('templates')
     .select('*, template_sections(*, template_items(*))')
     .eq('tenant_id', tenant.id)
-    .eq('id', id)
+    .eq('id', templateId)
     .single();
 
   if (fetchError || !original) return badRequest('Template not found');

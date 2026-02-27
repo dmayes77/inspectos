@@ -1,27 +1,13 @@
 "use client";
 
-// Helper for role description
-function getRoleDescription(role: string): string {
-  switch (role) {
-    case "OWNER":
-      return "Full access to all features and settings";
-    case "ADMIN":
-      return "Full access except billing and company deletion";
-    case "INSPECTOR":
-      return "Field operations and own inspection management";
-    case "OFFICE_STAFF":
-      return "Office operations without field work";
-    default:
-      return role;
-  }
-}
 import { Shield, Unlock, Lock, Plus } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { permissionCategories, getPermissionsForRole } from "@/lib/permissions";
-import { teamRoleBadge, teamStatusBadge } from "@/lib/admin/badges";
 
 import { useParams, useRouter } from "next/navigation";
-import { AdminPageHeader } from "@/layout/admin-page-header";
+import Link from "next/link";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { DeleteButton, SaveButton } from "@/components/shared/action-buttons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -40,11 +26,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Mail, Phone, MapPin, Star, ClipboardList, Calendar, Save, Trash2 } from "lucide-react";
+import { Star, ClipboardList, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useTeamMembers, useUpdateTeamMember, useDeleteTeamMember, TeamMember } from "@/hooks/use-team";
 import { useProfile } from "@/hooks/use-profile";
 import { can } from "@/lib/admin/permissions";
+import { uploadCurrentUserAvatar } from "@/lib/api/media";
+import { parseSlugIdSegment } from "@/lib/routing/slug-id";
 
 type WeeklyAvailabilitySlot = {
   day: string;
@@ -62,6 +52,8 @@ const DEFAULT_WEEKLY_AVAILABILITY: WeeklyAvailabilitySlot[] = [
   { day: "Sat", available: false, startTime: "", endTime: "" },
   { day: "Sun", available: false, startTime: "", endTime: "" },
 ];
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 
 function normalizeWeeklyAvailability(value: unknown): WeeklyAvailabilitySlot[] {
   if (!Array.isArray(value) || value.length === 0) return DEFAULT_WEEKLY_AVAILABILITY;
@@ -101,7 +93,7 @@ export default function TeamMemberDetailPage() {
   const updateMember = useUpdateTeamMember();
   const deleteMember = useDeleteTeamMember();
   const rawMemberId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const memberId = rawMemberId ? String(rawMemberId) : "";
+  const memberId = parseSlugIdSegment(rawMemberId ? String(rawMemberId) : "");
   const member = teamMembers.find((m) => m.memberId.toLowerCase() === memberId.toLowerCase());
   const [form, setForm] = useState<Partial<TeamMember>>({});
   const [weeklyAvailability, setWeeklyAvailability] = useState<WeeklyAvailabilitySlot[]>([]);
@@ -110,6 +102,8 @@ export default function TeamMemberDetailPage() {
   >([]);
   const [customPermissions, setCustomPermissions] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const uploadAvatarMutation = useMutation({ mutationFn: uploadCurrentUserAvatar });
 
   const effectiveRole = (form.role as TeamMember["role"]) ?? member?.role;
   const memberRolePermissions = effectiveRole ? getPermissionsForRole(effectiveRole) : [];
@@ -163,90 +157,90 @@ export default function TeamMemberDetailPage() {
     setDeleteDialogOpen(false);
     router.push("/team");
   };
+  const memberInitials = member.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2);
+  const resolvedAvatarUrl = form.avatarUrl ?? member.avatarUrl ?? undefined;
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      toast.error("Use PNG, JPEG, WebP, or GIF images.");
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error("Profile photos must be under 2MB.");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const data = await uploadAvatarMutation.mutateAsync(file);
+      setForm((prev) => ({ ...prev, avatarUrl: data.avatarUrl }));
+      toast.success("Profile photo updated");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to upload profile photo.";
+      toast.error(message);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const headerActions = (
+    <div className="space-y-2">
+      {canEditMember ? (
+        <>
+          <SaveButton className="w-full" onClick={handleSave} isSaving={updateMember.isPending} />
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() =>
+              setForm((prev) => ({
+                ...prev,
+                status: (prev.status ?? member.status) === "active" ? "inactive" : "active",
+              }))
+            }
+          >
+            {(form.status ?? member.status) === "active" ? (
+              <Lock className="mr-2 h-4 w-4" />
+            ) : (
+              <Unlock className="mr-2 h-4 w-4" />
+            )}
+            {(form.status ?? member.status) === "active" ? "Suspend" : "Reactivate"}
+          </Button>
+        </>
+      ) : null}
+      {canDeleteMember ? (
+        <DeleteButton
+          className="w-full"
+          onClick={() => setDeleteDialogOpen(true)}
+        />
+      ) : null}
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-      {/* Back Button */}
-
-      <AdminPageHeader
-        title={
-          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
-            <Avatar className="h-14 w-14 sm:h-16 sm:w-16">
-              <AvatarImage src={member.avatarUrl} />
-              <AvatarFallback className="bg-primary/10 text-lg text-primary sm:text-xl">
-                {member.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
-                <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{member.name}</h1>
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                  {teamRoleBadge(member.role)}
-                  {teamStatusBadge(member.status)}
-                </div>
-              </div>
-              <div className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground sm:justify-start">
-                <span className="font-medium">Joined</span>
-                <span>{member.joinedDate}</span>
-              </div>
-              {member.role ? (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  <span className="font-medium">Role:</span> {getRoleDescription(member.role)}
-                </div>
-              ) : null}
-              <div className="mt-2 text-xs text-muted-foreground">
-                ID# {member.memberId}
-              </div>
-              {member.certifications.length > 0 ? (
-                <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground sm:justify-start">
-                  <span className="font-medium">License:</span>
-                  <span>{member.certifications.join(", ")}</span>
-                </div>
-              ) : null}
-            </div>
-          </div>
+    <>
+      <IdPageLayout
+        title={member.name}
+        description="Adjust profile details, schedule, and permissions."
+        breadcrumb={
+          <>
+            <Link href="/team" className="text-muted-foreground transition hover:text-foreground">
+              Team
+            </Link>
+            <span className="text-muted-foreground">{">"}</span>
+            <span className="max-w-[20rem] truncate font-medium">{member.name}</span>
+          </>
         }
-        actions={
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-            {canEditMember ? (
-              <>
-                <Button size="sm" className="w-full sm:w-auto" onClick={handleSave} disabled={updateMember.isPending}>
-                  <Save className="mr-2 h-4 w-4" />
-                  {updateMember.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={() =>
-                    setForm((prev) => ({
-                      ...prev,
-                      status: (prev.status ?? member.status) === "active" ? "inactive" : "active",
-                    }))
-                  }
-                >
-                  {member.status === "active" ? "Suspend" : "Reactivate"}
-                </Button>
-              </>
-            ) : null}
-            {canDeleteMember ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full text-destructive hover:bg-destructive hover:text-destructive-foreground sm:w-auto"
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
-
+        left={
+          <div className="space-y-4">
       {/* Details Row: Contact Info & Certifications */}
       <div className="flex flex-col gap-4 md:flex-row">
         {/* Contact Info */}
@@ -255,6 +249,32 @@ export default function TeamMemberDetailPage() {
             <CardTitle className="text-base">Contact Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={resolvedAvatarUrl} />
+                <AvatarFallback>{memberInitials}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 space-y-3">
+                <div className="space-y-0.5">
+                  <p className="mb-0 font-medium leading-tight">{member.name}</p>
+                  <p className="mb-0 text-sm text-muted-foreground leading-tight">{member.email || "No email provided"}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="team-avatar">Profile photo</Label>
+                  <Input
+                    id="team-avatar"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    disabled={isUploadingAvatar}
+                  />
+                  <p className="mb-0 text-xs text-muted-foreground">
+                    {isUploadingAvatar ? "Uploading photo..." : "Use a square JPG, PNG, WebP, or GIF under 2MB."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="member-name">Full Name</Label>
@@ -448,172 +468,170 @@ export default function TeamMemberDetailPage() {
           <CardTitle className="text-base">Weekly Schedule & Exceptions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Weekly Schedule</div>
             <div className="space-y-2">
-              <div className="text-sm font-medium">Weekly Schedule</div>
-              <div className="space-y-2">
-                {weeklyAvailability.map((slot) => (
-                  <div key={slot.day} className="flex items-center gap-3 px-1 py-1.5">
-                    <div className="w-16 text-xs font-medium">{slot.day}</div>
+              {weeklyAvailability.map((slot) => (
+                <div key={slot.day} className="flex items-center gap-3 px-1 py-1.5">
+                  <div className="w-16 text-xs font-medium">{slot.day}</div>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={slot.available ? "available" : "unavailable"}
+                      onValueChange={(value) =>
+                        setWeeklyAvailability((prev) =>
+                          prev.map((item) =>
+                            item.day === slot.day
+                              ? {
+                                  ...item,
+                                  available: value === "available",
+                                  startTime: value === "available" ? item.startTime || "08:00" : "",
+                                  endTime: value === "available" ? item.endTime || "17:00" : "",
+                                }
+                              : item
+                          )
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-32 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="unavailable">Not Available</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {slot.available ? (
                     <div className="flex items-center gap-2">
-                      <Select
-                        value={slot.available ? "available" : "unavailable"}
-                        onValueChange={(value) =>
+                      <Input
+                        type="time"
+                        value={slot.startTime}
+                        className="h-8 w-32 text-xs"
+                        onChange={(e) =>
                           setWeeklyAvailability((prev) =>
-                            prev.map((item) =>
-                              item.day === slot.day
-                                ? {
-                                    ...item,
-                                    available: value === "available",
-                                    startTime: value === "available" ? item.startTime || "08:00" : "",
-                                    endTime: value === "available" ? item.endTime || "17:00" : "",
-                                  }
-                                : item
-                            )
+                            prev.map((item) => (item.day === slot.day ? { ...item, startTime: e.target.value } : item))
                           )
                         }
-                      >
-                        <SelectTrigger className="h-8 w-32 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="available">Available</SelectItem>
-                          <SelectItem value="unavailable">Not Available</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      />
+                      <span className="text-xs text-muted-foreground">to</span>
+                      <Input
+                        type="time"
+                        value={slot.endTime}
+                        className="h-8 w-32 text-xs"
+                        onChange={(e) =>
+                          setWeeklyAvailability((prev) =>
+                            prev.map((item) => (item.day === slot.day ? { ...item, endTime: e.target.value } : item))
+                          )
+                        }
+                      />
                     </div>
-                    {slot.available ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="time"
-                          value={slot.startTime}
-                          className="h-8 w-32 text-xs"
-                          onChange={(e) =>
-                            setWeeklyAvailability((prev) =>
-                              prev.map((item) => (item.day === slot.day ? { ...item, startTime: e.target.value } : item))
-                            )
-                          }
-                        />
-                        <span className="text-xs text-muted-foreground">to</span>
-                        <Input
-                          type="time"
-                          value={slot.endTime}
-                          className="h-8 w-32 text-xs"
-                          onChange={(e) =>
-                            setWeeklyAvailability((prev) =>
-                              prev.map((item) => (item.day === slot.day ? { ...item, endTime: e.target.value } : item))
-                            )
-                          }
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No hours set</span>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No hours set</span>
+                  )}
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Exceptions</div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    setAvailabilityExceptions((prev) => [
-                      ...prev,
-                      {
-                        id: crypto.randomUUID(),
-                        type: "Personal",
-                        startDate: "",
-                        endDate: "",
-                        status: "Pending",
-                      },
-                    ])
-                  }
-                >
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  Add Exception
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Time-off requests and one-off availability overrides are managed here.
-              </p>
-              <div className="space-y-2">
-                {availabilityExceptions.map((exception) => (
-                  <div key={exception.id} className="flex items-center justify-between rounded-sm border px-3 py-2">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5 text-sm font-medium">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <Input
-                          value={exception.type}
-                          className="h-8 min-w-28 text-xs"
-                          onChange={(e) =>
-                            setAvailabilityExceptions((prev) =>
-                              prev.map((item) => (item.id === exception.id ? { ...item, type: e.target.value } : item))
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Input
-                          type="date"
-                          value={exception.startDate}
-                          className="h-8 text-xs"
-                          onChange={(e) =>
-                            setAvailabilityExceptions((prev) =>
-                              prev.map((item) => (item.id === exception.id ? { ...item, startDate: e.target.value } : item))
-                            )
-                          }
-                        />
-                        <span>to</span>
-                        <Input
-                          type="date"
-                          value={exception.endDate}
-                          className="h-8 text-xs"
-                          onChange={(e) =>
-                            setAvailabilityExceptions((prev) =>
-                              prev.map((item) => (item.id === exception.id ? { ...item, endDate: e.target.value } : item))
-                            )
-                          }
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={exception.status}
-                        onValueChange={(value) =>
+          <div className="space-y-3 border-t pt-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium">Exceptions</div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setAvailabilityExceptions((prev) => [
+                    ...prev,
+                    {
+                      id: crypto.randomUUID(),
+                      type: "Personal",
+                      startDate: "",
+                      endDate: "",
+                      status: "Pending",
+                    },
+                  ])
+                }
+              >
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                Add Exception
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Time-off requests and one-off availability overrides are managed here.
+            </p>
+            <div className="space-y-2">
+              {availabilityExceptions.map((exception) => (
+                <div key={exception.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={exception.type}
+                        className="h-8 min-w-28 text-xs"
+                        onChange={(e) =>
                           setAvailabilityExceptions((prev) =>
-                            prev.map((item) => (item.id === exception.id ? { ...item, status: value } : item))
+                            prev.map((item) => (item.id === exception.id ? { ...item, type: e.target.value } : item))
                           )
                         }
-                      >
-                        <SelectTrigger className="h-8 w-28 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Denied">Denied</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="text-destructive"
-                        onClick={() =>
-                          setAvailabilityExceptions((prev) => prev.filter((item) => item.id !== exception.id))
+                      />
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Input
+                        type="date"
+                        value={exception.startDate}
+                        className="h-8 text-xs"
+                        onChange={(e) =>
+                          setAvailabilityExceptions((prev) =>
+                            prev.map((item) => (item.id === exception.id ? { ...item, startDate: e.target.value } : item))
+                          )
                         }
-                      >
-                        Remove
-                      </Button>
+                      />
+                      <span>to</span>
+                      <Input
+                        type="date"
+                        value={exception.endDate}
+                        className="h-8 text-xs"
+                        onChange={(e) =>
+                          setAvailabilityExceptions((prev) =>
+                            prev.map((item) => (item.id === exception.id ? { ...item, endDate: e.target.value } : item))
+                          )
+                        }
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={exception.status}
+                      onValueChange={(value) =>
+                        setAvailabilityExceptions((prev) =>
+                          prev.map((item) => (item.id === exception.id ? { ...item, status: value } : item))
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-28 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Approved">Approved</SelectItem>
+                        <SelectItem value="Denied">Denied</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive"
+                      onClick={() =>
+                        setAvailabilityExceptions((prev) => prev.filter((item) => item.id !== exception.id))
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </CardContent>
@@ -634,7 +652,7 @@ export default function TeamMemberDetailPage() {
           <CardContent className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {Object.entries(permissionCategories).map(([categoryKey, category]) => {
               return (
-                <div key={categoryKey} className="rounded-sm border p-3">
+                <div key={categoryKey} className="rounded-md border p-3">
                   <h4 className="mb-2 flex items-center gap-2 text-sm font-medium">{category.label}</h4>
                   <div className="space-y-2 pl-3">
                     {category.permissions.map((permission) => {
@@ -714,6 +732,32 @@ export default function TeamMemberDetailPage() {
           </Card>
         </div>
       )}
+          </div>
+        }
+        right={
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {headerActions}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Tips</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>Save after role/status updates to apply permissions.</p>
+                <p>Use exceptions for one-off schedule overrides.</p>
+                <p>Set inspector toggle only for billable field users.</p>
+              </CardContent>
+            </Card>
+          </>
+        }
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -726,12 +770,12 @@ export default function TeamMemberDetailPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-white">
-              Delete
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete Anyway
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

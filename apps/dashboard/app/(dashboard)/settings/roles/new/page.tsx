@@ -194,7 +194,7 @@ export default function NewRolePage() {
                     type="button"
                     onClick={() => setRolePrefix(prefix)}
                     className={`
-                      h-12 rounded-sm border-2 font-mono font-semibold text-lg
+                      h-12 rounded-md border-2 font-mono font-semibold text-lg
                       transition-all hover:border-primary
                       ${rolePrefix === prefix
                         ? 'border-primary bg-primary text-primary-foreground'

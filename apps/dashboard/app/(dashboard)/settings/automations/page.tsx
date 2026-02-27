@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { AdminTabSwitch } from "@/layout/admin-tab-switch";
 import Link from "next/link";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 import { toast } from "sonner";
 import { useWebhooks } from "@/hooks/use-webhooks";
 import { useWorkflows, useUpdateWorkflow } from "@/hooks/use-workflows";
@@ -83,7 +84,7 @@ export default function AutomationsPage() {
       return (
         <div
           key={workflow.id}
-          className="flex flex-col gap-4 rounded-sm border p-4 transition hover:shadow"
+          className="flex flex-col gap-4 rounded-md border p-4 transition hover:shadow"
         >
           <div className="flex items-start justify-between">
             <div>
@@ -110,7 +111,7 @@ export default function AutomationsPage() {
               {stats.failureCount} failures
             </Badge>
             <Button variant="link" asChild>
-              <Link href={`/workflows/${workflow.id}`}>View definition</Link>
+              <Link href={`/workflows/${toSlugIdSegment(workflow.name, workflow.id)}`}>View definition</Link>
             </Button>
           </div>
         </div>
@@ -126,7 +127,7 @@ export default function AutomationsPage() {
     return ruleWorkflows.map((workflow) => (
       <div
         key={workflow.id}
-        className="flex flex-col gap-4 rounded-sm border p-4 transition hover:shadow"
+        className="flex flex-col gap-4 rounded-md border p-4 transition hover:shadow"
       >
         <div className="flex items-start justify-between">
           <div>
@@ -145,7 +146,7 @@ export default function AutomationsPage() {
         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
           <Badge color="light">{workflow.delayMinutes ?? 0} min delay</Badge>
           <Button variant="link" asChild>
-            <Link href={`/workflows/${workflow.id}`}>Edit workflow</Link>
+            <Link href={`/workflows/${toSlugIdSegment(workflow.name, workflow.id)}`}>Edit workflow</Link>
           </Button>
         </div>
       </div>
@@ -214,7 +215,7 @@ export default function AutomationsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-10 text-center">
+            <div className="flex flex-col items-center justify-center gap-3 rounded-md border border-dashed p-10 text-center">
             <Sparkles className="h-10 w-10 text-muted-foreground" />
             <div>
               <p className="text-sm font-medium">Launch the workflow builder</p>

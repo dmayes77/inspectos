@@ -3,9 +3,12 @@ import { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
 type ClientInfo = {
   id: string;
+  publicId?: string;
+  public_id?: string;
   name: string;
   email?: string | null;
   phone?: string | null;
@@ -41,11 +44,11 @@ export function ClientInfoCard({
         {client ? (
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <div className="rounded-full bg-primary/10 p-2">
+              <div className="rounded-md bg-primary/10 p-2">
                 <User className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <Link href={`/contacts/${client.id}`} className="font-medium hover:underline block truncate">
+                <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.public_id ?? client.id)}`} className="font-medium hover:underline block truncate">
                   {client.name}
                 </Link>
                 {typeBadge ? <div className="mt-1">{typeBadge}</div> : null}

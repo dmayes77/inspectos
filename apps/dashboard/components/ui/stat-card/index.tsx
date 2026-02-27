@@ -35,7 +35,7 @@ export function StatCard({
     <div
       className={cn(
         "border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3",
-        isDense ? "rounded-sm p-3 md:p-3.5" : "rounded-sm p-5 md:p-6",
+        isDense ? "rounded-md p-3 md:p-3.5" : "rounded-md p-5 md:p-6",
         className
       )}
     >
@@ -43,7 +43,7 @@ export function StatCard({
         <div
           className={cn(
             "flex items-center justify-center bg-gray-100 dark:bg-gray-800",
-            isDense ? "h-8 w-8 rounded-sm" : "h-12 w-12 rounded-sm"
+            isDense ? "h-8 w-8 rounded-md" : "h-12 w-12 rounded-md"
           )}
         >
           <Icon className={cn("text-gray-800 dark:text-white/90", isDense ? "size-4" : "size-6")} />
@@ -62,7 +62,7 @@ export function StatCard({
         {badgeText && (
           <div
             className={cn(
-              "inline-flex items-center gap-1 rounded-full font-medium shrink-0",
+              "inline-flex items-center gap-1 rounded-md font-medium shrink-0",
               isDense ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-0.5 text-xs",
               isPositive
                 ? "bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500"

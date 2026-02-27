@@ -76,7 +76,7 @@ export function AdminPageSkeleton({
             <div className="space-y-4">
               {Array.from({ length: listItems }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <Skeleton className="h-12 w-12 rounded-sm" />
+                  <Skeleton className="h-12 w-12 rounded-md" />
                   <div className="space-y-2 flex-1">
                     <Skeleton className="h-4 w-full max-w-md" />
                     <Skeleton className="h-3 w-full max-w-xs" />

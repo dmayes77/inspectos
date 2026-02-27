@@ -3,6 +3,7 @@ import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
 import { isValidPublicId } from '@/lib/identifiers/public-id';
+import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COLOR_HEX_REGEX = /^#[0-9A-Fa-f]{6}$/;
@@ -128,7 +129,7 @@ export const PUT = withAuth<{ id: string }>(
 
   const { id } = params;
 
-  const memberId = id?.trim?.().toUpperCase() ?? '';
+  const memberId = parseRouteIdentifier(id ?? "").trim().toUpperCase();
   if (!isValidPublicId(memberId)) {
     return badRequest('Invalid team member id');
   }
