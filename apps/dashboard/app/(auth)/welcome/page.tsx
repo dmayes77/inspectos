@@ -74,10 +74,12 @@ function WelcomePageContent() {
   useEffect(() => {
     if (isLoadingSession) return;
     if (sessionData?.user?.id) return;
-    if (!justConfirmed) return;
-
-    console.info("[auth:welcome] confirmed without session -> /login?url=/welcome&confirmed=1");
-    router.replace("/login?url=/welcome&confirmed=1");
+    const loginUrl = justConfirmed ? "/login?url=/welcome&confirmed=1" : "/login?url=/welcome";
+    console.info("[auth:welcome] unauthenticated -> login handoff", {
+      justConfirmed,
+      loginUrl,
+    });
+    router.replace(loginUrl);
   }, [isLoadingSession, justConfirmed, router, sessionData?.user?.id]);
 
   const handleContinue = async (e: React.FormEvent) => {
@@ -142,7 +144,7 @@ function WelcomePageContent() {
       <div className="flex flex-col flex-1 w-full overflow-y-auto">
         <div className="w-full max-w-md pt-8 mx-auto px-6 mb-5">
           <Link
-            href="/login?url=/welcome"
+            href={justConfirmed ? "/login?url=/welcome&confirmed=1" : "/login?url=/welcome"}
             className="inline-flex items-center gap-1 text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -151,12 +153,12 @@ function WelcomePageContent() {
         </div>
         <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto px-6 pb-12">
           <h1 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90 sm:text-3xl">
-            {justConfirmed ? "Email confirmed" : "Confirm your email first"}
+            {justConfirmed ? "Email confirmed" : "Sign in to continue"}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {justConfirmed
               ? "Now sign in to continue onboarding."
-              : "Open the confirmation email and use that link so you arrive here signed in."}
+              : "Sign in to continue onboarding."}
           </p>
         </div>
       </div>
