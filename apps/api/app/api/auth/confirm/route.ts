@@ -42,6 +42,16 @@ export async function GET(request: NextRequest) {
 
   const fallbackPath = type === "recovery" ? "/reset-password" : "/welcome?confirmed=1";
   const redirectPath = getSafeRedirectPath(next, fallbackPath);
+
+  // For signup confirmations where Supabase does not issue an immediate session,
+  // route through login and preserve the onboarding destination.
+  if (type === "email" && !data.session) {
+    const loginUrl = new URL("/login", getWebBaseUrl());
+    loginUrl.searchParams.set("confirmed", "1");
+    loginUrl.searchParams.set("url", redirectPath);
+    return NextResponse.redirect(loginUrl, { status: 303 });
+  }
+
   const redirectUrl = new URL(redirectPath, getWebBaseUrl());
   const response = NextResponse.redirect(redirectUrl, { status: 303 });
 
