@@ -84,9 +84,28 @@ function AuthCallbackPageContent() {
         }
       }
 
-      const sessionResult = await refetchSession();
+      let sessionResult: Awaited<ReturnType<typeof refetchSession>> | null = null;
+      try {
+        sessionResult = await refetchSession();
+      } catch (sessionError) {
+        if (!cancelled) {
+          setError(
+            sessionError instanceof Error
+              ? sessionError.message
+              : "Authentication link is invalid or expired. Please request a new email."
+          );
+        }
+        return;
+      }
+
       if (sessionResult.error || !sessionResult.data?.user?.id) {
         if (!cancelled) {
+          // Some Supabase email confirmation links verify the address without creating a session.
+          // In that case, send the user to login instead of leaving this callback in a loading state.
+          if (otpType === "email") {
+            router.replace(`/login?confirmed=1&url=${encodeURIComponent(redirectPath)}`);
+            return;
+          }
           setError("Authentication link is invalid or expired. Please request a new email.");
         }
         return;
