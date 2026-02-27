@@ -17,7 +17,13 @@ function inferFromHostname(hostname: string): string {
     return DEV_DASHBOARD_URL;
   }
 
-  if (host.startsWith("dev-") || host.includes(".dev-")) {
+  if (
+    host === "dev.inspectos.co" ||
+    host.startsWith("dev.") ||
+    host.startsWith("dev-") ||
+    host.includes(".dev.") ||
+    host.includes(".dev-")
+  ) {
     return DEV_DASHBOARD_URL;
   }
 
@@ -44,6 +50,15 @@ export function getDashboardBaseUrl(): string {
   }
 
   return PROD_DASHBOARD_URL;
+}
+
+export function getDashboardBaseUrlFromHost(hostname: string): string {
+  const configured = process.env.NEXT_PUBLIC_DASHBOARD_URL?.trim();
+  if (configured) {
+    return trimTrailingSlash(configured);
+  }
+
+  return inferFromHostname(hostname);
 }
 
 export function getDashboardAuthHref(path: "/login" | "/register"): string {
