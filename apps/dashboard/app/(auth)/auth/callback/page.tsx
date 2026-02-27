@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthSession, useExchangeCode, useSetSession } from "@/hooks/use-auth";
+import { useAuthSession, useConfirmOtp, useExchangeCode, useSetSession } from "@/hooks/use-auth";
 
 function getSafeRedirectPath(nextParam: string | null, fallback = "/overview"): string {
   if (!nextParam) return fallback;
@@ -14,6 +14,7 @@ function getSafeRedirectPath(nextParam: string | null, fallback = "/overview"): 
 function AuthCallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const confirmOtpMutation = useConfirmOtp();
   const exchangeCodeMutation = useExchangeCode();
   const setSessionMutation = useSetSession();
   const { refetch: refetchSession } = useAuthSession();
@@ -38,6 +39,19 @@ function AuthCallbackPageContent() {
           setError(providerError);
         }
         return;
+      }
+
+      const tokenHash = searchParams.get("token_hash");
+      const otpType = searchParams.get("type");
+      if (tokenHash && otpType) {
+        try {
+          await confirmOtpMutation.mutateAsync({ tokenHash, type: otpType });
+        } catch (confirmError) {
+          if (!cancelled) {
+            setError(confirmError instanceof Error ? confirmError.message : "Could not verify authentication link.");
+          }
+          return;
+        }
       }
 
       const code = searchParams.get("code");
@@ -88,7 +102,7 @@ function AuthCallbackPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [redirectPath, router, searchParams]);
+  }, [confirmOtpMutation, exchangeCodeMutation, redirectPath, refetchSession, router, searchParams, setSessionMutation]);
 
   if (error) {
     return (

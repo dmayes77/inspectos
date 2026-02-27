@@ -27,7 +27,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <GridShape />
           <div className="relative z-10 flex flex-col items-center max-w-xs text-center">
             <Link href="/" className="mb-6 block">
-              <Logo size="lg" className="brightness-0 invert" />
+              <Logo size="lg" theme="dark" />
             </Link>
             <p className="text-gray-400 dark:text-white/60 text-sm leading-relaxed">
               Professional home inspection management — from lead to report.

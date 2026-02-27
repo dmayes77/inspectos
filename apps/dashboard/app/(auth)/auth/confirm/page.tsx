@@ -1,69 +1,32 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useConfirmOtp } from "@/hooks/use-auth";
+type SearchParams = Record<string, string | string[] | undefined>;
 
-function targetPathForType(type: string | null): string {
-  if (type === "recovery") return "/reset-password";
-  return "/welcome";
-}
+function buildQueryString(searchParams: SearchParams): string {
+  const query = new URLSearchParams();
 
-function AuthConfirmPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const confirmMutation = useConfirmOtp();
-  const [error, setError] = useState<string | null>(null);
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === "string") {
+      query.set(key, value);
+      continue;
+    }
 
-  const tokenHash = useMemo(() => searchParams.get("token_hash"), [searchParams]);
-  const type = useMemo(() => searchParams.get("type"), [searchParams]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const verify = async () => {
-      if (!tokenHash || !type) {
-        if (!cancelled) setError("Verification link is missing required parameters.");
-        return;
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        query.append(key, item);
       }
-
-      try {
-        await confirmMutation.mutateAsync({ tokenHash, type });
-      } catch (verifyError) {
-        if (!cancelled) setError(verifyError instanceof Error ? verifyError.message : "Verification failed.");
-        return;
-      }
-
-      if (!cancelled) {
-        router.replace(targetPathForType(type));
-      }
-    };
-
-    void verify();
-    return () => {
-      cancelled = true;
-    };
-  }, [router, tokenHash, type]);
-
-  if (error) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center px-6 text-center">
-        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-      </div>
-    );
+    }
   }
 
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center px-6 text-center">
-      <p className="text-sm text-muted-foreground">Confirming your email...</p>
-    </div>
-  );
+  return query.toString();
 }
 
-export default function AuthConfirmPage() {
-  return (
-    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center px-6 text-center"><p className="text-sm text-muted-foreground">Loading...</p></div>}>
-      <AuthConfirmPageContent />
-    </Suspense>
-  );
+export default async function AuthConfirmRedirectPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const queryString = buildQueryString(resolvedSearchParams);
+  redirect(queryString ? `/auth/callback?${queryString}` : "/auth/callback");
 }

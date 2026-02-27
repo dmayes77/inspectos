@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Eye, EyeOff } from "lucide-react";
 import { useResendConfirmation, useSignup } from "@/hooks/use-auth";
+import { ApiError } from "@/lib/api/client";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
 function getEmailRedirectUrl(): string {
@@ -14,7 +15,21 @@ function getEmailRedirectUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL ||
     "http://localhost:3001";
   const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
-  return `${baseUrl}/auth/confirm`;
+  return `${baseUrl}/auth/callback?next=%2Fwelcome`;
+}
+
+function parseRateLimitCooldownSeconds(error: unknown): number | null {
+  if (!(error instanceof ApiError) || error.status !== 429) {
+    return null;
+  }
+
+  const match = error.message.match(/(\d+)\s*(?:s|sec|secs|second|seconds)\b/i);
+  if (!match) {
+    return 60;
+  }
+
+  const seconds = Number(match[1]);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
 }
 
 function RegisterPageContent() {
@@ -50,7 +65,8 @@ function RegisterPageContent() {
     setError(null);
     setNotice(null);
 
-    if (!fullName.trim() || !email.trim()) {
+    const trimmedEmail = email.trim();
+    if (!fullName.trim() || !trimmedEmail) {
       setError("Complete all required fields.");
       return;
     }
@@ -64,7 +80,7 @@ function RegisterPageContent() {
     setIsSubmitting(true);
     try {
       const signUpResult = await signupMutation.mutateAsync({
-        email,
+        email: trimmedEmail,
         password,
         full_name: fullName.trim(),
         email_redirect_to: getEmailRedirectUrl(),
@@ -75,10 +91,14 @@ function RegisterPageContent() {
         return;
       }
 
-      setPendingEmail(email.trim());
+      setPendingEmail(trimmedEmail);
       setView("awaiting_confirmation");
       setNotice("Waiting for email confirmation.");
     } catch (err) {
+      const cooldown = parseRateLimitCooldownSeconds(err);
+      if (cooldown) {
+        setCooldownSeconds((current) => Math.max(current, cooldown));
+      }
       setError(err instanceof Error ? err.message : "Could not create account.");
     } finally {
       setIsSubmitting(false);
@@ -93,6 +113,10 @@ function RegisterPageContent() {
       await resendMutation.mutateAsync({ email: pendingEmail, emailRedirectTo: getEmailRedirectUrl() });
       setNotice("Confirmation email resent.");
     } catch (err) {
+      const cooldown = parseRateLimitCooldownSeconds(err);
+      if (cooldown) {
+        setCooldownSeconds((current) => Math.max(current, cooldown));
+      }
       setError(err instanceof Error ? err.message : "Unable to resend confirmation email.");
     } finally {
       setIsResending(false);
@@ -143,7 +167,7 @@ function RegisterPageContent() {
             type="button"
             onClick={handleResend}
             disabled={isResending || isRateLimited}
-            className="mt-6 inline-flex w-full items-center justify-center rounded-sm border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-md border border-gray-300 px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
           >
             {isResending ? "Resending..." : "Resend confirmation email"}
           </button>
@@ -185,7 +209,7 @@ function RegisterPageContent() {
               onChange={(event) => setFullName(event.target.value)}
               placeholder="Jane Smith"
               required
-              className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
@@ -199,7 +223,7 @@ function RegisterPageContent() {
               onChange={(event) => setEmail(event.target.value)}
               placeholder="you@company.com"
               required
-              className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
@@ -215,7 +239,7 @@ function RegisterPageContent() {
                 placeholder="Create a password"
                 minLength={10}
                 required
-                className="h-11 w-full rounded-sm border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                className="h-11 w-full rounded-md border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
               />
               <button
                 type="button"
@@ -254,7 +278,7 @@ function RegisterPageContent() {
           <button
             type="submit"
             disabled={isSubmitting || isRateLimited}
-            className="flex w-full items-center justify-center rounded-sm bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center rounded-md bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Creating account..." : "Create account"}
           </button>
