@@ -18,6 +18,7 @@ import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   createUserClient,
+  createAnonClient,
   createServiceClient,
   getAccessToken,
   getUserFromToken,
@@ -27,6 +28,7 @@ import {
   forbidden,
   serverError,
 } from '@/lib/supabase';
+import { readSessionTokensFromCookies } from '@/lib/auth/session-cookies';
 import { resolveTenant, type TenantMemberRole } from '@/lib/tenants';
 import { getBusinessApiKey, resolveBusinessByApiKey } from '@/lib/api/business-api-keys';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
@@ -137,7 +139,15 @@ export function withAuth<P = Record<string, string>>(handler: AuthHandler<P>) {
     try {
       const serviceClient = createServiceClient();
       const apiKey = getBusinessApiKey(request);
-      const accessToken = getAccessToken(request);
+      let accessToken = getAccessToken(request);
+      if (!accessToken) {
+        const { refreshToken } = readSessionTokensFromCookies(request);
+        if (refreshToken) {
+          const anonClient = createAnonClient();
+          const { data: refreshed } = await anonClient.auth.refreshSession({ refresh_token: refreshToken });
+          accessToken = refreshed.session?.access_token ?? null;
+        }
+      }
       const businessIdentifier = request.nextUrl.searchParams.get('business');
 
       let supabase: SupabaseClient;

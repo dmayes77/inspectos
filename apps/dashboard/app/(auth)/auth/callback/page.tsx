@@ -11,6 +11,20 @@ function getSafeRedirectPath(nextParam: string | null, fallback = "/overview"): 
   return nextParam;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }) as Promise<T>;
+}
+
 function AuthCallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,6 +44,17 @@ function AuthCallbackPageContent() {
     hasStartedRef.current = true;
 
     let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+
+      const otpType = searchParams.get("type");
+      if (otpType === "email") {
+        router.replace("/welcome?confirmed=1");
+        return;
+      }
+
+      setError("Authentication is taking longer than expected. Please retry the link.");
+    }, 12000);
 
     const finish = async () => {
       const providerError = searchParams.get("error_description") || searchParams.get("error");
@@ -44,7 +69,11 @@ function AuthCallbackPageContent() {
       const otpType = searchParams.get("type");
       if (tokenHash && otpType) {
         try {
-          await confirmOtpMutation.mutateAsync({ tokenHash, type: otpType });
+          await withTimeout(
+            confirmOtpMutation.mutateAsync({ tokenHash, type: otpType }),
+            10000,
+            "Verification timed out."
+          );
         } catch (confirmError) {
           if (!cancelled) {
             setError(confirmError instanceof Error ? confirmError.message : "Could not verify authentication link.");
@@ -57,7 +86,7 @@ function AuthCallbackPageContent() {
       let completedWithServerSession = false;
       if (code) {
         try {
-          await exchangeCodeMutation.mutateAsync({ code });
+          await withTimeout(exchangeCodeMutation.mutateAsync({ code }), 10000, "Sign-in exchange timed out.");
           completedWithServerSession = true;
         } catch (exchangeError) {
           if (!cancelled) {
@@ -75,7 +104,11 @@ function AuthCallbackPageContent() {
 
         if (accessToken && refreshToken) {
           try {
-            await setSessionMutation.mutateAsync({ accessToken, refreshToken });
+            await withTimeout(
+              setSessionMutation.mutateAsync({ accessToken, refreshToken }),
+              10000,
+              "Session restore timed out."
+            );
             completedWithServerSession = true;
           } catch (setSessionError) {
             if (!cancelled) {
@@ -89,7 +122,7 @@ function AuthCallbackPageContent() {
       // For email confirmation links that do not issue a session, send users to sign in.
       if (otpType === "email" && !completedWithServerSession) {
         if (!cancelled) {
-          router.replace(`/login?confirmed=1&url=${encodeURIComponent(redirectPath)}`);
+          router.replace("/welcome?confirmed=1");
         }
         return;
       }
@@ -103,6 +136,7 @@ function AuthCallbackPageContent() {
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, [confirmOtpMutation, exchangeCodeMutation, redirectPath, router, searchParams, setSessionMutation]);
 
