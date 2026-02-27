@@ -8,16 +8,6 @@ import { useResendConfirmation, useSignup } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api/client";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
-function getEmailRedirectUrl(): string {
-  const configuredBaseUrl =
-    (typeof window !== "undefined" ? window.location.origin : null) ||
-    process.env.NEXT_PUBLIC_WEB_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3001";
-  const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
-  return `${baseUrl}/auth/callback?next=%2Fwelcome`;
-}
-
 function parseRateLimitCooldownSeconds(error: unknown): number | null {
   if (!(error instanceof ApiError) || error.status !== 429) {
     return null;
@@ -80,14 +70,12 @@ function RegisterPageContent() {
     setIsSubmitting(true);
     console.info("[auth:register] submit", {
       email: trimmedEmail,
-      redirectTo: getEmailRedirectUrl(),
     });
     try {
       const signUpResult = await signupMutation.mutateAsync({
         email: trimmedEmail,
         password,
         full_name: fullName.trim(),
-        email_redirect_to: getEmailRedirectUrl(),
       });
       console.info("[auth:register] signup response", {
         requires_email_confirmation: signUpResult.requires_email_confirmation,
@@ -118,12 +106,11 @@ function RegisterPageContent() {
     if (!pendingEmail) return;
     console.info("[auth:register] resend confirmation", {
       email: pendingEmail,
-      redirectTo: getEmailRedirectUrl(),
     });
     setIsResending(true);
     setError(null);
     try {
-      await resendMutation.mutateAsync({ email: pendingEmail, emailRedirectTo: getEmailRedirectUrl() });
+      await resendMutation.mutateAsync({ email: pendingEmail });
       setNotice("Confirmation email resent.");
     } catch (err) {
       const cooldown = parseRateLimitCooldownSeconds(err);
