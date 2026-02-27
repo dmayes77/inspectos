@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createAuthApi } from "@inspectos/shared/api";
 import { authQueryKeys } from "@inspectos/shared/query";
-import { createApiClient } from "@/lib/api/client";
+import { ApiError, createApiClient } from "@/lib/api/client";
 
 const authSessionQueryKey = authQueryKeys.session();
 const authApi = createAuthApi(createApiClient());
@@ -15,6 +15,9 @@ export function useAuthSession() {
       authApi
         .getSession<{ user: { id: string; email: string | null } | null }>()
         .catch((error) => {
+          if (error instanceof ApiError && error.status === 401) {
+            return { user: null };
+          }
           const message = error instanceof Error ? error.message : "";
           if (message.toLowerCase().includes("not authenticated") || message.toLowerCase().includes("session expired")) {
             return { user: null };
