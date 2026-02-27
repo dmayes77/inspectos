@@ -108,9 +108,14 @@ export class ApiClient {
 
     if (method === "GET") {
       requestCache.set(cacheKey, requestPromise);
-      requestPromise.finally(() => {
-        requestCache.delete(cacheKey);
-      });
+      requestPromise.then(
+        () => {
+          requestCache.delete(cacheKey);
+        },
+        () => {
+          requestCache.delete(cacheKey);
+        }
+      );
     }
 
     return requestPromise;
