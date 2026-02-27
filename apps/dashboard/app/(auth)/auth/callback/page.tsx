@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthSession, useConfirmOtp, useExchangeCode, useSetSession } from "@/hooks/use-auth";
+import { useConfirmOtp, useExchangeCode, useSetSession } from "@/hooks/use-auth";
 
 function getSafeRedirectPath(nextParam: string | null, fallback = "/overview"): string {
   if (!nextParam) return fallback;
@@ -17,7 +17,6 @@ function AuthCallbackPageContent() {
   const confirmOtpMutation = useConfirmOtp();
   const exchangeCodeMutation = useExchangeCode();
   const setSessionMutation = useSetSession();
-  const { refetch: refetchSession } = useAuthSession();
   const [error, setError] = useState<string | null>(null);
   const hasStartedRef = useRef(false);
 
@@ -55,9 +54,11 @@ function AuthCallbackPageContent() {
       }
 
       const code = searchParams.get("code");
+      let completedWithServerSession = false;
       if (code) {
         try {
           await exchangeCodeMutation.mutateAsync({ code });
+          completedWithServerSession = true;
         } catch (exchangeError) {
           if (!cancelled) {
             setError(exchangeError instanceof Error ? exchangeError.message : "Could not complete sign in.");
@@ -75,6 +76,7 @@ function AuthCallbackPageContent() {
         if (accessToken && refreshToken) {
           try {
             await setSessionMutation.mutateAsync({ accessToken, refreshToken });
+            completedWithServerSession = true;
           } catch (setSessionError) {
             if (!cancelled) {
               setError(setSessionError instanceof Error ? setSessionError.message : "Could not restore session.");
@@ -84,29 +86,10 @@ function AuthCallbackPageContent() {
         }
       }
 
-      let sessionResult: Awaited<ReturnType<typeof refetchSession>> | null = null;
-      try {
-        sessionResult = await refetchSession();
-      } catch (sessionError) {
+      // For email confirmation links that do not issue a session, send users to sign in.
+      if (otpType === "email" && !completedWithServerSession) {
         if (!cancelled) {
-          setError(
-            sessionError instanceof Error
-              ? sessionError.message
-              : "Authentication link is invalid or expired. Please request a new email."
-          );
-        }
-        return;
-      }
-
-      if (sessionResult.error || !sessionResult.data?.user?.id) {
-        if (!cancelled) {
-          // Some Supabase email confirmation links verify the address without creating a session.
-          // In that case, send the user to login instead of leaving this callback in a loading state.
-          if (otpType === "email") {
-            router.replace(`/login?confirmed=1&url=${encodeURIComponent(redirectPath)}`);
-            return;
-          }
-          setError("Authentication link is invalid or expired. Please request a new email.");
+          router.replace(`/login?confirmed=1&url=${encodeURIComponent(redirectPath)}`);
         }
         return;
       }
@@ -121,7 +104,7 @@ function AuthCallbackPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [confirmOtpMutation, exchangeCodeMutation, redirectPath, refetchSession, router, searchParams, setSessionMutation]);
+  }, [confirmOtpMutation, exchangeCodeMutation, redirectPath, router, searchParams, setSessionMutation]);
 
   if (error) {
     return (
