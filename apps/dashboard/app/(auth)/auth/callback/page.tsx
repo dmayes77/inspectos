@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useConfirmOtp, useExchangeCode, useSetSession } from "@/hooks/use-auth";
+import { useExchangeCode, useSetSession } from "@/hooks/use-auth";
 
 function getSafeRedirectPath(nextParam: string | null, fallback = "/overview"): string {
   if (!nextParam) return fallback;
@@ -25,10 +25,13 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
   }) as Promise<T>;
 }
 
+function getApiBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/+$/, "");
+}
+
 function AuthCallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const confirmOtpMutation = useConfirmOtp();
   const exchangeCodeMutation = useExchangeCode();
   const setSessionMutation = useSetSession();
   const [error, setError] = useState<string | null>(null);
@@ -68,18 +71,14 @@ function AuthCallbackPageContent() {
       const tokenHash = searchParams.get("token_hash");
       const otpType = searchParams.get("type");
       if (tokenHash && otpType) {
-        try {
-          await withTimeout(
-            confirmOtpMutation.mutateAsync({ tokenHash, type: otpType }),
-            10000,
-            "Verification timed out."
-          );
-        } catch (confirmError) {
-          if (!cancelled) {
-            setError(confirmError instanceof Error ? confirmError.message : "Could not verify authentication link.");
-          }
-          return;
+        if (typeof window !== "undefined") {
+          const confirmUrl = new URL(`${getApiBaseUrl()}/auth/confirm`);
+          confirmUrl.searchParams.set("token_hash", tokenHash);
+          confirmUrl.searchParams.set("type", otpType);
+          confirmUrl.searchParams.set("next", redirectPath);
+          window.location.replace(confirmUrl.toString());
         }
+        return;
       }
 
       const code = searchParams.get("code");
@@ -138,7 +137,7 @@ function AuthCallbackPageContent() {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [confirmOtpMutation, exchangeCodeMutation, redirectPath, router, searchParams, setSessionMutation]);
+  }, [exchangeCodeMutation, redirectPath, router, searchParams, setSessionMutation]);
 
   if (error) {
     return (
