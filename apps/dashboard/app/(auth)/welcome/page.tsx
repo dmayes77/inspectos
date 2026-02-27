@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { useAuthSession } from "@/hooks/use-auth";
 import { createStripeCheckout, registerBusiness } from "@/lib/api/onboarding";
@@ -30,6 +30,7 @@ const PLAN_OPTIONS = [
 ];
 
 function WelcomePageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { data: sessionData, isLoading: isLoadingSession } = useAuthSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,12 +54,21 @@ function WelcomePageContent() {
   const additionalSeatCount = Math.max(0, normalizedInspectorSeats - selectedPlan.includedInspectors);
   const additionalSeatMonthlyTotal = additionalSeatCount * selectedPlan.additionalInspectorPrice;
   const monthlyTotal = selectedPlan.monthly + additionalSeatMonthlyTotal;
+  const justConfirmed = searchParams.get("confirmed") === "1";
 
   useEffect(() => {
     setInspectorSeats((current) =>
       Math.max(selectedPlan.includedInspectors, Math.min(selectedPlan.maxInspectors, current))
     );
   }, [selectedPlan.includedInspectors, selectedPlan.maxInspectors]);
+
+  useEffect(() => {
+    if (isLoadingSession) return;
+    if (sessionData?.user?.id) return;
+    if (!justConfirmed) return;
+
+    router.replace("/login?url=/welcome&confirmed=1");
+  }, [isLoadingSession, justConfirmed, router, sessionData?.user?.id]);
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,10 +141,12 @@ function WelcomePageContent() {
         </div>
         <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto px-6 pb-12">
           <h1 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90 sm:text-3xl">
-            Confirm your email first
+            {justConfirmed ? "Email confirmed" : "Confirm your email first"}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Open the confirmation email and use that link so you arrive here signed in.
+            {justConfirmed
+              ? "Now sign in to continue onboarding."
+              : "Open the confirmation email and use that link so you arrive here signed in."}
           </p>
         </div>
       </div>

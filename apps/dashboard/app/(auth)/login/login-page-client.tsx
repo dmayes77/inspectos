@@ -65,6 +65,11 @@ export function LoginPageClient({ publicSiteUrl }: LoginPageClientProps) {
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Enter your email and password to sign in.
           </p>
+          {searchParams.get("confirmed") === "1" ? (
+            <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">
+              Email confirmed. Sign in to continue onboarding.
+            </p>
+          ) : null}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
