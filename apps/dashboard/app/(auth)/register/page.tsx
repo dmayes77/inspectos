@@ -15,7 +15,7 @@ function getEmailRedirectUrl(): string {
     process.env.NEXT_PUBLIC_APP_URL ||
     "http://localhost:3001";
   const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
-  return `${baseUrl}/auth/confirm?next=%2Fwelcome`;
+  return `${baseUrl}/auth/callback?next=%2Fwelcome`;
 }
 
 function parseRateLimitCooldownSeconds(error: unknown): number | null {
