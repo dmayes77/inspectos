@@ -27,6 +27,11 @@ export default async function AuthConfirmRedirectPage({
   searchParams: Promise<SearchParams>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const queryString = buildQueryString(resolvedSearchParams);
-  redirect(queryString ? `/auth/callback?${queryString}` : "/auth/callback");
+  const query = new URLSearchParams(buildQueryString(resolvedSearchParams));
+  if (!query.get("next")) {
+    query.set("next", "/welcome");
+  }
+
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api").replace(/\/+$/, "");
+  redirect(`${apiBase}/auth/confirm?${query.toString()}`);
 }
