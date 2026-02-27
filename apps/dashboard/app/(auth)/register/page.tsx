@@ -78,6 +78,10 @@ function RegisterPageContent() {
     }
 
     setIsSubmitting(true);
+    console.info("[auth:register] submit", {
+      email: trimmedEmail,
+      redirectTo: getEmailRedirectUrl(),
+    });
     try {
       const signUpResult = await signupMutation.mutateAsync({
         email: trimmedEmail,
@@ -85,8 +89,13 @@ function RegisterPageContent() {
         full_name: fullName.trim(),
         email_redirect_to: getEmailRedirectUrl(),
       });
+      console.info("[auth:register] signup response", {
+        requires_email_confirmation: signUpResult.requires_email_confirmation,
+        user_id: signUpResult.user?.id ?? null,
+      });
 
       if (!signUpResult.requires_email_confirmation) {
+        console.info("[auth:register] no email confirmation required; redirecting to /welcome");
         router.push("/welcome");
         return;
       }
@@ -107,6 +116,10 @@ function RegisterPageContent() {
 
   const handleResend = async () => {
     if (!pendingEmail) return;
+    console.info("[auth:register] resend confirmation", {
+      email: pendingEmail,
+      redirectTo: getEmailRedirectUrl(),
+    });
     setIsResending(true);
     setError(null);
     try {

@@ -64,9 +64,19 @@ function WelcomePageContent() {
 
   useEffect(() => {
     if (isLoadingSession) return;
+    console.info("[auth:welcome] session state", {
+      confirmed: justConfirmed,
+      hasUser: Boolean(sessionData?.user?.id),
+      userId: sessionData?.user?.id ?? null,
+    });
+  }, [isLoadingSession, justConfirmed, sessionData?.user?.id]);
+
+  useEffect(() => {
+    if (isLoadingSession) return;
     if (sessionData?.user?.id) return;
     if (!justConfirmed) return;
 
+    console.info("[auth:welcome] confirmed without session -> /login?url=/welcome&confirmed=1");
     router.replace("/login?url=/welcome&confirmed=1");
   }, [isLoadingSession, justConfirmed, router, sessionData?.user?.id]);
 

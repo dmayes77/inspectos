@@ -8,7 +8,12 @@ import { createAnonClient, unauthorized } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
+  console.info("[api:auth:session] incoming", {
+    hasAccessToken: Boolean(accessToken),
+    hasRefreshToken: Boolean(refreshToken),
+  });
   if (!accessToken && !refreshToken) {
+    console.warn("[api:auth:session] no session cookies");
     return unauthorized("Not authenticated");
   }
 
@@ -17,6 +22,7 @@ export async function GET(request: NextRequest) {
   if (accessToken) {
     const { data, error } = await supabase.auth.getUser(accessToken);
     if (!error && data.user) {
+      console.info("[api:auth:session] access token valid", { userId: data.user.id });
       return NextResponse.json({
         success: true,
         data: {
@@ -30,6 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!refreshToken) {
+    console.warn("[api:auth:session] access invalid and no refresh token");
     const response = NextResponse.json(
       { success: false, error: { code: "UNAUTHORIZED", message: "Session expired" } },
       { status: 401 }
@@ -42,6 +49,10 @@ export async function GET(request: NextRequest) {
   });
 
   if (refreshError || !refreshed.session || !refreshed.user) {
+    console.warn("[api:auth:session] refresh failed", {
+      message: refreshError?.message ?? "unknown",
+      status: (refreshError as { status?: number } | null)?.status ?? null,
+    });
     const response = NextResponse.json(
       { success: false, error: { code: "UNAUTHORIZED", message: "Session expired" } },
       { status: 401 }
@@ -58,6 +69,7 @@ export async function GET(request: NextRequest) {
       },
     },
   });
+  console.info("[api:auth:session] refresh succeeded", { userId: refreshed.user.id });
 
   return setSessionCookies(response, {
     accessToken: refreshed.session.access_token,

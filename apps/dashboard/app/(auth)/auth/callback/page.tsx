@@ -60,8 +60,13 @@ function AuthCallbackPageContent() {
     }, 12000);
 
     const finish = async () => {
+      console.info("[auth:callback] entered", {
+        href: typeof window !== "undefined" ? window.location.href : "server",
+      });
+
       const providerError = searchParams.get("error_description") || searchParams.get("error");
       if (providerError) {
+        console.warn("[auth:callback] provider error", { providerError });
         if (!cancelled) {
           setError(providerError);
         }
@@ -71,6 +76,11 @@ function AuthCallbackPageContent() {
       const tokenHash = searchParams.get("token_hash");
       const otpType = searchParams.get("type");
       if (tokenHash && otpType) {
+        console.info("[auth:callback] token_hash flow -> api /auth/confirm", {
+          type: otpType,
+          tokenHashLength: tokenHash.length,
+          next: redirectPath,
+        });
         if (typeof window !== "undefined") {
           const confirmUrl = new URL(`${getApiBaseUrl()}/auth/confirm`);
           confirmUrl.searchParams.set("token_hash", tokenHash);
@@ -85,9 +95,12 @@ function AuthCallbackPageContent() {
       let completedWithServerSession = false;
       if (code) {
         try {
+          console.info("[auth:callback] code flow -> exchange session");
           await withTimeout(exchangeCodeMutation.mutateAsync({ code }), 10000, "Sign-in exchange timed out.");
           completedWithServerSession = true;
+          console.info("[auth:callback] exchange session success");
         } catch (exchangeError) {
+          console.warn("[auth:callback] exchange session failed", { exchangeError });
           if (!cancelled) {
             setError(exchangeError instanceof Error ? exchangeError.message : "Could not complete sign in.");
           }
@@ -103,13 +116,16 @@ function AuthCallbackPageContent() {
 
         if (accessToken && refreshToken) {
           try {
+            console.info("[auth:callback] hash token flow -> set session");
             await withTimeout(
               setSessionMutation.mutateAsync({ accessToken, refreshToken }),
               10000,
               "Session restore timed out."
             );
             completedWithServerSession = true;
+            console.info("[auth:callback] set session success");
           } catch (setSessionError) {
+            console.warn("[auth:callback] set session failed", { setSessionError });
             if (!cancelled) {
               setError(setSessionError instanceof Error ? setSessionError.message : "Could not restore session.");
             }
@@ -121,12 +137,14 @@ function AuthCallbackPageContent() {
       // For email confirmation links that do not issue a session, send users to sign in.
       if (otpType === "email" && !completedWithServerSession) {
         if (!cancelled) {
+          console.info("[auth:callback] email verified without session -> /welcome?confirmed=1");
           router.replace("/welcome?confirmed=1");
         }
         return;
       }
 
       if (!cancelled) {
+        console.info("[auth:callback] completed -> redirect", { redirectPath });
         router.replace(redirectPath);
       }
     };

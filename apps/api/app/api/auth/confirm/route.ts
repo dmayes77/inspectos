@@ -27,8 +27,15 @@ export async function GET(request: NextRequest) {
   const tokenHash = request.nextUrl.searchParams.get("token_hash")?.trim();
   const type = request.nextUrl.searchParams.get("type")?.trim() as EmailOtpType | null;
   const next = request.nextUrl.searchParams.get("next");
+  console.info("[api:auth:confirm:get] incoming", {
+    hasTokenHash: Boolean(tokenHash),
+    tokenHashLength: tokenHash?.length ?? 0,
+    type: type ?? null,
+    next: next ?? null,
+  });
 
   if (!tokenHash || !type) {
+    console.warn("[api:auth:confirm:get] missing token/type -> login");
     const url = new URL("/login?error=missing_confirmation_token", getWebBaseUrl());
     return NextResponse.redirect(url, { status: 303 });
   }
@@ -36,6 +43,11 @@ export async function GET(request: NextRequest) {
   const supabase = createAnonClient();
   const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
   if (error) {
+    console.warn("[api:auth:confirm:get] verifyOtp failed", {
+      message: error.message,
+      status: (error as { status?: number }).status ?? null,
+      type,
+    });
     const url = new URL("/login?error=invalid_or_expired_confirmation", getWebBaseUrl());
     return NextResponse.redirect(url, { status: 303 });
   }
@@ -46,12 +58,18 @@ export async function GET(request: NextRequest) {
   // For signup confirmations where Supabase does not issue an immediate session,
   // route through login and preserve the onboarding destination.
   if (type === "email" && !data.session) {
+    console.info("[api:auth:confirm:get] verified without session -> login handoff", {
+      redirectPath,
+    });
     const loginUrl = new URL("/login", getWebBaseUrl());
     loginUrl.searchParams.set("confirmed", "1");
     loginUrl.searchParams.set("url", redirectPath);
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
+  console.info("[api:auth:confirm:get] verified with session -> redirect", {
+    redirectPath,
+  });
   const redirectUrl = new URL(redirectPath, getWebBaseUrl());
   const response = NextResponse.redirect(redirectUrl, { status: 303 });
 
