@@ -104,7 +104,7 @@ const defaultSettings: TenantSettings = {
   },
   branding: {
     logoUrl: null,
-    primaryColor: "#f97316",
+    primaryColor: "#2563eb",
   },
   notifications: {
     newBooking: true,

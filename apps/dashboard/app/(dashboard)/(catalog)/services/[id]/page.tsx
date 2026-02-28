@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/layout/page-header";
-import EditServicePage from "./edit/page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,11 +36,6 @@ export default function ServiceDetailPage() {
   const router = useRouter();
   const params = useParams();
   const serviceId = params.id;
-  const isEditing = true;
-
-  if (isEditing) {
-    return <EditServicePage />;
-  }
 
   const { data: allServices = [], isLoading, isError, error } = useServices();
   const service = allServices.find((svc) => svc.serviceId === serviceId);

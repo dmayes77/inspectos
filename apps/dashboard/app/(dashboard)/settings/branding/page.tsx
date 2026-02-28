@@ -15,14 +15,14 @@ import { toast } from "sonner";
 import { deleteBrandLogo, uploadBrandLogo } from "@/lib/api/media";
 
 const PRESET_COLORS = [
-  { color: "#f97316", label: "Orange" },
-  { color: "#3b82f6", label: "Blue" },
-  { color: "#10b981", label: "Green" },
-  { color: "#8b5cf6", label: "Purple" },
-  { color: "#ef4444", label: "Red" },
-  { color: "#06b6d4", label: "Cyan" },
-  { color: "#f59e0b", label: "Amber" },
-  { color: "#64748b", label: "Slate" },
+  { color: "#2563eb", label: "SaaS Blue" },
+  { color: "#4f46e5", label: "Indigo" },
+  { color: "#0ea5e9", label: "Sky" },
+  { color: "#14b8a6", label: "Teal" },
+  { color: "#10b981", label: "Emerald" },
+  { color: "#0f766e", label: "Deep Teal" },
+  { color: "#7c3aed", label: "Violet" },
+  { color: "#475569", label: "Slate" },
 ];
 
 function isLightColor(hex: string): boolean {
@@ -38,7 +38,7 @@ export default function BrandingSettingsPage() {
   const updateMutation = useUpdateSettings();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [branding, setBranding] = useState({ logoUrl: null as string | null, primaryColor: "#f97316" });
+  const [branding, setBranding] = useState({ logoUrl: null as string | null, primaryColor: "#2563eb" });
   const [logoUploading, setLogoUploading] = useState(false);
   const uploadLogoMutation = useMutation({ mutationFn: uploadBrandLogo });
   const deleteLogoMutation = useMutation({ mutationFn: deleteBrandLogo });
@@ -154,9 +154,9 @@ export default function BrandingSettingsPage() {
                       }
                     }}
                     className="w-24 font-mono text-sm"
-                    placeholder="#f97316"
+                    placeholder="#2563eb"
                   />
-                  <Button variant="ghost" className="text-xs" onClick={() => setColor("#f97316")}>
+                  <Button variant="ghost" className="text-xs" onClick={() => setColor("#2563eb")}>
                     Reset
                   </Button>
                 </div>

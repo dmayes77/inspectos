@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
-import EditInvoicePage from "./edit/page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,11 +43,6 @@ export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const invoiceId = parseSlugIdSegment(params.id as string);
-  const isEditing = true;
-
-  if (isEditing) {
-    return <EditInvoicePage />;
-  }
 
   const { data: invoice, isLoading, isError } = useInvoice(invoiceId);
   const { data: order } = useOrderById(invoice?.orderId ?? "");

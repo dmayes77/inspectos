@@ -41,16 +41,16 @@ function SidebarNavItem({
         "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
         !showLabel && "lg:justify-center lg:px-2.5",
         isActive
-          ? "bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
+          ? "bg-[var(--brand)] text-[var(--brand-foreground)] shadow-sm"
+          : "text-slate-600 hover:bg-brand/10 hover:text-brand dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
       )}
     >
       <Icon
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
           isActive
-            ? "text-white dark:text-slate-900"
-            : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200"
+            ? "text-[var(--brand-foreground)]"
+            : "text-slate-500 group-hover:text-[var(--brand)] dark:text-slate-400 dark:group-hover:text-slate-200"
         )}
       />
       {showLabel && <span className="truncate">{label}</span>}
@@ -75,7 +75,7 @@ export function AdminSidebar({
     <aside
       data-sidebar
       className={cn(
-        "fixed top-14 left-0 flex h-[calc(100dvh-56px)] flex-col bg-slate-50/95 backdrop-blur-sm dark:bg-gray-950 lg:top-0 lg:h-screen",
+        "fixed top-11 left-0 flex h-[calc(100dvh-44px)] flex-col bg-slate-50/95 backdrop-blur-sm dark:bg-gray-950 lg:top-0 lg:h-screen",
         "border-r border-slate-200/90 dark:border-gray-800",
         "transition-all duration-300 ease-in-out z-50",
         isExpanded || isHovered ? "w-[290px]" : "w-[90px]",
@@ -111,7 +111,7 @@ export function AdminSidebar({
                 className="object-contain rounded-md"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center rounded-md bg-brand-500 text-white font-bold text-sm">
+              <div className="flex h-full w-full items-center justify-center rounded-md bg-brand text-brand-foreground font-bold text-sm">
                 {businessName ? businessName.slice(0, 2).toUpperCase() : "IO"}
               </div>
             )}
