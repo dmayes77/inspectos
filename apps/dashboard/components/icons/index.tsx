@@ -10,12 +10,20 @@ export {
   MoreHorizontal as DotsMenuIcon,
   Search        as SearchIcon,
   Bell          as BellIcon,
+  Camera        as CameraIcon,
+  Loader2       as LoaderIcon,
 
   // User menu
   CircleUser    as UserCircleIcon,
   Settings      as GearIcon,
   Info          as InfoCircleIcon,
   LogOut        as SignOutIcon,
+
+  // Social
+  Facebook      as FacebookIcon,
+  Twitter       as TwitterIcon,
+  Linkedin      as LinkedInIcon,
+  Instagram     as InstagramIcon,
 
   // Sidebar nav
   LayoutDashboard as DashboardIcon,
