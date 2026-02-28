@@ -38,18 +38,22 @@ function SidebarNavItem({
         }
       }}
       className={cn(
-        "menu-item group",
-        !showLabel && "lg:justify-center",
-        isActive ? "menu-item-active" : "menu-item-inactive"
+        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+        !showLabel && "lg:justify-center lg:px-2.5",
+        isActive
+          ? "bg-slate-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900"
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white"
       )}
     >
       <Icon
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
-          isActive ? "menu-item-icon-active" : "menu-item-icon-inactive"
+          isActive
+            ? "text-white dark:text-slate-900"
+            : "text-slate-500 group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-200"
         )}
       />
-      {showLabel && <span>{label}</span>}
+      {showLabel && <span className="truncate">{label}</span>}
     </Link>
   );
 }
@@ -71,8 +75,8 @@ export function AdminSidebar({
     <aside
       data-sidebar
       className={cn(
-        "fixed top-14 left-0 flex h-[calc(100dvh-56px)] flex-col bg-white dark:bg-gray-900 lg:top-0 lg:h-screen",
-        "border-r border-gray-200 dark:border-gray-800",
+        "fixed top-14 left-0 flex h-[calc(100dvh-56px)] flex-col bg-slate-50/95 backdrop-blur-sm dark:bg-gray-950 lg:top-0 lg:h-screen",
+        "border-r border-slate-200/90 dark:border-gray-800",
         "transition-all duration-300 ease-in-out z-50",
         isExpanded || isHovered ? "w-[290px]" : "w-[90px]",
         isMobileOpen ? "translate-x-0" : "-translate-x-full",
@@ -84,7 +88,7 @@ export function AdminSidebar({
       {/* Logo / Brand */}
       <div
         className={cn(
-          "py-6 flex px-5",
+          "flex px-5 py-5",
           !showFull ? "lg:justify-center" : "justify-start"
         )}
       >
@@ -114,10 +118,10 @@ export function AdminSidebar({
           </div>
           {showFull && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-semibold leading-tight text-gray-900 dark:text-white">
+              <p className="truncate text-[15px] font-semibold leading-tight text-slate-900 dark:text-white">
                 {businessName || "InspectOS"}
               </p>
-              <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-tight mt-0.5">Admin Panel</p>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Enterprise Workspace</p>
             </div>
           )}
         </Link>
@@ -125,16 +129,16 @@ export function AdminSidebar({
 
       {/* Nav */}
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar py-4">
-        <nav className={cn("flex flex-col gap-6", "px-5")}>
+        <nav className={cn("flex flex-col gap-6", "px-4")}>
           {/* MENU group */}
           <div>
             <h2
               className={cn(
-                "mb-4 flex text-xs uppercase leading-[20px] text-gray-400 dark:text-gray-500",
+                "mb-2 flex px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
                 !showFull ? "lg:justify-center" : "justify-start"
               )}
             >
-              {showFull ? "Menu" : <MoreHorizontal className="h-4 w-4" />}
+              {showFull ? "Main" : <MoreHorizontal className="h-4 w-4" />}
             </h2>
             <ul className="flex flex-col gap-1">
               {(isPlatformAdmin ? mainNav : pinnedNav).map((item) => (
@@ -150,7 +154,7 @@ export function AdminSidebar({
             <div key={section.label}>
               <h2
                 className={cn(
-                  "mb-4 flex text-xs uppercase leading-[20px] text-gray-400 dark:text-gray-500",
+                  "mb-2 flex px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
                   !showFull ? "lg:justify-center" : "justify-start"
                 )}
               >
@@ -171,7 +175,7 @@ export function AdminSidebar({
             <div>
               <h2
                 className={cn(
-                  "mb-4 flex text-xs uppercase leading-[20px] text-gray-400 dark:text-gray-500",
+                  "mb-2 flex px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
                   !showFull ? "lg:justify-center" : "justify-start"
                 )}
               >

@@ -550,7 +550,7 @@ export default function OverviewPage() {
       ) : null}
 
       <AdminPageHeader
-        title="Owner Command Center"
+        title="Overview"
         description={`Margin-first view for ${greetingName}. Use this to price, cut, and scale with confidence.`}
         actions={
           can(profile?.role ?? "owner", "create_inspections", userPermissions) ? (

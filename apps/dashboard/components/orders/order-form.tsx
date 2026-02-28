@@ -532,8 +532,8 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2 md:items-start">
-            <Card>
+          <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
+            <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -618,7 +618,7 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
