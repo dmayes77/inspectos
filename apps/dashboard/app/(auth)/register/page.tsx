@@ -8,19 +8,6 @@ import { useResendConfirmation, useSignup } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api/client";
 import { getPasswordPolicyChecks, validatePasswordPolicy } from "@/lib/password-policy";
 
-function getEmailRedirectUrl(): string {
-  const configuredRedirectUrl =
-    process.env.NEXT_PUBLIC_AUTH_REDIRECT_URL ||
-    process.env.NEXT_PUBLIC_WEB_URL ||
-    process.env.NEXT_PUBLIC_APP_URL;
-  const fallbackBaseUrl =
-    (typeof window !== "undefined" ? window.location.origin : null) ||
-    "http://localhost:3001";
-
-  const baseUrl = (configuredRedirectUrl || fallbackBaseUrl).replace(/\/+$/, "");
-  return `${baseUrl}/auth/callback?next=%2Fwelcome`;
-}
-
 function parseRateLimitCooldownSeconds(error: unknown): number | null {
   if (!(error instanceof ApiError) || error.status !== 429) {
     return null;
@@ -81,24 +68,14 @@ function RegisterPageContent() {
     }
 
     setIsSubmitting(true);
-    console.info("[auth:register] submit", {
-      email: trimmedEmail,
-      redirectTo: getEmailRedirectUrl(),
-    });
     try {
       const signUpResult = await signupMutation.mutateAsync({
         email: trimmedEmail,
         password,
         full_name: fullName.trim(),
-        email_redirect_to: getEmailRedirectUrl(),
-      });
-      console.info("[auth:register] signup response", {
-        requires_email_confirmation: signUpResult.requires_email_confirmation,
-        user_id: signUpResult.user?.id ?? null,
       });
 
       if (!signUpResult.requires_email_confirmation) {
-        console.info("[auth:register] no email confirmation required; redirecting to /welcome");
         router.push("/welcome");
         return;
       }
@@ -119,14 +96,10 @@ function RegisterPageContent() {
 
   const handleResend = async () => {
     if (!pendingEmail) return;
-    console.info("[auth:register] resend confirmation", {
-      email: pendingEmail,
-      redirectTo: getEmailRedirectUrl(),
-    });
     setIsResending(true);
     setError(null);
     try {
-      await resendMutation.mutateAsync({ email: pendingEmail, emailRedirectTo: getEmailRedirectUrl() });
+      await resendMutation.mutateAsync({ email: pendingEmail });
       setNotice("Confirmation email resent.");
     } catch (err) {
       const cooldown = parseRateLimitCooldownSeconds(err);

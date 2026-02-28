@@ -6,30 +6,39 @@ type SignupBody = {
   email?: string;
   password?: string;
   full_name?: string;
-  email_redirect_to?: string;
 };
+
+function inferRedirectBaseUrl(request: NextRequest): string {
+  const origin = request.headers.get("origin")?.trim();
+  if (origin) {
+    try {
+      const parsed = new URL(origin);
+      const host = parsed.host.toLowerCase();
+      const isLocalhost = host.startsWith("localhost:") || host.startsWith("127.0.0.1:");
+      const isInspectos = host === "inspectos.co" || host.endsWith(".inspectos.co");
+      if (isLocalhost || isInspectos) {
+        return `${parsed.protocol}//${parsed.host}`;
+      }
+    } catch {
+      // ignore malformed origin
+    }
+  }
+
+  const configured =
+    process.env.NEXT_PUBLIC_AUTH_REDIRECT_URL ||
+    process.env.NEXT_PUBLIC_WEB_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3001";
+
+  return configured.replace(/\/+$/, "");
+}
 
 export async function POST(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as SignupBody;
   const email = body.email?.trim();
   const password = body.password;
   const fullName = body.full_name?.trim();
-  const emailRedirectTo = body.email_redirect_to?.trim();
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const supabaseHost = (() => {
-    try {
-      return supabaseUrl ? new URL(supabaseUrl).host : "missing";
-    } catch {
-      return "invalid";
-    }
-  })();
-
-  console.info("[api:auth:signup] incoming", {
-    email,
-    hasEmailRedirectTo: Boolean(emailRedirectTo),
-    emailRedirectTo: emailRedirectTo ?? null,
-    supabaseHost,
-  });
+  const emailRedirectTo = `${inferRedirectBaseUrl(request)}/auth/callback?next=%2Fwelcome`;
 
   if (!email || !password || !fullName) {
     return badRequest("Email, password, and full name are required.");
@@ -41,16 +50,11 @@ export async function POST(request: NextRequest) {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: emailRedirectTo || undefined,
+      emailRedirectTo,
     },
   });
 
   if (error) {
-    console.warn("[api:auth:signup] signUp failed", {
-      message: error.message,
-      status: (error as { status?: number }).status ?? null,
-      supabaseHost,
-    });
     return NextResponse.json(
       {
         success: false,
@@ -62,12 +66,6 @@ export async function POST(request: NextRequest) {
       { status: (error as { status?: number }).status ?? 400 }
     );
   }
-
-  console.info("[api:auth:signup] signUp success", {
-    requiresEmailConfirmation: !data.session,
-    userId: data.user?.id ?? null,
-    supabaseHost,
-  });
 
   const response = NextResponse.json({
     success: true,
