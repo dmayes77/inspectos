@@ -36,6 +36,7 @@ export const companyPinnedNav: NavItem[] = [
   { href: "/orders", icon: Folders, label: "Orders" },
   { href: "/properties", icon: MapPin, label: "Properties" },
   { href: "/agents", icon: IdCard, label: "Agents" },
+  { href: "/agencies", icon: Building2, label: "Agencies" },
   { href: "/leads", icon: Users, label: "Leads" },
 ];
 
@@ -104,6 +105,7 @@ export const companyMobileNav: NavItem[] = [
   { href: "/orders", icon: Folders, label: "Orders" },
   { href: "/properties", icon: MapPin, label: "Properties" },
   { href: "/agents", icon: IdCard, label: "Agents" },
+  { href: "/agencies", icon: Building2, label: "Agencies" },
   { href: "/leads", icon: Users, label: "Leads" },
   { href: "/invoices", icon: Receipt, label: "Invoices" },
   { href: "/reports", icon: BarChart3, label: "Reports" },

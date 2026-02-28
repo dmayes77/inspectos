@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AdminPageHeader } from "@/layout/admin-page-header";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,50 +167,48 @@ export default function NewTeamMemberPage() {
 
   if (!canInvite) {
     return (
-      <div className="space-y-6 max-w-3xl">
-        <AdminPageHeader
-          title="Add Team Member"
-          description="Only owners and admins can send team invites."
-        />
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Restricted</CardTitle>
-            <CardDescription>
-              You do not have permission to invite members to this business.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline">
-              <Link href="/team">Back to Team</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <IdPageLayout
+        title="Add Team Member"
+        description="Only owners and admins can send team invites."
+        left={
+          <Card>
+            <CardHeader>
+              <CardTitle>Access Restricted</CardTitle>
+              <CardDescription>
+                You do not have permission to invite members to this business.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline">
+                <Link href="/team">Back to Team</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        }
+      />
     );
   }
 
   return (
-    <>
-    <div className="max-w-5xl space-y-4">
-      {/* Back Button */}
-
-      <AdminPageHeader
+    <form onSubmit={handleSubmit}>
+      <IdPageLayout
         title="Add Team Member"
         description="Create a new team member account with role and permissions"
-      />
-
-      <Alert
-        variant="info"
-        title="Identity Model"
-        message="Members sign in with their globally unique email. Internal UUID identity is managed automatically."
-      />
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {formError ? (
-          <Alert variant="error" title="Missing required fields" message={formError} />
-        ) : null}
-        {/* Basic Information */}
-        <Card className="card-admin">
+        breadcrumb={
+          <>
+            <Link href="/team" className="text-muted-foreground transition hover:text-foreground">
+              Team
+            </Link>
+            <span className="text-muted-foreground">{">"}</span>
+            <span className="max-w-[20rem] truncate font-medium">New Team Member</span>
+          </>
+        }
+        left={
+          <div className="space-y-4">
+            {formError ? (
+              <Alert variant="error" title="Missing required fields" message={formError} />
+            ) : null}
+            <Card className="card-admin">
           <CardHeader className="pb-2">
             <CardTitle>Add A New User</CardTitle>
             <CardDescription>Member setup and access configuration</CardDescription>
@@ -329,8 +327,7 @@ export default function NewTeamMemberPage() {
           </CardContent>
         </Card>
 
-        {/* Additional Options */}
-        <Card className="card-admin">
+            <Card className="card-admin">
           <CardHeader className="pb-2">
             <CardTitle>Additional Options</CardTitle>
             <CardDescription>Address is optional, required for inspectors</CardDescription>
@@ -367,47 +364,52 @@ export default function NewTeamMemberPage() {
           </CardContent>
         </Card>
 
-        {/* Inspector Specific Fields */}
-        {selectedRole === "INSPECTOR" && (
-          <Card className="card-admin">
-            <CardHeader className="pb-2">
-              <CardTitle>Inspector Certifications</CardTitle>
-              <CardDescription>Professional certifications and credentials</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {certifications.map((cert) => (
-                  <div key={cert} className="flex items-center space-x-2 rounded-md border px-2 py-1.5">
-                    <Checkbox
-                      id={cert}
-                      checked={selectedCertifications.includes(cert)}
-                      onCheckedChange={() => toggleCertification(cert)}
-                    />
-                    <Label
-                      htmlFor={cert}
-                      className="cursor-pointer text-sm font-normal"
-                    >
-                      {cert}
-                    </Label>
+            {selectedRole === "INSPECTOR" && (
+              <Card className="card-admin">
+                <CardHeader className="pb-2">
+                  <CardTitle>Inspector Certifications</CardTitle>
+                  <CardDescription>Professional certifications and credentials</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {certifications.map((cert) => (
+                      <div key={cert} className="flex items-center space-x-2 rounded-md border px-2 py-1.5">
+                        <Checkbox
+                          id={cert}
+                          checked={selectedCertifications.includes(cert)}
+                          onCheckedChange={() => toggleCertification(cert)}
+                        />
+                        <Label
+                          htmlFor={cert}
+                          className="cursor-pointer text-sm font-normal"
+                        >
+                          {cert}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        }
+        right={
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button type="submit" className="w-full" disabled={isSaving}>
+                <Save className="mr-2 h-4 w-4" />
+                {isSaving ? "Creating..." : "Create Team Member"}
+              </Button>
+              <Button type="button" variant="outline" className="w-full" asChild>
+                <Link href="/team">Cancel</Link>
+              </Button>
             </CardContent>
           </Card>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center justify-between border-t pt-3">
-          <Button type="button" variant="outline" size="sm" asChild>
-            <Link href="/team">Cancel</Link>
-          </Button>
-          <Button type="submit" size="sm" disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSaving ? "Creating..." : "Create Team Member"}
-          </Button>
-        </div>
-      </form>
-    </div>
-    </>
+        }
+      />
+    </form>
   );
 }

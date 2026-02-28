@@ -10,19 +10,39 @@ import { Copy, Loader2, RefreshCw } from "lucide-react";
 import { useRegenerateApiKey, useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
 
+const EMPTY_COMPANY = {
+  name: "",
+  email: "",
+  phone: "",
+  website: "",
+  address: "",
+  city: "",
+  state: "",
+  zip: "",
+};
+
 export default function CompanySettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
   const regenerateApiKeyMutation = useRegenerateApiKey();
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
 
-  const [company, setCompany] = useState({
-    name: "", email: "", phone: "", website: "",
-    address: "", city: "", state: "", zip: "",
-  });
+  const [company, setCompany] = useState(EMPTY_COMPANY);
 
   useEffect(() => {
-    if (settings) setCompany(settings.company);
+    if (!settings?.company) return;
+    setCompany({
+      ...EMPTY_COMPANY,
+      ...settings.company,
+      name: settings.company.name ?? "",
+      email: settings.company.email ?? "",
+      phone: settings.company.phone ?? "",
+      website: settings.company.website ?? "",
+      address: settings.company.address ?? "",
+      city: settings.company.city ?? "",
+      state: settings.company.state ?? "",
+      zip: settings.company.zip ?? "",
+    });
   }, [settings]);
 
   const handleSave = () => {

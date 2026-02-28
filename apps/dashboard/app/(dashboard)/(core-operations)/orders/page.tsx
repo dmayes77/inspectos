@@ -11,10 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ModernDataTable } from "@/components/ui/modern-data-table";
 import { ColumnDef } from "@tanstack/react-table";
-import { Plus, MapPin, User, Search, Calendar, DollarSign, Building2, FileText, Clock } from "lucide-react";
+import { Plus, MapPin, User, Search, Calendar, FileText } from "lucide-react";
 import { useOrders, type Order } from "@/hooks/use-orders";
-import { useProfile } from "@/hooks/use-profile";
-import { can } from "@/lib/admin/permissions";
 import { cn } from "@/lib/utils";
 import { formatDateShort, formatTime12 } from "@inspectos/shared/utils/dates";
 import { AdminPageSkeleton } from "@/layout/admin-page-skeleton";
@@ -180,7 +178,6 @@ const columns: ColumnDef<Order>[] = [
 
 export default function OrdersPage() {
   const { data, isLoading, isError } = useOrders();
-  const { data: profile } = useProfile();
   const orders = useMemo(() => data ?? [], [data]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -216,23 +213,18 @@ export default function OrdersPage() {
   if (isLoading) {
     return <AdminPageSkeleton showTable listItems={10} />;
   }
-  const userRole = (profile?.role ?? "").toUpperCase();
-  const userPermissions = profile?.permissions ?? [];
-
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="Orders"
         description="Manage inspection orders - the complete business lifecycle"
         actions={
-          can(userRole, "create_inspections", userPermissions) ? (
-            <Button asChild>
-              <Link href="/orders/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Order
-              </Link>
-            </Button>
-          ) : null
+          <Button asChild>
+            <Link href="/orders/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Order
+            </Link>
+          </Button>
         }
       />
 
@@ -374,14 +366,12 @@ export default function OrdersPage() {
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-semibold">No orders yet</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Create your first order to start managing inspections.</p>
-                {can(userRole, "create_inspections", userPermissions) && (
-                  <Button asChild className="mt-6">
-                    <Link href="/orders/new">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Order
-                    </Link>
-                  </Button>
-                )}
+                <Button asChild className="mt-6">
+                  <Link href="/orders/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Order
+                  </Link>
+                </Button>
               </div>
             )
           }

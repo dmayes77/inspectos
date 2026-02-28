@@ -154,7 +154,7 @@ export const contactsTableColumns: ColumnDef<Client>[] = [
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}/edit`}>
+              <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit client
               </Link>

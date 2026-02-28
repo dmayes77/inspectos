@@ -198,7 +198,7 @@ describe("ClientsPage", () => {
     renderWithQueryClient(<ClientsPage />);
 
     const addLeadLink = screen.getByRole("link", { name: /add lead/i });
-    expect(addLeadLink).toHaveAttribute("href", "/contacts/leads/new");
+    expect(addLeadLink).toHaveAttribute("href", "/leads");
   });
 });
 

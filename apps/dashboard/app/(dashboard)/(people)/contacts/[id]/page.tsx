@@ -1,53 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
+import { PageHeader } from "@/layout/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Trash2, DollarSign, ClipboardList, Calendar, Mail, Phone } from "lucide-react";
-import { useClientById, useDeleteClient } from "@/hooks/use-clients";
-import { IdPageLayout } from "@/components/shared/id-page-layout";
-import { TagAssignmentEditor } from "@/components/tags/tag-assignment-editor";
-import EditContactPage from "./edit/page";
+import { useClientById, useUpdateClient, type Client } from "@/hooks/use-clients";
+import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
+import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
+import { ContactFormErrors, ContactFormSections, ContactFormValues, validateContactForm } from "@/components/contacts/contact-form-sections";
+import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
-const formatPropertyAddress = (property: { addressLine1: string; addressLine2?: string | null; city: string; state: string; zipCode: string }) => {
-  const parts = [property.addressLine1];
-  if (property.addressLine2) {
-    parts.push(property.addressLine2);
-  }
-  parts.push(`${property.city}, ${property.state} ${property.zipCode}`);
-  return parts.join(", ");
-};
-
-const formatPropertyType = (propertyType: string) => {
-  return propertyType.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-};
-
-export default function ContactDetailPage() {
+export default function EditContactPage() {
   const params = useParams();
   const router = useRouter();
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
   const { id } = params as { id: string };
-  const isEditing = true;
-  if (isEditing) {
-    return <EditContactPage />;
-  }
+
   const { data: client, isLoading } = useClientById(id);
-  const deleteClient = useDeleteClient();
+  const updateClient = useUpdateClient();
+
+  const [form, setForm] = useState<ContactFormValues>({
+    name: "",
+    email: "",
+    phone: "",
+    type: "",
+  });
+  const [errors, setErrors] = useState<ContactFormErrors>({});
+  const [isSaving, setIsSaving] = useState(false);
+
+  const initializeForm = (nextClient: Client) => {
+    setForm({
+      name: nextClient.name ?? "",
+      email: nextClient.email ?? "",
+      phone: nextClient.phone ?? "",
+      type: nextClient.type ?? "",
+    });
+  };
+
+  useEffect(() => {
+    if (client) {
+      initializeForm(client);
+    }
+  }, [client]);
 
   if (isLoading) {
     return (
@@ -57,146 +51,76 @@ export default function ContactDetailPage() {
 
   if (!client) {
     return (
-      <div className="space-y-6">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-semibold mb-2">Client Not Found</h1>
-          <p className="text-muted-foreground">The client you are looking for does not exist.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Client Not Found"
+        description="The client you're looking for doesn't exist or you don't have access."
+      />
     );
   }
 
-  const handleDelete = () => {
-    deleteClient.mutate(client.clientId, {
-      onSuccess: () => {
-        setDeleteDialogOpen(false);
-        router.push("/contacts");
-      },
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const validationErrors = validateContactForm(form);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      return;
+    }
+    setIsSaving(true);
+
+    await updateClient.mutateAsync({
+      clientId: client.clientId,
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      type: form.type,
     });
+
+    setIsSaving(false);
+    router.push(`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`);
   };
-
-  const mainContent = (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{client.email}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{client.phone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <span className="font-medium">{client.inspections}</span> inspections
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                <span className="font-medium">${client.totalSpent.toLocaleString()}</span> total spent
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">Last inspection: {client.lastInspection}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Total Inspections" value={client.inspections} />
-        <StatCard label="Total Revenue" value={`$${client.totalSpent.toLocaleString()}`} />
-        <StatCard label="Avg per Inspection" value={`$${client.inspections > 0 ? Math.round(client.totalSpent / client.inspections).toLocaleString() : 0}`} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Tags</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <TagAssignmentEditor scope="client" entityId={client.clientId} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Properties</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {client.properties && client.properties.length > 0 ? (
-            client.properties.map((property) => (
-              <Link
-                key={property.propertyId}
-                href={`/properties/${property.propertyPublicId ?? property.propertyId}`}
-                className="flex items-center justify-between gap-4 rounded-md border border-border/70 px-4 py-3 transition hover:border-primary hover:bg-primary/10"
-              >
-                <div>
-                  <p className="text-sm font-medium">{formatPropertyAddress(property)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {property.city}, {property.state} {property.zipCode}
-                  </p>
-                </div>
-                <Badge color="light">{formatPropertyType(property.propertyType)}</Badge>
-              </Link>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground">This client does not yet have any linked properties.</p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Inspection History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground py-8 text-center">Inspection history will be displayed here when integrated with inspections data.</div>
-        </CardContent>
-      </Card>
-
-      <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium">Delete contact</p>
-          <p className="text-xs text-muted-foreground">Permanently remove this contact and all associated data.</p>
-        </div>
-        <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </Button>
-      </div>
-    </div>
-  );
 
   return (
     <>
-    <IdPageLayout
-      title={client.name}
-      description={`Client • ${client.type}`}
-      left={mainContent}
-    />
+    <div className="space-y-6">
+      <PageHeader
+        title="Client"
+        description="Update client information"
+      />
 
-    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Client</AlertDialogTitle>
-          <AlertDialogDescription>Are you sure you want to delete {client.name}? This action cannot be undone.</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-            Delete Anyway
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <form onSubmit={handleSubmit}>
+        <ResourceFormLayout
+          left={
+            <ContactFormSections
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              setErrors={setErrors}
+              title="Client Information"
+              description="Update the client details below"
+            />
+          }
+          right={
+            <ResourceFormSidebar
+              actions={
+                <>
+                  <Button type="submit" className="w-full" disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" asChild>
+                    <Link href={`/contacts/${toSlugIdSegment(client.name, client.publicId ?? client.clientId)}`}>Cancel</Link>
+                  </Button>
+                </>
+              }
+              tips={[
+                "• Required fields are marked with an asterisk (*)",
+                "• Keep phone numbers formatted for easy calling",
+                "• Contact types help with segmentation",
+              ]}
+            />
+          }
+        />
+      </form>
+    </div>
     </>
   );
 }

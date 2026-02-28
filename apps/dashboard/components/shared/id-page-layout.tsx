@@ -34,7 +34,7 @@ export function IdPageLayout({
     <div className="space-y-6">
       {breadcrumb ? <div className="hidden lg:flex fixed right-8 top-20 z-20 items-center gap-2 text-sm">{breadcrumb}</div> : null}
 
-      <div className={hasRightRail ? "grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]" : "space-y-4"}>
+      <div className={hasRightRail ? "grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]" : "space-y-4"}>
         <div className={leftClassName}>
           <PageHeader title={title} description={description} meta={meta} actions={headerActions} />
           {left ?? children}

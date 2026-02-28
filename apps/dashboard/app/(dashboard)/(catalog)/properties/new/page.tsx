@@ -1,16 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PageHeader } from "@/layout/page-header";
+import { useRouter } from "next/navigation";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { SaveButton } from "@/components/shared/action-buttons";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateProperty } from "@/hooks/use-properties";
 import { useClients } from "@/hooks/use-clients";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
-import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
-import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
 import { toSlugIdSegment } from "@/lib/routing/slug-id";
 
@@ -37,9 +36,7 @@ export default function NewPropertyPage() {
     setForm((prev) => ({ ...prev, clientId }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleCreate = async () => {
     const validationErrors = validatePropertyForm(form);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
@@ -57,35 +54,30 @@ export default function NewPropertyPage() {
         city: form.city.trim(),
         state: form.state.trim(),
         zip_code: form.zipCode.trim(),
-        property_type: form.propertyType as 'single-family' | 'condo-townhome' | 'multi-family' | 'manufactured' | 'commercial',
+        property_type: form.propertyType as "single-family" | "condo-townhome" | "multi-family" | "manufactured" | "commercial",
         year_built: form.yearBuilt ? parseInt(form.yearBuilt, 10) : null,
         square_feet: form.squareFeet ? parseInt(form.squareFeet, 10) : null,
         notes: form.notes.trim() || null,
         client_id: form.clientId || null,
-        // Common details
         bedrooms: form.bedrooms ? parseInt(form.bedrooms, 10) : null,
         bathrooms: form.bathrooms ? parseFloat(form.bathrooms) : null,
         stories: form.stories || null,
         foundation: form.foundation || null,
         garage: form.garage || null,
         pool: form.pool,
-        // Residential specific
         basement: basementValue,
         lot_size_acres: form.lotSizeAcres ? parseFloat(form.lotSizeAcres) : null,
         heating_type: form.heatingType || null,
         cooling_type: form.coolingType || null,
         roof_type: form.roofType || null,
-        // Commercial specific
         building_class: buildingClassValue,
         loading_docks: form.loadingDocks ? parseInt(form.loadingDocks, 10) : null,
         zoning: form.zoning || null,
         occupancy_type: form.occupancyType || null,
         ceiling_height: form.ceilingHeight ? parseFloat(form.ceilingHeight) : null,
-        // Multi-family specific
         number_of_units: form.numberOfUnits ? parseInt(form.numberOfUnits, 10) : null,
         unit_mix: form.unitMix || null,
         laundry_type: laundryValue,
-        // Shared
         parking_spaces: form.parkingSpaces ? parseInt(form.parkingSpaces, 10) : null,
         elevator: form.elevator,
       });
@@ -96,71 +88,64 @@ export default function NewPropertyPage() {
           result.public_id ?? result.id
         )}`
       );
-    } catch (error) {
-      // Error handled by mutation
+    } catch {
+      // Error surfaced by mutation hooks/toasts
     }
   };
 
   return (
     <>
-    <div className="space-y-6">
-      <PageHeader
-        title="Add New Property"
-        description="Create a new property record in your database"
+      <IdPageLayout
+        title="Add Property"
+        description="Create a new property record in your workspace"
+        breadcrumb={
+          <>
+            <Link href="/properties" className="text-muted-foreground transition hover:text-foreground">
+              Properties
+            </Link>
+            <span className="text-muted-foreground">{">"}</span>
+            <span className="max-w-[20rem] truncate font-medium">New Property</span>
+          </>
+        }
+        left={
+          <PropertyFormSections
+            form={form}
+            setForm={setForm}
+            errors={errors}
+            setErrors={setErrors}
+            clients={clients}
+            onOpenClientDialog={() => setShowClientDialog(true)}
+          />
+        }
+        right={
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <SaveButton className="w-full" label="Create Property" savingLabel="Creating..." onClick={handleCreate} isSaving={createProperty.isPending} />
+                <Button type="button" variant="outline" className="w-full" asChild>
+                  <Link href="/properties">Cancel</Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Tips</CardTitle>
+                <CardDescription>Keep this profile complete for smoother order scheduling.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>Required fields are marked with an asterisk (*).</p>
+                <p>Assign a primary contact to speed dispatch handoffs.</p>
+                <p>You can add detailed attributes now or update them later.</p>
+              </CardContent>
+            </Card>
+          </>
+        }
       />
-
-      <form onSubmit={handleSubmit}>
-        <ResourceFormLayout
-          left={
-            <PropertyFormSections
-              form={form}
-              setForm={setForm}
-              errors={errors}
-              setErrors={setErrors}
-              clients={clients}
-              onOpenClientDialog={() => setShowClientDialog(true)}
-            />
-          }
-          right={
-            <ResourceFormSidebar
-              actions={
-                <>
-                  <Button type="submit" className="w-full" disabled={createProperty.isPending}>
-                    {createProperty.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Create Property
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => router.push("/properties")}
-                    disabled={createProperty.isPending}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              }
-              tips={[
-                "• Required fields are marked with an asterisk (*)",
-                "• You can assign an owner/contact now or later",
-                "• Property details can be edited at any time",
-              ]}
-            />
-          }
-        />
-      </form>
-
       <InlineClientDialog open={showClientDialog} onOpenChange={setShowClientDialog} onClientCreated={handleClientCreated} />
-    </div>
     </>
   );
 }

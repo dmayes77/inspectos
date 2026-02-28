@@ -613,7 +613,7 @@ export default function OverviewPage() {
             <CardDescription>Weekly margin dollars against average cost per inspection</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-2">
-            <ChartContainer config={decisionTrendConfig} className="h-[200px] w-full">
+            <ChartContainer config={decisionTrendConfig} className="h-50 w-full">
               <LineChart data={decisionData.trendBuckets} margin={{ top: 4, right: 6, left: -14, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
@@ -639,7 +639,7 @@ export default function OverviewPage() {
             <CardDescription>Margin contribution by source</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-2">
-            <ChartContainer config={referralConfig} className="h-[200px] w-full">
+            <ChartContainer config={referralConfig} className="h-50 w-full">
               <BarChart data={decisionData.referralLeaderboard} layout="vertical" margin={{ top: 6, right: 8, left: 8, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} />

@@ -8,6 +8,20 @@ type LoginBody = {
   password?: string;
 };
 
+function parseJwtIssuer(token: string | null | undefined): string | null {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const decoded = JSON.parse(Buffer.from(padded, "base64").toString("utf-8"));
+    return typeof decoded?.iss === "string" ? decoded.iss : null;
+  } catch {
+    return null;
+  }
+}
+
 function isAllowedOrigin(origin: string) {
   if (!origin) return false;
   const exact = new Set([
@@ -110,6 +124,8 @@ export async function POST(request: NextRequest) {
       origin,
       userId: data.user?.id ?? null,
       email: data.user?.email ?? null,
+      tokenIssuer: parseJwtIssuer(data.session.access_token),
+      refreshTokenLength: data.session.refresh_token?.length ?? 0,
     });
     return applyCorsHeaders(
       setSessionCookies(response, {

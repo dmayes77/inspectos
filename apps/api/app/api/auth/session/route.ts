@@ -6,11 +6,36 @@ import {
 } from "@/lib/auth/session-cookies";
 import { createAnonClient, unauthorized } from "@/lib/supabase";
 
+function parseJwtIssuer(token: string | null | undefined): string | null {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const decoded = JSON.parse(Buffer.from(padded, "base64").toString("utf-8"));
+    return typeof decoded?.iss === "string" ? decoded.iss : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseHost = (() => {
+    try {
+      return supabaseUrl ? new URL(supabaseUrl).host : "missing";
+    } catch {
+      return "invalid";
+    }
+  })();
   console.info("[api:auth:session] incoming", {
     hasAccessToken: Boolean(accessToken),
     hasRefreshToken: Boolean(refreshToken),
+    accessTokenIssuer: parseJwtIssuer(accessToken),
+    refreshTokenLength: refreshToken?.length ?? 0,
+    supabaseHost,
   });
   if (!accessToken && !refreshToken) {
     console.warn("[api:auth:session] no session cookies");
@@ -33,6 +58,12 @@ export async function GET(request: NextRequest) {
         },
       });
     }
+    console.warn("[api:auth:session] access token invalid", {
+      message: error?.message ?? "unknown",
+      status: (error as { status?: number } | null)?.status ?? null,
+      accessTokenIssuer: parseJwtIssuer(accessToken),
+      supabaseHost,
+    });
   }
 
   if (!refreshToken) {

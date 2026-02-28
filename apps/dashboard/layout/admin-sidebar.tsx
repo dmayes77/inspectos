@@ -126,7 +126,6 @@ export function AdminSidebar({
       {/* Nav */}
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar py-4">
         <nav className={cn("flex flex-col gap-6", "px-5")}>
-
           {/* MENU group */}
           <div>
             <h2

@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, CheckCircle2, ClipboardList, Clock, DollarSign, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
+import { CheckCircle2, ClipboardList, DollarSign, Loader2, MapPin, Plus, User, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useCreateOrder, useUpdateOrder, type Order } from "@/hooks/use-orders";
 import { useClients } from "@/hooks/use-clients";
@@ -27,6 +25,7 @@ import { ServiceAssignmentsSection, type ServiceAssignment } from "@/components/
 import type { InspectionService } from "@/hooks/use-orders";
 import type { Inspection } from "@/hooks/use-inspections";
 import { useVendors } from "@/hooks/use-vendors";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
 import { cn } from "@/lib/utils";
 import { tryFormatDate } from "@inspectos/shared/utils/tryFormatDate";
 
@@ -434,59 +433,11 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
   const isSubmitting = createOrder.isPending || updateOrder.isPending;
   const primaryActionLabel = mode === "edit" ? "Save Changes" : "Create Order";
   const cancelHref = mode === "edit" && order ? `/orders/${order.order_number ?? order.id}` : "/orders";
-  const scheduleLabel = formatScheduleLabel(form.scheduled_date, form.scheduled_time);
   const hasInspectorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.inspectorIds.length > 0);
   const hasVendorAssignment = serviceAssignments.some((assignment) => assignment.selected && assignment.vendorIds.length > 0);
   const marginTone = costTotals.grossMargin < 0 ? "text-destructive" : "text-foreground";
-  const isDirectClientOrder = !form.agent_id;
-
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        breadcrumb={
-          <>
-            <Link href="/overview" className="hover:text-foreground">
-              Overview
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <Link href="/orders" className="hover:text-foreground">
-              Orders
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span>{mode === "edit" && order ? "Edit" : "New"}</span>
-          </>
-        }
-        title={mode === "edit" && order ? order.order_number : "New Order"}
-        meta={
-          <>
-            <Badge className="text-xs px-2 py-0.5">{formatStatusLabel(form.status)}</Badge>
-            <Badge color="light" className="text-xs px-2 py-0.5">
-              {formatStatusLabel(form.payment_status)}
-            </Badge>
-            {order?.created_at || order?.source ? (
-              <span className="text-xs text-muted-foreground">
-                {order?.created_at ? `Created ${new Date(order.created_at).toLocaleDateString()}` : ""}
-                {order?.created_at && order?.source ? " • " : ""}
-                {order?.source ? `Source: ${order.source}` : ""}
-              </span>
-            ) : null}
-          </>
-        }
-        description="Capture the core order details, then confirm services and schedule."
-        actions={
-          <>
-            <Button variant="ghost" asChild>
-              <Link href={cancelHref}>Cancel</Link>
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : primaryActionLabel}
-            </Button>
-          </>
-        }
-      />
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,2.1fr)_minmax(320px,1fr)]">
-        <div className="space-y-4">
+  const leftContent = (
+    <>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -581,149 +532,149 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                Property
-              </CardTitle>
-              <CardDescription>Select the property and source.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 md:items-start">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  Property
+                </CardTitle>
+                <CardDescription>Select the property and source.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="property_id">Property</Label>
+                    <Select value={form.property_id} onValueChange={handlePropertySelect}>
+                      <SelectTrigger id="property_id" className="w-full">
+                        <SelectValue placeholder="Select property" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__add_new_property__" className="text-brand-600 font-semibold">
+                          <span className="inline-flex items-center gap-2">
+                            <Plus className="h-3 w-3" />
+                            Add new property
+                          </span>
+                        </SelectItem>
+                        {properties.map((property) => (
+                          <SelectItem key={property.id} value={property.id}>
+                            {getPropertyLabel(property)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="source">Source</Label>
+                    <Input
+                      id="source"
+                      className="w-full"
+                      value={form.source}
+                      onChange={(event) => setForm((prev) => ({ ...prev, source: event.target.value }))}
+                      placeholder="Referral, website, partner..."
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={cn(
+                    "overflow-hidden rounded-md border bg-muted/20 transition-all duration-300 ease-in-out",
+                    showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
+                  )}
+                  aria-hidden={!showInlinePropertyForm}
+                >
+                  <form onSubmit={handleInlinePropertySubmit} className="space-y-4 p-4">
+                    <div>
+                      <p className="font-semibold">Create new property</p>
+                      <p className="text-sm text-muted-foreground">The order stays in context while you capture the address.</p>
+                    </div>
+                    <PropertyFormSections
+                      form={propertyForm}
+                      setForm={setPropertyForm}
+                      errors={propertyFormErrors}
+                      setErrors={setPropertyFormErrors}
+                      showOwnerSection={false}
+                    />
+                    <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
+                      <Button type="button" variant="ghost" onClick={handleInlinePropertyCancel} disabled={createProperty.isPending}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createProperty.isPending}>
+                        {createProperty.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Save property
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  People
+                </CardTitle>
+                <CardDescription>Link the client and optional referring agent.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="property_id">Property</Label>
-                  <Select value={form.property_id} onValueChange={handlePropertySelect}>
-                    <SelectTrigger id="property_id">
-                      <SelectValue placeholder="Select property" />
+                  <Label htmlFor="client_id">Client</Label>
+                  <Select value={form.client_id ?? "__none__"} onValueChange={handleClientSelect}>
+                    <SelectTrigger id="client_id" className="w-full">
+                      <SelectValue placeholder="Select client" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__add_new_property__" className="text-brand-600 font-semibold">
+                      <SelectItem value="__add_new_client__" className="text-brand-600 font-semibold">
                         <span className="inline-flex items-center gap-2">
                           <Plus className="h-3 w-3" />
-                          Add new property
+                          Add new client
                         </span>
                       </SelectItem>
-                      {properties.map((property) => (
-                        <SelectItem key={property.id} value={property.id}>
-                          {getPropertyLabel(property)}
+                      <SelectItem value="__none__">No client</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.clientId} value={client.clientId}>
+                          {client.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="source">Source</Label>
-                  <Input
-                    id="source"
-                    value={form.source}
-                    onChange={(event) => setForm((prev) => ({ ...prev, source: event.target.value }))}
-                    placeholder="Referral, website, partner..."
-                  />
+                  <Label htmlFor="agent_id">Referring Agent (optional)</Label>
+                  <Select value={form.agent_id ?? "__none__"} onValueChange={handleAgentSelect}>
+                    <SelectTrigger id="agent_id" className="w-full">
+                      <SelectValue placeholder="Select agent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__add_new_agent__" className="text-brand-600 font-semibold">
+                        <span className="inline-flex items-center gap-2">
+                          <Plus className="h-3 w-3" />
+                          Add new agent
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="__none__">Direct client (no agent)</SelectItem>
+                      {agents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-
-              <div
-                className={cn(
-                  "overflow-hidden rounded-md border bg-muted/20 transition-all duration-300 ease-in-out",
-                  showInlinePropertyForm ? "max-h-1250 opacity-100 pointer-events-auto" : "max-h-0 opacity-0 pointer-events-none",
-                )}
-                aria-hidden={!showInlinePropertyForm}
-              >
-                <form onSubmit={handleInlinePropertySubmit} className="space-y-4 p-4">
-                  <div>
-                    <p className="font-semibold">Create new property</p>
-                    <p className="text-sm text-muted-foreground">The order stays in context while you capture the address.</p>
-                  </div>
-                  <PropertyFormSections
-                    form={propertyForm}
-                    setForm={setPropertyForm}
-                    errors={propertyFormErrors}
-                    setErrors={setPropertyFormErrors}
-                    showOwnerSection={false}
-                  />
-                  <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-4">
-                    <Button type="button" variant="ghost" onClick={handleInlinePropertyCancel} disabled={createProperty.isPending}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={createProperty.isPending}>
-                      {createProperty.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Save property
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                People
-              </CardTitle>
-              <CardDescription>Link the client and optional referring agent.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="client_id">Client</Label>
-                <Select value={form.client_id ?? "__none__"} onValueChange={handleClientSelect}>
-                  <SelectTrigger id="client_id">
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__add_new_client__" className="text-brand-600 font-semibold">
-                      <span className="inline-flex items-center gap-2">
-                        <Plus className="h-3 w-3" />
-                        Add new client
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="__none__">No client</SelectItem>
-                    {clients.map((client) => (
-                      <SelectItem key={client.clientId} value={client.clientId}>
-                        {client.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="agent_id">Referring Agent (optional)</Label>
-                <Select value={form.agent_id ?? "__none__"} onValueChange={handleAgentSelect}>
-                  <SelectTrigger id="agent_id">
-                    <SelectValue placeholder="Select agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__add_new_agent__" className="text-brand-600 font-semibold">
-                      <span className="inline-flex items-center gap-2">
-                        <Plus className="h-3 w-3" />
-                        Add new agent
-                      </span>
-                    </SelectItem>
-                    <SelectItem value="__none__">Direct client (no agent)</SelectItem>
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isDirectClientOrder ? (
-                  <p className="text-xs text-muted-foreground">This order will be tracked as direct client (no agent).</p>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
 
           <Card>
             <CardHeader>
@@ -857,9 +808,25 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
               </CardContent>
             </Card>
           )}
-        </div>
+    </>
+  );
 
-        <div className="space-y-4 xl:sticky xl:top-20 xl:self-start">
+  const rightContent = (
+    <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button className="w-full" onClick={handleSubmit} disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : primaryActionLabel}
+              </Button>
+              <Button variant="outline" className="w-full" asChild>
+                <Link href={cancelHref}>Cancel</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -931,38 +898,37 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4 text-muted-foreground" />
-                Schedule Snapshot
-              </CardTitle>
-              <CardDescription>Quick view of schedule.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                {scheduleLabel ?? "Pick a date and time"}
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {form.duration_minutes ? `${form.duration_minutes} min` : `${totals.duration || 0} min estimate`}
-              </div>
-              <div className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                {hasInspectorAssignment ? "Inspector(s) assigned by service" : "No inspector assignments yet"}
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {isDirectClientOrder ? "Direct client order" : "Agent-referred order"}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+    </>
+  );
 
+  return (
+    <>
+      <IdPageLayout
+        title={mode === "edit" && order ? order.order_number : "New Order"}
+        description="Capture the core order details, then confirm services and schedule."
+        meta={
+          order?.created_at || order?.source ? (
+            <span className="text-xs text-muted-foreground">
+              {order?.created_at ? `Created ${new Date(order.created_at).toLocaleDateString()}` : ""}
+              {order?.created_at && order?.source ? " • " : ""}
+              {order?.source ? `Source: ${order.source}` : ""}
+            </span>
+          ) : undefined
+        }
+        breadcrumb={
+          <>
+            <Link href="/orders" className="text-muted-foreground transition hover:text-foreground">
+              Orders
+            </Link>
+            <span className="text-muted-foreground">{">"}</span>
+            <span className="max-w-[20rem] truncate font-medium">{mode === "edit" && order ? order.order_number : "New Order"}</span>
+          </>
+        }
+        left={leftContent}
+        right={rightContent}
+      />
       <InlineClientDialog open={clientDialogOpen} onOpenChange={setClientDialogOpen} onClientCreated={handleClientCreated} />
       <InlineAgentDialog open={agentDialogOpen} onOpenChange={setAgentDialogOpen} onAgentCreated={handleAgentCreated} />
-    </div>
+    </>
   );
 }

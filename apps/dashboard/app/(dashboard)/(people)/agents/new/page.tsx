@@ -3,18 +3,25 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/layout/page-header";
+import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { SaveButton } from "@/components/shared/action-buttons";
 import { Button } from "@/components/ui/button";
-import { ResourceFormLayout } from "@/components/shared/resource-form-layout";
-import { ResourceFormSidebar } from "@/components/shared/resource-form-sidebar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AgentForm, type AgentFormValues } from "@/components/partners/agent-form";
 import { AgentInternetScrub } from "@/components/partners/agent-internet-scrub";
 import { useAgencies } from "@/hooks/use-agencies";
 import { useCreateAgent } from "@/hooks/use-agents";
 import { toast } from "sonner";
 import type { AgentScrubResult } from "@/types/agent-scrub";
-import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import { toSlugIdSegment } from "@/lib/routing/slug-id";
+import {
+  buildAgencyAddress,
+  normalize,
+  normalizeWebsite,
+  parseScrubbedAddress,
+  resolveLogoForSubmit,
+  websiteFromDomain,
+} from "../../_shared/form-utils";
 
 const DEFAULT_TENANT_SLUG = "demo";
 const AGENT_TIPS = [
@@ -48,181 +55,6 @@ const emptyForm: AgentFormValues = {
   notes: "",
 };
 
-const normalize = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-};
-
-const normalizeWebsite = (value?: string | null) => {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-  const sanitized = trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
-  if (!sanitized) return null;
-  return `https://${sanitized}`;
-};
-
-const websiteFromDomain = (domain?: string | null) => normalizeWebsite(domain) ?? "";
-
-type ParsedAddress = {
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-};
-
-const parseScrubbedAddress = (value?: string | null): ParsedAddress | null => {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-
-  const normalizeAddressInput = (raw: string) => {
-    let normalized = raw.replace(/\s+/g, " ").trim();
-    normalized = normalized.replace(/^(?:hours?|office|address|location)\b[:\s-]*/i, "").trim();
-
-    // If scrape noise prefixes the address, start from the first street-looking segment.
-    const streetStart = normalized.match(
-      /\b\d{1,6}\s+[A-Za-z0-9#.'-]+(?:\s+[A-Za-z0-9#.'-]+){0,5}\s+(?:st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|pkwy|parkway|ct|court|pl|place|ter|terrace|cir|circle|hwy|highway)\b/i
-    );
-    if (streetStart?.index !== undefined && streetStart.index > 0) {
-      normalized = normalized.slice(streetStart.index).trim();
-    }
-
-    return normalized;
-  };
-
-  const normalizedInput = normalizeAddressInput(trimmed);
-
-  const tokens = normalizedInput
-    .split(/\r?\n+/)
-    .flatMap((line) => line.split(","))
-    .map((token) => token.trim())
-    .filter(Boolean);
-
-  if (tokens.length === 0) {
-    return null;
-  }
-
-  const remaining = [...tokens];
-  let addressLine1 = remaining.shift() ?? "";
-  let zipCode: string | undefined;
-  let state: string | undefined;
-  let city: string | undefined;
-
-  const isCountryToken = (token: string) => {
-    const cleaned = token.replace(/\.+/g, "").trim();
-    if (!cleaned) return false;
-    const normalized = cleaned.replace(/[^a-z]/gi, "").toLowerCase();
-    const countries = new Set(["us", "usa", "unitedstates", "unitedstatesofamerica"]);
-    if (countries.has(normalized)) return true;
-    if (/\d/.test(cleaned)) return false;
-    if (/^[A-Za-z]{2}$/.test(cleaned)) return true;
-    return false;
-  };
-
-  const extractCityStateZip = (source: string) => {
-    const match = source.match(/^(.*?)(?:,\s*)?([A-Za-z .'-]+)\s*,?\s*([A-Za-z]{2})\s+(\d{5}(?:-\d{4})?)$/);
-    if (!match) return null;
-    const [, street, cityPart, statePart, zipPart] = match;
-    return {
-      street: street.trim(),
-      city: cityPart.trim(),
-      state: statePart.toUpperCase(),
-      zip: zipPart,
-    };
-  };
-
-  while (remaining.length > 0 && isCountryToken(remaining[remaining.length - 1])) {
-    remaining.pop();
-  }
-
-  if (remaining.length > 0) {
-    const last = remaining[remaining.length - 1];
-    let working = last;
-    const zipMatch = working.match(/\b\d{5}(?:-\d{4})?\b/);
-    if (zipMatch) {
-      zipCode = zipMatch[0];
-      working = working.replace(zipMatch[0], "").trim();
-    }
-    const stateMatch = working.match(/\b[A-Za-z]{2}\b/);
-    if (stateMatch) {
-      state = stateMatch[0].toUpperCase();
-      working = working.replace(stateMatch[0], "").replace(/,\s*$/, "").trim();
-    }
-    if (working) {
-      remaining[remaining.length - 1] = working;
-    } else {
-      remaining.pop();
-    }
-  }
-
-  if (!state && remaining.length > 0) {
-    const last = remaining[remaining.length - 1];
-    if (/^[A-Za-z]{2}$/.test(last)) {
-      state = last.toUpperCase();
-      remaining.pop();
-    }
-  }
-
-  if (!zipCode && remaining.length > 0) {
-    const last = remaining[remaining.length - 1];
-    if (/^\d{5}(?:-\d{4})?$/.test(last)) {
-      zipCode = last;
-      remaining.pop();
-    }
-  }
-
-  if (remaining.length > 0) {
-    city = remaining.pop() ?? undefined;
-  }
-
-  const addressLine2 = remaining.length > 0 ? remaining.join(", ") : undefined;
-
-  const applyFallback = () => {
-    if (!addressLine1) return;
-    const fallback = extractCityStateZip(addressLine1) ?? extractCityStateZip(normalizedInput);
-    if (!fallback) return;
-    if (fallback.street) {
-      addressLine1 = fallback.street;
-    }
-    if (!city && fallback.city) {
-      city = fallback.city;
-    }
-    if (!state && fallback.state) {
-      state = fallback.state;
-    }
-    if (!zipCode && fallback.zip) {
-      zipCode = fallback.zip;
-    }
-  };
-
-  if (!city || !state || !zipCode) {
-    applyFallback();
-  }
-
-  return {
-    addressLine1,
-    addressLine2,
-    city,
-    state,
-    zipCode,
-  };
-};
-
-const buildAgencyAddress = (values: Pick<AgentFormValues, "agencyAddressLine1" | "agencyAddressLine2" | "agencyCity" | "agencyState" | "agencyZipCode">) => {
-  const segments: string[] = [];
-  if (values.agencyAddressLine1?.trim()) {
-    segments.push(values.agencyAddressLine1.trim());
-  }
-  if (values.agencyAddressLine2?.trim()) {
-    segments.push(values.agencyAddressLine2.trim());
-  }
-  const cityState = [values.agencyCity?.trim(), values.agencyState?.trim()].filter(Boolean).join(", ");
-  const locality = [cityState, values.agencyZipCode?.trim()].filter(Boolean).join(" ").trim();
-  if (locality) {
-    segments.push(locality);
-  }
-  return segments.length > 0 ? segments.join(", ") : null;
-};
 
 export default function NewAgentPage() {
   const router = useRouter();
@@ -256,7 +88,7 @@ export default function NewAgentPage() {
     const sanitizedAgencyName = agencyNameCandidate || "";
     const sanitizedAgentName = (split.agent ?? result.name ?? "").trim();
     const website = websiteFromDomain(result.domain);
-    const resolvedLogoUrl = result.logoUrl ?? logoDevUrl(result.domain ?? website ?? null, { size: 96 }) ?? null;
+    const resolvedLogoUrl = resolveLogoForSubmit(result.logoUrl, result.domain ?? website ?? null) ?? null;
     const parsedAddress = parseScrubbedAddress(result.agencyAddress);
     setForm((prev) => ({
       ...prev,
@@ -311,8 +143,6 @@ export default function NewAgentPage() {
       agency_website: normalizeWebsite(form.agencyWebsite),
     };
 
-    console.log("Creating agent", payload);
-
     try {
       const agent = await createAgent.mutateAsync(payload);
       toast.success("Agent created");
@@ -325,38 +155,59 @@ export default function NewAgentPage() {
 
   return (
     <>
-    <div className="space-y-6">
-      <PageHeader
-        title="Add Agent"
-        description="Invite referring agents and control portal access"
-      />
-
       <form onSubmit={handleSubmit}>
-        <ResourceFormLayout
+        <IdPageLayout
+          title="Add Agent"
+          description="Invite referring agents and control portal access"
+          breadcrumb={
+            <>
+              <Link href="/agents" className="text-muted-foreground transition hover:text-foreground">
+                Agents
+              </Link>
+              <span className="text-muted-foreground">{">"}</span>
+              <span className="max-w-[20rem] truncate font-medium">New Agent</span>
+            </>
+          }
           left={
-            <div className="space-y-6">
-              <AgentInternetScrub onApply={applyScrubResult} />
+            <div className="space-y-4">
+              <AgentInternetScrub onApply={applyScrubResult} urlRequired={false} />
               <AgentForm form={form} setForm={setForm} agencies={agencies} />
             </div>
           }
           right={
-            <ResourceFormSidebar
-              actions={
-                <>
-                  <Button type="submit" className="w-full" disabled={createAgent.isPending}>
-                    {createAgent.isPending ? "Saving..." : "Create Agent"}
-                  </Button>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <SaveButton
+                    type="submit"
+                    className="w-full"
+                    isSaving={createAgent.isPending}
+                    label="Create Agent"
+                    savingLabel="Creating..."
+                  />
                   <Button type="button" variant="outline" className="w-full" asChild>
                     <Link href="/agents?tab=agents">Cancel</Link>
                   </Button>
-                </>
-              }
-              tips={AGENT_TIPS}
-            />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Tips</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  {AGENT_TIPS.map((tip) => (
+                    <p key={tip}>{tip}</p>
+                  ))}
+                </CardContent>
+              </Card>
+            </>
           }
         />
       </form>
-    </div>
     </>
   );
 }

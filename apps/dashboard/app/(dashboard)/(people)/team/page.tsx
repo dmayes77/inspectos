@@ -190,7 +190,7 @@ export default function TeamPage() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`} className="text-sm font-medium leading-tight hover:underline">
+                <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`} className="text-sm font-medium leading-tight hover:underline">
                   {member.name}
                 </Link>
                 <div className="mt-0.5 text-xs text-muted-foreground">ID# {member.memberId}</div>
@@ -284,7 +284,7 @@ export default function TeamPage() {
           return (
             <div className="flex items-center gap-1">
               <Button size="sm" variant="outline" asChild className="h-8 w-8 p-0">
-                <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`}>
+                <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`}>
                   <FileText className="h-3.5 w-3.5" />
                   <span className="sr-only">Profile</span>
                 </Link>
@@ -339,7 +339,7 @@ export default function TeamPage() {
         actions={
           canInvite ? (
             <Button asChild className="sm:w-auto">
-              <Link href="/admin/team/new">
+              <Link href="/team/new">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Team Member
               </Link>
@@ -448,7 +448,7 @@ export default function TeamPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`} className="font-medium hover:underline">
+                        <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`} className="font-medium hover:underline">
                           {member.name}
                         </Link>
                         <div className="text-xs text-muted-foreground truncate">{member.email}</div>
@@ -467,7 +467,7 @@ export default function TeamPage() {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Button size="sm" variant="outline" asChild>
-                        <Link href={`/admin/team/${toSlugIdSegment(member.name, member.memberId)}`}>
+                        <Link href={`/team/${toSlugIdSegment(member.name, member.memberId)}`}>
                           <StickyNote className="mr-1 h-3.5 w-3.5" />Open
                         </Link>
                       </Button>
