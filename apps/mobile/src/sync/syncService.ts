@@ -109,7 +109,7 @@ class SyncService {
     this.setState({ status: "syncing", error: null });
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/sync/bootstrap?tenant=${this.tenantSlug}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sync/bootstrap?business=${this.tenantSlug}`, {
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
           "Content-Type": "application/json",
@@ -126,8 +126,8 @@ class SyncService {
         throw new Error(result.error || "Bootstrap failed");
       }
 
-      // Store tenant ID
-      this.tenantId = result.data.tenant.id;
+      // Store tenant ID from bootstrap payload
+      this.tenantId = result.data.business.id;
 
       // Process downloaded data
       await this.processBootstrapData(result.data);
@@ -212,7 +212,7 @@ class SyncService {
           entity_type: item.entity_type,
           entity_id: item.entity_id,
           operation: item.operation,
-          payload: JSON.parse(item.payload),
+          payload: this.normalizeOutboxPayload(item.entity_type, JSON.parse(item.payload)),
           created_at: item.created_at,
         })),
       }),
@@ -245,7 +245,7 @@ class SyncService {
     const since = syncState[0]?.cursor;
 
     const url = new URL(`${API_BASE_URL}/api/sync/pull`);
-    url.searchParams.set("tenant", this.tenantSlug!);
+    url.searchParams.set("business", this.tenantSlug!);
     if (since) {
       url.searchParams.set("since", since);
     }
@@ -346,14 +346,20 @@ class SyncService {
    * Process bootstrap data into local database
    */
   private async processBootstrapData(data: Record<string, unknown>): Promise<void> {
+    const business = data.business as { id: string } | undefined;
+    const resolvedTenantId = business?.id ?? this.tenantId;
+
     await database.transaction(async () => {
       // Store user profile
       if (data.user) {
+        if (!resolvedTenantId) {
+          throw new Error("Missing tenant id for user profile sync");
+        }
         const user = data.user as Record<string, unknown>;
         await database.run(
           `INSERT OR REPLACE INTO user_profile (id, tenant_id, email, full_name, role, avatar_url, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [user.id, (data.tenant as { id: string }).id, user.email, user.full_name, user.role, user.avatar_url, new Date().toISOString()],
+          [user.id, resolvedTenantId, user.email, user.full_name, user.role, user.avatar_url, new Date().toISOString()],
         );
       }
 
@@ -483,6 +489,96 @@ class SyncService {
         await jobsRepository.upsert(job as Parameters<typeof jobsRepository.upsert>[0]);
       }
 
+      // Store inspections and nested records (for resume and cross-device continuity)
+      const inspections = data.inspections as Array<Record<string, unknown>>;
+      for (const inspection of inspections || []) {
+        await database.run(
+          `INSERT OR REPLACE INTO inspections (
+            id, job_id, tenant_id, template_id, template_version, inspector_id, status,
+            started_at, completed_at, weather_conditions, temperature, present_parties,
+            notes, created_at, updated_at, synced_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            inspection.id,
+            inspection.job_id,
+            inspection.tenant_id,
+            inspection.template_id,
+            inspection.template_version,
+            inspection.inspector_id,
+            inspection.status,
+            inspection.started_at,
+            inspection.completed_at,
+            inspection.weather_conditions,
+            inspection.temperature,
+            inspection.present_parties ? JSON.stringify(inspection.present_parties) : null,
+            inspection.notes,
+            inspection.created_at,
+            inspection.updated_at,
+            new Date().toISOString(),
+          ],
+        );
+
+        const answers = (inspection.answers as Array<Record<string, unknown>> | undefined) || [];
+        for (const answer of answers) {
+          await database.run(
+            `INSERT OR REPLACE INTO answers (id, inspection_id, template_item_id, section_id, value, notes, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              answer.id,
+              answer.inspection_id,
+              answer.template_item_id,
+              answer.section_id,
+              answer.value,
+              answer.notes,
+              answer.created_at,
+              answer.updated_at,
+            ],
+          );
+        }
+
+        const findings = (inspection.findings as Array<Record<string, unknown>> | undefined) || [];
+        for (const finding of findings) {
+          await database.run(
+            `INSERT OR REPLACE INTO findings (
+              id, inspection_id, section_id, template_item_id, defect_library_id, title, description,
+              severity, location, recommendation, estimated_cost_min, estimated_cost_max, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              finding.id,
+              finding.inspection_id,
+              finding.section_id,
+              finding.template_item_id,
+              finding.defect_library_id,
+              finding.title,
+              finding.description,
+              finding.severity,
+              finding.location,
+              finding.recommendation,
+              finding.estimated_cost_min,
+              finding.estimated_cost_max,
+              finding.created_at,
+              finding.updated_at,
+            ],
+          );
+        }
+
+        const signatures = (inspection.signatures as Array<Record<string, unknown>> | undefined) || [];
+        for (const signature of signatures) {
+          await database.run(
+            `INSERT OR REPLACE INTO signatures (id, inspection_id, signer_name, signer_type, signature_data, signed_at)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+              signature.id,
+              signature.inspection_id,
+              signature.signer_name,
+              signature.signer_type,
+              signature.signature_data,
+              signature.signed_at,
+            ],
+          );
+        }
+      }
+
       // Store defect library
       const defects = data.defect_library as Array<Record<string, unknown>>;
       for (const defect of defects || []) {
@@ -567,6 +663,30 @@ class SyncService {
     }
 
     return new Blob(byteArrays, { type: mimeType });
+  }
+
+  private normalizeOutboxPayload(entityType: string, payload: Record<string, unknown>): Record<string, unknown> {
+    if (entityType !== "inspection") {
+      return payload;
+    }
+
+    const normalized = { ...payload };
+    const presentParties = normalized.present_parties;
+
+    if (typeof presentParties === "string") {
+      try {
+        const parsed = JSON.parse(presentParties);
+        normalized.present_parties = Array.isArray(parsed) ? parsed : null;
+      } catch {
+        normalized.present_parties = null;
+      }
+    } else if (!Array.isArray(presentParties) && presentParties !== null && presentParties !== undefined) {
+      normalized.present_parties = null;
+    } else if (presentParties === undefined) {
+      normalized.present_parties = null;
+    }
+
+    return normalized;
   }
 
   /**
