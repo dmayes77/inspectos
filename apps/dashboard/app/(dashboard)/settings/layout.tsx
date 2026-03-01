@@ -16,6 +16,7 @@ import {
   Zap,
   Mail,
   Target,
+  Calculator,
 } from "lucide-react";
 
 const NAV_SECTIONS = [
@@ -37,6 +38,7 @@ const NAV_SECTIONS = [
     label: "Configuration",
     items: [
       { href: "/settings/services",               label: "Services",         icon: Target     },
+      { href: "/settings/pricing-strategy",       label: "Pricing Strategy", icon: Calculator },
       { href: "/settings/workflows",              label: "Workflows",        icon: Workflow   },
       { href: "/settings/automations",            label: "Automations",      icon: Zap        },
       { href: "/settings/email-templates",        label: "Email Templates",  icon: Mail       },
