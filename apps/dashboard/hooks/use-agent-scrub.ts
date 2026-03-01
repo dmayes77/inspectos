@@ -6,6 +6,16 @@ import { agentScrubQueryKeys } from "@inspectos/shared/query";
 import type { AgentScrubResult } from "@/types/agent-scrub";
 import { createApiClient } from "@/lib/api/client";
 
+function parseScrubResponse(
+  payload: AgentScrubResult | { data?: AgentScrubResult } | null | undefined
+): AgentScrubResult | null {
+  if (!payload) return null;
+  if ("domain" in payload) {
+    return payload;
+  }
+  return payload.data ?? null;
+}
+
 export function useAgentScrub() {
   const apiClient = createApiClient();
   const agentScrubApi = createAgentScrubApi(apiClient);
@@ -23,9 +33,13 @@ export function useAgentScrub() {
     setError(null);
 
     try {
-      const payload = await agentScrubApi.scrub<{ data: AgentScrubResult }>(url, controller.signal, options);
+      const payload = await agentScrubApi.scrub<AgentScrubResult | { data?: AgentScrubResult }>(
+        url,
+        controller.signal,
+        options
+      );
       void agentScrubQueryKeys.all;
-      const scrubData = payload?.data;
+      const scrubData = parseScrubResponse(payload);
       console.log("Agent scrub result", scrubData);
       if (!scrubData) {
         throw new Error("No profile details were returned from the scrub request.");
