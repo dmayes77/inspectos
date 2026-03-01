@@ -3,6 +3,7 @@ import { withAuth } from '@/lib/api/with-auth';
 import { createClientSchema } from '@inspectos/shared/validations/client';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildClientPayload } from '@/lib/webhooks/payloads';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 /**
  * GET /api/admin/clients
@@ -82,7 +83,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       tenant_id: tenant.id,
       name: payload.name,
       email: payload.email ?? null,
-      phone: payload.phone ?? null,
+      phone: normalizePhoneForStorage(payload.phone),
       type: payload.type ?? null,
       company: payload.company ?? null,
       notes: payload.notes ?? null,

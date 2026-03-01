@@ -8,10 +8,15 @@ type SearchParams = {
 
 const first = (value?: string | string[]) => (Array.isArray(value) ? value[0] : value);
 
-export default function NewOrderPage({ searchParams }: { searchParams?: SearchParams }) {
-  const propertyId = first(searchParams?.propertyId);
-  const clientId = first(searchParams?.clientId);
-  const agentId = first(searchParams?.agentId);
+export default async function NewOrderPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams> | SearchParams;
+}) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const propertyId = first(resolvedSearchParams.propertyId);
+  const clientId = first(resolvedSearchParams.clientId);
+  const agentId = first(resolvedSearchParams.agentId);
 
   return (
     <OrderForm

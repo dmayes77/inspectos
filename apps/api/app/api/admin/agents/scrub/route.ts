@@ -8,10 +8,26 @@ type ScrubBody = {
   debug?: boolean;
 };
 
-const REQUEST_TIMEOUT_MS = 10000;
+const DIRECT_FETCH_TIMEOUT_MS = 10000;
+const MIRROR_FETCH_TIMEOUT_MS = 12000;
 const MAX_HTML_BYTES = 1_000_000;
-const USER_AGENT = 'InspectOS-Agent-Scrub/1.0';
+const USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+const MIRROR_FETCH_PREFIX = 'https://r.jina.ai/http://';
 const GOOGLE_PLACES_SEARCH_URL = 'https://places.googleapis.com/v1/places:searchText';
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 function toTitleCase(value: string) {
   return value
@@ -512,10 +528,12 @@ export const POST = withAuth(async ({ request }) => {
     return badRequest('Invalid request body.');
   }
 
-  const inputUrl = body.url?.trim();
-  if (!inputUrl) {
+  const rawInputUrl = body.url?.trim();
+  if (!rawInputUrl) {
     return badRequest('URL is required.');
   }
+
+  const inputUrl = /^https?:\/\//i.test(rawInputUrl) ? rawInputUrl : `https://${rawInputUrl}`;
 
   let parsed: URL;
   try {
@@ -526,24 +544,53 @@ export const POST = withAuth(async ({ request }) => {
 
   const domain = parsed.hostname.replace(/^www\./i, '').toLowerCase();
   const excluded = new Set((body.excludePhotos ?? []).filter(Boolean));
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
   try {
-    const response = await fetch(parsed.toString(), {
+    const response = await fetchWithTimeout(
+      parsed.toString(),
+      {
       headers: {
         'User-Agent': USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+        'Upgrade-Insecure-Requests': '1',
       },
       cache: 'no-store',
-      signal: controller.signal,
-    });
+      },
+      DIRECT_FETCH_TIMEOUT_MS
+    );
 
-    if (!response.ok) {
-      return badRequest(`Unable to reach ${domain}`);
+    let html = '';
+    if (response.ok) {
+      html = await response.text();
+    } else {
+      const mirrorUrl = `${MIRROR_FETCH_PREFIX}${parsed.host}${parsed.pathname}${parsed.search}`;
+      const mirrorResponse = await fetchWithTimeout(
+        mirrorUrl,
+        {
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'text/html,text/plain;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        },
+        cache: 'no-store',
+        },
+        MIRROR_FETCH_TIMEOUT_MS
+      );
+
+      if (!mirrorResponse.ok) {
+        return badRequest(
+          `Unable to reach ${domain} (HTTP ${response.status}; mirror HTTP ${mirrorResponse.status})`
+        );
+      }
+
+      html = await mirrorResponse.text();
     }
 
-    const html = (await response.text()).slice(0, MAX_HTML_BYTES);
+    html = html.slice(0, MAX_HTML_BYTES);
     const bodyHtml = extractBodyContent(html);
     const textContent = collapseWhitespace(stripTags(stripNoise(bodyHtml)));
 
@@ -602,7 +649,5 @@ export const POST = withAuth(async ({ request }) => {
         ? 'The website took too long to respond.'
         : 'Unable to scrub that profile right now.';
     return badRequest(message);
-  } finally {
-    clearTimeout(timeout);
   }
 });

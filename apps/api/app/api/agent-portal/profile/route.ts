@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { badRequest, createServiceClient, success, unauthorized } from "@/lib/supabase";
 import { resolveAgentPortalSession } from "@/lib/agent-portal/session";
+import { normalizePhoneForStorage } from "@/lib/phone/normalize";
 
 type UpdateProfileBody = {
   name?: string;
@@ -31,7 +32,7 @@ export async function PUT(request: NextRequest) {
   const body = (await request.json().catch(() => ({}))) as UpdateProfileBody;
   const name = body.name?.trim();
   const email = body.email?.trim().toLowerCase();
-  const phone = typeof body.phone === "string" ? body.phone.trim() : null;
+  const phone = normalizePhoneForStorage(body.phone);
 
   if (!name || !email) {
     return badRequest("name and email are required.");

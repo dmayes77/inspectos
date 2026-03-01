@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
 import { isValidPublicId } from '@/lib/identifiers/public-id';
 import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COLOR_HEX_REGEX = /^#[0-9A-Fa-f]{6}$/;
@@ -158,7 +159,7 @@ export const PUT = withAuth<{ id: string }>(
   const avatar = typeof avatarUrl === 'string' ? avatarUrl : undefined;
   const role = mapRoleToDb(rawRole);
   const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : undefined;
-  const phoneNumber = typeof phone === 'string' ? phone.trim() : undefined;
+  const phoneNumber = typeof phone === 'string' ? normalizePhoneForStorage(phone) : undefined;
   const addressLine1Value = typeof addressLine1 === 'string' ? addressLine1.trim() : undefined;
   const addressLine2Value = typeof addressLine2 === 'string' ? addressLine2.trim() : undefined;
   const cityValue = typeof city === 'string' ? city.trim() : undefined;
@@ -317,7 +318,7 @@ export const PUT = withAuth<{ id: string }>(
   if (fullName) profileUpdate.full_name = fullName;
   if (avatar) profileUpdate.avatar_url = avatar;
   if (email) profileUpdate.email = email;
-  if (phoneNumber) profileUpdate.phone = phoneNumber;
+  if (phone !== undefined) profileUpdate.phone = phoneNumber;
   if (addressLine1Value !== undefined) profileUpdate.address_line1 = addressLine1Value;
   if (addressLine2Value !== undefined) profileUpdate.address_line2 = addressLine2Value;
   if (cityValue !== undefined) profileUpdate.city = cityValue;

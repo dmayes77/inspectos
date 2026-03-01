@@ -4,6 +4,7 @@ import { updateClientSchema } from '@inspectos/shared/validations/client';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildClientPayload } from '@/lib/webhooks/payloads';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const mapClient = (client: Record<string, unknown>) => ({
   clientId: client.id,
@@ -69,7 +70,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   const updateData: Record<string, unknown> = {};
   if (payload.name !== undefined) updateData.name = payload.name;
   if (payload.email !== undefined) updateData.email = payload.email;
-  if (payload.phone !== undefined) updateData.phone = payload.phone;
+  if (payload.phone !== undefined) updateData.phone = normalizePhoneForStorage(payload.phone);
   if (payload.type !== undefined) updateData.type = payload.type;
   if (payload.company !== undefined) updateData.company = payload.company;
   if (payload.notes !== undefined) updateData.notes = payload.notes;

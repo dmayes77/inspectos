@@ -1,6 +1,7 @@
 import { serverError, success, validationError, notFound } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { updateLeadSchema } from '@inspectos/shared/validations/lead';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const normalizeStage = (stage?: string | null) => {
   if (!stage) return "new";
@@ -74,7 +75,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .update({
       name: payload.name,
       email: payload.email ?? null,
-      phone: payload.phone ?? null,
+      phone: normalizePhoneForStorage(payload.phone),
       stage: normalizeStage(payload.stage),
       source: payload.source ?? null,
       notes: payload.notes ?? null,

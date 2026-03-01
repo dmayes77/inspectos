@@ -2,6 +2,7 @@ import { badRequest, serverError, success } from '@/lib/supabase';
 import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 // Default settings structure
 const defaultSettings = {
@@ -249,6 +250,8 @@ export const PUT = withAuth(async ({ serviceClient, tenant, memberRole, memberPe
     billing: { ...defaultSettings.billing, ...currentSettings.billing, ...updates.billing },
     onboarding: { ...defaultSettings.onboarding, ...currentSettings.onboarding, ...updates.onboarding },
   };
+
+  newSettings.company.phone = normalizePhoneForStorage(newSettings.company.phone) ?? '';
 
   const requestedSeatCount = updates.billing
     ? Number((updates.billing as Partial<TenantSettings['billing']>).inspectorSeatCount)

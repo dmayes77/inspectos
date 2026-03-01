@@ -2,6 +2,7 @@ import { serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
 import { updateVendorSchema } from '@inspectos/shared/validations/vendor';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -83,7 +84,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (payload.contact_person !== undefined) updateData.contact_person = payload.contact_person ?? null;
   if (payload.vendor_type !== undefined) updateData.vendor_type = payload.vendor_type ?? null;
   if (payload.email !== undefined) updateData.email = payload.email ?? null;
-  if (payload.phone !== undefined) updateData.phone = payload.phone ?? null;
+  if (payload.phone !== undefined) updateData.phone = normalizePhoneForStorage(payload.phone);
   if (payload.address_line1 !== undefined) updateData.address_line1 = payload.address_line1 ?? null;
   if (payload.address_line2 !== undefined) updateData.address_line2 = payload.address_line2 ?? null;
   if (payload.city !== undefined) updateData.city = payload.city ?? null;

@@ -4,6 +4,7 @@ import { badRequest, createServiceClient, unauthorized } from "@/lib/supabase";
 import { validatePasswordPolicy } from "@/lib/security/password-policy";
 import { hashAgentPortalPassword } from "@/lib/agent-portal/password";
 import { setAgentPortalSessionCookies } from "@/lib/agent-portal/session";
+import { normalizePhoneForStorage } from "@/lib/phone/normalize";
 
 type CompleteOnboardingBody = {
   token?: string;
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
   const agentId = body.agent_id?.trim();
   const name = body.name?.trim();
   const email = body.email?.trim().toLowerCase();
-  const phone = typeof body.phone === "string" ? body.phone.trim() : null;
+  const phone = normalizePhoneForStorage(body.phone);
   const password = body.password ?? "";
 
   if (!token || !agentId) {

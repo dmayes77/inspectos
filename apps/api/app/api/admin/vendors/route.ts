@@ -2,6 +2,7 @@ import { serverError, success } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
 import { createVendorSchema } from '@inspectos/shared/validations/vendor';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 /**
  * GET /api/admin/vendors
@@ -72,7 +73,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       contact_person: payload.contact_person ?? null,
       vendor_type: payload.vendor_type ?? null,
       email: payload.email ?? null,
-      phone: payload.phone ?? null,
+      phone: normalizePhoneForStorage(payload.phone),
       address_line1: payload.address_line1 ?? null,
       address_line2: payload.address_line2 ?? null,
       city: payload.city ?? null,

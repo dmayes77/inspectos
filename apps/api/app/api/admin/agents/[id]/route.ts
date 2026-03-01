@@ -9,6 +9,7 @@ import { withAuth } from '@/lib/api/with-auth';
 import { updateAgentSchema } from '@inspectos/shared/validations/agent';
 import { resolveAgencyAssociation } from '@/lib/agents/agency-helpers';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 /**
  * GET /api/admin/agents/[id]
@@ -108,7 +109,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (resolvedAgencyId !== undefined) updateData.agency_id = resolvedAgencyId;
   if (payload.name !== undefined) updateData.name = payload.name;
   if (payload.email !== undefined) updateData.email = normalizedEmail;
-  if (payload.phone !== undefined) updateData.phone = payload.phone;
+  if (payload.phone !== undefined) updateData.phone = normalizePhoneForStorage(payload.phone);
   if (payload.role !== undefined) updateData.role = payload.role;
   if (payload.license_number !== undefined) updateData.license_number = payload.license_number;
   if (payload.status !== undefined) updateData.status = payload.status;

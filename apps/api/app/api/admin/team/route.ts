@@ -3,6 +3,7 @@ import { requirePermission, withAuth } from '@/lib/api/with-auth';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { syncStripeSeatQuantityForTenant } from '@/lib/billing/stripe-seat-sync';
 import { validatePasswordPolicy } from '@/lib/security/password-policy';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NEUTRAL_MEMBER_COLOR = '#CBD5E1';
@@ -190,6 +191,7 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
 
   const email = rawEmail?.trim().toLowerCase();
   const password = typeof rawPassword === 'string' ? rawPassword.trim() : '';
+  const normalizedPhone = typeof phone === 'string' ? normalizePhoneForStorage(phone) : null;
   const wantsLoginEmail = Boolean(send_login_details);
   const nextMemberRole = mapRoleToDb(typeof rawRole === 'string' ? rawRole.trim() : null);
   const requestedInspectorFlag = Boolean(is_inspector);
@@ -358,7 +360,7 @@ export const POST = withAuth(async ({ serviceClient, tenant, memberRole: actorRo
           id: userId,
           email,
           full_name: name,
-          phone: phone ?? null,
+          phone: normalizedPhone,
           address_line1: address_line1 ?? null,
           address_line2: address_line2 ?? null,
           city: city ?? null,

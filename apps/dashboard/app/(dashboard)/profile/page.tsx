@@ -9,26 +9,157 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IdPageLayout } from "@/components/shared/id-page-layout";
+import { extractDomain, logoDevUrl } from "@inspectos/shared/utils/logos";
 import {
   CameraIcon,
   LoaderIcon,
-  FacebookIcon,
-  TwitterIcon,
-  LinkedInIcon,
-  InstagramIcon,
 } from "@/components/icons";
+import { Globe, Plus, Trash2 } from "lucide-react";
 import { useProfile, useUpdateProfile, type ProfileUpdate } from "@/hooks/use-profile";
 import { toast } from "sonner";
 import { uploadCurrentUserAvatar } from "@/lib/api/media";
 
-function SocialLink({ icon, href }: { icon: React.ReactNode; href?: string | null }) {
+type SocialPreview = {
+  label: string;
+  url: string | null;
+  icon: React.ReactNode;
+  surfaceClass: string;
+};
+
+const SOCIAL_LABEL_BY_DOMAIN: Record<string, string> = {
+  "facebook.com": "Facebook",
+  "x.com": "X",
+  "twitter.com": "X",
+  "linkedin.com": "LinkedIn",
+  "lnkd.in": "LinkedIn",
+  "instagram.com": "Instagram",
+  "youtube.com": "YouTube",
+  "youtu.be": "YouTube",
+  "tiktok.com": "TikTok",
+  "threads.net": "Threads",
+  "snapchat.com": "Snapchat",
+  "pinterest.com": "Pinterest",
+  "reddit.com": "Reddit",
+  "discord.com": "Discord",
+  "discord.gg": "Discord",
+};
+
+const SOCIAL_FIELD_KEYS = [
+  "social_facebook",
+  "social_twitter",
+  "social_linkedin",
+  "social_instagram",
+] as const;
+
+type SocialFieldKey = (typeof SOCIAL_FIELD_KEYS)[number];
+
+function parseSocialPreview(urlValue: string): SocialPreview {
+  const normalized = urlValue.trim().toLowerCase();
+  const value = normalized.startsWith("http://") || normalized.startsWith("https://")
+    ? normalized
+    : `https://${normalized}`;
+
+  try {
+    const domain = extractDomain(value);
+    const hostname = domain?.replace(/^www\./, "") ?? "";
+    const matchedKey = Object.keys(SOCIAL_LABEL_BY_DOMAIN).find(
+      (key) => hostname === key || hostname.endsWith(`.${key}`)
+    );
+    const label = matchedKey ? SOCIAL_LABEL_BY_DOMAIN[matchedKey] : hostname || "Website";
+    const logoUrl = logoDevUrl(hostname, { size: 64, format: "png", theme: "light", retina: true });
+
+    if (logoUrl) {
+      return {
+        label,
+        url: logoUrl,
+        icon: (
+          <img
+            src={logoUrl}
+            alt={`${label} logo`}
+            className="h-4 w-4 object-contain"
+            loading="lazy"
+            decoding="async"
+          />
+        ),
+        surfaceClass: "bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700",
+      };
+    }
+
+    return {
+      label,
+      url: null,
+      icon: <Globe className="h-4 w-4 text-sky-600 dark:text-sky-400" />,
+      surfaceClass: "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800",
+    };
+  } catch {
+    return {
+      label: "Link",
+      url: null,
+      icon: <Globe className="h-4 w-4 text-sky-600 dark:text-sky-400" />,
+      surfaceClass: "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800",
+    };
+  }
+}
+
+function buildSocialLinksFromProfile(profile: {
+  social_links?: string[] | null;
+  social_facebook?: string | null;
+  social_twitter?: string | null;
+  social_linkedin?: string | null;
+  social_instagram?: string | null;
+}): string[] {
+  const fromArray = Array.isArray(profile.social_links)
+    ? profile.social_links.map((value) => value?.trim() ?? "").filter(Boolean)
+    : [];
+  if (fromArray.length > 0) {
+    return fromArray;
+  }
+
+  const links = [
+    profile.social_facebook,
+    profile.social_twitter,
+    profile.social_linkedin,
+    profile.social_instagram,
+  ]
+    .map((value) => value?.trim() ?? "")
+    .filter(Boolean);
+
+  return links.length > 0 ? links : [""];
+}
+
+function applySocialLinksToPayload(base: ProfileUpdate, links: string[]): ProfileUpdate {
+  const sanitized = links.map((link) => link.trim()).filter(Boolean);
+  const next = { ...base };
+  next.social_links = sanitized;
+
+  for (let index = 0; index < SOCIAL_FIELD_KEYS.length; index += 1) {
+    const key = SOCIAL_FIELD_KEYS[index] as SocialFieldKey;
+    next[key] = sanitized[index] ?? null;
+  }
+
+  return next;
+}
+
+function SocialLink({
+  icon,
+  href,
+  label,
+  surfaceClass,
+}: {
+  icon: React.ReactNode;
+  href?: string | null;
+  label: string;
+  surfaceClass: string;
+}) {
   return (
     <a
       href={href || "#"}
       target={href ? "_blank" : undefined}
       rel="noreferrer"
       onClick={!href ? (e) => e.preventDefault() : undefined}
-      className="flex h-11 w-11 items-center justify-center gap-2 rounded-md border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 dark:hover:text-gray-200"
+      className={`flex h-11 w-11 items-center justify-center rounded-full border text-sm font-medium shadow-theme-xs transition ${surfaceClass} hover:scale-[1.03]`}
+      title={label}
+      aria-label={label}
     >
       {icon}
     </a>
@@ -93,6 +224,7 @@ export default function ProfilePage() {
     address_line1: "", address_line2: "",
     city: "", state_region: "", country: "", postal_code: "",
   });
+  const [socialLinks, setSocialLinks] = useState<string[]>([""]);
 
   useEffect(() => {
     if (profile) {
@@ -111,6 +243,7 @@ export default function ProfilePage() {
         country: profile.country ?? "",
         postal_code: profile.postal_code ?? "",
       });
+      setSocialLinks(buildSocialLinksFromProfile(profile));
     }
   }, [profile]);
 
@@ -118,7 +251,8 @@ export default function ProfilePage() {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   const handleSave = () => {
-    updateMutation.mutate(form, {
+    const payload = applySocialLinksToPayload(form, socialLinks);
+    updateMutation.mutate(payload, {
       onSuccess: () => toast.success("Profile updated"),
       onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to save"),
     });
@@ -135,6 +269,7 @@ export default function ProfilePage() {
   const initials = getInitials(profile?.full_name, profile?.email);
   const displayName = profile?.full_name || profile?.email?.split("@")[0] || "Your Name";
   const location = [form.city, form.state_region, form.country].filter(Boolean).join(", ");
+  const activeSocialLinks = socialLinks.map((link) => link.trim()).filter(Boolean);
 
   const leftContent = (
     <div className="space-y-6">
@@ -187,10 +322,18 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-              <SocialLink icon={<FacebookIcon />} href={form.social_facebook} />
-              <SocialLink icon={<TwitterIcon />} href={form.social_twitter} />
-              <SocialLink icon={<LinkedInIcon />} href={form.social_linkedin} />
-              <SocialLink icon={<InstagramIcon />} href={form.social_instagram} />
+              {activeSocialLinks.map((url, index) => {
+                const preview = parseSocialPreview(url);
+                return (
+                  <SocialLink
+                    key={`${index}-${url}`}
+                    icon={preview.icon}
+                    href={url}
+                    label={preview.label}
+                    surfaceClass={preview.surfaceClass}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
@@ -222,19 +365,52 @@ export default function ProfilePage() {
         <h4 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
           Social Links
         </h4>
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-          <FieldRow label="Facebook">
-            <Input value={form.social_facebook ?? ""} onChange={set("social_facebook")} placeholder="https://facebook.com/yourprofile" />
-          </FieldRow>
-          <FieldRow label="X.com">
-            <Input value={form.social_twitter ?? ""} onChange={set("social_twitter")} placeholder="https://x.com/yourhandle" />
-          </FieldRow>
-          <FieldRow label="LinkedIn">
-            <Input value={form.social_linkedin ?? ""} onChange={set("social_linkedin")} placeholder="https://linkedin.com/in/yourprofile" />
-          </FieldRow>
-          <FieldRow label="Instagram">
-            <Input value={form.social_instagram ?? ""} onChange={set("social_instagram")} placeholder="https://instagram.com/yourhandle" />
-          </FieldRow>
+        <div className="space-y-3">
+          {socialLinks.map((value, index) => {
+            const preview = value.trim() ? parseSocialPreview(value) : null;
+            return (
+              <div key={`social-link-${index}`} className="flex items-center gap-2">
+                <Input
+                  value={value}
+                  onChange={(event) =>
+                    setSocialLinks((prev) => prev.map((item, itemIndex) => (itemIndex === index ? event.target.value : item)))
+                  }
+                  placeholder="https://tiktok.com/@yourhandle or https://youtube.com/@channel"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setSocialLinks((prev) => {
+                      if (prev.length === 1) return [""];
+                      return prev.filter((_, itemIndex) => itemIndex !== index);
+                    })
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                {preview ? (
+                  <span className="inline-flex min-w-[92px] items-center justify-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-2 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    {preview.icon}
+                    {preview.label}
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Add any social URL you use. We detect the platform automatically.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSocialLinks((prev) => [...prev, ""])}
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              Add link
+            </Button>
+          </div>
         </div>
       </div>
 

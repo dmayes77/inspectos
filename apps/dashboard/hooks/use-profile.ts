@@ -10,6 +10,7 @@ export type UserProfile = {
   avatar_url: string | null;
   phone: string | null;
   bio: string | null;
+  social_links: string[] | null;
   social_facebook: string | null;
   social_twitter: string | null;
   social_linkedin: string | null;

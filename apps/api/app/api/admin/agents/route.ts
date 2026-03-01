@@ -2,6 +2,7 @@ import { serverError, success, validationError } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { createAgentSchema } from '@inspectos/shared/validations/agent';
 import { resolveAgencyAssociation } from '@/lib/agents/agency-helpers';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const normalizeEmail = (value?: string | null) => {
   const trimmed = value?.trim().toLowerCase();
@@ -112,7 +113,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       agency_id: agencyId,
       name: payload.name,
       email: normalizedEmail,
-      phone: payload.phone ?? null,
+      phone: normalizePhoneForStorage(payload.phone),
       role: payload.role ?? null,
       license_number: payload.license_number ?? null,
       status: payload.status ?? 'active',

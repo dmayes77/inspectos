@@ -1,6 +1,7 @@
 import { serverError, success, validationError } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { createLeadSchema } from '@inspectos/shared/validations/lead';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 const normalizeStage = (stage?: string | null) => {
   if (!stage) return "new";
@@ -69,7 +70,7 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
       tenant_id: tenant.id,
       name: payload.name,
       email: payload.email ?? null,
-      phone: payload.phone ?? null,
+      phone: normalizePhoneForStorage(payload.phone),
       stage: normalizeStage(payload.stage),
       source: payload.source ?? null,
       notes: payload.notes ?? null,

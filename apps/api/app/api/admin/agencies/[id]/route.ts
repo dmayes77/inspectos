@@ -2,6 +2,7 @@ import { serverError, success, validationError } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { updateAgencySchema } from '@inspectos/shared/validations/agency';
 import { parseRouteIdentifier } from '@/lib/identifiers/lookup';
+import { normalizePhoneForStorage } from '@/lib/phone/normalize';
 
 /**
  * GET /api/admin/agencies/[id]
@@ -47,7 +48,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (payload.logo_url !== undefined) updateData.logo_url = payload.logo_url;
   if (payload.license_number !== undefined) updateData.license_number = payload.license_number;
   if (payload.email !== undefined) updateData.email = payload.email;
-  if (payload.phone !== undefined) updateData.phone = payload.phone;
+  if (payload.phone !== undefined) updateData.phone = normalizePhoneForStorage(payload.phone);
   if (payload.website !== undefined) updateData.website = payload.website || null;
   if (payload.address_line1 !== undefined) updateData.address_line1 = payload.address_line1;
   if (payload.address_line2 !== undefined) updateData.address_line2 = payload.address_line2;
