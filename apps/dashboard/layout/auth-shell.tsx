@@ -17,13 +17,13 @@ function GridShape() {
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-white dark:bg-gray-900">
-      <div className="relative flex w-full min-h-screen flex-col lg:flex-row">
+    <div className="relative h-screen overflow-hidden bg-white dark:bg-gray-900">
+      <div className="relative flex h-full w-full flex-col lg:flex-row">
         {/* Left — form content (provided by page) */}
-        <div className="flex flex-1 flex-col lg:w-1/2">{children}</div>
+        <div className="flex h-full flex-1 flex-col overflow-y-auto lg:w-1/2">{children}</div>
 
         {/* Right — branding panel */}
-        <div className="hidden lg:flex lg:w-1/2 min-h-screen items-center justify-center bg-brand-950 dark:bg-white/5 relative overflow-hidden">
+        <div className="relative hidden h-full overflow-hidden bg-brand-950 dark:bg-white/5 lg:flex lg:w-1/2 lg:items-center lg:justify-center">
           <GridShape />
           <div className="relative z-10 flex flex-col items-center max-w-xs text-center">
             <Link href="/" className="mb-6 block">
