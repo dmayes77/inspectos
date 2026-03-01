@@ -28,8 +28,9 @@ import { useVendors } from "@/hooks/use-vendors";
 import { IdPageLayout } from "@/components/shared/id-page-layout";
 import { cn } from "@/lib/utils";
 import { tryFormatDate } from "@inspectos/shared/utils/tryFormatDate";
+import { getAllowedNextOrderStatuses, type OrderStatus } from "@inspectos/shared/constants/order-lifecycle";
 
-const orderStatusOptions = ["pending", "scheduled", "in_progress", "pending_report", "delivered", "completed", "cancelled"] as const;
+const tenantEditableOrderStatuses = ["pending", "scheduled", "cancelled"] as const;
 
 const paymentStatusOptions = ["unpaid", "partial", "paid", "refunded"] as const;
 
@@ -214,6 +215,17 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
     return services.filter((service) => selectedIds.includes(service.serviceId));
   }, [services, serviceAssignments]);
 
+  const statusOptions = useMemo(() => {
+    if (mode !== "edit" || !order?.status) {
+      return [...tenantEditableOrderStatuses];
+    }
+    const currentStatus = order.status as OrderStatus;
+    const nextAllowed = getAllowedNextOrderStatuses(currentStatus).filter((status) =>
+      tenantEditableOrderStatuses.includes(status as (typeof tenantEditableOrderStatuses)[number])
+    );
+    return [currentStatus, ...nextAllowed].filter((status, index, source) => source.indexOf(status) === index);
+  }, [mode, order?.status]);
+
   const totals = useMemo(() => {
     const subtotal = selectedServices.reduce((sum, service) => sum + getServicePrice(service), 0);
     const duration = selectedServices.reduce((sum, service) => sum + Number(service.durationMinutes ?? 0), 0);
@@ -254,6 +266,14 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
   const handleSubmit = () => {
     if (!form.property_id) {
       toast.error("Select a property to continue.");
+      return;
+    }
+    if (!form.client_id && !form.agent_id) {
+      toast.error("Attach a client or agent before creating the order.");
+      return;
+    }
+    if (!form.scheduled_date) {
+      toast.error("Set a scheduled date to continue.");
       return;
     }
     if (selectedServices.length === 0) {
@@ -485,18 +505,24 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="status">Order Status</Label>
-                      <Select value={form.status} onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as Order["status"] }))}>
+                      <Select
+                        value={form.status}
+                        onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as Order["status"] }))}
+                      >
                         <SelectTrigger id="status">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          {orderStatusOptions.map((status) => (
+                          {statusOptions.map((status) => (
                             <SelectItem key={status} value={status}>
                               {formatStatusLabel(status)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Inspection execution statuses are updated in the Inspector App.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="payment_status">Payment Status</Label>

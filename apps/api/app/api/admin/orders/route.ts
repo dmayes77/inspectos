@@ -6,6 +6,7 @@ import {
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
 import { createOrderSchema } from '@inspectos/shared/validations/order';
+import { findOrderSchedulingConflict } from '@/lib/scheduling/order-conflicts';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { buildOrderCreatedPayload, buildSchedulePayload } from '@/lib/webhooks/payloads';
@@ -109,6 +110,61 @@ export const POST = withAuth(async ({ supabase, tenant, request }) => {
   const validation = await validateRequestBody(request, createOrderSchema);
   if (validation.error) return validation.error;
   const payload = validation.data;
+
+  if (!payload.client_id && !payload.agent_id) {
+    return badRequest("Order requires at least one primary contact (client or agent).");
+  }
+
+  const { data: property, error: propertyError } = await supabase
+    .from("properties")
+    .select("id")
+    .eq("tenant_id", tenant.id)
+    .eq("id", payload.property_id)
+    .single();
+
+  if (propertyError || !property) {
+    return badRequest("Selected property was not found for this tenant.");
+  }
+
+  if (payload.client_id) {
+    const { data: client, error: clientError } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", payload.client_id)
+      .single();
+    if (clientError || !client) {
+      return badRequest("Selected client was not found for this tenant.");
+    }
+  }
+
+  if (payload.agent_id) {
+    const { data: agent, error: agentError } = await supabase
+      .from("agents")
+      .select("id")
+      .eq("tenant_id", tenant.id)
+      .eq("id", payload.agent_id)
+      .single();
+    if (agentError || !agent) {
+      return badRequest("Selected agent was not found for this tenant.");
+    }
+  }
+
+  if (payload.inspector_id) {
+    const conflict = await findOrderSchedulingConflict(supabase, {
+      tenantId: tenant.id,
+      inspectorId: payload.inspector_id,
+      scheduledDate: payload.scheduled_date,
+      scheduledTime: payload.scheduled_time,
+      durationMinutes: payload.duration_minutes,
+    });
+
+    if (conflict) {
+      return badRequest(
+        `Inspector already has a conflicting order (${conflict.orderNumber}) at ${conflict.scheduledTime}.`,
+      );
+    }
+  }
 
   const subtotal = payload.services.reduce((sum: number, s: { price: number }) => sum + s.price, 0);
   const totalDuration = payload.services.reduce((sum: number, s: { duration_minutes?: number }) => sum + (s.duration_minutes ?? 0), 0);

@@ -14,13 +14,16 @@ export const orderServiceSchema = z.object({
   vendor_id: z.string().uuid("Invalid vendor ID").optional().nullable(),
 });
 
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const timeRegex = /^\d{2}:\d{2}$/;
+
 export const createOrderSchema = z.object({
   client_id: z.string().uuid("Invalid client ID").optional().nullable(),
   agent_id: z.string().uuid("Invalid agent ID").optional().nullable(),
   inspector_id: z.string().uuid("Invalid inspector ID").optional().nullable(),
   property_id: z.string().uuid("Invalid property ID"),
-  scheduled_date: z.string().optional().nullable(),
-  scheduled_time: z.string().optional().nullable(),
+  scheduled_date: z.string().regex(dateRegex, "Scheduled date must be YYYY-MM-DD"),
+  scheduled_time: z.string().regex(timeRegex, "Scheduled time must be HH:MM").optional().nullable(),
   duration_minutes: z.number().int().positive().optional(),
   services: z.array(orderServiceSchema).min(1, "At least one service is required"),
   source: z.string().max(100).optional().nullable(),
@@ -31,6 +34,14 @@ export const createOrderSchema = z.object({
   internal_notes: z.string().max(5000).optional().nullable(),
   client_notes: z.string().max(5000).optional().nullable(),
   primary_contact_type: z.enum(["agent", "client"]).optional().nullable(),
+}).superRefine((payload, ctx) => {
+  if (!payload.client_id && !payload.agent_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["client_id"],
+      message: "Order must have at least one primary contact (client or agent)",
+    });
+  }
 });
 
 export const updateOrderSchema = z.object({

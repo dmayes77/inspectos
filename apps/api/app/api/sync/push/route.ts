@@ -12,6 +12,14 @@ import {
 import { createLogger, generateRequestId } from '@/lib/logger';
 import { rateLimitByIP, RateLimitPresets } from '@/lib/rate-limit';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
+import {
+  inspectorSyncInspectionPayloadSchema,
+  inspectorSyncJobStatusPayloadSchema,
+  inspectorSyncPushRequestSchema,
+  type InspectorSyncInspectionPayload,
+  type InspectorSyncJobStatusPayload,
+  type InspectorSyncPushRequest,
+} from '@inspectos/shared/validations/inspector-sync-contract';
 
 interface OutboxItem {
   id: string;
@@ -20,11 +28,6 @@ interface OutboxItem {
   operation: 'upsert' | 'delete';
   payload: Record<string, unknown>;
   created_at: string;
-}
-
-interface PushRequest {
-  tenant_id: string;
-  items: OutboxItem[];
 }
 
 interface PushResult {
@@ -71,10 +74,11 @@ export async function POST(request: NextRequest) {
 
     log.info('Processing sync push', { userId: user.userId });
 
-    const body: PushRequest = await request.json();
-    if (!body.tenant_id || !body.items || !Array.isArray(body.items)) {
-      return badRequest('Invalid request body');
+    const parsedBody = inspectorSyncPushRequestSchema.safeParse(await request.json());
+    if (!parsedBody.success) {
+      return badRequest(`Invalid sync payload: ${parsedBody.error.issues[0]?.message ?? 'malformed request body'}`);
     }
+    const body: InspectorSyncPushRequest = parsedBody.data;
 
     // Use service client to bypass RLS for batch operations
     // But we still verify tenant membership first
@@ -197,23 +201,33 @@ async function processInspection(
     return { id: entityId, success: true };
   }
 
+  const parsedPayload = inspectorSyncInspectionPayloadSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return {
+      id: entityId,
+      success: false,
+      error: `Invalid inspection handoff payload: ${parsedPayload.error.issues[0]?.message ?? 'invalid payload'}`,
+    };
+  }
+  const inspectionPayload: InspectorSyncInspectionPayload = parsedPayload.data;
+
   // Upsert inspection
   const { error } = await supabase.from('inspections').upsert({
-    id: payload.id as string,
-    job_id: payload.job_id as string,
+    id: inspectionPayload.id,
+    job_id: inspectionPayload.job_id,
     tenant_id: tenantId,
-    template_id: payload.template_id as string,
-    template_version: payload.template_version as number,
-    inspector_id: payload.inspector_id as string,
-    status: payload.status as string,
-    started_at: payload.started_at as string | null,
-    completed_at: payload.completed_at as string | null,
-    weather_conditions: payload.weather_conditions as string | null,
-    temperature: payload.temperature as string | null,
-    present_parties: payload.present_parties as string | null,
-    notes: payload.notes as string | null,
-    created_at: payload.created_at as string,
-    updated_at: payload.updated_at as string
+    template_id: inspectionPayload.template_id,
+    template_version: inspectionPayload.template_version,
+    inspector_id: inspectionPayload.inspector_id,
+    status: inspectionPayload.status,
+    started_at: inspectionPayload.started_at,
+    completed_at: inspectionPayload.completed_at,
+    weather_conditions: inspectionPayload.weather_conditions,
+    temperature: inspectionPayload.temperature,
+    present_parties: inspectionPayload.present_parties,
+    notes: inspectionPayload.notes,
+    created_at: inspectionPayload.created_at,
+    updated_at: inspectionPayload.updated_at
   }, { onConflict: 'id' });
 
   if (error) return { id: entityId, success: false, error: error.message };
@@ -311,6 +325,16 @@ async function processJobStatus(
   entityId: string,
   payload: Record<string, unknown>
 ): Promise<PushResult> {
+  const parsedPayload = inspectorSyncJobStatusPayloadSchema.safeParse(payload);
+  if (!parsedPayload.success) {
+    return {
+      id: entityId,
+      success: false,
+      error: `Invalid job status handoff payload: ${parsedPayload.error.issues[0]?.message ?? 'invalid payload'}`,
+    };
+  }
+  const jobStatusPayload: InspectorSyncJobStatusPayload = parsedPayload.data;
+
   // Verify job belongs to tenant
   const { data: job } = await supabase
     .from('jobs')
@@ -325,7 +349,7 @@ async function processJobStatus(
   const { error } = await supabase
     .from('jobs')
     .update({
-      status: payload.status as string,
+      status: jobStatusPayload.status,
       updated_at: new Date().toISOString()
     })
     .eq('id', entityId);
