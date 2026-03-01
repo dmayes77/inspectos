@@ -20,7 +20,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
     <div className="relative h-screen overflow-hidden bg-white dark:bg-gray-900">
       <div className="relative flex h-full w-full flex-col lg:flex-row">
         {/* Left — form content (provided by page) */}
-        <div className="flex h-full flex-1 flex-col overflow-y-auto lg:w-1/2">{children}</div>
+        <div className="no-scrollbar flex h-full flex-1 flex-col overflow-y-auto lg:w-1/2">{children}</div>
 
         {/* Right — branding panel */}
         <div className="relative hidden h-full overflow-hidden bg-brand-950 dark:bg-white/5 lg:flex lg:w-1/2 lg:items-center lg:justify-center">

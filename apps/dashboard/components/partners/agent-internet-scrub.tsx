@@ -96,6 +96,9 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
 
     try {
       const payload = await scrub(trimmed, options);
+      if (!payload) {
+        return;
+      }
       recordScrubPayload(payload, !isRepeatScrub);
     } catch (_) {
       // errors handled in hook state
@@ -117,6 +120,9 @@ export function AgentInternetScrub({ onApply, variant = "agent", urlRequired = t
 
     try {
       const payload = await scrub(sourceUrl, options);
+      if (!payload) {
+        return;
+      }
       recordScrubPayload(payload, false);
     } catch (_) {
       // errors handled in hook state

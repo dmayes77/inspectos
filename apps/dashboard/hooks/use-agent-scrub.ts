@@ -25,9 +25,13 @@ export function useAgentScrub() {
     try {
       const payload = await agentScrubApi.scrub<{ data: AgentScrubResult }>(url, controller.signal, options);
       void agentScrubQueryKeys.all;
-      console.log("Agent scrub result", payload.data);
-      setResult(payload.data);
-      return payload.data;
+      const scrubData = payload?.data;
+      console.log("Agent scrub result", scrubData);
+      if (!scrubData) {
+        throw new Error("No profile details were returned from the scrub request.");
+      }
+      setResult(scrubData);
+      return scrubData;
     } catch (scrubError) {
       const message = scrubError instanceof Error ? scrubError.message : "Unable to scrub that profile.";
       setError(message);
