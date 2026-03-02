@@ -7,11 +7,7 @@ import {
   IonFooter,
   IonHeader,
   IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
   IonPage,
-  IonPopover,
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
@@ -22,12 +18,12 @@ import {
   menuOutline,
   moonOutline,
   notificationsOutline,
-  personOutline,
   peopleOutline,
-  settingsOutline,
+  sunnyOutline,
 } from 'ionicons/icons';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 export function MobileAppShell({
   title,
@@ -43,6 +39,8 @@ export function MobileAppShell({
   const history = useHistory();
   const location = useLocation();
   const { user, tenant: authTenant } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const tenantSlug = location.pathname.match(/^\/t\/([^/]+)/)?.[1];
 
   const isDashboard = /\/dashboard$/.test(location.pathname);
@@ -51,8 +49,13 @@ export function MobileAppShell({
   const isCalendar = /\/calendar$/.test(location.pathname);
   const isSettings = /\/settings$/.test(location.pathname);
   const isProfile = /\/profile$/.test(location.pathname);
+  const mockAlerts = [
+    { id: 'a1', title: 'Inspection updated', detail: 'Order #1042 changed to In Progress', time: '2m ago', unread: true },
+    { id: 'a2', title: 'New comment', detail: 'Client added a note on Order #1039', time: '18m ago', unread: true },
+    { id: 'a3', title: 'Calendar sync', detail: 'Tomorrow schedule imported successfully', time: '1h ago', unread: false },
+  ];
   const businessTitle = authTenant?.name?.trim() || 'InspectOS';
-  const hasUnreadNotifications = true;
+  const hasUnreadNotifications = mockAlerts.some((alert) => alert.unread);
   const avatarInitials =
     user?.email
       ?.split('@')[0]
@@ -90,10 +93,15 @@ export function MobileAppShell({
           <IonTitle>{title ? '' : ''}</IonTitle>
           <IonButtons slot="end">
             <div className="mobile-header-actions">
-              <button className="mobile-header-icon-btn" aria-label="Theme">
-                <IonIcon icon={moonOutline} />
+              <button className="mobile-header-icon-btn" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>
+                <IonIcon icon={theme === 'dark' ? sunnyOutline : moonOutline} />
               </button>
-              <button className="mobile-header-icon-btn" aria-label="Notifications">
+              <button
+                id="mobile-notifications-trigger"
+                className={`mobile-header-icon-btn ${isNotificationsOpen ? 'is-open' : ''}`}
+                aria-label="Notifications"
+                onClick={() => setIsNotificationsOpen((prev) => !prev)}
+              >
                 {hasUnreadNotifications ? <span className="mobile-header-dot" /> : null}
                 <IonIcon icon={notificationsOutline} />
               </button>
@@ -113,6 +121,31 @@ export function MobileAppShell({
           </IonButtons>
         </IonToolbar>
       </IonHeader>
+      <div
+        className={`mobile-alerts-overlay ${isNotificationsOpen ? 'is-open' : ''}`}
+        aria-hidden={!isNotificationsOpen}
+        onClick={() => setIsNotificationsOpen(false)}
+      >
+        <section className="mobile-alerts-sheet" onClick={(event) => event.stopPropagation()}>
+          <div className="mobile-alerts-head">
+            <h3>Alerts</h3>
+            <button type="button" className="mobile-alerts-close" aria-label="Close alerts" onClick={() => setIsNotificationsOpen(false)}>
+              Close
+            </button>
+          </div>
+          <div className="mobile-alerts-list">
+            {mockAlerts.map((alert) => (
+              <article key={alert.id} className={`mobile-alert-item ${alert.unread ? 'is-unread' : ''}`}>
+                <div className="mobile-alert-item-head">
+                  <strong>{alert.title}</strong>
+                  <span>{alert.time}</span>
+                </div>
+                <p>{alert.detail}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
       <IonContent className={`ion-padding mobile-shell-content ${isDashboard ? 'is-dashboard' : ''}`}>{children}</IonContent>
       <IonFooter className="inspectos-tabbar">
         <IonToolbar>

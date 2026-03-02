@@ -2,6 +2,7 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, IonSpinner, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -87,11 +88,13 @@ function AppRoutes() {
 
 const App = () => (
   <IonApp>
-    <AuthProvider>
-      <IonReactRouter>
-        <AppRoutes />
-      </IonReactRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <IonReactRouter>
+          <AppRoutes />
+        </IonReactRouter>
+      </AuthProvider>
+    </ThemeProvider>
   </IonApp>
 );
 
