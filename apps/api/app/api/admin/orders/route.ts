@@ -5,7 +5,7 @@ import {
 } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
-import { createOrderSchema } from '@inspectos/shared/validations/order';
+import { createOrderSchema } from '../../../../../../shared/validations/order';
 import { findOrderSchedulingConflict } from '@/lib/scheduling/order-conflicts';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';

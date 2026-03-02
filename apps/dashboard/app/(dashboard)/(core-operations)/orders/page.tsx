@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/layout/admin-page-header";
-import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +33,12 @@ const paymentStatusOptions = [
   { value: "partial", label: "Partial" },
   { value: "paid", label: "Paid" },
   { value: "refunded", label: "Refunded" },
+];
+
+const orderTypeOptions = [
+  { value: "all", label: "All Types" },
+  { value: "field_intake", label: "Field Intake" },
+  { value: "standard", label: "Standard Order" },
 ];
 
 function getStatusBadgeVariant(status: string) {
@@ -106,15 +111,26 @@ function getOrderAddress(order: Order) {
   return [property.address_line1, property.address_line2, `${property.city}, ${property.state} ${property.zip_code}`].filter(Boolean).join(", ");
 }
 
+function isFieldIntakeOrder(order: Order) {
+  return (order.source ?? "").startsWith("mobile_field_intake:");
+}
+
 const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "order_number",
     header: "Order",
     enableHiding: false,
     cell: ({ row }) => (
-      <Link href={`/orders/${row.original.order_number}`} className="font-medium hover:underline text-xs">
-        {row.original.order_number}
-      </Link>
+      <div className="flex flex-col items-start gap-1">
+        <Link href={`/orders/${row.original.order_number}`} className="font-medium hover:underline text-xs">
+          {row.original.order_number}
+        </Link>
+        {isFieldIntakeOrder(row.original) ? (
+          <Badge color="light" className="text-[10px] bg-orange-100 text-orange-800 border-orange-200">
+            Field Intake
+          </Badge>
+        ) : null}
+      </div>
     ),
   },
   {
@@ -181,13 +197,18 @@ export default function OrdersPage() {
   const orders = useMemo(() => data ?? [], [data]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [orderTypeFilter, setOrderTypeFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesStatus = statusFilter === "all" || order.status === statusFilter;
       const matchesPayment = paymentFilter === "all" || order.payment_status === paymentFilter;
-      if (!matchesStatus || !matchesPayment) return false;
+      const matchesType =
+        orderTypeFilter === "all" ||
+        (orderTypeFilter === "field_intake" && isFieldIntakeOrder(order)) ||
+        (orderTypeFilter === "standard" && !isFieldIntakeOrder(order));
+      if (!matchesStatus || !matchesPayment || !matchesType) return false;
 
       if (!searchQuery.trim()) return true;
       const query = searchQuery.toLowerCase();
@@ -196,7 +217,7 @@ export default function OrdersPage() {
       const orderNumber = order.order_number.toLowerCase();
       return address.includes(query) || clientName.includes(query) || orderNumber.includes(query);
     });
-  }, [orders, statusFilter, paymentFilter, searchQuery]);
+  }, [orders, statusFilter, paymentFilter, orderTypeFilter, searchQuery]);
 
   // Stats
   const stats = useMemo(() => {
@@ -205,8 +226,9 @@ export default function OrdersPage() {
     const inProgress = orders.filter((o) => o.status === "in_progress").length;
     const unpaid = orders.filter((o) => o.payment_status === "unpaid").length;
     const completed = orders.filter((o) => o.status === "completed").length;
+    const fieldIntakeCount = orders.filter((o) => isFieldIntakeOrder(o)).length;
     const totalRevenue = orders.filter((o) => o.payment_status === "paid").reduce((sum, o) => sum + o.total, 0);
-    return { pending, scheduled, inProgress, unpaid, completed, totalRevenue };
+    return { pending, scheduled, inProgress, unpaid, completed, fieldIntakeCount, totalRevenue };
   }, [orders]);
 
   // Show loading skeleton while data is being fetched
@@ -229,12 +251,13 @@ export default function OrdersPage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
+      <div className="grid grid-cols-3 gap-3 md:grid-cols-7">
         <StatCard label="Pending" value={stats.pending} />
         <StatCard label="Scheduled" value={stats.scheduled} />
         <StatCard label="In Progress" value={stats.inProgress} />
         <StatCard label="Unpaid" value={stats.unpaid} />
         <StatCard label="Completed" value={stats.completed} />
+        <StatCard label="Field Intake" value={stats.fieldIntakeCount} />
         <StatCard label="Total Revenue" value={`$${stats.totalRevenue.toLocaleString()}`} />
       </div>
 
@@ -277,6 +300,11 @@ export default function OrdersPage() {
                   <Badge color="light" className={cn("font-medium text-[0.65rem] px-2 py-0.5", getPaymentBadgeClasses(order.payment_status))}>
                     {formatStatusLabel(order.payment_status)}
                   </Badge>
+                  {isFieldIntakeOrder(order) ? (
+                    <Badge color="light" className="font-medium text-[0.65rem] px-2 py-0.5 bg-orange-100 text-orange-800 border-orange-200">
+                      Field Intake
+                    </Badge>
+                  ) : null}
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-[0.65rem] text-muted-foreground">
@@ -346,6 +374,19 @@ export default function OrdersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {paymentStatusOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={orderTypeFilter} onValueChange={setOrderTypeFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orderTypeOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

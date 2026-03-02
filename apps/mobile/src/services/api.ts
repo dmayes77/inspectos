@@ -1,3 +1,8 @@
+import type {
+  InspectionTransitionRequestPayload,
+  InspectionTransitionResponsePayload,
+} from '../../../../shared/types/inspection-state-machine';
+
 const rawApiBaseUrl = (import.meta.env.VITE_API_URL || '').trim();
 const shouldUseRelativeApiInDev =
   import.meta.env.DEV &&
@@ -59,6 +64,7 @@ export type MobileOrderDetailPayload = {
     id: string;
     order_number?: string | null;
     status: string;
+    source?: string | null;
     scheduled_date: string;
     scheduled_time?: string | null;
     template_id?: string | null;
@@ -102,6 +108,37 @@ export type MobileOrderDetailPayload = {
   findings: Array<Record<string, unknown>>;
   signatures: Array<Record<string, unknown>>;
   media: Array<Record<string, unknown>>;
+};
+
+export type CreateFieldIntakeOrderInput = {
+  address_line1: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  reason_code: 'emergency' | 'walk_up' | 'add_on' | 'after_hours' | 'other';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  contact_name?: string;
+  tenant_phone?: string;
+  notes?: string;
+};
+
+export type CreateFieldIntakeOrderPayload = {
+  order_id: string;
+  order_number?: string | null;
+  status: string;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
+  schedule_id?: string | null;
+  requires_dispatch_review: boolean;
+  created_offline: boolean;
+};
+
+export type UpdateFieldIntakeOrderInput = {
+  contact_name?: string;
+  address_line1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
 };
 
 export type MobileProfilePayload = {
@@ -250,6 +287,71 @@ export async function fetchOrderDetail(tenantSlug: string, orderId: string): Pro
     throw new Error(json?.error || 'Order detail failed');
   }
   return json.data;
+}
+
+export async function createFieldIntakeOrder(
+  tenantSlug: string,
+  input: CreateFieldIntakeOrderInput
+): Promise<CreateFieldIntakeOrderPayload> {
+  const json = await apiPost<{ success?: boolean; data?: CreateFieldIntakeOrderPayload; error?: string | { message?: string } }>(
+    `/api/mobile/orders/field-intake?business=${encodeURIComponent(tenantSlug)}`,
+    input
+  );
+
+  if (!json?.success || !json?.data) {
+    if (typeof json?.error === 'string') {
+      throw new Error(json.error);
+    }
+    throw new Error(json?.error?.message || 'Field intake creation failed');
+  }
+
+  return json.data;
+}
+
+export async function transitionOrderInspectionState(
+  tenantSlug: string,
+  orderId: string,
+  input: InspectionTransitionRequestPayload
+): Promise<InspectionTransitionResponsePayload> {
+  const json = await apiPost<{
+    success?: boolean;
+    data?: InspectionTransitionResponsePayload;
+    error?: string | { message?: string };
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/transition?business=${encodeURIComponent(tenantSlug)}`,
+    input
+  );
+
+  if (!json?.success || !json?.data) {
+    if (typeof json?.error === 'string') {
+      throw new Error(json.error);
+    }
+    throw new Error(json?.error?.message || 'Order transition failed');
+  }
+
+  return json.data;
+}
+
+export async function updateFieldIntakeOrder(
+  tenantSlug: string,
+  orderId: string,
+  input: UpdateFieldIntakeOrderInput
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/mobile/orders/${encodeURIComponent(orderId)}/field-intake?business=${encodeURIComponent(tenantSlug)}`,
+    {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(input),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
 }
 
 export async function fetchBranding(tenantSlug: string): Promise<{ primary?: string | null; secondary?: string | null }> {

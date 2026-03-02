@@ -7,6 +7,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
+import FieldIntake from './pages/FieldIntake';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -52,6 +53,14 @@ function AppRoutes() {
 
         <Route exact path="/t/:tenantSlug/orders">
           {user && tenant ? <Orders /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/orders/field-intake">
+          {user && tenant ? <FieldIntake /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/order/:orderId/field-intake">
+          {user && tenant ? <FieldIntake /> : <Redirect to="/login" />}
         </Route>
 
         <Route exact path="/t/:tenantSlug/order/:orderId">
