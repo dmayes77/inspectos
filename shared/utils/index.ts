@@ -10,5 +10,6 @@ export * from './formatters';
 export * from './invoices';
 export * from './logos';
 export * from './pricing';
+export * from './profile-social';
 export * from './services';
 export * from './tryFormatDate';

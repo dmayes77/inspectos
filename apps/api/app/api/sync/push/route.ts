@@ -12,6 +12,7 @@ import {
 import { createLogger, generateRequestId } from '@/lib/logger';
 import { rateLimitByIP, RateLimitPresets } from '@/lib/rate-limit';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
+import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
 import {
   inspectorSyncInspectionPayloadSchema,
   inspectorSyncJobStatusPayloadSchema,
@@ -56,27 +57,30 @@ export async function POST(request: NextRequest) {
   const rateLimitResponse = rateLimitByIP(request, RateLimitPresets.sync);
   if (rateLimitResponse) {
     log.warn('Rate limit exceeded');
-    return rateLimitResponse;
+    return applyCorsHeaders(rateLimitResponse, request);
   }
 
   try {
     const accessToken = getAccessToken(request);
     if (!accessToken) {
       log.warn('Missing access token');
-      return unauthorized('Missing access token', { requestId });
+      return applyCorsHeaders(unauthorized('Missing access token', { requestId }), request);
     }
 
     const user = getUserFromToken(accessToken);
     if (!user) {
       log.warn('Invalid access token');
-      return unauthorized('Invalid access token', { requestId });
+      return applyCorsHeaders(unauthorized('Invalid access token', { requestId }), request);
     }
 
     log.info('Processing sync push', { userId: user.userId });
 
     const parsedBody = inspectorSyncPushRequestSchema.safeParse(await request.json());
     if (!parsedBody.success) {
-      return badRequest(`Invalid sync payload: ${parsedBody.error.issues[0]?.message ?? 'malformed request body'}`);
+      return applyCorsHeaders(
+        badRequest(`Invalid sync payload: ${parsedBody.error.issues[0]?.message ?? 'malformed request body'}`),
+        request
+      );
     }
     const body: InspectorSyncPushRequest = parsedBody.data;
 
@@ -93,15 +97,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (membershipError || !membership) {
-      return unauthorized('Not a member of this tenant');
+      return applyCorsHeaders(unauthorized('Not a member of this tenant'), request);
     }
 
     const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, body.tenant_id);
     if (billingAccess.error) {
-      return serverError('Failed to verify business billing status', billingAccess.error, { requestId });
+      return applyCorsHeaders(serverError('Failed to verify business billing status', billingAccess.error, { requestId }), request);
     }
     if (!billingAccess.allowed) {
-      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.', { requestId });
+      return applyCorsHeaders(
+        paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.', { requestId }),
+        request
+      );
     }
 
     const membershipProfile = Array.isArray((membership as { profiles?: unknown[] }).profiles)
@@ -112,7 +119,7 @@ export async function POST(request: NextRequest) {
       Boolean((membershipProfile as { is_inspector?: boolean } | undefined)?.is_inspector);
 
     if (!hasInspectorAccess) {
-      return unauthorized('Inspector mobile access is restricted to inspector seats.');
+      return applyCorsHeaders(unauthorized('Inspector mobile access is restricted to inspector seats.'), request);
     }
 
     const results: PushResult[] = [];
@@ -141,17 +148,21 @@ export async function POST(request: NextRequest) {
       failed: failCount,
     });
 
-    return success({
+    return applyCorsHeaders(success({
       processed: results.length,
       succeeded: successCount,
       failed: failCount,
       results,
       synced_at: new Date().toISOString()
-    });
+    }), request);
   } catch (error) {
     log.error('Sync push failed', { requestId }, error);
-    return serverError('Sync push failed', error, { requestId });
+    return applyCorsHeaders(serverError('Sync push failed', error, { requestId }), request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return buildCorsPreflightResponse(request, 'POST, OPTIONS');
 }
 
 async function processItem(
@@ -330,24 +341,24 @@ async function processJobStatus(
     return {
       id: entityId,
       success: false,
-      error: `Invalid job status handoff payload: ${parsedPayload.error.issues[0]?.message ?? 'invalid payload'}`,
+      error: `Invalid order status handoff payload: ${parsedPayload.error.issues[0]?.message ?? 'invalid payload'}`,
     };
   }
   const jobStatusPayload: InspectorSyncJobStatusPayload = parsedPayload.data;
 
-  // Verify job belongs to tenant
-  const { data: job } = await supabase
-    .from('jobs')
+  // Verify order belongs to tenant
+  const { data: order } = await supabase
+    .from('orders')
     .select('tenant_id')
     .eq('id', entityId)
     .single();
 
-  if (!job || job.tenant_id !== tenantId) {
-    return { id: entityId, success: false, error: 'Job not found or tenant mismatch' };
+  if (!order || order.tenant_id !== tenantId) {
+    return { id: entityId, success: false, error: 'Order not found or tenant mismatch' };
   }
 
   const { error } = await supabase
-    .from('jobs')
+    .from('orders')
     .update({
       status: jobStatusPayload.status,
       updated_at: new Date().toISOString()

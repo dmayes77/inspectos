@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clearSessionCookies, readSessionTokensFromCookies } from "@/lib/auth/session-cookies";
 import { createAnonClient } from "@/lib/supabase";
+import { applyCorsHeaders, buildCorsPreflightResponse } from "@/lib/cors";
 
 export async function POST(request: NextRequest) {
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
@@ -19,5 +20,9 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ success: true, data: { loggedOut: true } });
-  return clearSessionCookies(response);
+  return applyCorsHeaders(clearSessionCookies(response), request);
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return buildCorsPreflightResponse(request, "POST, OPTIONS");
 }

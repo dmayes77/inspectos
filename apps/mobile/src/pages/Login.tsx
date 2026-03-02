@@ -1,170 +1,101 @@
-import { useMemo, useState } from "react";
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonInput,
-  IonItem,
-  IonLabel,
-  IonPage,
-  IonText,
-  IonTitle,
-  IonToolbar
-} from "@ionic/react";
-import { supabase } from "../lib/supabaseClient";
-
-function validatePasswordPolicy(password: string): string | null {
-  if (password.length < 10) return "Password must be at least 10 characters.";
-  if (!/[A-Z]/.test(password)) return "Password must include at least one uppercase letter.";
-  if (!/[0-9]/.test(password)) return "Password must include at least one number.";
-  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include at least one special character (for example: !).";
-  return null;
-}
+import { useState } from "react";
+import { useHistory } from "react-router-dom";
+import { IonButton, IonContent, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonSpinner, IonText } from "@ionic/react";
+import { eyeOffOutline, eyeOutline } from "ionicons/icons";
+import { useAuth } from "../contexts/AuthContext";
+import { login, requestPasswordReset } from "../services/api";
 
 export default function Login() {
+  const history = useHistory();
+  const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState("");
-  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+  const [loading, setLoading] = useState(false);
 
-  const canSignIn = useMemo(() => {
-    if (!email.includes("@")) return false;
-    if (mode === "reset") return true;
-    return password.length >= 6;
-  }, [email, password, mode]);
-
-  const canSignUp = useMemo(() => {
-    if (!email.includes("@")) return false;
-    if (validatePasswordPolicy(password)) return false;
-    return password === confirmPassword;
-  }, [email, password, confirmPassword]);
-
-  async function signIn() {
+  const signIn = async () => {
+    setLoading(true);
     setStatus("Signing in...");
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    setStatus(error ? error.message : "Signed in.");
-  }
+    try {
+      await login(email, password);
+      await refreshSession();
+      history.replace("/");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  async function signUp() {
-    const passwordError = validatePasswordPolicy(password);
-    if (passwordError) {
-      setStatus(passwordError);
+  const onForgotPassword = async () => {
+    if (!email.trim()) {
+      setStatus("Enter your username/email first to reset password.");
       return;
     }
-
-    setStatus("Creating account...");
-    const { error } = await supabase.auth.signUp({
-      email,
-      password
-    });
-    setStatus(
-      error
-        ? error.message
-        : "Account created. Check your email to confirm if required."
-    );
-  }
-
-  async function resetPassword() {
-    setStatus("Sending reset email...");
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    setStatus(error ? error.message : "Password reset email sent.");
-  }
+    setLoading(true);
+    try {
+      await requestPasswordReset(email.trim());
+      setStatus("Password reset email sent.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not send reset email");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>
-            InspectOS{" "}
-            {mode === "signin" ? "Login" : mode === "signup" ? "Sign Up" : "Reset Password"}
-          </IonTitle>
-        </IonToolbar>
-      </IonHeader>
       <IonContent className="ion-padding">
-        <IonItem>
-          <IonLabel position="stacked">Email</IonLabel>
-          <IonInput
-            value={email}
-            onIonInput={(e: CustomEvent) => setEmail((e.detail.value as string) ?? "")}
-            type="email"
-            placeholder="you@domain.com"
-          />
-        </IonItem>
+        <div className="login-shell">
+          <div className="login-panel login-panel-auth">
+            <div className="login-brand">
+              <div className="login-brand-icon">IO</div>
+              <span className="login-brand-text">InspectOS</span>
+            </div>
+            <h1 className="login-title">Log in</h1>
 
-        {mode !== "reset" && (
-          <IonItem>
-            <IonLabel position="stacked">Password</IonLabel>
-            <IonInput
-              value={password}
-              onIonInput={(e: CustomEvent) => setPassword((e.detail.value as string) ?? "")}
-              type="password"
-              placeholder="••••••••"
-            />
-          </IonItem>
-        )}
+            <IonItem lines="none" className="login-field">
+              <IonLabel position="stacked">Username</IonLabel>
+              <IonInput type="email" value={email} onIonInput={(e) => setEmail(String(e.detail.value ?? ""))} />
+            </IonItem>
 
-        {mode === "signup" && (
-          <IonItem>
-            <IonLabel position="stacked">Confirm Password</IonLabel>
-            <IonInput
-              value={confirmPassword}
-              onIonInput={(e: CustomEvent) =>
-                setConfirmPassword((e.detail.value as string) ?? "")
-              }
-              type="password"
-              placeholder="••••••••"
-            />
-          </IonItem>
-        )}
+            <IonItem lines="none" className="login-field">
+              <IonLabel position="stacked">Password</IonLabel>
+              <IonInput type={showPassword ? "text" : "password"} value={password} onIonInput={(e) => setPassword(String(e.detail.value ?? ""))}>
+                <IonButton slot="end" fill="clear" onClick={() => setShowPassword((v) => !v)}>
+                  <IonIcon icon={showPassword ? eyeOffOutline : eyeOutline} />
+                </IonButton>
+              </IonInput>
+            </IonItem>
 
-        <IonButton
-          expand="block"
-          disabled={mode === "signup" ? !canSignUp : !canSignIn}
-          onClick={
-            mode === "signin" ? signIn : mode === "signup" ? signUp : resetPassword
-          }
-          style={{ marginTop: 16 }}
-        >
-          {mode === "signin"
-            ? "Sign in"
-            : mode === "signup"
-            ? "Create account"
-            : "Send reset email"}
-        </IonButton>
+            <IonButton expand="block" className="login-action-primary" onClick={signIn} disabled={loading || !email || !password}>
+              {loading ? <IonSpinner name="crescent" /> : "LOG IN"}
+            </IonButton>
 
-        <IonButton
-          expand="block"
-          fill="clear"
-          onClick={() => {
-            setStatus("");
-            setMode(mode === "signin" ? "signup" : "signin");
-          }}
-        >
-          {mode === "signin"
-            ? "Need an account? Sign up"
-            : "Already have an account? Sign in"}
-        </IonButton>
+            <IonButton
+              expand="block"
+              fill="outline"
+              color="medium"
+              className="login-action-secondary"
+              onClick={() => setStatus("Biometric login will be available after first successful login.")}
+            >
+              ENABLE BIOMETRIC LOGIN
+            </IonButton>
 
-        <IonButton
-          expand="block"
-          fill="clear"
-          onClick={() => {
-            setStatus("");
-            setMode(mode === "reset" ? "signin" : "reset");
-          }}
-        >
-          {mode === "reset" ? "Back to sign in" : "Forgot password?"}
-        </IonButton>
+            <button type="button" className="login-link-btn" onClick={() => void onForgotPassword()}>
+              Forgot Password?
+            </button>
+            <p className="login-note">Sign up is not available in the mobile app.</p>
 
-        {status && (
-          <IonText>
-            <p style={{ marginTop: 12 }}>{status}</p>
-          </IonText>
-        )}
+            {status ? (
+              <IonText color="medium">
+                <p className="login-status">{status}</p>
+              </IonText>
+            ) : null}
+          </div>
+          <p className="login-legal-fixed">By clicking LOG IN, you agree to our Terms of Service and acknowledge our Privacy Policy.</p>
+        </div>
       </IonContent>
     </IonPage>
   );

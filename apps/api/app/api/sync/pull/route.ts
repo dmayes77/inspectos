@@ -9,6 +9,7 @@ import {
   serverError
 } from '@/lib/supabase';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
+import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
 
 /**
  * GET /api/sync/pull
@@ -24,17 +25,17 @@ export async function GET(request: NextRequest) {
   try {
     const accessToken = getAccessToken(request);
     if (!accessToken) {
-      return unauthorized('Missing access token');
+      return applyCorsHeaders(unauthorized('Missing access token'), request);
     }
 
     const user = getUserFromToken(accessToken);
     if (!user) {
-      return unauthorized('Invalid access token');
+      return applyCorsHeaders(unauthorized('Invalid access token'), request);
     }
 
     const businessIdentifier = request.nextUrl.searchParams.get('business');
     if (!businessIdentifier) {
-      return badRequest('Missing business parameter');
+      return applyCorsHeaders(badRequest('Missing business parameter'), request);
     }
 
     const since = request.nextUrl.searchParams.get('since');
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
     const tenantError = tenantBySlug ? tenantSlugError : tenantByBusinessId.error;
 
     if (tenantError || !tenant) {
-      return badRequest('Business not found');
+      return applyCorsHeaders(badRequest('Business not found'), request);
     }
 
     // Verify user is a member of this tenant
@@ -74,15 +75,15 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (membershipError || !membership) {
-      return unauthorized('Not a member of this business');
+      return applyCorsHeaders(unauthorized('Not a member of this business'), request);
     }
 
     const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, tenant.id);
     if (billingAccess.error) {
-      return serverError('Failed to verify business billing status', billingAccess.error);
+      return applyCorsHeaders(serverError('Failed to verify business billing status', billingAccess.error), request);
     }
     if (!billingAccess.allowed) {
-      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.');
+      return applyCorsHeaders(paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.'), request);
     }
 
     const membershipProfile = Array.isArray((membership as { profiles?: unknown[] }).profiles)
@@ -93,7 +94,7 @@ export async function GET(request: NextRequest) {
       Boolean((membershipProfile as { is_inspector?: boolean } | undefined)?.is_inspector);
 
     if (!hasInspectorAccess) {
-      return unauthorized('Inspector mobile access is restricted to inspector seats.');
+      return applyCorsHeaders(unauthorized('Inspector mobile access is restricted to inspector seats.'), request);
     }
 
     const changes: Record<string, unknown[]> = {};
@@ -123,15 +124,15 @@ export async function GET(request: NextRequest) {
       changes.templates = data || [];
     }
 
-    // Pull jobs
-    if (shouldPull('jobs')) {
-      // Get jobs for this inspector (next 14 days)
+    // Pull orders
+    if (shouldPull('orders')) {
+      // Get orders for this inspector (next 14 days)
       const today = new Date();
       const endDate = new Date(today);
       endDate.setDate(endDate.getDate() + 14);
 
       let query = supabase
-        .from('jobs')
+        .from('orders')
         .select('*')
         .eq('tenant_id', tenant.id)
         .eq('inspector_id', user.userId)
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest) {
       }
 
       const { data } = await query;
-      changes.jobs = data || [];
+      changes.orders = data || [];
 
       // Also get related properties and clients
       if (data && data.length > 0) {
@@ -168,18 +169,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Pull inspections (for this user's jobs)
+    // Pull inspections (for this user's orders)
     if (shouldPull('inspections')) {
-      // First get the user's job IDs
-      const { data: userJobs } = await supabase
-        .from('jobs')
+      // First get the user's order IDs
+      const { data: userOrders } = await supabase
+        .from('orders')
         .select('id')
         .eq('tenant_id', tenant.id)
         .eq('inspector_id', user.userId);
 
-      const jobIds = (userJobs || []).map(j => j.id);
+      const orderIds = (userOrders || []).map(o => o.id);
 
-      if (jobIds.length > 0) {
+      if (orderIds.length > 0) {
         let query = supabase
           .from('inspections')
           .select(`
@@ -188,7 +189,7 @@ export async function GET(request: NextRequest) {
             findings (*),
             signatures (*)
           `)
-          .in('job_id', jobIds);
+          .in('order_id', orderIds);
 
         if (since) {
           query = query.gt('updated_at', since);
@@ -230,13 +231,17 @@ export async function GET(request: NextRequest) {
       changes.services = data || [];
     }
 
-    return Response.json({
+    return applyCorsHeaders(Response.json({
       success: true,
       changes,
       synced_at: new Date().toISOString()
-    });
+    }), request);
   } catch (error) {
     console.error('[Sync Pull] Error:', error);
-    return serverError();
+    return applyCorsHeaders(serverError(), request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return buildCorsPreflightResponse(request, 'GET, OPTIONS');
 }

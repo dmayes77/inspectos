@@ -158,6 +158,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [deploymentInspectorId, setDeploymentInspectorId] = useState<string>("__none__");
+  const [statusDraft, setStatusDraft] = useState<OrderStatus | "">("");
+  const [paymentStatusDraft, setPaymentStatusDraft] = useState<string>("");
   const [showCreatePropertyForm, setShowCreatePropertyForm] = useState(false);
   const [showEditPropertyForm, setShowEditPropertyForm] = useState(false);
   const [propertyForm, setPropertyForm] = useState(() => createEmptyPropertyFormState());
@@ -208,6 +211,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }, [order?.id, order?.scheduled_date, order?.scheduled_time, order?.duration_minutes]);
 
   useEffect(() => {
+    setDeploymentInspectorId(order?.inspector_id ?? "__none__");
+  }, [order?.id, order?.inspector_id]);
+
+  useEffect(() => {
     setCostForm({
       labor_cost: typeof order?.labor_cost === "number" ? String(order.labor_cost) : "",
       travel_cost: typeof order?.travel_cost === "number" ? String(order.travel_cost) : "",
@@ -249,36 +256,44 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     return [currentStatus, ...nextAllowed].filter((status, index, source) => source.indexOf(status) === index);
   }, [order?.status]);
 
-  const handleStatusChange = (newStatus: string) => {
+  useEffect(() => {
     if (!order) return;
-    if (newStatus === order.status) return;
+    setStatusDraft(order.status as OrderStatus);
+    setPaymentStatusDraft(order.payment_status);
+  }, [order?.id, order?.status, order?.payment_status]);
+
+  const handleStatusDraftChange = (newStatus: string) => {
+    if (!order) return;
     if (!tenantEditableOrderStatuses.includes(newStatus as (typeof tenantEditableOrderStatuses)[number])) {
       toast.info("Inspection execution status is managed in the Inspector App.");
       return;
     }
+    setStatusDraft(newStatus as OrderStatus);
+  };
+
+  const handleSaveStatusAndPayment = () => {
+    if (!order) return;
+
+    const nextStatus = statusDraft || (order.status as OrderStatus);
+    const nextPaymentStatus = paymentStatusDraft || order.payment_status;
+    const hasChanges = nextStatus !== order.status || nextPaymentStatus !== order.payment_status;
+    if (!hasChanges) {
+      toast.info("No status changes to save.");
+      return;
+    }
+
     updateOrder.mutate(
-      { id: order.id, status: newStatus as typeof order.status },
+      {
+        id: order.id,
+        status: nextStatus as typeof order.status,
+        payment_status: nextPaymentStatus as typeof order.payment_status,
+      },
       {
         onSuccess: () => {
-          toast.success(`Order marked ${formatStatusLabel(newStatus)}.`);
+          toast.success("Order status updated.");
         },
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "Failed to update status.");
-        },
-      }
-    );
-  };
-
-  const handlePaymentStatusChange = (newStatus: string) => {
-    if (!order) return;
-    updateOrder.mutate(
-      { id: order.id, payment_status: newStatus as typeof order.payment_status },
-      {
-        onSuccess: () => {
-          toast.success(`Payment marked ${formatStatusLabel(newStatus)}.`);
-        },
-        onError: (error) => {
-          toast.error(error instanceof Error ? error.message : "Failed to update payment status.");
         },
       }
     );
@@ -611,6 +626,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     );
   };
 
+  const handleDeployToInspectorApp = () => {
+    if (!order) return;
+
+    if (!scheduleForm.scheduled_date) {
+      toast.error("Set a scheduled date before deploying.");
+      return;
+    }
+
+    if (!deploymentInspectorId || deploymentInspectorId === "__none__") {
+      toast.error("Select a lead inspector before deploying.");
+      return;
+    }
+
+    const nextAllowedStatuses = getAllowedNextOrderStatuses(order.status as OrderStatus);
+    const shouldMoveToScheduled = order.status === "scheduled" || nextAllowedStatuses.includes("scheduled");
+
+    updateOrder.mutate(
+      {
+        id: order.id,
+        inspector_id: deploymentInspectorId,
+        scheduled_date: scheduleForm.scheduled_date || null,
+        scheduled_time: scheduleForm.scheduled_time || null,
+        duration_minutes: scheduleForm.duration_minutes.trim() ? Number.parseInt(scheduleForm.duration_minutes, 10) : undefined,
+        status: shouldMoveToScheduled ? "scheduled" : order.status,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Inspection deployed to inspector app.");
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Failed to deploy inspection.");
+        },
+      }
+    );
+  };
+
   const handleSaveAssignments = () => {
     if (!order) return;
     if (!assignmentForm.property_id) {
@@ -810,6 +861,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const draftTotalCost = costDraft.labor + costDraft.travel + costDraft.overhead + costDraft.other;
   const draftGrossMargin = totalRevenue - draftTotalCost;
   const draftGrossMarginPct = totalRevenue > 0 ? (draftGrossMargin / totalRevenue) * 100 : null;
+  const hasStatusOrPaymentChanges =
+    Boolean(order) &&
+    ((statusDraft && statusDraft !== order.status) ||
+      (paymentStatusDraft && paymentStatusDraft !== order.payment_status));
   const workspaceCard = (
     <Card>
       <CardHeader className="pb-3">
@@ -850,7 +905,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Order Status</p>
-            <Select value={order.status} onValueChange={handleStatusChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
+            <Select value={statusDraft || order.status} onValueChange={handleStatusDraftChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -866,7 +921,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Payment Status</p>
-            <Select value={order.payment_status} onValueChange={handlePaymentStatusChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
+            <Select
+              value={paymentStatusDraft || order.payment_status}
+              onValueChange={setPaymentStatusDraft}
+              disabled={updateOrder.isPending || deleteOrder.isPending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -879,6 +938,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </SelectContent>
             </Select>
           </div>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSaveStatusAndPayment}
+            disabled={updateOrder.isPending || deleteOrder.isPending || !hasStatusOrPaymentChanges}
+          >
+            {updateOrder.isPending ? "Saving..." : "Save Status & Payment"}
+          </Button>
         </div>
         <div className="grid gap-2 md:grid-cols-4">
           <Button size="sm" variant="outline" className="w-full" onClick={() => toast("Client portal link sending is coming soon.")}>
@@ -932,15 +1001,39 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="order-deploy-inspector">Lead Inspector</Label>
+            <Select value={deploymentInspectorId} onValueChange={setDeploymentInspectorId} disabled={updateOrder.isPending || deleteOrder.isPending}>
+              <SelectTrigger id="order-deploy-inspector">
+                <SelectValue placeholder="Select inspector" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Unassigned</SelectItem>
+                {inspectors.map((inspector) => (
+                  <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
+                    {inspector.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Orders appear in the inspector app only when assigned to an inspector.
+            </p>
+          </div>
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               {order.scheduled_date
                 ? `Current: ${formatDate(order.scheduled_date, "EEEE, MMM d, yyyy")}${order.scheduled_time ? ` at ${formatTime12(order.scheduled_time)}` : ""}`
                 : "Current: Not scheduled"}
             </p>
-            <Button size="sm" variant="outline" onClick={handleSaveSchedule} disabled={updateOrder.isPending || deleteOrder.isPending}>
-              {updateOrder.isPending ? "Saving..." : "Save Schedule"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleSaveSchedule} disabled={updateOrder.isPending || deleteOrder.isPending}>
+                {updateOrder.isPending ? "Saving..." : "Save Schedule"}
+              </Button>
+              <Button size="sm" onClick={handleDeployToInspectorApp} disabled={updateOrder.isPending || deleteOrder.isPending}>
+                {updateOrder.isPending ? "Deploying..." : "Deploy to Inspector App"}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -1567,7 +1660,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       {servicesCard}
       {financialsCard}
       {notesCard}
-      <OrderInspectionTab orderId={order.id} />
+      <OrderInspectionTab
+        orderId={order.id}
+        onDeploy={handleDeployToInspectorApp}
+        deployDisabled={updateOrder.isPending || deleteOrder.isPending}
+        deployLabel={updateOrder.isPending ? "Deploying..." : "Deploy to Inspector App"}
+      />
     </>
   );
 
