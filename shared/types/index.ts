@@ -14,4 +14,5 @@ export * from './invoice';
 export * from './payment';
 export * from './service';
 export * from './inspection';
+export * from './inspection-state-machine';
 export * from './workspace';

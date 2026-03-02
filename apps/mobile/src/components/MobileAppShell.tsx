@@ -13,6 +13,7 @@ import {
 } from '@ionic/react';
 import {
   calendarOutline,
+  chevronBackOutline,
   homeOutline,
   listOutline,
   menuOutline,
@@ -44,7 +45,7 @@ export function MobileAppShell({
   const tenantSlug = location.pathname.match(/^\/t\/([^/]+)/)?.[1];
 
   const isDashboard = /\/dashboard$/.test(location.pathname);
-  const isOrders = /\/orders$|\/order\//.test(location.pathname);
+  const isOrders = /\/orders(\/|$)|\/order\//.test(location.pathname);
   const isPeople = /\/people$/.test(location.pathname);
   const isCalendar = /\/calendar$/.test(location.pathname);
   const isSettings = /\/settings$/.test(location.pathname);
@@ -72,7 +73,7 @@ export function MobileAppShell({
         <IonToolbar className="mobile-shell-toolbar">
           <IonButtons slot="start">
             {showBack ? (
-              <IonBackButton defaultHref={defaultHref} />
+              <IonBackButton defaultHref={defaultHref} icon={chevronBackOutline} text="Back" />
             ) : (
               <div className="mobile-header-left">
                 <IonButton

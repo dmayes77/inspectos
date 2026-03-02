@@ -6,14 +6,14 @@ import {
 } from '@/lib/supabase';
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
-import { updateOrderSchema } from '@inspectos/shared/validations/order';
+import { updateOrderSchema } from '../../../../../../../shared/validations/order';
 import { findOrderSchedulingConflict } from '@/lib/scheduling/order-conflicts';
 import {
   getAllowedNextOrderStatuses,
   isOrderStatusTransitionAllowed,
   STATUS_REQUIRES_SCHEDULE,
   type OrderStatus,
-} from '@inspectos/shared/constants/order-lifecycle';
+} from '../../../../../../../shared/constants/order-lifecycle';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';

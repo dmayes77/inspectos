@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonItem, IonLabel, IonList, IonSpinner, IonText } from '@ionic/react';
+import { IonButton, IonItem, IonLabel, IonList, IonSpinner, IonText } from '@ionic/react';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchBootstrap } from '../services/api';
-import { MobileAppShell } from '../components/MobileAppShell';
+import { MobilePageLayout } from '../components/MobilePageLayout';
 
 export default function Orders() {
   const { tenant } = useAuth();
@@ -30,34 +30,31 @@ export default function Orders() {
         setLoading(false);
       }
     };
-    run();
+    void run();
   }, [tenant]);
 
   return (
-    <MobileAppShell title="Orders">
-      <IonCard>
-        <IonCardHeader>
-          <IonCardTitle>Assigned Orders</IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent>
-          {loading ? <IonSpinner name="crescent" /> : null}
-          {error ? <IonText color="danger"><p>{error}</p></IonText> : null}
-          {!loading && !error && orders.length === 0 ? <IonText color="medium"><p>No assigned orders.</p></IonText> : null}
-          {!loading && !error && orders.length > 0 ? (
-            <IonList>
-              {orders.map((o) => (
-                <IonItem key={o.id} button onClick={() => history.push(`/t/${tenantSlug}/order/${o.id}`)}>
-                  <IonLabel>
-                    <h2>{o.order_number || 'Inspection Order'}</h2>
-                    <p>{o.scheduled_date} {o.scheduled_time ?? ''}</p>
-                    <p>{o.status}</p>
-                  </IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
-          ) : null}
-        </IonCardContent>
-      </IonCard>
-    </MobileAppShell>
+    <MobilePageLayout title="Orders">
+      <IonButton expand="block" fill="outline" onClick={() => history.push(`/t/${tenantSlug}/orders/field-intake`)}>
+        Create Field Intake
+      </IonButton>
+
+      {loading ? <IonSpinner name="crescent" /> : null}
+      {error ? <IonText color="danger"><p>{error}</p></IonText> : null}
+      {!loading && !error && orders.length === 0 ? <IonText color="medium"><p>No assigned orders.</p></IonText> : null}
+      {!loading && !error && orders.length > 0 ? (
+        <IonList>
+          {orders.map((o) => (
+            <IonItem key={o.id} button onClick={() => history.push(`/t/${tenantSlug}/order/${o.id}`)}>
+              <IonLabel>
+                <h2>{o.order_number || 'Inspection Order'}</h2>
+                <p>{o.scheduled_date} {o.scheduled_time ?? ''}</p>
+                <p>{o.status}</p>
+              </IonLabel>
+            </IonItem>
+          ))}
+        </IonList>
+      ) : null}
+    </MobilePageLayout>
   );
 }

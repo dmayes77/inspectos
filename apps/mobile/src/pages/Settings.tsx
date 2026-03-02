@@ -1,17 +1,12 @@
-import { IonCard, IonCardContent, IonCardHeader, IonCardTitle } from '@ionic/react';
-import { MobileAppShell } from '../components/MobileAppShell';
+import { IonText } from '@ionic/react';
+import { MobilePageLayout } from '../components/MobilePageLayout';
 
 export default function Settings() {
   return (
-    <MobileAppShell title="Settings">
-      <IonCard>
-        <IonCardHeader>
-          <IonCardTitle>Settings</IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent>
-          <p>Account sign out is available in Profile.</p>
-        </IonCardContent>
-      </IonCard>
-    </MobileAppShell>
+    <MobilePageLayout title="Settings">
+      <IonText color="medium">
+        <p>Account sign out is available in Profile.</p>
+      </IonText>
+    </MobilePageLayout>
   );
 }
