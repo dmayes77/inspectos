@@ -530,8 +530,8 @@ ion-button {
 }
 
 .mobile-user-avatar {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   aspect-ratio: 1 / 1;
   border-radius: 999rem;
   border: 0.0625rem solid rgba(255, 255, 255, 0.35);
