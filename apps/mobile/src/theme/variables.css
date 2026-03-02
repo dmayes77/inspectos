@@ -8,7 +8,7 @@
   --font-size-h5: calc(var(--font-size-base) * 1.125);
   --font-size-h6: calc(var(--font-size-base) * 1);
   --ion-font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --ion-background-color: #f2f4f7;
+  --ion-background-color: #f7f8fb;
   --ion-card-background: #ffffff;
   --ion-input-background: #ffffff;
   --mobile-topbar-background: #0f8adb;
@@ -41,7 +41,7 @@ body {
     "Segoe UI",
     sans-serif;
   font-size: var(--font-size-base);
-  background: #f2f4f7;
+  background: var(--ion-background-color);
 }
 
 body.theme-dark {
