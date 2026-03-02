@@ -1,7 +1,4 @@
 {
-  "name": "apps/mobile",
-  "integrations": {
-    "capacitor": {}
-  },
+  "name": "inspectos-inspector",
   "type": "react-vite"
 }

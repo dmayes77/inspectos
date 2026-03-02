@@ -10,6 +10,7 @@ import {
 } from '@/lib/supabase';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
 import { RateLimitPresets, rateLimitByIP } from '@/lib/rate-limit';
+import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
 
 interface SignRequest {
   tenant_id: string;
@@ -48,30 +49,30 @@ export async function POST(request: NextRequest) {
   try {
     const rateLimitResponse = rateLimitByIP(request, RateLimitPresets.expensive);
     if (rateLimitResponse) {
-      return rateLimitResponse;
+      return applyCorsHeaders(rateLimitResponse, request);
     }
 
     const accessToken = getAccessToken(request);
     if (!accessToken) {
-      return unauthorized('Missing access token');
+      return applyCorsHeaders(unauthorized('Missing access token'), request);
     }
 
     const user = getUserFromToken(accessToken);
     if (!user) {
-      return unauthorized('Invalid access token');
+      return applyCorsHeaders(unauthorized('Invalid access token'), request);
     }
 
     const body: SignRequest = await request.json();
     if (!body.tenant_id || !body.files || !Array.isArray(body.files)) {
-      return badRequest('Invalid request body');
+      return applyCorsHeaders(badRequest('Invalid request body'), request);
     }
 
     if (body.files.length === 0) {
-      return badRequest('No files to sign');
+      return applyCorsHeaders(badRequest('No files to sign'), request);
     }
 
     if (body.files.length > 20) {
-      return badRequest('Maximum 20 files per request');
+      return applyCorsHeaders(badRequest('Maximum 20 files per request'), request);
     }
 
     const supabase = createServiceClient();
@@ -85,15 +86,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (membershipError || !membership) {
-      return unauthorized('Not a member of this tenant');
+      return applyCorsHeaders(unauthorized('Not a member of this tenant'), request);
     }
 
     const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, body.tenant_id);
     if (billingAccess.error) {
-      return serverError('Failed to verify business billing status', billingAccess.error);
+      return applyCorsHeaders(serverError('Failed to verify business billing status', billingAccess.error), request);
     }
     if (!billingAccess.allowed) {
-      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.');
+      return applyCorsHeaders(paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.'), request);
     }
 
     const signedUrls: SignedUrl[] = [];
@@ -159,13 +160,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return Response.json({
+    return applyCorsHeaders(Response.json({
       success: true,
       signed_urls: signedUrls,
       errors: errors.length > 0 ? errors : undefined
-    });
+    }), request);
   } catch (error) {
     console.error('[Uploads Sign] Error:', error);
-    return serverError();
+    return applyCorsHeaders(serverError(), request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return buildCorsPreflightResponse(request, 'POST, OPTIONS');
 }

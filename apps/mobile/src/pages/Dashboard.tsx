@@ -1,210 +1,139 @@
-import { useEffect, useState } from 'react';
-import { useParams, useHistory } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { IonIcon, IonSpinner, IonText } from '@ionic/react';
 import {
-  IonButton,
-  IonCard,
-  IonCardContent,
-  IonCardHeader,
-  IonCardTitle,
-  IonIcon,
-  IonItem,
-  IonLabel,
-  IonList,
-  IonSpinner,
-  IonText,
-} from '@ionic/react';
-import { calendarOutline, locationOutline, personOutline, timeOutline } from 'ionicons/icons';
+  addCircleOutline,
+  checkboxOutline,
+  chevronForwardOutline,
+  clipboardOutline,
+  documentTextOutline,
+  folderOpenOutline,
+} from 'ionicons/icons';
+import { useHistory } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { jobsRepository, JobWithDetails } from '../db/repositories/jobs';
-import { SyncStatusBar } from '../components/SyncStatusBar';
-import { useSyncStatus, useSyncActions } from '../sync';
+import { fetchBootstrap } from '../services/api';
 import { MobileAppShell } from '../components/MobileAppShell';
 
+type BootstrapOrders = Awaited<ReturnType<typeof fetchBootstrap>>['orders'];
+type BootstrapProperties = Awaited<ReturnType<typeof fetchBootstrap>>['properties'];
+type BootstrapClients = Awaited<ReturnType<typeof fetchBootstrap>>['clients'];
+
 export default function Dashboard() {
-  const { tenantSlug } = useParams<{ tenantSlug: string }>();
-  const { tenant, user, signOut } = useAuth();
-  const { isOnline, pendingChanges, pendingUploads } = useSyncStatus();
-  const { sync } = useSyncActions();
+  const { tenant } = useAuth();
   const history = useHistory();
-
-  const [todayJobs, setTodayJobs] = useState<JobWithDetails[]>([]);
-  const [upcomingJobs, setUpcomingJobs] = useState<JobWithDetails[]>([]);
+  const [orders, setOrders] = useState<BootstrapOrders>([]);
   const [loading, setLoading] = useState(true);
-
-  const loadJobs = async () => {
-    if (!tenant || !user) return;
-
-    setLoading(true);
-    try {
-      const today = await jobsRepository.getToday(tenant.id, user.id);
-      const upcoming = await jobsRepository.getUpcoming(tenant.id, user.id);
-
-      setTodayJobs(today);
-      // Filter out today's jobs from upcoming
-      const todayDate = new Date().toISOString().split('T')[0];
-      setUpcomingJobs(upcoming.filter(j => j.scheduled_date !== todayDate));
-    } catch (error) {
-      console.error('Failed to load jobs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenant, user]);
+    const run = async () => {
+      if (!tenant) {
+        setLoading(false);
+        return;
+      }
 
-  const handleRefresh = async () => {
-    if (isOnline) {
-      await sync();
-    }
-    await loadJobs();
-  };
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchBootstrap(tenant.slug);
+        setOrders(data.orders || []);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load dashboard');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleJobClick = (job: JobWithDetails) => {
-    history.push(`/t/${tenantSlug}/job/${job.id}`);
-  };
+    run();
+  }, [tenant]);
 
-  const handleSignOut = async () => {
-    await signOut();
-    history.replace('/login');
-  };
+  const todayDate = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const formatTime = (time: string | null) => {
-    if (!time) return '';
-    const [hours, minutes] = time.split(':');
-    const h = parseInt(hours);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${minutes} ${ampm}`;
-  };
+  const today = useMemo(() => {
+    return orders.filter((o) => o.scheduled_date === todayDate);
+  }, [orders, todayDate]);
 
-  const formatDate = (date: string) => {
-    return new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const upcoming = useMemo(() => {
+    return orders.filter((o) => o.scheduled_date > todayDate);
+  }, [orders, todayDate]);
+
+  const overdue = useMemo(() => {
+    return orders.filter((o) => o.scheduled_date < todayDate && o.status !== 'completed');
+  }, [orders, todayDate]);
+
+  const todayLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+      }).format(new Date()),
+    []
+  );
 
   return (
-    <MobileAppShell
-      title={tenant?.name || 'Dashboard'}
-      headerActions={<SyncStatusBar showDetails />}
-      onRefresh={handleRefresh}
-      contentClassName="ion-padding"
-    >
-      {/* Sync status banner */}
-      {!isOnline && (
-        <IonCard color="warning">
-          <IonCardContent>
-            <strong>Offline Mode</strong>
-            <p>You can continue working. Changes will sync when online.</p>
-          </IonCardContent>
-        </IonCard>
-      )}
+    <MobileAppShell title={tenant?.name || 'Dashboard'}>
+      <div className="dashboard-hub">
+        <section className="dashboard-hub-header">
+          <h2>{todayLabel}</h2>
+          <p>Field Operations Hub</p>
+          <div className="dashboard-hub-stats">
+            <span>{today.length} today</span>
+            <span>{upcoming.length} upcoming</span>
+            <span>{overdue.length} overdue</span>
+          </div>
+        </section>
 
-      {(pendingChanges > 0 || pendingUploads > 0) && isOnline && (
-        <IonCard color="light">
-          <IonCardContent>
-            <p>
-              {pendingChanges > 0 && `${pendingChanges} changes pending`}
-              {pendingChanges > 0 && pendingUploads > 0 && ' • '}
-              {pendingUploads > 0 && `${pendingUploads} uploads pending`}
-            </p>
-          </IonCardContent>
-        </IonCard>
-      )}
+        {loading ? (
+          <div className="dashboard-hub-loading">
+            <IonSpinner name="crescent" />
+          </div>
+        ) : null}
 
-      {/* Today's Jobs */}
-      <IonCard>
-        <IonCardHeader>
-          <IonCardTitle>Today's Inspections</IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent>
-          {loading ? (
-            <div className="ion-text-center">
-              <IonSpinner name="crescent" />
-            </div>
-          ) : todayJobs.length === 0 ? (
-            <IonText color="medium">
-              <p>No inspections scheduled for today.</p>
-            </IonText>
-          ) : (
-            <IonList>
-              {todayJobs.map((job) => (
-                <IonItem key={job.id} button onClick={() => handleJobClick(job)}>
-                  <IonLabel>
-                    <h2>{job.property_address}</h2>
-                    <p>
-                      <IonIcon icon={timeOutline} /> {formatTime(job.scheduled_time)}
-                      {job.client_name && (
-                        <>
-                          {' • '}
-                          <IonIcon icon={personOutline} /> {job.client_name}
-                        </>
-                      )}
-                    </p>
-                    <p>
-                      <IonIcon icon={locationOutline} /> {job.template_name}
-                    </p>
-                  </IonLabel>
-                  <IonText
-                    color={
-                      job.status === 'completed'
-                        ? 'success'
-                        : job.status === 'in_progress'
-                        ? 'warning'
-                        : 'medium'
-                    }
-                    slot="end"
-                  >
-                    {job.status.replace('_', ' ')}
-                  </IonText>
-                </IonItem>
-              ))}
-            </IonList>
-          )}
-        </IonCardContent>
-      </IonCard>
+        {error ? (
+          <IonText color="danger">
+            <p>{error}</p>
+          </IonText>
+        ) : null}
 
-      {/* Upcoming Jobs */}
-      <IonCard>
-        <IonCardHeader>
-          <IonCardTitle>Upcoming Inspections</IonCardTitle>
-        </IonCardHeader>
-        <IonCardContent>
-          {loading ? (
-            <div className="ion-text-center">
-              <IonSpinner name="crescent" />
-            </div>
-          ) : upcomingJobs.length === 0 ? (
-            <IonText color="medium">
-              <p>No upcoming inspections.</p>
-            </IonText>
-          ) : (
-            <IonList>
-              {upcomingJobs.slice(0, 5).map((job) => (
-                <IonItem key={job.id} button onClick={() => handleJobClick(job)}>
-                  <IonLabel>
-                    <h2>{job.property_address}</h2>
-                    <p>
-                      <IonIcon icon={calendarOutline} /> {formatDate(job.scheduled_date)}
-                      {job.scheduled_time && ` at ${formatTime(job.scheduled_time)}`}
-                    </p>
-                  </IonLabel>
-                </IonItem>
-              ))}
-            </IonList>
-          )}
-        </IonCardContent>
-      </IonCard>
+        {!loading && !error ? (
+          <>
+            <section className="hub-section">
+              <div className="hub-section-head">Inspection & Audit</div>
+              <div className="hub-grid">
+                <button className="hub-tile hub-tile-wide" onClick={() => tenant && history.push(`/t/${tenant.slug}/orders`)}>
+                  <IonIcon icon={addCircleOutline} />
+                  <strong>Start New Inspection</strong>
+                </button>
+                <button className="hub-tile" onClick={() => tenant && history.push(`/t/${tenant.slug}/orders`)}>
+                  <IonIcon icon={clipboardOutline} />
+                  <strong>Orders Queue</strong>
+                  <small>{orders.length} assigned</small>
+                </button>
+                <button className="hub-tile" onClick={() => tenant && history.push(`/t/${tenant.slug}/orders`)}>
+                  <IonIcon icon={checkboxOutline} />
+                  <strong>Today's Schedule</strong>
+                  <small>{today.length} inspections</small>
+                </button>
+              </div>
+            </section>
 
-      {/* Sign out button */}
-      <IonButton expand="block" fill="outline" color="medium" onClick={handleSignOut}>
-        Sign Out
-      </IonButton>
+            <section className="hub-section">
+              <div className="hub-section-head">Records</div>
+              <div className="hub-grid">
+                <button className="hub-tile">
+                  <IonIcon icon={documentTextOutline} />
+                  <strong>Reports</strong>
+                </button>
+                <button className="hub-tile">
+                  <IonIcon icon={folderOpenOutline} />
+                  <strong>Checklist</strong>
+                </button>
+              </div>
+            </section>
+
+          </>
+        ) : null}
+      </div>
     </MobileAppShell>
   );
 }

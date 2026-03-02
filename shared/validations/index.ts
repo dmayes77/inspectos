@@ -9,6 +9,7 @@ export * from './client';
 export * from './email-template';
 export * from './inspection-api';
 export * from './inspection';
+export * from './inspector-sync-contract';
 export * from './integration';
 export * from './lead';
 export * from './order';

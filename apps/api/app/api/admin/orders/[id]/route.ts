@@ -7,6 +7,13 @@ import {
 import { withAuth } from '@/lib/api/with-auth';
 import { validateRequestBody } from '@/lib/api/validate';
 import { updateOrderSchema } from '@inspectos/shared/validations/order';
+import { findOrderSchedulingConflict } from '@/lib/scheduling/order-conflicts';
+import {
+  getAllowedNextOrderStatuses,
+  isOrderStatusTransitionAllowed,
+  STATUS_REQUIRES_SCHEDULE,
+  type OrderStatus,
+} from '@inspectos/shared/constants/order-lifecycle';
 import { format } from 'date-fns';
 import { triggerWebhookEvent } from '@/lib/webhooks/delivery';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
@@ -95,7 +102,7 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 
   const { data: currentOrder } = await supabase
     .from("orders")
-    .select("id, status, client_id, agent_id, primary_contact_type")
+    .select("id, status, client_id, agent_id, primary_contact_type, inspector_id, scheduled_date, scheduled_time, duration_minutes, report_delivered_at")
     .eq("tenant_id", tenant.id)
     .eq(lookup.column, lookup.value)
     .limit(1)
@@ -103,7 +110,68 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 
   if (!currentOrder?.id) return notFound("Order not found.");
 
-  const previousStatus = currentOrder?.status;
+  const previousStatus = currentOrder.status as OrderStatus;
+  const nextStatus = (payload.status ?? currentOrder.status) as OrderStatus;
+
+  if (payload.status && !isOrderStatusTransitionAllowed(previousStatus, nextStatus)) {
+    const allowed = getAllowedNextOrderStatuses(previousStatus);
+    return badRequest(
+      `Invalid status transition from ${previousStatus} to ${nextStatus}. ` +
+      `Allowed transitions: ${allowed.length > 0 ? allowed.join(", ") : "none"}.`
+    );
+  }
+
+  if (STATUS_REQUIRES_SCHEDULE.has(nextStatus)) {
+    const effectiveInspectorId = payload.inspector_id !== undefined ? payload.inspector_id : currentOrder.inspector_id;
+    const effectiveScheduledDate = payload.scheduled_date !== undefined ? payload.scheduled_date : currentOrder.scheduled_date;
+
+    if (!effectiveInspectorId) {
+      return badRequest(`Cannot set status to ${nextStatus} without an assigned inspector.`);
+    }
+    if (!effectiveScheduledDate) {
+      return badRequest(`Cannot set status to ${nextStatus} without a scheduled date.`);
+    }
+  }
+
+  if (nextStatus === "delivered" || nextStatus === "completed") {
+    const effectiveReportDeliveredAt = payload.report_delivered_at !== undefined
+      ? payload.report_delivered_at
+      : currentOrder.report_delivered_at;
+
+    if (!effectiveReportDeliveredAt) {
+      return badRequest(`Cannot set status to ${nextStatus} before report delivery is recorded.`);
+    }
+  }
+
+  const shouldValidateScheduleConflict =
+    payload.inspector_id !== undefined ||
+    payload.scheduled_date !== undefined ||
+    payload.scheduled_time !== undefined ||
+    payload.duration_minutes !== undefined;
+
+  if (shouldValidateScheduleConflict) {
+    const effectiveInspectorId = payload.inspector_id !== undefined ? payload.inspector_id : currentOrder.inspector_id;
+    const effectiveScheduledDate = payload.scheduled_date !== undefined ? payload.scheduled_date : currentOrder.scheduled_date;
+    const effectiveScheduledTime = payload.scheduled_time !== undefined ? payload.scheduled_time : currentOrder.scheduled_time;
+    const effectiveDuration = payload.duration_minutes !== undefined ? payload.duration_minutes : currentOrder.duration_minutes;
+
+    if (effectiveInspectorId && effectiveScheduledDate) {
+      const conflict = await findOrderSchedulingConflict(supabase, {
+        tenantId: tenant.id,
+        inspectorId: effectiveInspectorId,
+        scheduledDate: effectiveScheduledDate,
+        scheduledTime: effectiveScheduledTime,
+        durationMinutes: effectiveDuration,
+        excludeOrderId: currentOrder.id,
+      });
+
+      if (conflict) {
+        return badRequest(
+          `Inspector already has a conflicting order (${conflict.orderNumber}) at ${conflict.scheduledTime}.`,
+        );
+      }
+    }
+  }
 
   const updateData: Record<string, unknown> = {};
   if (payload.client_id !== undefined) updateData.client_id = payload.client_id;

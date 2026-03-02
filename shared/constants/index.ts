@@ -6,4 +6,5 @@
 export * from './contact-options';
 export * from './lead-options';
 export * from './mock-users';
+export * from './order-lifecycle';
 export * from './property-options';

@@ -3,23 +3,19 @@ import { IonApp, IonRouterOutlet, IonSpinner, setupIonicReact } from '@ionic/rea
 import { IonReactRouter } from '@ionic/react-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-// Pages
 import Login from './pages/Login';
-import TenantCreate from './pages/TenantCreate';
-import TenantSelect from './pages/TenantSelect';
 import Dashboard from './pages/Dashboard';
-import JobDetail from './pages/JobDetail';
-import InspectionRunner from './pages/InspectionRunner';
+import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import People from './pages/People';
+import Calendar from './pages/Calendar';
 
-/* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
-
-/* Basic CSS for apps built with Ionic */
 import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
-
-/* Optional CSS utils */
 import '@ionic/react/css/padding.css';
 import '@ionic/react/css/float-elements.css';
 import '@ionic/react/css/text-alignment.css';
@@ -27,59 +23,16 @@ import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 
-import '@ionic/react/css/palettes/dark.system.css';
 import './theme/variables.css';
 
 setupIonicReact();
 
-// Protected route wrapper
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, isInitialized } = useAuth();
-
-  if (!isInitialized || isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <IonSpinner name="crescent" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Redirect to="/login" />;
-  }
-
-  return <>{children}</>;
-}
-
-// Tenant-scoped route wrapper
-function TenantRoute({ children }: { children: React.ReactNode }) {
-  const { user, tenant, isLoading, isInitialized } = useAuth();
-
-  if (!isInitialized || isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <IonSpinner name="crescent" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Redirect to="/login" />;
-  }
-
-  if (!tenant) {
-    return <Redirect to="/select-tenant" />;
-  }
-
-  return <>{children}</>;
-}
-
 function AppRoutes() {
-  const { user, isInitialized } = useAuth();
+  const { user, tenant, isLoading } = useAuth();
 
-  if (!isInitialized) {
+  if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ height: '100vh', display: 'grid', placeItems: 'center' }}>
         <IonSpinner name="crescent" />
       </div>
     );
@@ -88,49 +41,42 @@ function AppRoutes() {
   return (
     <IonRouterOutlet>
       <Switch>
-        {/* Public routes */}
         <Route exact path="/login">
-          {user ? <Redirect to="/select-tenant" /> : <Login />}
+          {user && tenant ? <Redirect to={`/t/${tenant.slug}/dashboard`} /> : <Login />}
         </Route>
 
-        {/* Protected routes (need auth) */}
-        <Route exact path="/select-tenant">
-          <ProtectedRoute>
-            <TenantSelect />
-          </ProtectedRoute>
-        </Route>
-
-        <Route exact path="/tenant/create">
-          <ProtectedRoute>
-            <TenantCreate />
-          </ProtectedRoute>
-        </Route>
-
-        {/* Tenant-scoped routes */}
         <Route exact path="/t/:tenantSlug/dashboard">
-          <TenantRoute>
-            <Dashboard />
-          </TenantRoute>
+          {user && tenant ? <Dashboard /> : <Redirect to="/login" />}
         </Route>
 
-        <Route exact path="/t/:tenantSlug/job/:jobId">
-          <TenantRoute>
-            <JobDetail />
-          </TenantRoute>
+        <Route exact path="/t/:tenantSlug/orders">
+          {user && tenant ? <Orders /> : <Redirect to="/login" />}
         </Route>
 
-        <Route exact path="/t/:tenantSlug/inspection/:inspectionId">
-          <TenantRoute>
-            <InspectionRunner />
-          </TenantRoute>
+        <Route exact path="/t/:tenantSlug/order/:orderId">
+          {user && tenant ? <OrderDetail /> : <Redirect to="/login" />}
         </Route>
 
-        {/* Default redirect */}
+        <Route exact path="/t/:tenantSlug/profile">
+          {user && tenant ? <Profile /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/settings">
+          {user && tenant ? <Settings /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/people">
+          {user && tenant ? <People /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/calendar">
+          {user && tenant ? <Calendar /> : <Redirect to="/login" />}
+        </Route>
+
         <Route exact path="/">
-          <Redirect to={user ? '/select-tenant' : '/login'} />
+          {user && tenant ? <Redirect to={`/t/${tenant.slug}/dashboard`} /> : <Redirect to="/login" />}
         </Route>
 
-        {/* Catch all */}
         <Route>
           <Redirect to="/" />
         </Route>
@@ -139,7 +85,7 @@ function AppRoutes() {
   );
 }
 
-const App: React.FC = () => (
+const App = () => (
   <IonApp>
     <AuthProvider>
       <IonReactRouter>

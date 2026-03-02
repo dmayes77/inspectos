@@ -20,9 +20,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Calendar, Check, Clock, DollarSign, Mail, MapPin, Phone, Send, Tag, User } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar, Check, Clock, DollarSign, Download, Mail, MapPin, Phone, Send, Tag, User } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
 import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
+import { useInspectionData } from "@/hooks/use-inspection-data";
+import { useCreateInvoice } from "@/hooks/use-invoices";
+import { useRecordPayment } from "@/hooks/use-payments";
 import { useClients } from "@/hooks/use-clients";
 import { useAgents } from "@/hooks/use-agents";
 import { useCreateProperty, useProperties, useUpdateProperty } from "@/hooks/use-properties";
@@ -42,6 +46,7 @@ import { PropertyFormErrors, PropertyFormSections, createEmptyPropertyFormState,
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
 import { toSlugIdSegment } from "@/lib/routing/slug-id";
+import { getAllowedNextOrderStatuses, type OrderStatus } from "@inspectos/shared/constants/order-lifecycle";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {
@@ -149,6 +154,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
   const [agentDialogOpen, setAgentDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [deploymentInspectorId, setDeploymentInspectorId] = useState<string>("__none__");
+  const [statusDraft, setStatusDraft] = useState<OrderStatus | "">("");
+  const [paymentStatusDraft, setPaymentStatusDraft] = useState<string>("");
   const [showCreatePropertyForm, setShowCreatePropertyForm] = useState(false);
   const [showEditPropertyForm, setShowEditPropertyForm] = useState(false);
   const [propertyForm, setPropertyForm] = useState(() => createEmptyPropertyFormState());
@@ -156,6 +168,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const updateProperty = useUpdateProperty(assignmentForm.property_id || order?.property_id || "");
   const { data: orderNotes = [] } = useOrderNotes(id);
   const createOrderNote = useCreateOrderNote(id);
+  const { data: inspectionData, isLoading: inspectionDataLoading } = useInspectionData(order?.id ?? "");
+  const createInvoice = useCreateInvoice();
+  const recordPayment = useRecordPayment();
 
   const serviceNameMap = useMemo(() => {
     return new Map(services.map((service) => [service.name.toLowerCase(), service.serviceId]));
@@ -196,6 +211,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }, [order?.id, order?.scheduled_date, order?.scheduled_time, order?.duration_minutes]);
 
   useEffect(() => {
+    setDeploymentInspectorId(order?.inspector_id ?? "__none__");
+  }, [order?.id, order?.inspector_id]);
+
+  useEffect(() => {
     setCostForm({
       labor_cost: typeof order?.labor_cost === "number" ? String(order.labor_cost) : "",
       travel_cost: typeof order?.travel_cost === "number" ? String(order.travel_cost) : "",
@@ -227,43 +246,54 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     const selectedIds = serviceAssignments.filter((a) => a.selected).map((a) => a.serviceId);
     return services.filter((service) => selectedIds.includes(service.serviceId));
   }, [services, serviceAssignments]);
+  const canRecordReportDelivery = Boolean(order && ["pending_report", "delivered", "completed"].includes(order.status));
   const tenantVisibleStatusOptions = useMemo(() => {
-    const editable = [...tenantEditableOrderStatuses];
-    if (order?.status && !editable.includes(order.status as (typeof tenantEditableOrderStatuses)[number])) {
-      return [order.status, ...editable];
-    }
-    return editable;
+    if (!order?.status) return [...tenantEditableOrderStatuses];
+    const currentStatus = order.status as OrderStatus;
+    const nextAllowed = getAllowedNextOrderStatuses(currentStatus).filter((status) =>
+      tenantEditableOrderStatuses.includes(status as (typeof tenantEditableOrderStatuses)[number])
+    );
+    return [currentStatus, ...nextAllowed].filter((status, index, source) => source.indexOf(status) === index);
   }, [order?.status]);
 
-  const handleStatusChange = (newStatus: string) => {
+  useEffect(() => {
+    if (!order) return;
+    setStatusDraft(order.status as OrderStatus);
+    setPaymentStatusDraft(order.payment_status);
+  }, [order?.id, order?.status, order?.payment_status]);
+
+  const handleStatusDraftChange = (newStatus: string) => {
     if (!order) return;
     if (!tenantEditableOrderStatuses.includes(newStatus as (typeof tenantEditableOrderStatuses)[number])) {
       toast.info("Inspection execution status is managed in the Inspector App.");
       return;
     }
+    setStatusDraft(newStatus as OrderStatus);
+  };
+
+  const handleSaveStatusAndPayment = () => {
+    if (!order) return;
+
+    const nextStatus = statusDraft || (order.status as OrderStatus);
+    const nextPaymentStatus = paymentStatusDraft || order.payment_status;
+    const hasChanges = nextStatus !== order.status || nextPaymentStatus !== order.payment_status;
+    if (!hasChanges) {
+      toast.info("No status changes to save.");
+      return;
+    }
+
     updateOrder.mutate(
-      { id: order.id, status: newStatus as typeof order.status },
+      {
+        id: order.id,
+        status: nextStatus as typeof order.status,
+        payment_status: nextPaymentStatus as typeof order.payment_status,
+      },
       {
         onSuccess: () => {
-          toast.success(`Order marked ${formatStatusLabel(newStatus)}.`);
+          toast.success("Order status updated.");
         },
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "Failed to update status.");
-        },
-      }
-    );
-  };
-
-  const handlePaymentStatusChange = (newStatus: string) => {
-    if (!order) return;
-    updateOrder.mutate(
-      { id: order.id, payment_status: newStatus as typeof order.payment_status },
-      {
-        onSuccess: () => {
-          toast.success(`Payment marked ${formatStatusLabel(newStatus)}.`);
-        },
-        onError: (error) => {
-          toast.error(error instanceof Error ? error.message : "Failed to update payment status.");
         },
       }
     );
@@ -277,6 +307,184 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         router.push("/orders");
       },
     });
+  };
+
+  const handleExportReport = () => {
+    if (!order) return;
+    if (!inspectionData) {
+      toast.error("No inspection report data is available to export yet.");
+      return;
+    }
+
+    const reportPayload = {
+      generated_at: new Date().toISOString(),
+      order: {
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        scheduled_date: order.scheduled_date,
+        scheduled_time: order.scheduled_time,
+        report_delivered_at: order.report_delivered_at,
+      },
+      inspection: inspectionData.inspection,
+      answers: inspectionData.answers,
+      findings: inspectionData.findings,
+      signatures: inspectionData.signatures,
+      media: inspectionData.media,
+    };
+
+    const fileName = `${order.order_number.toLowerCase()}-report-${new Date().toISOString().slice(0, 10)}.json`;
+    const blob = new Blob([JSON.stringify(reportPayload, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Report exported.");
+  };
+
+  const handleMarkReportDelivered = () => {
+    if (!order) return;
+    if (!canRecordReportDelivery) {
+      toast.error("Report delivery can only be recorded after inspection reaches pending report.");
+      return;
+    }
+    const deliveredAt = new Date().toISOString();
+    const nextStatus: OrderStatus = order.status === "pending_report" ? "delivered" : (order.status as OrderStatus);
+
+    updateOrder.mutate(
+      {
+        id: order.id,
+        report_delivered_at: deliveredAt,
+        status: nextStatus,
+      },
+      {
+        onSuccess: () => {
+          void createOrderNote.mutateAsync({
+            orderId: order.id,
+            noteType: "internal",
+            body: "[COMM][OUTBOUND][EMAIL][SENT] Report delivery recorded for this order.",
+          });
+          toast.success("Report delivery recorded.");
+        },
+        onError: (error) => {
+          void createOrderNote.mutateAsync({
+            orderId: order.id,
+            noteType: "internal",
+            body: `[COMM][OUTBOUND][EMAIL][FAILED] Report delivery update failed: ${error instanceof Error ? error.message : "Unknown error"}.`,
+          });
+          toast.error(error instanceof Error ? error.message : "Failed to record report delivery.");
+        },
+      }
+    );
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!order) return;
+
+    if (order.invoices && order.invoices.length > 0) {
+      const existingInvoice = order.invoices[0];
+      toast.info("This order already has an invoice. Opening existing invoice.");
+      router.push(`/invoices/${toSlugIdSegment("invoice", existingInvoice.id)}`);
+      return;
+    }
+
+    if (!order.client_id) {
+      toast.error("Assign a client before creating an invoice.");
+      return;
+    }
+
+    if (!order.total || order.total <= 0) {
+      toast.error("Order total must be greater than 0 to create an invoice.");
+      return;
+    }
+
+    try {
+      const now = new Date();
+      const due = new Date(now);
+      due.setDate(due.getDate() + 14);
+
+      const created = await createInvoice.mutateAsync({
+        order_id: order.id,
+        client_id: order.client_id,
+        status: "draft",
+        total: order.total,
+        issued_at: now.toISOString(),
+        due_at: due.toISOString(),
+      });
+
+      void createOrderNote.mutateAsync({
+        orderId: order.id,
+        noteType: "internal",
+        body: `[COMM][OUTBOUND][EMAIL][QUEUED] Invoice ${created.invoiceNumber ?? created.invoiceId} created and queued for delivery.`,
+      });
+
+      toast.success("Invoice created.");
+      router.push(`/invoices/${toSlugIdSegment(created.invoiceNumber ?? created.invoiceId, created.invoiceId)}`);
+    } catch (error) {
+      void createOrderNote.mutateAsync({
+        orderId: order.id,
+        noteType: "internal",
+        body: `[COMM][OUTBOUND][EMAIL][FAILED] Invoice creation failed: ${error instanceof Error ? error.message : "Unknown error"}.`,
+      });
+      toast.error(error instanceof Error ? error.message : "Failed to create invoice.");
+    }
+  };
+
+  const handleOpenPaymentDialog = () => {
+    if (!order) return;
+    setPaymentAmount(order.total > 0 ? order.total.toFixed(2) : "");
+    setPaymentMethod("");
+    setPaymentNotes("");
+    setPaymentDialogOpen(true);
+  };
+
+  const handleRecordPaymentFromOrder = () => {
+    if (!order) return;
+    const amount = Number.parseFloat(paymentAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error("Enter a valid payment amount.");
+      return;
+    }
+    if (!paymentMethod) {
+      toast.error("Select a payment method.");
+      return;
+    }
+
+    recordPayment.mutate(
+      {
+        order_id: order.id,
+        amount,
+        method: paymentMethod,
+        notes: paymentNotes.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          updateOrder.mutate({
+            id: order.id,
+            payment_status: amount >= order.total ? "paid" : "partial",
+          });
+          void createOrderNote.mutateAsync({
+            orderId: order.id,
+            noteType: "internal",
+            body: `[COMM][SYSTEM][PAYMENT][RECORDED] Payment recorded (${paymentMethod}) for $${amount.toFixed(2)}.`,
+          });
+          setPaymentDialogOpen(false);
+          toast.success("Payment recorded.");
+        },
+        onError: (error) => {
+          void createOrderNote.mutateAsync({
+            orderId: order.id,
+            noteType: "internal",
+            body: `[COMM][SYSTEM][PAYMENT][FAILED] Payment recording failed: ${error instanceof Error ? error.message : "Unknown error"}.`,
+          });
+          toast.error(error instanceof Error ? error.message : "Failed to record payment.");
+        },
+      }
+    );
   };
 
   const propertyFromOrder = order?.property;
@@ -413,6 +621,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         },
         onError: (error) => {
           toast.error(error instanceof Error ? error.message : "Failed to update schedule.");
+        },
+      }
+    );
+  };
+
+  const handleDeployToInspectorApp = () => {
+    if (!order) return;
+
+    if (!scheduleForm.scheduled_date) {
+      toast.error("Set a scheduled date before deploying.");
+      return;
+    }
+
+    if (!deploymentInspectorId || deploymentInspectorId === "__none__") {
+      toast.error("Select a lead inspector before deploying.");
+      return;
+    }
+
+    const nextAllowedStatuses = getAllowedNextOrderStatuses(order.status as OrderStatus);
+    const shouldMoveToScheduled = order.status === "scheduled" || nextAllowedStatuses.includes("scheduled");
+
+    updateOrder.mutate(
+      {
+        id: order.id,
+        inspector_id: deploymentInspectorId,
+        scheduled_date: scheduleForm.scheduled_date || null,
+        scheduled_time: scheduleForm.scheduled_time || null,
+        duration_minutes: scheduleForm.duration_minutes.trim() ? Number.parseInt(scheduleForm.duration_minutes, 10) : undefined,
+        status: shouldMoveToScheduled ? "scheduled" : order.status,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Inspection deployed to inspector app.");
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Failed to deploy inspection.");
         },
       }
     );
@@ -592,6 +836,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const internalHistory = orderNotes.filter((note) => note.note_type === "internal");
+  const communicationHistory = internalHistory.filter((note) => note.body.startsWith("[COMM]"));
 
   const headerMeta = (
     <>
@@ -616,6 +861,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const draftTotalCost = costDraft.labor + costDraft.travel + costDraft.overhead + costDraft.other;
   const draftGrossMargin = totalRevenue - draftTotalCost;
   const draftGrossMarginPct = totalRevenue > 0 ? (draftGrossMargin / totalRevenue) * 100 : null;
+  const hasStatusOrPaymentChanges =
+    Boolean(order) &&
+    ((statusDraft && statusDraft !== order.status) ||
+      (paymentStatusDraft && paymentStatusDraft !== order.payment_status));
   const workspaceCard = (
     <Card>
       <CardHeader className="pb-3">
@@ -656,7 +905,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Order Status</p>
-            <Select value={order.status} onValueChange={handleStatusChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
+            <Select value={statusDraft || order.status} onValueChange={handleStatusDraftChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -672,7 +921,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Payment Status</p>
-            <Select value={order.payment_status} onValueChange={handlePaymentStatusChange} disabled={updateOrder.isPending || deleteOrder.isPending}>
+            <Select
+              value={paymentStatusDraft || order.payment_status}
+              onValueChange={setPaymentStatusDraft}
+              disabled={updateOrder.isPending || deleteOrder.isPending}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -685,6 +938,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </SelectContent>
             </Select>
           </div>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSaveStatusAndPayment}
+            disabled={updateOrder.isPending || deleteOrder.isPending || !hasStatusOrPaymentChanges}
+          >
+            {updateOrder.isPending ? "Saving..." : "Save Status & Payment"}
+          </Button>
         </div>
         <div className="grid gap-2 md:grid-cols-4">
           <Button size="sm" variant="outline" className="w-full" onClick={() => toast("Client portal link sending is coming soon.")}>
@@ -738,15 +1001,39 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="order-deploy-inspector">Lead Inspector</Label>
+            <Select value={deploymentInspectorId} onValueChange={setDeploymentInspectorId} disabled={updateOrder.isPending || deleteOrder.isPending}>
+              <SelectTrigger id="order-deploy-inspector">
+                <SelectValue placeholder="Select inspector" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Unassigned</SelectItem>
+                {inspectors.map((inspector) => (
+                  <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
+                    {inspector.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Orders appear in the inspector app only when assigned to an inspector.
+            </p>
+          </div>
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               {order.scheduled_date
                 ? `Current: ${formatDate(order.scheduled_date, "EEEE, MMM d, yyyy")}${order.scheduled_time ? ` at ${formatTime12(order.scheduled_time)}` : ""}`
                 : "Current: Not scheduled"}
             </p>
-            <Button size="sm" variant="outline" onClick={handleSaveSchedule} disabled={updateOrder.isPending || deleteOrder.isPending}>
-              {updateOrder.isPending ? "Saving..." : "Save Schedule"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" onClick={handleSaveSchedule} disabled={updateOrder.isPending || deleteOrder.isPending}>
+                {updateOrder.isPending ? "Saving..." : "Save Schedule"}
+              </Button>
+              <Button size="sm" onClick={handleDeployToInspectorApp} disabled={updateOrder.isPending || deleteOrder.isPending}>
+                {updateOrder.isPending ? "Deploying..." : "Deploy to Inspector App"}
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
@@ -1163,6 +1450,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <p className="text-xs text-muted-foreground">{formatTimestampFull(order.report_delivered_at)}</p>
             </div>
           )}
+          {communicationHistory.map((entry) => (
+            <div key={`comm-${entry.id}`} className="border-l-2 border-border pl-3">
+              <p className="text-xs font-medium">Communication Event</p>
+              <p className="text-xs text-muted-foreground">{entry.body}</p>
+              <p className="text-xs text-muted-foreground">{formatTimestampFull(entry.created_at)}</p>
+            </div>
+          ))}
         </CardContent>
       </Card>
   );
@@ -1173,10 +1467,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <CardTitle className="text-base">Actions</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        <Button className="w-full" onClick={() => toast("Invoice creation is coming soon.")}>
-          Create Invoice
+        <Button variant="outline" className="w-full" onClick={handleExportReport} disabled={inspectionDataLoading || !inspectionData}>
+          <Download className="mr-2 h-4 w-4" />
+          {inspectionDataLoading ? "Loading Report..." : "Export Report"}
         </Button>
-        <Button variant="outline" className="w-full" onClick={() => toast("Payment recording is coming soon.")}>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={handleMarkReportDelivered}
+          disabled={updateOrder.isPending || deleteOrder.isPending || !canRecordReportDelivery}
+        >
+          {order.report_delivered_at ? "Update Report Delivery Time" : "Mark Report Delivered"}
+        </Button>
+        <Button className="w-full" onClick={handleCreateInvoice} disabled={createInvoice.isPending}>
+          {createInvoice.isPending ? "Creating Invoice..." : "Create Invoice"}
+        </Button>
+        <Button variant="outline" className="w-full" onClick={handleOpenPaymentDialog}>
           Record Payment
         </Button>
         <DeleteButton className="w-full" label="Delete Order" onClick={() => setDeleteDialogOpen(true)} />
@@ -1354,7 +1660,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       {servicesCard}
       {financialsCard}
       {notesCard}
-      <OrderInspectionTab orderId={order.id} />
+      <OrderInspectionTab
+        orderId={order.id}
+        onDeploy={handleDeployToInspectorApp}
+        deployDisabled={updateOrder.isPending || deleteOrder.isPending}
+        deployLabel={updateOrder.isPending ? "Deploying..." : "Deploy to Inspector App"}
+      />
     </>
   );
 
@@ -1402,6 +1713,60 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>Record payment received for this order.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="order-payment-amount">Amount</Label>
+              <Input
+                id="order-payment-amount"
+                type="number"
+                min={0}
+                step="0.01"
+                value={paymentAmount}
+                onChange={(event) => setPaymentAmount(event.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="order-payment-method">Payment Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="order-payment-method">
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="card">Credit/Debit Card</SelectItem>
+                  <SelectItem value="check">Check</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="order-payment-notes">Notes (optional)</Label>
+              <Input
+                id="order-payment-notes"
+                value={paymentNotes}
+                onChange={(event) => setPaymentNotes(event.target.value)}
+                placeholder="Payment notes"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRecordPaymentFromOrder} disabled={recordPayment.isPending}>
+              {recordPayment.isPending ? "Recording..." : "Record Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <InlineClientDialog open={clientDialogOpen} onOpenChange={setClientDialogOpen} onClientCreated={handleClientCreated} />
       <InlineAgentDialog open={agentDialogOpen} onOpenChange={setAgentDialogOpen} onAgentCreated={handleAgentCreated} />
     </>

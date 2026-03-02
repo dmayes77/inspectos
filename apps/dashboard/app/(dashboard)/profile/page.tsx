@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IdPageLayout } from "@/components/shared/id-page-layout";
-import { extractDomain, logoDevUrl } from "@inspectos/shared/utils/logos";
+import { buildSocialLinksFromProfile, applySocialLinksToPayload, getSocialLinkMetadata } from "@inspectos/shared/utils";
+import { logoDevUrl } from "@inspectos/shared/utils/logos";
 import {
   CameraIcon,
   LoaderIcon,
@@ -26,72 +27,9 @@ type SocialPreview = {
   surfaceClass: string;
 };
 
-const SOCIAL_LABEL_BY_DOMAIN: Record<string, string> = {
-  "facebook.com": "Facebook",
-  "x.com": "X",
-  "twitter.com": "X",
-  "linkedin.com": "LinkedIn",
-  "lnkd.in": "LinkedIn",
-  "instagram.com": "Instagram",
-  "youtube.com": "YouTube",
-  "youtu.be": "YouTube",
-  "tiktok.com": "TikTok",
-  "threads.net": "Threads",
-  "snapchat.com": "Snapchat",
-  "pinterest.com": "Pinterest",
-  "reddit.com": "Reddit",
-  "discord.com": "Discord",
-  "discord.gg": "Discord",
-};
-
-const SOCIAL_FIELD_KEYS = [
-  "social_facebook",
-  "social_twitter",
-  "social_linkedin",
-  "social_instagram",
-] as const;
-
-type SocialFieldKey = (typeof SOCIAL_FIELD_KEYS)[number];
-
 function parseSocialPreview(urlValue: string): SocialPreview {
-  const normalized = urlValue.trim().toLowerCase();
-  const value = normalized.startsWith("http://") || normalized.startsWith("https://")
-    ? normalized
-    : `https://${normalized}`;
-
-  try {
-    const domain = extractDomain(value);
-    const hostname = domain?.replace(/^www\./, "") ?? "";
-    const matchedKey = Object.keys(SOCIAL_LABEL_BY_DOMAIN).find(
-      (key) => hostname === key || hostname.endsWith(`.${key}`)
-    );
-    const label = matchedKey ? SOCIAL_LABEL_BY_DOMAIN[matchedKey] : hostname || "Website";
-    const logoUrl = logoDevUrl(hostname, { size: 64, format: "png", theme: "light", retina: true });
-
-    if (logoUrl) {
-      return {
-        label,
-        url: logoUrl,
-        icon: (
-          <img
-            src={logoUrl}
-            alt={`${label} logo`}
-            className="h-4 w-4 object-contain"
-            loading="lazy"
-            decoding="async"
-          />
-        ),
-        surfaceClass: "bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700",
-      };
-    }
-
-    return {
-      label,
-      url: null,
-      icon: <Globe className="h-4 w-4 text-sky-600 dark:text-sky-400" />,
-      surfaceClass: "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800",
-    };
-  } catch {
+  const metadata = getSocialLinkMetadata(urlValue);
+  if (!metadata) {
     return {
       label: "Link",
       url: null,
@@ -99,45 +37,34 @@ function parseSocialPreview(urlValue: string): SocialPreview {
       surfaceClass: "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800",
     };
   }
-}
 
-function buildSocialLinksFromProfile(profile: {
-  social_links?: string[] | null;
-  social_facebook?: string | null;
-  social_twitter?: string | null;
-  social_linkedin?: string | null;
-  social_instagram?: string | null;
-}): string[] {
-  const fromArray = Array.isArray(profile.social_links)
-    ? profile.social_links.map((value) => value?.trim() ?? "").filter(Boolean)
-    : [];
-  if (fromArray.length > 0) {
-    return fromArray;
+  const logoUrl = metadata.domain
+    ? logoDevUrl(metadata.domain, { size: 64, format: "png", theme: "light", retina: true })
+    : null;
+
+  if (logoUrl) {
+    return {
+      label: metadata.label,
+      url: logoUrl,
+      icon: (
+        <img
+          src={logoUrl}
+          alt={`${metadata.label} logo`}
+          className="h-4 w-4 object-contain"
+          loading="lazy"
+          decoding="async"
+        />
+      ),
+      surfaceClass: "bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-700",
+    };
   }
 
-  const links = [
-    profile.social_facebook,
-    profile.social_twitter,
-    profile.social_linkedin,
-    profile.social_instagram,
-  ]
-    .map((value) => value?.trim() ?? "")
-    .filter(Boolean);
-
-  return links.length > 0 ? links : [""];
-}
-
-function applySocialLinksToPayload(base: ProfileUpdate, links: string[]): ProfileUpdate {
-  const sanitized = links.map((link) => link.trim()).filter(Boolean);
-  const next = { ...base };
-  next.social_links = sanitized;
-
-  for (let index = 0; index < SOCIAL_FIELD_KEYS.length; index += 1) {
-    const key = SOCIAL_FIELD_KEYS[index] as SocialFieldKey;
-    next[key] = sanitized[index] ?? null;
-  }
-
-  return next;
+  return {
+    label: metadata.label,
+    url: null,
+    icon: <Globe className="h-4 w-4 text-sky-600 dark:text-sky-400" />,
+    surfaceClass: "bg-sky-50 border-sky-200 dark:bg-sky-950/30 dark:border-sky-800",
+  };
 }
 
 function SocialLink({

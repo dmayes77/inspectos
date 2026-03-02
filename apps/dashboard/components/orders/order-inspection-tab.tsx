@@ -29,9 +29,12 @@ function severityBorderClass(severity: string) {
 
 interface OrderInspectionTabProps {
   orderId: string;
+  onDeploy?: () => void;
+  deployDisabled?: boolean;
+  deployLabel?: string;
 }
 
-export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
+export function OrderInspectionTab({ orderId, onDeploy, deployDisabled = false, deployLabel = "Deploy" }: OrderInspectionTabProps) {
   const { data: inspectionData, isLoading } = useInspectionData(orderId);
 
   const stats = useMemo(() => {
@@ -96,9 +99,9 @@ export function OrderInspectionTab({ orderId }: OrderInspectionTabProps) {
                 <FileText className="mr-1.5 h-3.5 w-3.5" />
                 Generate Report
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={onDeploy} disabled={deployDisabled}>
                 <ClipboardList className="mr-1.5 h-3.5 w-3.5" />
-                Deploy
+                {deployLabel}
               </Button>
             </div>
           </div>

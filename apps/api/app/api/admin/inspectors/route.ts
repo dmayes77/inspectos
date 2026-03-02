@@ -29,7 +29,8 @@ export const GET = withAuth(async ({ serviceClient, tenant }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const profile = Array.isArray((row as any).profiles) ? (row as any).profiles[0] : (row as any).profiles;
     return {
-      teamMemberId: profile?.id ?? row.user_id,
+      // Orders/inspections expect auth user_id for assignment.
+      teamMemberId: row.user_id,
       name: profile?.full_name ?? profile?.email ?? 'Unknown',
     };
   });

@@ -9,6 +9,7 @@ import {
   serverError
 } from '@/lib/supabase';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
+import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
 
 /**
  * GET /api/sync/bootstrap
@@ -16,9 +17,9 @@ import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
  * Downloads all data needed to work offline:
  * - User profile
  * - Templates (with sections and items)
- * - Jobs (for the next 14 days)
- * - Properties (for those jobs)
- * - Clients (for those jobs)
+ * - Orders (for the next 14 days)
+ * - Properties (for those orders)
+ * - Clients (for those orders)
  * - Defect library
  * - Services
  *
@@ -29,17 +30,19 @@ export async function GET(request: NextRequest) {
   try {
     const accessToken = getAccessToken(request);
     if (!accessToken) {
-      return unauthorized('Missing access token');
+      return applyCorsHeaders(unauthorized('Missing access token'), request);
     }
 
     const user = getUserFromToken(accessToken);
     if (!user) {
-      return unauthorized('Invalid access token');
+      return applyCorsHeaders(unauthorized('Invalid access token'), request);
     }
 
     const businessIdentifier = request.nextUrl.searchParams.get('business');
+    const scope = request.nextUrl.searchParams.get('scope');
+    const ordersOnlyScope = scope === 'orders';
     if (!businessIdentifier) {
-      return badRequest('Missing business parameter');
+      return applyCorsHeaders(badRequest('Missing business parameter'), request);
     }
 
     const supabase = createUserClient(accessToken);
@@ -63,38 +66,49 @@ export async function GET(request: NextRequest) {
     const tenantError = tenantBySlug ? tenantSlugError : tenantByBusinessId.error;
 
     if (tenantError || !tenant) {
-      return badRequest('Business not found');
+      return applyCorsHeaders(badRequest('Business not found'), request);
     }
 
     // Verify user is a member of this tenant
     const { data: membership, error: membershipError } = await supabase
       .from('tenant_members')
-      .select('id, role, profiles!inner(is_inspector)')
+      .select('id, role, profiles!inner(id, is_inspector)')
       .eq('tenant_id', tenant.id)
       .eq('user_id', user.userId)
       .single();
 
     if (membershipError || !membership) {
-      return unauthorized('Not a member of this business');
+      return applyCorsHeaders(unauthorized('Not a member of this business'), request);
     }
 
     const billingAccess = await verifyBusinessBillingAccessByTenantId(supabase, tenant.id);
     if (billingAccess.error) {
-      return serverError('Failed to verify business billing status', billingAccess.error);
+      return applyCorsHeaders(serverError('Failed to verify business billing status', billingAccess.error), request);
     }
     if (!billingAccess.allowed) {
-      return paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.');
+      return applyCorsHeaders(paymentRequired('Business subscription is unpaid. Access is disabled until payment is received.'), request);
     }
 
     const membershipProfile = Array.isArray((membership as { profiles?: unknown[] }).profiles)
       ? (membership as { profiles?: unknown[] }).profiles?.[0]
       : (membership as { profiles?: unknown }).profiles;
+    const membershipProfileId =
+      (membershipProfile as { id?: string } | undefined)?.id ?? null;
+    const memberRole = (membership as { role?: string }).role;
     const hasInspectorAccess =
-      (membership as { role?: string }).role === 'inspector' ||
+      memberRole === 'owner' ||
+      memberRole === 'admin' ||
+      memberRole === 'inspector' ||
       Boolean((membershipProfile as { is_inspector?: boolean } | undefined)?.is_inspector);
 
     if (!hasInspectorAccess) {
-      return unauthorized('Inspector mobile access is restricted to inspector seats.');
+      return applyCorsHeaders(unauthorized('Inspector mobile access is restricted to inspector seats.'), request);
+    }
+
+    const inspectorIds = [user.userId];
+    if (membershipProfileId && membershipProfileId !== user.userId) {
+      // Backward compatibility: some orders were assigned using profile ids instead of auth user ids.
+      inspectorIds.push(membershipProfileId);
     }
 
     // Get user profile
@@ -104,46 +118,55 @@ export async function GET(request: NextRequest) {
       .eq('id', user.userId)
       .single();
 
-    // Calculate date range for jobs (today + 14 days)
+    // Calculate date range for orders (today + 30 days)
     const today = new Date();
     const endDate = new Date(today);
-    endDate.setDate(endDate.getDate() + 14);
+    endDate.setDate(endDate.getDate() + 30);
 
     const startDateStr = today.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
 
-    // Get templates with sections and items
-    const { data: templates } = await supabase
-      .from('templates')
-      .select(`
-        id, tenant_id, name, description, version, is_active, created_at, updated_at,
-        template_sections (
-          id, template_id, name, description, sort_order, created_at, updated_at,
-          template_items (
-            id, section_id, name, description, item_type, options, is_required, sort_order, created_at, updated_at
-          )
-        )
-      `)
-      .eq('tenant_id', tenant.id)
-      .eq('is_active', true)
-      .order('name');
+    const templates = ordersOnlyScope
+      ? []
+      : (
+          await supabase
+            .from('templates')
+            .select(`
+              id, tenant_id, name, description, version, is_active, created_at, updated_at,
+              template_sections (
+                id, template_id, name, description, sort_order, created_at, updated_at,
+                template_items (
+                  id, section_id, name, description, item_type, options, is_required, sort_order, created_at, updated_at
+                )
+              )
+            `)
+            .eq('tenant_id', tenant.id)
+            .eq('is_active', true)
+            .order('name')
+        ).data || [];
 
-    // Get jobs for this inspector in the date range
-    const { data: jobs } = await supabase
-      .from('jobs')
+    // Get orders for this inspector in the date range
+    const { data: ordersRaw } = await supabase
+      .from('orders')
       .select('*')
       .eq('tenant_id', tenant.id)
-      .eq('inspector_id', user.userId)
+      .in('inspector_id', inspectorIds)
       .gte('scheduled_date', startDateStr)
       .lte('scheduled_date', endDateStr)
       .order('scheduled_date')
       .order('scheduled_time');
 
-    // Get unique property IDs and client IDs from jobs
-    const propertyIds = [...new Set((jobs || []).map(j => j.property_id).filter(Boolean))];
-    const clientIds = [...new Set((jobs || []).map(j => j.client_id).filter(Boolean))];
+    const orders = (ordersRaw || []).map((order) => ({
+      ...order,
+      // Normalize to auth user id so mobile local filters always match current inspector.
+      inspector_id: user.userId,
+    }));
 
-    // Get properties for these jobs
+    // Get unique property IDs and client IDs from orders
+    const propertyIds = [...new Set((orders || []).map(o => o.property_id).filter(Boolean))];
+    const clientIds = [...new Set((orders || []).map(o => o.client_id).filter(Boolean))];
+
+    // Get properties for these orders
     const { data: properties } = propertyIds.length > 0
       ? await supabase
           .from('properties')
@@ -151,7 +174,7 @@ export async function GET(request: NextRequest) {
           .in('id', propertyIds)
       : { data: [] };
 
-    // Get clients for these jobs
+    // Get clients for these orders
     const { data: clients } = clientIds.length > 0
       ? await supabase
           .from('clients')
@@ -159,38 +182,47 @@ export async function GET(request: NextRequest) {
           .in('id', clientIds)
       : { data: [] };
 
-    // Get defect library for this tenant
-    const { data: defectLibrary } = await supabase
-      .from('defect_library')
-      .select('*')
-      .eq('tenant_id', tenant.id)
-      .order('category')
-      .order('name');
+    const defectLibrary = ordersOnlyScope
+      ? []
+      : (
+          await supabase
+            .from('defect_library')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .order('category')
+            .order('name')
+        ).data || [];
 
-    // Get active services for this tenant
-    const { data: services } = await supabase
-      .from('services')
-      .select('*')
-      .eq('tenant_id', tenant.id)
-      .eq('is_active', true)
-      .order('category')
-      .order('name');
+    const services = ordersOnlyScope
+      ? []
+      : (
+          await supabase
+            .from('services')
+            .select('*')
+            .eq('tenant_id', tenant.id)
+            .eq('is_active', true)
+            .order('category')
+            .order('name')
+        ).data || [];
 
-    // Get any existing inspections for these jobs (in case of resume)
-    const jobIds = (jobs || []).map(j => j.id);
-    const { data: inspections } = jobIds.length > 0
-      ? await supabase
-          .from('inspections')
-          .select(`
-            *,
-            answers (*),
-            findings (*),
-            signatures (*)
-          `)
-          .in('job_id', jobIds)
-      : { data: [] };
+    const orderIds = (orders || []).map(o => o.id);
+    const inspections = ordersOnlyScope
+      ? []
+      : orderIds.length > 0
+        ? (
+            await supabase
+              .from('inspections')
+              .select(`
+                *,
+                answers (*),
+                findings (*),
+                signatures (*)
+              `)
+              .in('order_id', orderIds)
+          ).data || []
+        : [];
 
-    return Response.json({
+    return applyCorsHeaders(Response.json({
       success: true,
       data: {
         business: {
@@ -207,7 +239,7 @@ export async function GET(request: NextRequest) {
           role: membership.role
         },
         templates: templates || [],
-        jobs: jobs || [],
+        orders: orders || [],
         properties: properties || [],
         clients: clients || [],
         defect_library: defectLibrary || [],
@@ -215,9 +247,13 @@ export async function GET(request: NextRequest) {
         inspections: inspections || []
       },
       synced_at: new Date().toISOString()
-    });
+    }), request);
   } catch (error) {
     console.error('[Sync Bootstrap] Error:', error);
-    return serverError();
+    return applyCorsHeaders(serverError(), request);
   }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return buildCorsPreflightResponse(request, 'GET, OPTIONS');
 }
