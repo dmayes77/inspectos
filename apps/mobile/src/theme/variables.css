@@ -105,7 +105,7 @@ ion-button {
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 3.5rem 1rem 1rem;
+  padding: 3.5rem 0rem 1rem;
 }
 
 .login-panel {
@@ -158,7 +158,7 @@ ion-button {
 }
 
 .login-field {
-  --background: var(--ion-input-background);
+  --background: #ffffff;
   --padding-start: 0.75rem;
   --padding-end: 0.75rem;
   --inner-padding-end: 0;
@@ -176,6 +176,7 @@ ion-button {
 }
 
 .login-action-secondary {
+  background: #ffffff;
   margin-top: 0.5rem;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -216,7 +217,6 @@ ion-button {
   color: #9ca3af;
   font-size: 0.625rem;
   line-height: 1.35;
-  padding-bottom: 1rem;
 }
 
 .inspectos-tabbar ion-toolbar {
