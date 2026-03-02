@@ -190,7 +190,7 @@ ion-button {
   color: #0891b2;
   text-decoration: underline;
   font-size: var(--font-size-base);
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   text-align: center;
 }
 
@@ -199,7 +199,7 @@ ion-button {
   text-align: center;
   font-size: 0.8125rem;
   color: #6b7280;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .login-status {
