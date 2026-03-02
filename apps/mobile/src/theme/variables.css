@@ -750,11 +750,34 @@ ion-button {
   padding: 0;
 }
 
+.profile-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
 .profile-heading {
-  margin: 0 0 0.625rem;
+  margin: 0;
   font-size: var(--font-size-h5);
   font-weight: 700;
   color: #111827;
+}
+
+.profile-signout-btn {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #0f8adb;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 0 0.5rem;
 }
 
 .profile-form-grid {
@@ -926,6 +949,10 @@ ion-button {
 :root[data-theme="dark"] .inspector-order-address,
 :root[data-theme="dark"] .profile-heading {
   color: #f8fafc;
+}
+
+:root[data-theme="dark"] .profile-signout-btn {
+  color: #7ec1ff;
 }
 
 :root[data-theme="dark"] .inspector-progress > div {

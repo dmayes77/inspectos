@@ -10,8 +10,10 @@ import {
   IonText,
   IonTextarea,
 } from '@ionic/react';
+import { useHistory } from 'react-router-dom';
 import { MobileAppShell } from '../components/MobileAppShell';
 import { SocialLinksEditor } from '../components/profile/SocialLinksEditor';
+import { useAuth } from '../contexts/AuthContext';
 import { fetchProfile, type MobileProfilePayload, updateProfile, uploadAvatar } from '../services/api';
 
 type ProfileForm = {
@@ -53,6 +55,8 @@ function toForm(profile: MobileProfilePayload): ProfileForm {
 }
 
 export default function Profile() {
+  const history = useHistory();
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<MobileProfilePayload | null>(null);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -138,10 +142,20 @@ export default function Profile() {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    history.replace('/login');
+  };
+
   return (
     <MobileAppShell title="Profile">
       <section className="profile-panel">
-        <h2 className="profile-heading">Edit Profile</h2>
+        <div className="profile-heading-row">
+          <h2 className="profile-heading">Edit Profile</h2>
+          <button type="button" className="profile-signout-btn" onClick={() => void handleSignOut()}>
+            Sign out
+          </button>
+        </div>
         {loading ? (
           <div className="profile-loading">
             <IonSpinner name="crescent" />
