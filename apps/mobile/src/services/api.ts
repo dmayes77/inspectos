@@ -194,6 +194,23 @@ export type QuickCaptureMediaPayload = {
   created_at: string;
 };
 
+export type ArrivalChecklistPayload = {
+  safety_ready: boolean;
+  safety_ppe: string;
+  safety_notes: string;
+  access_ready: boolean;
+  access_method: string;
+  access_notes: string;
+  occupancy_logged: boolean;
+  occupancy_status: string;
+  occupancy_notes: string;
+  utilities_logged: boolean;
+  electricity_status: string;
+  water_status: string;
+  gas_status: string;
+  utilities_notes: string;
+};
+
 async function parseApiError(response: Response): Promise<string> {
   let payload: ApiErrorPayload | null = null;
   try {
@@ -484,4 +501,55 @@ export async function createQuickCapture(
   }
 
   return json.data.item;
+}
+
+export async function fetchArrivalChecklist(
+  tenantSlug: string,
+  orderId: string
+): Promise<{ checklist: ArrivalChecklistPayload; updated_at: string } | null> {
+  const json = await apiGet<{
+    success?: boolean;
+    data?: { item?: { checklist?: ArrivalChecklistPayload; updated_at?: string } | null };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/arrival-checklist?business=${encodeURIComponent(tenantSlug)}`
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Arrival checklist fetch failed');
+  }
+
+  const item = json.data?.item;
+  if (!item?.checklist || !item.updated_at) {
+    return null;
+  }
+
+  return {
+    checklist: item.checklist,
+    updated_at: item.updated_at,
+  };
+}
+
+export async function saveArrivalChecklist(
+  tenantSlug: string,
+  orderId: string,
+  checklist: ArrivalChecklistPayload
+): Promise<{ checklist: ArrivalChecklistPayload; updated_at: string }> {
+  const json = await apiPut<{
+    success?: boolean;
+    data?: { item?: { checklist?: ArrivalChecklistPayload; updated_at?: string } };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/arrival-checklist?business=${encodeURIComponent(tenantSlug)}`,
+    { checklist }
+  );
+
+  if (!json?.success || !json.data?.item?.checklist || !json.data?.item?.updated_at) {
+    throw new Error(json?.error || 'Arrival checklist save failed');
+  }
+
+  return {
+    checklist: json.data.item.checklist,
+    updated_at: json.data.item.updated_at,
+  };
 }

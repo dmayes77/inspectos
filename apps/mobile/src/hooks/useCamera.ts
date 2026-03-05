@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Geolocation } from '@capacitor/geolocation';
 
@@ -33,6 +34,40 @@ function fileName(prefix: string, capturedAt: string, mimeType: string): string 
   return `${prefix}-${stamp}.${extensionForMime(mimeType)}`;
 }
 
+function pickImageFromWeb(source: CameraSource): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    if (source === CameraSource.Camera) {
+      input.setAttribute('capture', 'environment');
+    }
+
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+
+    const cleanup = () => {
+      if (input.parentNode) {
+        input.parentNode.removeChild(input);
+      }
+    };
+
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      cleanup();
+      if (!file) {
+        reject(new Error('User cancelled camera'));
+        return;
+      }
+      resolve(file);
+    });
+
+    input.click();
+  });
+}
+
 export function useCamera() {
   const capture = async (options: CaptureOptions): Promise<CameraCaptureResult> => {
     const {
@@ -43,25 +78,34 @@ export function useCamera() {
       filePrefix = 'capture',
     } = options;
 
-    const photo = await Camera.getPhoto({
-      source,
-      resultType: CameraResultType.Uri,
-      quality,
-      saveToGallery: false,
-      correctOrientation: true,
-    });
+    let blob: Blob;
+    let mimeType = 'image/jpeg';
+    if (Capacitor.getPlatform() === 'web') {
+      const file = await pickImageFromWeb(source);
+      blob = file;
+      mimeType = file.type || 'image/jpeg';
+    } else {
+      const photo = await Camera.getPhoto({
+        source,
+        resultType: CameraResultType.Uri,
+        quality,
+        saveToGallery: false,
+        correctOrientation: true,
+      });
 
-    if (!photo.webPath) {
-      throw new Error('Could not read captured image.');
+      if (!photo.webPath) {
+        throw new Error('Could not read captured image.');
+      }
+
+      const response = await fetch(photo.webPath);
+      if (!response.ok) {
+        throw new Error('Could not read captured image.');
+      }
+
+      blob = await response.blob();
+      mimeType = blob.type || 'image/jpeg';
     }
 
-    const response = await fetch(photo.webPath);
-    if (!response.ok) {
-      throw new Error('Could not read captured image.');
-    }
-
-    const blob = await response.blob();
-    const mimeType = blob.type || 'image/jpeg';
     const capturedAt = new Date().toISOString();
     const file = new File([blob], fileName(filePrefix, capturedAt, mimeType), { type: mimeType });
     const previewUrl = URL.createObjectURL(blob);
