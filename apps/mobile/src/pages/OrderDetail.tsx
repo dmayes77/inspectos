@@ -174,10 +174,10 @@ export default function OrderDetail() {
         };
       case 'arrived':
         return {
-          label: 'Begin Inspection',
+          label: 'Continue On-Site Start',
           toState: 'in_progress',
           trigger: 'INSPECTION_STARTED',
-          successMessage: 'Inspection started.',
+          successMessage: 'Continue on-site start checks.',
         };
       case 'paused':
         return {
@@ -296,6 +296,10 @@ export default function OrderDetail() {
 
   const runTransition = async (action: TransitionAction) => {
     if (!order) return;
+    if (workflowState === 'arrived' && action.trigger === 'INSPECTION_STARTED') {
+      history.push(`/t/${tenantSlug}/order/${order.id}/arrival`);
+      return;
+    }
 
     const { checks, guardResult } = buildChecksForTransition(workflowState, action.toState, action.trigger);
     if (!guardResult.ok) {
@@ -326,6 +330,10 @@ export default function OrderDetail() {
       const response = await transitionOrderInspectionState(tenantSlug, order.id, payload);
       setWorkflowState(response.to_state);
       setActionNote(action.successMessage);
+      if (action.trigger === 'ARRIVAL_CONFIRMED') {
+        history.push(`/t/${tenantSlug}/order/${order.id}/arrival`);
+        return;
+      }
     } catch (transitionError) {
       setActionNote(transitionError instanceof Error ? transitionError.message : 'Transition failed');
     } finally {
@@ -353,18 +361,10 @@ export default function OrderDetail() {
       ) : null}
       {!loading && !error && order ? (
         <div className="inspector-order">
-          <div className="inspector-hero">
-            <div className="inspector-order-chip-row">
-              <span className="inspector-order-badge">{order.status}</span>
-              <span className="inspector-order-badge">{workflowState.replace(/_/g, ' ')}</span>
-              {isPendingFieldIntake ? <span className="inspector-order-badge">Awaiting Dispatch</span> : null}
-            </div>
-
-            <p className="inspector-order-address">
-              {order.property?.address_line1 || 'Property address unavailable'}
-              {order.property?.city ? `, ${order.property.city}` : ''}
-              {order.property?.state ? `, ${order.property.state}` : ''}
-            </p>
+          <div className="inspector-order-chip-row">
+            <span className="inspector-order-badge">{order.status}</span>
+            <span className="inspector-order-badge">{workflowState.replace(/_/g, ' ')}</span>
+            {isPendingFieldIntake ? <span className="inspector-order-badge">Awaiting Dispatch</span> : null}
           </div>
 
           {mapEmbedUrl ? (

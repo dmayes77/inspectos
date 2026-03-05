@@ -222,7 +222,12 @@ ion-button {
 .inspectos-tabbar ion-toolbar {
   --background: var(--mobile-bottom-nav-background);
   --border-width: 0;
-  border-top: 0.0625rem solid rgba(148, 163, 184, 0.26);
+  --border-style: none;
+  --border-color: transparent;
+  --mobile-tabbar-height: 3.25rem;
+  border-top: 0;
+  box-shadow: none;
+  min-height: var(--mobile-tabbar-height);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -265,15 +270,6 @@ ion-button {
   padding-bottom: calc(env(safe-area-inset-bottom) + 8.5rem);
 }
 
-.inspector-hero {
-  border: 0.0625rem solid rgba(148, 163, 184, 0.26);
-  border-radius: var(--app-radius);
-  background: var(--ion-card-background);
-  padding: 0.75rem;
-  display: grid;
-  gap: 0.625rem;
-}
-
 .inspector-order-badge {
   text-transform: capitalize;
   font-size: 0.75rem;
@@ -288,14 +284,7 @@ ion-button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem;
-}
-
-.inspector-order-address {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: #111827;
+  margin-top: 0.125rem;
 }
 
 .inspector-order-subtle {
@@ -379,6 +368,165 @@ ion-button {
   gap: 0.125rem;
 }
 
+.inspector-arrival-block {
+  border: 0.0625rem solid rgba(15, 138, 219, 0.24);
+  border-radius: var(--app-radius);
+  background: #ffffff;
+  box-shadow: 0 0.18rem 0.52rem rgba(15, 23, 42, 0.08);
+  padding: 0.625rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.inspector-arrival-meta {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.inspector-arrival-meta > div {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.26);
+  border-radius: var(--app-radius);
+  background: #f8fafc;
+  padding: 0.5rem 0.625rem;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.inspector-arrival-meta strong {
+  font-size: 0.78rem;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.inspector-arrival-checks {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.inspector-arrival-check {
+  width: 100%;
+  min-height: 2.5rem;
+  text-align: left;
+  border: 0.0625rem solid rgba(148, 163, 184, 0.3);
+  border-radius: var(--app-radius);
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.5rem 0.625rem;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.inspector-arrival-check span {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.inspector-arrival-check small {
+  font-size: 0.68rem;
+  color: #64748b;
+}
+
+.inspector-arrival-check.is-on {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: rgba(37, 99, 235, 0.09);
+  color: #1d4ed8;
+}
+
+.inspector-arrival-check.is-on small {
+  color: #1d4ed8;
+}
+
+.inspector-arrival-photo-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.inspector-arrival-photo-card {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.28);
+  border-radius: var(--app-radius);
+  background: #f8fafc;
+  padding: 0.5rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.inspector-arrival-photo-card strong {
+  font-size: 0.78rem;
+  color: #0f172a;
+}
+
+.inspector-arrival-photo-card small {
+  font-size: 0.66rem;
+  color: #64748b;
+}
+
+.inspector-arrival-photo-preview {
+  width: 100%;
+  border-radius: var(--app-radius);
+  max-height: 10rem;
+  object-fit: cover;
+}
+
+.arrival-confirm-modal::part(content) {
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+}
+
+.arrival-modal-body {
+  padding: 0.875rem 0.875rem calc(0.875rem + env(safe-area-inset-bottom));
+  display: grid;
+  gap: 0.625rem;
+}
+
+.arrival-modal-body h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.arrival-modal-body p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.arrival-modal-row {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.arrival-modal-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.arrival-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.arrival-option-chip {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.32);
+  border-radius: var(--app-radius);
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  min-height: 2rem;
+  padding: 0.45rem 0.625rem;
+}
+
+.arrival-option-chip.is-on {
+  border-color: rgba(37, 99, 235, 0.48);
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
 .login-shell ion-button,
 .inspector-order ion-button {
   --border-radius: var(--app-radius);
@@ -417,12 +565,12 @@ ion-button {
   position: fixed;
   left: env(safe-area-inset-left);
   right: env(safe-area-inset-right);
-  bottom: calc(env(safe-area-inset-bottom) + 4.25rem);
+  bottom: calc(env(safe-area-inset-bottom) + 3.25rem);
   z-index: 30;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-  padding: 0.5rem 0.5rem 0;
+  padding: 0.5rem 0.5rem 0.75rem;
   margin: 0;
   background: var(--ion-background-color);
   box-shadow:
@@ -1595,7 +1743,8 @@ ion-button {
 }
 
 :root[data-theme="dark"] .inspectos-tabbar ion-toolbar {
-  border-top-color: rgba(71, 85, 105, 0.6);
+  border-top: 0;
+  box-shadow: none;
 }
 
 :root[data-theme="dark"] .inspectos-tab-btn {
@@ -1606,7 +1755,6 @@ ion-button {
   color: #63b4ff;
 }
 
-:root[data-theme="dark"] .inspector-order-address,
 :root[data-theme="dark"] .profile-heading,
 :root[data-theme="dark"] .mobile-page-layout-title {
   color: #f8fafc;
@@ -1619,6 +1767,74 @@ ion-button {
 :root[data-theme="dark"] .inspector-progress > div {
   border-color: rgba(71, 85, 105, 0.55);
   background: #111827;
+}
+
+:root[data-theme="dark"] .inspector-arrival-block {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: #111827;
+}
+
+:root[data-theme="dark"] .inspector-arrival-meta > div {
+  border-color: rgba(71, 85, 105, 0.55);
+  background: #0f172a;
+}
+
+:root[data-theme="dark"] .inspector-arrival-meta strong {
+  color: #e2e8f0;
+}
+
+:root[data-theme="dark"] .inspector-arrival-check {
+  border-color: rgba(71, 85, 105, 0.55);
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+:root[data-theme="dark"] .inspector-arrival-check small {
+  color: #94a3b8;
+}
+
+:root[data-theme="dark"] .inspector-arrival-check.is-on {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(14, 116, 144, 0.32);
+  color: #bae6fd;
+}
+
+:root[data-theme="dark"] .inspector-arrival-check.is-on small {
+  color: #bae6fd;
+}
+
+:root[data-theme="dark"] .inspector-arrival-photo-card {
+  border-color: rgba(71, 85, 105, 0.55);
+  background: #0f172a;
+}
+
+:root[data-theme="dark"] .inspector-arrival-photo-card strong {
+  color: #e2e8f0;
+}
+
+:root[data-theme="dark"] .inspector-arrival-photo-card small,
+:root[data-theme="dark"] .arrival-modal-body p {
+  color: #94a3b8;
+}
+
+:root[data-theme="dark"] .arrival-modal-body h3 {
+  color: #e2e8f0;
+}
+
+:root[data-theme="dark"] .arrival-modal-label {
+  color: #94a3b8;
+}
+
+:root[data-theme="dark"] .arrival-option-chip {
+  border-color: rgba(71, 85, 105, 0.55);
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+:root[data-theme="dark"] .arrival-option-chip.is-on {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(14, 116, 144, 0.32);
+  color: #bae6fd;
 }
 
 :root[data-theme="dark"] .mobile-shell-header .mobile-shell-toolbar {

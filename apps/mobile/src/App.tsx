@@ -15,6 +15,7 @@ import People from './pages/People';
 import Calendar from './pages/Calendar';
 import QuickCapture from './pages/QuickCapture';
 import QuickCaptureDetail from './pages/QuickCaptureDetail';
+import ArrivalConfirmed from './pages/ArrivalConfirmed';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -67,6 +68,10 @@ function AppRoutes() {
 
         <Route exact path="/t/:tenantSlug/order/:orderId">
           {user && tenant ? <OrderDetail /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/order/:orderId/arrival">
+          {user && tenant ? <ArrivalConfirmed /> : <Redirect to="/login" />}
         </Route>
 
         <Route exact path="/t/:tenantSlug/profile">
