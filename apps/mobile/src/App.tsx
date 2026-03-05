@@ -13,6 +13,8 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import People from './pages/People';
 import Calendar from './pages/Calendar';
+import QuickCapture from './pages/QuickCapture';
+import QuickCaptureDetail from './pages/QuickCaptureDetail';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -81,6 +83,14 @@ function AppRoutes() {
 
         <Route exact path="/t/:tenantSlug/calendar">
           {user && tenant ? <Calendar /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/quick-capture">
+          {user && tenant ? <QuickCapture /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/quick-capture/:captureId">
+          {user && tenant ? <QuickCaptureDetail /> : <Redirect to="/login" />}
         </Route>
 
         <Route exact path="/">

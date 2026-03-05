@@ -2,29 +2,29 @@ import React from 'react';
 import {
   IonBackButton,
   IonButtons,
-  IonButton,
   IonContent,
   IonFooter,
   IonHeader,
   IonIcon,
+  IonItem,
+  IonList,
   IonPage,
+  IonPopover,
   IonTitle,
   IonToolbar,
 } from '@ionic/react';
 import {
+  addOutline,
   calendarOutline,
-  chevronBackOutline,
+  ellipsisHorizontalOutline,
   homeOutline,
+  imagesOutline,
   listOutline,
-  menuOutline,
-  moonOutline,
-  notificationsOutline,
-  peopleOutline,
-  sunnyOutline,
+  logOutOutline,
+  optionsOutline,
 } from 'ionicons/icons';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
 
 export function MobileAppShell({
   title,
@@ -39,24 +39,16 @@ export function MobileAppShell({
 }) {
   const history = useHistory();
   const location = useLocation();
-  const { user, tenant: authTenant } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+  const { user, tenant: authTenant, signOut } = useAuth();
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = React.useState(false);
+  const [accountMenuEvent, setAccountMenuEvent] = React.useState<MouseEvent | undefined>(undefined);
   const tenantSlug = location.pathname.match(/^\/t\/([^/]+)/)?.[1];
 
   const isDashboard = /\/dashboard$/.test(location.pathname);
-  const isOrders = /\/orders(\/|$)|\/order\//.test(location.pathname);
-  const isPeople = /\/people$/.test(location.pathname);
+  const isOrders = /\/orders$|\/order\//.test(location.pathname);
+  const isGallery = /\/quick-capture(\/|$)/.test(location.pathname);
   const isCalendar = /\/calendar$/.test(location.pathname);
-  const isSettings = /\/settings$/.test(location.pathname);
-  const isProfile = /\/profile$/.test(location.pathname);
-  const mockAlerts = [
-    { id: 'a1', title: 'Inspection updated', detail: 'Order #1042 changed to In Progress', time: '2m ago', unread: true },
-    { id: 'a2', title: 'New comment', detail: 'Client added a note on Order #1039', time: '18m ago', unread: true },
-    { id: 'a3', title: 'Calendar sync', detail: 'Tomorrow schedule imported successfully', time: '1h ago', unread: false },
-  ];
   const businessTitle = authTenant?.name?.trim() || 'InspectOS';
-  const hasUnreadNotifications = mockAlerts.some((alert) => alert.unread);
   const avatarInitials =
     user?.email
       ?.split('@')[0]
@@ -67,26 +59,48 @@ export function MobileAppShell({
       .join('') || 'U';
   const avatarUrl = user?.avatar_url?.trim() || null;
 
+  const navigateToSettings = () => {
+    if (!tenantSlug) return;
+    history.push(`/t/${tenantSlug}/settings`);
+  };
+
+  const navigateToFieldIntake = () => {
+    if (!tenantSlug) return;
+    history.push(`/t/${tenantSlug}/orders/field-intake`);
+  };
+
+  const navigateToProfile = () => {
+    setIsAccountMenuOpen(false);
+    if (!tenantSlug) return;
+    history.push(`/t/${tenantSlug}/profile`);
+  };
+
+  const handleSignOut = async () => {
+    setIsAccountMenuOpen(false);
+    setAccountMenuEvent(undefined);
+    await signOut();
+    history.replace('/login');
+  };
+
+  const handleAccountMenuToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isAccountMenuOpen) {
+      setIsAccountMenuOpen(false);
+      setAccountMenuEvent(undefined);
+      return;
+    }
+    setAccountMenuEvent(event.nativeEvent);
+    setIsAccountMenuOpen(true);
+  };
+
   return (
     <IonPage>
       <IonHeader className="mobile-shell-header">
         <IonToolbar className="mobile-shell-toolbar">
           <IonButtons slot="start">
             {showBack ? (
-              <IonBackButton defaultHref={defaultHref} icon={chevronBackOutline} text="Back" />
+              <IonBackButton defaultHref={defaultHref} />
             ) : (
               <div className="mobile-header-left">
-                <IonButton
-                  fill="clear"
-                  className="mobile-menu-btn"
-                  aria-label="Settings"
-                  onClick={() => {
-                    if (!tenantSlug) return;
-                    history.push(isSettings ? `/t/${tenantSlug}/dashboard` : `/t/${tenantSlug}/settings`);
-                  }}
-                >
-                  <IonIcon icon={menuOutline} />
-                </IonButton>
                 <span className="mobile-business-name">{businessTitle}</span>
               </div>
             )}
@@ -94,59 +108,48 @@ export function MobileAppShell({
           <IonTitle>{title ? '' : ''}</IonTitle>
           <IonButtons slot="end">
             <div className="mobile-header-actions">
-              <button className="mobile-header-icon-btn" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} onClick={toggleTheme}>
-                <IonIcon icon={theme === 'dark' ? sunnyOutline : moonOutline} />
+              <button className="mobile-header-icon-btn mobile-header-icon-btn--plain" aria-label="Settings" onClick={navigateToSettings}>
+                <IonIcon icon={optionsOutline} />
+              </button>
+              <button className="mobile-header-icon-btn mobile-header-icon-btn--plain" aria-label="New Field Intake" onClick={navigateToFieldIntake}>
+                <IonIcon icon={addOutline} />
               </button>
               <button
-                id="mobile-notifications-trigger"
-                className={`mobile-header-icon-btn ${isNotificationsOpen ? 'is-open' : ''}`}
-                aria-label="Notifications"
-                onClick={() => setIsNotificationsOpen((prev) => !prev)}
+                className={`mobile-header-icon-btn mobile-header-icon-btn--plain ${isAccountMenuOpen ? 'is-open' : ''}`}
+                aria-label="Account menu"
+                onClick={handleAccountMenuToggle}
               >
-                {hasUnreadNotifications ? <span className="mobile-header-dot" /> : null}
-                <IonIcon icon={notificationsOutline} />
+                <IonIcon icon={ellipsisHorizontalOutline} />
               </button>
-              <button
-                className="mobile-user-chip"
-                aria-label="User profile"
-                onClick={() => {
-                  if (!tenantSlug) return;
-                  history.push(isProfile ? `/t/${tenantSlug}/dashboard` : `/t/${tenantSlug}/profile`);
+              <IonPopover
+                isOpen={isAccountMenuOpen}
+                event={accountMenuEvent}
+                reference="event"
+                onDidDismiss={() => {
+                  setIsAccountMenuOpen(false);
+                  setAccountMenuEvent(undefined);
                 }}
+                side="bottom"
+                alignment="center"
+                className="mobile-user-menu"
               >
-                <span className="mobile-user-avatar">
-                  {avatarUrl ? <img src={avatarUrl} alt="User avatar" /> : avatarInitials}
-                </span>
-              </button>
+                <IonList>
+                  <IonItem lines="none" button detail={false} onClick={navigateToProfile}>
+                    <span slot="start" className="mobile-menu-avatar">
+                      {avatarUrl ? <img src={avatarUrl} alt="User avatar" /> : avatarInitials}
+                    </span>
+                    Profile Settings
+                  </IonItem>
+                  <IonItem lines="none" button detail={false} onClick={() => void handleSignOut()}>
+                    <IonIcon slot="start" icon={logOutOutline} className="mobile-logout-icon" />
+                    Logout
+                  </IonItem>
+                </IonList>
+              </IonPopover>
             </div>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <div
-        className={`mobile-alerts-overlay ${isNotificationsOpen ? 'is-open' : ''}`}
-        aria-hidden={!isNotificationsOpen}
-        onClick={() => setIsNotificationsOpen(false)}
-      >
-        <section className="mobile-alerts-sheet" onClick={(event) => event.stopPropagation()}>
-          <div className="mobile-alerts-head">
-            <h3>Alerts</h3>
-            <button type="button" className="mobile-alerts-close" aria-label="Close alerts" onClick={() => setIsNotificationsOpen(false)}>
-              Close
-            </button>
-          </div>
-          <div className="mobile-alerts-list">
-            {mockAlerts.map((alert) => (
-              <article key={alert.id} className={`mobile-alert-item ${alert.unread ? 'is-unread' : ''}`}>
-                <div className="mobile-alert-item-head">
-                  <strong>{alert.title}</strong>
-                  <span>{alert.time}</span>
-                </div>
-                <p>{alert.detail}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      </div>
       <IonContent className={`ion-padding mobile-shell-content ${isDashboard ? 'is-dashboard' : ''}`}>{children}</IonContent>
       <IonFooter className="inspectos-tabbar">
         <IonToolbar>
@@ -159,9 +162,9 @@ export function MobileAppShell({
               <IonIcon icon={listOutline} />
               <span>Orders</span>
             </button>
-            <button className={`inspectos-tab-btn ${isPeople ? 'active' : ''}`} onClick={() => tenantSlug && history.replace(`/t/${tenantSlug}/people`)}>
-              <IonIcon icon={peopleOutline} />
-              <span>People</span>
+            <button className={`inspectos-tab-btn ${isGallery ? 'active' : ''}`} onClick={() => tenantSlug && history.replace(`/t/${tenantSlug}/quick-capture`)}>
+              <IonIcon icon={imagesOutline} />
+              <span>Gallery</span>
             </button>
             <button className={`inspectos-tab-btn ${isCalendar ? 'active' : ''}`} onClick={() => tenantSlug && history.replace(`/t/${tenantSlug}/calendar`)}>
               <IonIcon icon={calendarOutline} />

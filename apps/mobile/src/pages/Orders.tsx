@@ -10,6 +10,7 @@ export default function Orders() {
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const history = useHistory();
   const [orders, setOrders] = useState<Awaited<ReturnType<typeof fetchBootstrap>>['orders']>([]);
+  const [propertyAddressById, setPropertyAddressById] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +25,13 @@ export default function Orders() {
       try {
         const data = await fetchBootstrap(tenant.slug);
         setOrders(data.orders || []);
+        const nextPropertyAddressById = Object.fromEntries(
+          (data.properties || []).map((property) => [
+            property.id,
+            [property.address_line1, property.city, property.state, property.zip_code].filter(Boolean).join(', '),
+          ])
+        );
+        setPropertyAddressById(nextPropertyAddressById);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to load orders');
       } finally {
@@ -47,7 +55,8 @@ export default function Orders() {
           {orders.map((o) => (
             <IonItem key={o.id} button onClick={() => history.push(`/t/${tenantSlug}/order/${o.id}`)}>
               <IonLabel>
-                <h2>{o.order_number || 'Inspection Order'}</h2>
+                <h2>{propertyAddressById[o.property_id] || 'Property address unavailable'}</h2>
+                <p>{o.order_number || 'Inspection Order'}</p>
                 <p>{o.scheduled_date} {o.scheduled_time ?? ''}</p>
                 <p>{o.status}</p>
               </IonLabel>

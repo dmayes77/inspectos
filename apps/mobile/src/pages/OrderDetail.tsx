@@ -136,6 +136,8 @@ export default function OrderDetail() {
   const mapEmbedUrl = hasMappableAddress
     ? `https://www.google.com/maps?q=${encodeURIComponent(propertyAddress)}&output=embed`
     : null;
+  const inspectionTitle = propertyAddress || order?.property?.address_line1 || 'Inspection Order';
+  const inspectionSubtitle = order?.order_number || 'Order number unavailable';
 
   const openNativeMaps = () => {
     if (!hasMappableAddress) return;
@@ -332,7 +334,12 @@ export default function OrderDetail() {
   };
 
   return (
-    <MobilePageLayout title={order?.order_number || 'Inspection Order'} showBack defaultHref={`/t/${tenantSlug}/orders`}>
+    <MobilePageLayout
+      title={inspectionTitle}
+      subtitle={inspectionSubtitle}
+      showBack
+      defaultHref={`/t/${tenantSlug}/orders`}
+    >
       {loading ? <IonSpinner name="crescent" /> : null}
       {error ? (
         <IonText color="danger">

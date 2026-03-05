@@ -181,6 +181,19 @@ export type UpdateMobileProfileInput = {
   postal_code?: string;
 };
 
+export type QuickCaptureMediaPayload = {
+  id: string;
+  name: string;
+  note: string;
+  captured_at: string;
+  latitude: number;
+  longitude: number;
+  accuracy_meters?: number | null;
+  storage_path: string;
+  image_url: string;
+  created_at: string;
+};
+
 async function parseApiError(response: Response): Promise<string> {
   let payload: ApiErrorPayload | null = null;
   try {
@@ -231,6 +244,20 @@ async function apiPut<T>(path: string, body?: unknown): Promise<T> {
       'Content-Type': 'application/json',
     },
     body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  return (await response.json()) as T;
+}
+
+async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
   });
 
   if (!response.ok) {
@@ -400,4 +427,61 @@ export async function uploadAvatar(file: File): Promise<string> {
     throw new Error('Avatar upload failed');
   }
   return avatarUrl;
+}
+
+export async function fetchQuickCaptures(tenantSlug: string): Promise<QuickCaptureMediaPayload[]> {
+  const json = await apiGet<{ success?: boolean; data?: { items?: QuickCaptureMediaPayload[] }; error?: string }>(
+    `/api/mobile/quick-captures?business=${encodeURIComponent(tenantSlug)}`
+  );
+
+  if (!json?.success || !json?.data?.items) {
+    throw new Error(json?.error || 'Quick capture fetch failed');
+  }
+
+  return json.data.items;
+}
+
+export async function fetchQuickCaptureById(tenantSlug: string, captureId: string): Promise<QuickCaptureMediaPayload> {
+  const json = await apiGet<{ success?: boolean; data?: { item?: QuickCaptureMediaPayload }; error?: string }>(
+    `/api/mobile/quick-captures/${encodeURIComponent(captureId)}?business=${encodeURIComponent(tenantSlug)}`
+  );
+
+  if (!json?.success || !json?.data?.item) {
+    throw new Error(json?.error || 'Quick capture detail fetch failed');
+  }
+
+  return json.data.item;
+}
+
+export async function createQuickCapture(
+  tenantSlug: string,
+  input: {
+    file: File;
+    note: string;
+    captured_at: string;
+    latitude: number;
+    longitude: number;
+    accuracy_meters?: number | null;
+  }
+): Promise<QuickCaptureMediaPayload> {
+  const formData = new FormData();
+  formData.append('file', input.file);
+  formData.append('note', input.note);
+  formData.append('captured_at', input.captured_at);
+  formData.append('latitude', String(input.latitude));
+  formData.append('longitude', String(input.longitude));
+  if (input.accuracy_meters != null) {
+    formData.append('accuracy_meters', String(input.accuracy_meters));
+  }
+
+  const json = await apiPostForm<{ success?: boolean; data?: { item?: QuickCaptureMediaPayload }; error?: string }>(
+    `/api/mobile/quick-captures?business=${encodeURIComponent(tenantSlug)}`,
+    formData
+  );
+
+  if (!json?.success || !json?.data?.item) {
+    throw new Error(json?.error || 'Quick capture create failed');
+  }
+
+  return json.data.item;
 }
