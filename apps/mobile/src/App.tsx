@@ -16,6 +16,8 @@ import Calendar from './pages/Calendar';
 import QuickCapture from './pages/QuickCapture';
 import QuickCaptureDetail from './pages/QuickCaptureDetail';
 import ArrivalConfirmed from './pages/ArrivalConfirmed';
+import Inspection from './pages/Inspection';
+import InspectionItem from './pages/InspectionItem';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -27,8 +29,6 @@ import '@ionic/react/css/text-alignment.css';
 import '@ionic/react/css/text-transformation.css';
 import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
-
-import './theme/variables.css';
 
 setupIonicReact();
 
@@ -72,6 +72,14 @@ function AppRoutes() {
 
         <Route exact path="/t/:tenantSlug/order/:orderId/arrival">
           {user && tenant ? <ArrivalConfirmed /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/order/:orderId/inspection">
+          {user && tenant ? <Inspection /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/order/:orderId/inspection/item/:itemId">
+          {user && tenant ? <InspectionItem /> : <Redirect to="/login" />}
         </Route>
 
         <Route exact path="/t/:tenantSlug/profile">

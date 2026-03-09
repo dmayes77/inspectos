@@ -476,7 +476,7 @@ export default function ArrivalConfirmed() {
         },
       });
       await transitionOrderInspectionState(tenantSlug, order.id, payload);
-      history.replace(`/t/${tenantSlug}/order/${order.id}`);
+      history.replace(`/t/${tenantSlug}/order/${order.id}/inspection`);
     } catch (transitionError) {
       setActionNote(transitionError instanceof Error ? transitionError.message : 'Failed to begin inspection');
     } finally {

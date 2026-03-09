@@ -1,3 +1,4 @@
+import './dashboard.css';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { IonButton, IonIcon, IonSpinner, IonText } from '@ionic/react';
 import {
@@ -13,9 +14,9 @@ import {
   warningOutline,
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { fetchBootstrap } from '../services/api';
-import { MobileAppShell } from '../components/MobileAppShell';
+import { useAuth } from '../../contexts/AuthContext';
+import { fetchBootstrap } from '../../services/api';
+import { MobileAppShell } from '../../components/MobileAppShell';
 
 type BootstrapPayload = Awaited<ReturnType<typeof fetchBootstrap>>;
 type BootstrapOrders = BootstrapPayload['orders'];

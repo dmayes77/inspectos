@@ -1,9 +1,10 @@
+import './login.css';
 import { useState } from "react";
 import { useHistory } from "react-router-dom";
 import { IonButton, IonContent, IonIcon, IonInput, IonItem, IonLabel, IonPage, IonSpinner, IonText } from "@ionic/react";
 import { eyeOffOutline, eyeOutline } from "ionicons/icons";
-import { useAuth } from "../contexts/AuthContext";
-import { login, requestPasswordReset } from "../services/api";
+import { useAuth } from "../../contexts/AuthContext";
+import { login, requestPasswordReset } from "../../services/api";
 
 export default function Login() {
   const history = useHistory();

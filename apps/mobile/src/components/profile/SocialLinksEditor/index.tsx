@@ -1,6 +1,7 @@
+import './social-links-editor.css';
 import { IonButton, IonIcon, IonInput } from '@ionic/react';
 import { addOutline, trashOutline } from 'ionicons/icons';
-import { getSocialLinkMetadata } from '../../../../../shared/utils/profile-social';
+import { getSocialLinkMetadata } from '../../../../../../shared/utils/profile-social';
 
 export function SocialLinksEditor({
   links,

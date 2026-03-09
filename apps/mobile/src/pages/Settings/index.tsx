@@ -1,5 +1,6 @@
+import './settings.css';
 import { IonText } from '@ionic/react';
-import { MobilePageLayout } from '../components/MobilePageLayout';
+import { MobilePageLayout } from '../../components/MobilePageLayout';
 
 export default function Settings() {
   return (

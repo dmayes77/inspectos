@@ -145,9 +145,71 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
         template = {
           ...templateRow,
-          sections: sectionsWithItems,
+          sections: sectionsWithItems.map((section) => ({
+            ...section,
+            is_custom: false,
+            items: (section.items ?? []).map((item) => ({
+              ...item,
+              is_custom: false,
+            })),
+          })),
         };
       }
+    }
+
+    const [customSectionsRes, customItemsRes, customAnswersRes] = await Promise.all([
+      supabase
+        .from('mobile_inspection_custom_sections')
+        .select('id, name, sort_order, created_at')
+        .eq('tenant_id', tenant.id)
+        .eq('order_id', order.id)
+        .order('sort_order')
+        .order('created_at'),
+      supabase
+        .from('mobile_inspection_custom_items')
+        .select('id, section_id, name, description, item_type, options, is_required, sort_order, created_at')
+        .eq('tenant_id', tenant.id)
+        .eq('order_id', order.id)
+        .order('sort_order')
+        .order('created_at'),
+      supabase
+        .from('mobile_inspection_custom_answers')
+        .select('*')
+        .eq('tenant_id', tenant.id)
+        .eq('order_id', order.id)
+        .order('updated_at', { ascending: false }),
+    ]);
+
+    const customSectionItems = (customItemsRes.data ?? []).reduce<Record<string, Array<Record<string, unknown>>>>((acc, item) => {
+      const sectionId = String((item as { section_id?: string }).section_id ?? '');
+      if (!sectionId) return acc;
+      if (!acc[sectionId]) acc[sectionId] = [];
+      acc[sectionId].push({
+        ...item,
+        is_custom: true,
+      });
+      return acc;
+    }, {});
+
+    const customSections = (customSectionsRes.data ?? []).map((section) => ({
+      ...section,
+      description: null,
+      is_custom: true,
+      items: customSectionItems[String((section as { id?: string }).id ?? '')] ?? [],
+    }));
+
+    if (template) {
+      template = {
+        ...template,
+        sections: [...(template.sections ?? []), ...customSections],
+      };
+    } else if (customSections.length > 0) {
+      template = {
+        id: `custom-${order.id}`,
+        name: 'Custom Inspection',
+        description: 'Inspector-created sections and items',
+        sections: customSections,
+      };
     }
 
     const [answersRes, findingsRes, signaturesRes, mediaRes] = await Promise.all([
@@ -164,6 +226,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
           order,
           template,
           answers: answersRes.data ?? [],
+          custom_answers: customAnswersRes.data ?? [],
           findings: findingsRes.data ?? [],
           signatures: signaturesRes.data ?? [],
           media: mediaRes.data ?? [],

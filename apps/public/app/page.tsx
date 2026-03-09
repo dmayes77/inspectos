@@ -4,9 +4,11 @@ import {
   ArrowRight,
   BarChart3,
   Brain,
+  Building2,
   CheckCircle2,
   Database,
   LockKeyhole,
+  Smartphone,
   ShieldCheck,
   Tags,
   Workflow,
@@ -101,6 +103,27 @@ const hiddenBurden = [
   "Your team closes jobs, but owner decisions still depend on spreadsheets.",
   "Referral volume looks strong, but quality and margin are inconsistent.",
   "Reporting exists, but operational truth is scattered across tools.",
+];
+
+const operatingSystemLayers = [
+  {
+    icon: Smartphone,
+    title: "Field Execution App",
+    description:
+      "Inspectors run intake, arrival checklists, media capture, and on-site workflows with mobile-first execution.",
+  },
+  {
+    icon: Building2,
+    title: "Office + Operations Hub",
+    description:
+      "Scheduling, dispatch, templates, team management, communications, and payment workflows stay connected to orders.",
+  },
+  {
+    icon: BarChart3,
+    title: "Owner Decision Layer",
+    description:
+      "Leaders see margin, cost-to-serve, referral quality, and performance signals to make faster business decisions.",
+  },
 ];
 
 const fragmentedReality = [
@@ -209,6 +232,34 @@ const inspectosInPractice = [
   },
 ];
 
+const comparisonRows = [
+  {
+    focus: "Primary orientation",
+    traditional: "Inspection task completion and report output.",
+    inspectos: "Business operating system: field execution + operations + owner decisions.",
+  },
+  {
+    focus: "Profit visibility",
+    traditional: "Revenue and activity views, often with manual spreadsheet reconciliation.",
+    inspectos: "Order-level cost and margin context connected to daily operations.",
+  },
+  {
+    focus: "Referral evaluation",
+    traditional: "Volume-first channel reporting.",
+    inspectos: "Referral quality measured by contribution margin and outcomes.",
+  },
+  {
+    focus: "Field-to-office context",
+    traditional: "Mobile and office data often split across separate systems.",
+    inspectos: "Shared order model connecting intake, dispatch, arrival, capture, and leadership reporting.",
+  },
+  {
+    focus: "Owner decision speed",
+    traditional: "Delayed decisions due to cross-tool reporting lag.",
+    inspectos: "Faster decisions from one operating view with unified business signals.",
+  },
+];
+
 const industryProblems = [
   {
     problem: "Tool sprawl is treated as normal operating reality.",
@@ -270,8 +321,8 @@ export default function LandingPage() {
               If your business runs on fragmented tools, you are carrying hidden cost.
             </h1>
             <p className="mx-auto mb-8 max-w-3xl text-xl text-muted-foreground">
-              InspectOS helps inspection companies see the burden they have normalized, then replace it with one platform
-              for operational truth, profit decisions, and scalable growth.
+              InspectOS helps inspection companies replace fragmented systems with one platform for field execution,
+              back-office operations, and owner-level profitability decisions.
             </p>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="md" className="h-12 px-8 text-base" asChild>
@@ -292,6 +343,32 @@ export default function LandingPage() {
                 <CardContent className="flex items-start gap-2 p-5">
                   <XCircle className="mt-0.5 h-4 w-4 text-destructive" />
                   <p className="text-sm text-muted-foreground">{item}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="how-it-works" className="border-y border-border bg-muted/20 py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto mb-12 max-w-3xl text-center">
+            <Badge color="light" className="mb-4">How It Works</Badge>
+            <h2 className="mb-4">InspectOS is not just a field app.</h2>
+            <p className="text-lg text-muted-foreground">
+              Field workflows matter, but the business wins when field, office, and owner decisions run on one system.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {operatingSystemLayers.map((layer) => (
+              <Card key={layer.title}>
+                <CardContent className="p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-sm bg-primary/10">
+                    <layer.icon className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold">{layer.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{layer.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -452,6 +529,37 @@ export default function LandingPage() {
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto mb-12 max-w-3xl text-center">
+            <Badge color="light" className="mb-4">Platform Comparison</Badge>
+            <h2 className="mb-4">InspectOS vs Traditional Inspection Software</h2>
+            <p className="text-lg text-muted-foreground">
+              Most platforms are built around inspection tasks. InspectOS is built around running the full business.
+            </p>
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-3 border-b border-border/70 bg-muted/40 px-6 py-3 text-sm font-semibold">
+                <p>Focus Area</p>
+                <p>Traditional Software</p>
+                <p>InspectOS</p>
+              </div>
+              <div className="divide-y divide-border/70">
+                {comparisonRows.map((row) => (
+                  <div key={row.focus} className="grid grid-cols-1 gap-2 px-6 py-4 text-sm md:grid-cols-3 md:gap-4">
+                    <p className="font-semibold">{row.focus}</p>
+                    <p className="text-muted-foreground">{row.traditional}</p>
+                    <p className="text-muted-foreground">{row.inspectos}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 

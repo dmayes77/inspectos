@@ -1,0 +1,136 @@
+
+.profile-loading {
+  min-height: 10rem;
+  display: grid;
+  place-items: center;
+}
+
+.profile-panel {
+  padding: 0;
+}
+
+.profile-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.profile-heading {
+  margin: 0;
+  font-size: var(--font-size-h5);
+  font-weight: 700;
+  color: #111827;
+}
+
+
+.profile-form-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profile-page {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.profile-hero {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+.profile-section {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.profile-section h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.profile-avatar-preview-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0 0.25rem;
+}
+
+.profile-avatar-preview {
+  width: 6.75rem;
+  height: 6.75rem;
+  border-radius: 999rem;
+  object-fit: cover;
+  border: 0.0625rem solid #d1d5db;
+}
+
+.profile-avatar-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.profile-avatar-input {
+  display: none;
+}
+
+.profile-field-row {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.profile-field-row > span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.profile-input {
+  --background: var(--ion-input-background);
+  --padding-start: 0.625rem;
+  --padding-end: 0.625rem;
+  --min-height: 2.5rem;
+  --border-radius: var(--app-radius);
+  border: 0.0625rem solid #dbe2ea;
+  border-radius: var(--app-radius);
+  overflow: hidden;
+}
+
+.profile-textarea {
+  --padding-top: 0.625rem;
+  --padding-bottom: 0.625rem;
+  min-height: 4.5rem;
+}
+
+.profile-input-readonly {
+  --background: #eef2f7;
+  opacity: 0.95;
+}
+
+:root[data-theme='dark'] .profile-section h3 {
+  color: #94a3b8;
+}
+
+:root[data-theme='dark'] .profile-heading {
+  color: #f8fafc;
+}
+
+:root[data-theme='dark'] .profile-field-row > span {
+  color: #e2e8f0;
+}
+
+:root[data-theme='dark'] .profile-avatar-preview {
+  border-color: #334155;
+}
+
+:root[data-theme='dark'] .profile-input {
+  border-color: #334155;
+}
+
+:root[data-theme='dark'] .profile-input-readonly {
+  --background: #1e293b;
+}

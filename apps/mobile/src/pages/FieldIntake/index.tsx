@@ -1,3 +1,4 @@
+import './field-intake.css';
 import { useEffect, useMemo, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
 import {
@@ -13,13 +14,13 @@ import {
   IonText,
   IonTextarea,
 } from '@ionic/react';
-import { MobilePageLayout } from '../components/MobilePageLayout';
+import { MobilePageLayout } from '../../components/MobilePageLayout';
 import {
   createFieldIntakeOrder,
   fetchOrderDetail,
   updateFieldIntakeOrder,
   type CreateFieldIntakeOrderInput,
-} from '../services/api';
+} from '../../services/api';
 
 const fieldIntakeDefaults: CreateFieldIntakeOrderInput = {
   address_line1: '',

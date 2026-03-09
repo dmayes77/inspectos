@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import './profile.css';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applySocialLinksToPayload,
   buildSocialLinksFromProfile,
-} from '../../../../shared/utils/profile-social';
-import { Capacitor } from '@capacitor/core';
-import { CameraSource } from '@capacitor/camera';
+} from '../../../../../shared/utils/profile-social';
 import {
   IonButton,
   IonInput,
@@ -12,12 +11,9 @@ import {
   IonText,
   IonTextarea,
 } from '@ionic/react';
-import { useHistory } from 'react-router-dom';
-import { MobileAppShell } from '../components/MobileAppShell';
-import { SocialLinksEditor } from '../components/profile/SocialLinksEditor';
-import { useAuth } from '../contexts/AuthContext';
-import { useCamera } from '../hooks/useCamera';
-import { fetchProfile, type MobileProfilePayload, updateProfile, uploadAvatar } from '../services/api';
+import { MobileAppShell } from '../../components/MobileAppShell';
+import { SocialLinksEditor } from '../../components/profile/SocialLinksEditor';
+import { fetchProfile, type MobileProfilePayload, updateProfile, uploadAvatar } from '../../services/api';
 
 type ProfileForm = {
   full_name: string;
@@ -58,9 +54,6 @@ function toForm(profile: MobileProfilePayload): ProfileForm {
 }
 
 export default function Profile() {
-  const history = useHistory();
-  const { signOut } = useAuth();
-  const { capture, isCancelError } = useCamera();
   const [profile, setProfile] = useState<MobileProfilePayload | null>(null);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [avatarUrl, setAvatarUrl] = useState('');
@@ -69,6 +62,8 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const photosInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const run = async () => {
@@ -96,22 +91,18 @@ export default function Profile() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAvatarCapture = async (source: CameraSource) => {
+  const handleAvatarFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
     setAvatarUploading(true);
     setStatus(null);
     try {
-      const result = await capture({
-        source,
-        quality: 90,
-        filePrefix: 'avatar',
-      });
-      const uploadedAvatarUrl = await uploadAvatar(result.file);
+      const uploadedAvatarUrl = await uploadAvatar(file);
       setAvatarUrl(uploadedAvatarUrl);
       setStatus('Avatar updated.');
     } catch (error) {
-      if (isCancelError(error)) {
-        return;
-      }
       setStatus(error instanceof Error ? error.message : 'Failed to upload avatar');
     } finally {
       setAvatarUploading(false);
@@ -148,19 +139,11 @@ export default function Profile() {
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    history.replace('/login');
-  };
-
   return (
     <MobileAppShell title="Profile">
       <section className="profile-panel">
         <div className="profile-heading-row">
           <h2 className="profile-heading">Edit Profile</h2>
-          <button type="button" className="profile-signout-btn" onClick={() => void handleSignOut()}>
-            Sign out
-          </button>
         </div>
         {loading ? (
           <div className="profile-loading">
@@ -176,24 +159,25 @@ export default function Profile() {
               ) : null}
 
               <div className="profile-avatar-actions">
-                <IonButton
-                  fill="outline"
-                  size="small"
-                  onClick={() => void handleAvatarCapture(CameraSource.Camera)}
-                  disabled={avatarUploading}
-                >
+                <input
+                  ref={cameraInputRef}
+                  className="profile-avatar-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleAvatarFile}
+                />
+                <input
+                  ref={photosInputRef}
+                  className="profile-avatar-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFile}
+                />
+                <IonButton fill="outline" size="small" onClick={() => cameraInputRef.current?.click()} disabled={avatarUploading}>
                   Take Photo
                 </IonButton>
-                <IonButton
-                  fill="outline"
-                  size="small"
-                  onClick={() =>
-                    void handleAvatarCapture(
-                      Capacitor.getPlatform() === 'web' ? CameraSource.Prompt : CameraSource.Photos
-                    )
-                  }
-                  disabled={avatarUploading}
-                >
+                <IonButton fill="outline" size="small" onClick={() => photosInputRef.current?.click()} disabled={avatarUploading}>
                   Choose Photo
                 </IonButton>
               </div>

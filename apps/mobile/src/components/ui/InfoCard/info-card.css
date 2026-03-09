@@ -1,0 +1,44 @@
+
+.inspector-meta-card {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.28);
+  border-radius: var(--app-radius);
+  background: var(--ion-card-background);
+  padding: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.inspector-meta-card strong {
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  color: var(--ion-text-color);
+}
+
+.inspector-meta-card--scheduled {
+  background: #16a34a;
+  border-color: #15803d;
+}
+
+.inspector-meta-card--client {
+  background: #2563eb;
+  border-color: #1d4ed8;
+}
+
+.inspector-meta-card--scheduled .inspector-progress-label,
+.inspector-meta-card--scheduled strong,
+.inspector-meta-card--client .inspector-progress-label,
+.inspector-meta-card--client strong {
+  color: #ffffff;
+}
+
+.inspector-progress-label {
+  color: #6b7280;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+:root[data-theme='dark'] .inspector-progress-label {
+  color: #94a3b8;
+}

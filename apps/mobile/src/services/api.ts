@@ -92,6 +92,7 @@ export type MobileOrderDetailPayload = {
       id: string;
       name: string;
       description?: string | null;
+      is_custom?: boolean;
       sort_order?: number | null;
       items: Array<{
         id: string;
@@ -99,15 +100,52 @@ export type MobileOrderDetailPayload = {
         description?: string | null;
         item_type?: string | null;
         options?: unknown;
+        is_custom?: boolean;
         is_required?: boolean | null;
         sort_order?: number | null;
       }>;
     }>;
   } | null;
   answers: Array<Record<string, unknown>>;
+  custom_answers?: Array<Record<string, unknown>>;
   findings: Array<Record<string, unknown>>;
   signatures: Array<Record<string, unknown>>;
   media: Array<Record<string, unknown>>;
+};
+
+export type InspectionAnswerPayload = {
+  id?: string;
+  template_item_id: string;
+  section_id: string;
+  value?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type InspectionMediaPayload = {
+  id: string;
+  order_id: string;
+  answer_id?: string | null;
+  template_item_id?: string | null;
+  file_name: string;
+  mime_type: string;
+  file_size: number;
+  created_at: string;
+  image_url: string;
+  captured_at?: string;
+  latitude?: number;
+  longitude?: number;
+  accuracy_meters?: number | null;
+};
+
+export type InspectionCustomAnswerPayload = {
+  id?: string;
+  custom_item_id: string;
+  value?: string | null;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 export type CreateFieldIntakeOrderInput = {
@@ -552,4 +590,206 @@ export async function saveArrivalChecklist(
     checklist: json.data.item.checklist,
     updated_at: json.data.item.updated_at,
   };
+}
+
+export async function fetchInspectionAnswers(
+  tenantSlug: string,
+  orderId: string
+): Promise<InspectionAnswerPayload[]> {
+  const json = await apiGet<{
+    success?: boolean;
+    data?: { items?: InspectionAnswerPayload[] };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-data?business=${encodeURIComponent(tenantSlug)}`
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Inspection answers fetch failed');
+  }
+
+  return json?.data?.items ?? [];
+}
+
+export async function saveInspectionAnswers(
+  tenantSlug: string,
+  orderId: string,
+  answers: InspectionAnswerPayload[]
+): Promise<InspectionAnswerPayload[]> {
+  const json = await apiPut<{
+    success?: boolean;
+    data?: { items?: InspectionAnswerPayload[] };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-data?business=${encodeURIComponent(tenantSlug)}`,
+    { answers }
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Inspection answers save failed');
+  }
+
+  return json?.data?.items ?? [];
+}
+
+export async function fetchInspectionMedia(
+  tenantSlug: string,
+  orderId: string,
+  templateItemId?: string
+): Promise<InspectionMediaPayload[]> {
+  const query = templateItemId ? `&template_item_id=${encodeURIComponent(templateItemId)}` : '';
+  const json = await apiGet<{
+    success?: boolean;
+    data?: { items?: InspectionMediaPayload[] };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-media?business=${encodeURIComponent(tenantSlug)}${query}`
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Inspection media fetch failed');
+  }
+
+  return json?.data?.items ?? [];
+}
+
+export async function createInspectionMedia(
+  tenantSlug: string,
+  orderId: string,
+  input: {
+    file: File;
+    template_item_id: string;
+    section_id: string;
+    captured_at: string;
+    latitude: number;
+    longitude: number;
+    accuracy_meters?: number | null;
+  }
+): Promise<InspectionMediaPayload> {
+  const formData = new FormData();
+  formData.append('file', input.file);
+  formData.append('template_item_id', input.template_item_id);
+  formData.append('section_id', input.section_id);
+  formData.append('captured_at', input.captured_at);
+  formData.append('latitude', String(input.latitude));
+  formData.append('longitude', String(input.longitude));
+  if (input.accuracy_meters != null) {
+    formData.append('accuracy_meters', String(input.accuracy_meters));
+  }
+
+  const json = await apiPostForm<{
+    success?: boolean;
+    data?: { item?: InspectionMediaPayload };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-media?business=${encodeURIComponent(tenantSlug)}`,
+    formData
+  );
+
+  if (!json?.success || !json?.data?.item) {
+    throw new Error(json?.error || 'Inspection media upload failed');
+  }
+
+  return json.data.item;
+}
+
+export async function createInspectionCustomSection(
+  tenantSlug: string,
+  orderId: string,
+  input: {
+    name: string;
+  }
+): Promise<{ id: string; name: string; sort_order?: number | null; created_at?: string }> {
+  const json = await apiPost<{
+    success?: boolean;
+    data?: { section?: { id: string; name: string; sort_order?: number | null; created_at?: string } };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-outline?business=${encodeURIComponent(tenantSlug)}`,
+    {
+      type: 'section',
+      name: input.name,
+    }
+  );
+
+  if (!json?.success || !json?.data?.section) {
+    throw new Error(json?.error || 'Failed to create custom section');
+  }
+
+  return json.data.section;
+}
+
+export async function createInspectionCustomItem(
+  tenantSlug: string,
+  orderId: string,
+  input: {
+    section_id: string;
+    name: string;
+    description?: string | null;
+    item_type?: string | null;
+    is_required?: boolean;
+  }
+): Promise<{
+  id: string;
+  section_id: string;
+  name: string;
+  description?: string | null;
+  item_type?: string | null;
+  options?: unknown;
+  is_required?: boolean | null;
+  sort_order?: number | null;
+}> {
+  const json = await apiPost<{
+    success?: boolean;
+    data?: {
+      item?: {
+        id: string;
+        section_id: string;
+        name: string;
+        description?: string | null;
+        item_type?: string | null;
+        options?: unknown;
+        is_required?: boolean | null;
+        sort_order?: number | null;
+      };
+    };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-outline?business=${encodeURIComponent(tenantSlug)}`,
+    {
+      type: 'item',
+      section_id: input.section_id,
+      name: input.name,
+      description: input.description ?? null,
+      item_type: input.item_type ?? 'text',
+      is_required: Boolean(input.is_required),
+    }
+  );
+
+  if (!json?.success || !json?.data?.item) {
+    throw new Error(json?.error || 'Failed to create custom item');
+  }
+
+  return json.data.item;
+}
+
+export async function saveInspectionCustomAnswers(
+  tenantSlug: string,
+  orderId: string,
+  answers: InspectionCustomAnswerPayload[]
+): Promise<InspectionCustomAnswerPayload[]> {
+  const json = await apiPut<{
+    success?: boolean;
+    data?: { items?: InspectionCustomAnswerPayload[] };
+    error?: string;
+  }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-custom-answers?business=${encodeURIComponent(tenantSlug)}`,
+    { answers }
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Inspection custom answers save failed');
+  }
+
+  return json?.data?.items ?? [];
 }

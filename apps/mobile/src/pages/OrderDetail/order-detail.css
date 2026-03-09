@@ -1,0 +1,88 @@
+
+.inspector-order {
+  display: grid;
+  gap: 0.875rem;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8.5rem);
+}
+
+.inspector-hero {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.inspector-order-address {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.inspector-order-subtle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+.inspector-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.inspector-map-embed {
+  width: 100%;
+  min-height: 12rem;
+  border: 0;
+  border-radius: var(--app-radius);
+}
+
+.inspector-meta-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.inspector-progress > div {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.28);
+  border-radius: var(--app-radius);
+  padding: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.inspector-primary-action {
+  margin-top: 0.25rem;
+  font-weight: 600;
+}
+
+.inspector-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.inspector-secondary-actions--stacked {
+  grid-template-columns: 1fr;
+}
+
+.inspector-status-note {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.24);
+  border-radius: var(--app-radius);
+  background: var(--ion-card-background);
+  padding: 0.625rem 0.6875rem;
+}
+
+:root[data-theme="dark"] .inspector-order-subtle {
+  color: #94a3b8;
+}
+
+:root[data-theme="dark"] .inspector-order-address {
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .inspector-progress > div {
+  border-color: rgba(71, 85, 105, 0.55);
+  background: #111827;
+}

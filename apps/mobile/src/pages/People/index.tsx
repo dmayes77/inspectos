@@ -1,16 +1,17 @@
+import './people.css';
 import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonText } from '@ionic/react';
-import { MobileAppShell } from '../components/MobileAppShell';
+import { MobileAppShell } from '../../components/MobileAppShell';
 
-export default function Calendar() {
+export default function People() {
   return (
-    <MobileAppShell title="Calendar">
+    <MobileAppShell title="People">
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Calendar</IonCardTitle>
+          <IonCardTitle>People</IonCardTitle>
         </IonCardHeader>
         <IonCardContent>
           <IonText color="medium">
-            <p>Schedule calendar view will appear here.</p>
+            <p>Team and contact directory will appear here.</p>
           </IonText>
         </IonCardContent>
       </IonCard>

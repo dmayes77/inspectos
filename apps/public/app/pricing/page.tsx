@@ -10,6 +10,7 @@ import {
   Shield,
 } from "lucide-react";
 import { getDashboardAuthHref } from "@/lib/dashboard-url";
+import { PricingCalculator } from "@/components/pricing/pricing-calculator";
 
 const registerHref = getDashboardAuthHref("/register");
 
@@ -25,7 +26,9 @@ const plans = [
     popular: false,
     features: [
       "Unlimited inspections and reports",
+      "Inspector mobile app with arrival checklist + quick capture",
       "Order-centric operations dashboard",
+      "Scheduling, dispatch, and workflow visibility",
       "Baseline automations + reminders",
       "Business ID + API key access",
       "Core performance analytics",
@@ -45,6 +48,7 @@ const plans = [
       "Everything in Growth",
       "Advanced team management and controls",
       "Expanded workflow automations",
+      "Advanced operations views for dispatch + team accountability",
       "Service line performance analytics",
       "Referral and channel performance views",
       "Priority implementation support",
@@ -63,6 +67,7 @@ const plans = [
       "Everything in Team",
       "Custom implementation and onboarding",
       "Business audit + operating model review",
+      "Cross-team operating design and leadership reporting cadence",
       "Advanced analytics and advisory cadence",
       "Dedicated success and solutions lead",
       "Custom integration planning",
@@ -130,7 +135,7 @@ export default function PricingPage() {
           Pricing aligned to business impact
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-          InspectOS is built for owner-level decisions, not commodity reporting features.
+          InspectOS is business operations software for inspection companies: field app + office workflows + owner intelligence.
           Choose the tier that matches your team size and operating complexity.
         </p>
       </section>
@@ -211,6 +216,10 @@ export default function PricingPage() {
             </Card>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4">
+        <PricingCalculator />
       </section>
 
       {/* Highlights */}

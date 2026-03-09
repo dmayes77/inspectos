@@ -146,6 +146,44 @@ export default function OverviewPage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const todayOrders = useMemo(() => orders.filter((order) => order.scheduled_date === today), [orders, today]);
+  const launchpadItems = [
+    {
+      href: "/orders/new",
+      title: "Create First Order",
+      description: "Open your intake-to-dispatch workflow and create a new job.",
+      icon: Plus,
+    },
+    {
+      href: "/templates",
+      title: "Set Inspection Templates",
+      description: "Lock in day-one report templates and checklist standards.",
+      icon: ClipboardList,
+    },
+    {
+      href: "/services",
+      title: "Configure Services",
+      description: "Define service catalog, pricing defaults, and scope options.",
+      icon: Calendar,
+    },
+    {
+      href: "/payments",
+      title: "Enable Payments",
+      description: "Track unpaid orders and record deposits/final payments.",
+      icon: DollarSign,
+    },
+    {
+      href: "/settings/email-templates",
+      title: "Prep Communications",
+      description: "Set reminder/payment email templates for clients and agents.",
+      icon: ArrowRight,
+    },
+    {
+      href: "/settings/team",
+      title: "Invite Team",
+      description: "Add inspectors and set permissions before workload scales.",
+      icon: Users,
+    },
+  ];
 
   const decisionData = useMemo(() => {
     const now = new Date();
@@ -563,6 +601,31 @@ export default function OverviewPage() {
           ) : null
         }
       />
+
+      <Card className="rounded-md">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">Day-One Competitive Launchpad</CardTitle>
+          <CardDescription>
+            Complete these setup actions to match core workflows expected from top inspection platforms.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {launchpadItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-md border px-3 py-2.5 transition-colors hover:bg-muted/50"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <item.icon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <p className="mt-2 text-sm font-semibold">{item.title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">
         <StatCard
