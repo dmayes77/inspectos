@@ -93,6 +93,7 @@ export type MobileOrderDetailPayload = {
       name: string;
       description?: string | null;
       is_custom?: boolean;
+      source_template_section_id?: string | null;
       sort_order?: number | null;
       items: Array<{
         id: string;
@@ -101,6 +102,8 @@ export type MobileOrderDetailPayload = {
         item_type?: string | null;
         options?: unknown;
         is_custom?: boolean;
+        source_template_item_id?: string | null;
+        source_section_id?: string | null;
         is_required?: boolean | null;
         sort_order?: number | null;
       }>;
@@ -282,6 +285,23 @@ async function apiPost<T>(path: string, body?: unknown): Promise<T> {
       'Content-Type': 'application/json',
     },
     body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseApiError(response));
+  }
+
+  return (await response.json()) as T;
+}
+
+async function apiDelete<T>(path: string, body?: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -771,6 +791,34 @@ export async function createInspectionCustomItem(
   }
 
   return json.data.item;
+}
+
+export async function removeInspectionOutlineSection(tenantSlug: string, orderId: string, sectionId: string): Promise<void> {
+  const json = await apiDelete<{ success?: boolean; error?: string }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-outline?business=${encodeURIComponent(tenantSlug)}`,
+    {
+      type: 'remove_section',
+      section_id: sectionId,
+    }
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Failed to remove section');
+  }
+}
+
+export async function removeInspectionOutlineItem(tenantSlug: string, orderId: string, itemId: string): Promise<void> {
+  const json = await apiDelete<{ success?: boolean; error?: string }>(
+    `/api/mobile/orders/${encodeURIComponent(orderId)}/inspection-outline?business=${encodeURIComponent(tenantSlug)}`,
+    {
+      type: 'remove_item',
+      item_id: itemId,
+    }
+  );
+
+  if (!json?.success) {
+    throw new Error(json?.error || 'Failed to remove item');
+  }
 }
 
 export async function saveInspectionCustomAnswers(

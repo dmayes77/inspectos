@@ -87,17 +87,25 @@ export default function InspectionItem() {
       setLoading(true);
       setError(null);
       try {
-        const [orderDetail, mediaItems] = await Promise.all([
-          fetchOrderDetail(tenantSlug, orderId),
-          fetchInspectionMedia(tenantSlug, orderId, itemId),
-        ]);
+        const orderDetail = await fetchOrderDetail(tenantSlug, orderId);
         setDetail(orderDetail);
 
-        const existingAnswer = orderDetail.answers.find((row) => row.template_item_id === itemId);
+        const flattened = orderDetail.template?.sections.flatMap((section) =>
+          section.items.map((entry) => ({
+            ...entry,
+            sectionId: section.id,
+            sourceSectionId: entry.source_section_id ?? section.source_template_section_id ?? section.id,
+            sourceTemplateItemId: entry.source_template_item_id ?? null,
+          }))
+        ) ?? [];
+        const resolvedItem = flattened.find((entry) => entry.id === itemId) ?? null;
+        const answerLookupId = resolvedItem?.sourceTemplateItemId ?? itemId;
+        const existingAnswer = orderDetail.answers.find((row) => row.template_item_id === answerLookupId);
         const existingCustomAnswer = (orderDetail.custom_answers ?? []).find((row) => row.custom_item_id === itemId);
         const answerRow = existingCustomAnswer ?? existingAnswer;
         setValue(stringifyValue(answerRow?.value));
         setNotes(stringifyValue(answerRow?.notes));
+        const mediaItems = await fetchInspectionMedia(tenantSlug, orderId, answerLookupId);
         setMedia(mediaItems);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load inspection item');
@@ -133,7 +141,9 @@ export default function InspectionItem() {
   const isBooleanType = itemType === 'boolean' || itemType === 'yes_no' || itemType === 'pass_fail' || itemType === 'toggle';
   const isLongTextType = itemType === 'textarea' || itemType === 'long_text' || itemType === 'comment' || itemType === 'notes';
   const isNumberType = itemType === 'number' || itemType === 'integer' || itemType === 'decimal';
-  const isCustomItem = Boolean(item?.is_custom);
+  const sourceTemplateItemId = typeof item?.source_template_item_id === 'string' ? item.source_template_item_id : null;
+  const sourceSectionId = typeof item?.source_section_id === 'string' ? item.source_section_id : null;
+  const isCustomItem = !sourceTemplateItemId;
 
   const saveAnswer = async () => {
     if (!item) return;
@@ -149,18 +159,23 @@ export default function InspectionItem() {
           },
         ]);
       } else {
+        if (!sourceTemplateItemId) {
+          throw new Error('Missing source template item for inspection response.');
+        }
         await saveInspectionAnswers(tenantSlug, orderId, [
           {
-            template_item_id: item.id,
-            section_id: item.sectionId,
+            template_item_id: sourceTemplateItemId,
+            section_id: sourceSectionId ?? item.sectionId,
             value: value.trim() || null,
             notes: notes.trim() || null,
           },
         ]);
       }
       setStatusNote('Item response saved.');
+      return true;
     } catch (saveError) {
       setStatusNote(saveError instanceof Error ? saveError.message : 'Failed to save item response');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -183,8 +198,8 @@ export default function InspectionItem() {
 
       const uploaded = await createInspectionMedia(tenantSlug, orderId, {
         file: captureResult.file,
-        template_item_id: item.id,
-        section_id: item.sectionId,
+        template_item_id: sourceTemplateItemId ?? item.id,
+        section_id: sourceSectionId ?? item.sectionId,
         captured_at: captureResult.capturedAt,
         latitude: captureResult.latitude,
         longitude: captureResult.longitude,
@@ -201,16 +216,23 @@ export default function InspectionItem() {
   };
 
   const saveAndNext = async () => {
-    await saveAnswer();
+    const saved = await saveAnswer();
+    if (!saved) return;
     if (nextItem) {
       history.push(`/t/${tenantSlug}/order/${orderId}/inspection/item/${nextItem.id}`);
-    } else {
-      history.push(previousHref);
+      return;
     }
+    history.push(previousHref);
+  };
+
+  const saveAndReturn = async () => {
+    const saved = await saveAnswer();
+    if (!saved) return;
+    history.push(previousHref);
   };
 
   return (
-    <MobilePageLayout title={item?.name || 'Inspection Item'} subtitle={detail?.order?.order_number || 'Inspection'} showBack defaultHref={previousHref}>
+    <MobilePageLayout title={item?.name || 'Inspection Item'} showBack defaultHref={previousHref}>
       {loading ? <IonSpinner name="crescent" /> : null}
       {error ? (
         <IonText color="danger">
@@ -234,7 +256,7 @@ export default function InspectionItem() {
             {item.description ? <p>{item.description}</p> : null}
 
             {isChoiceType ? (
-              <IonItem lines="none">
+              <IonItem lines="none" className="inspection-item-field">
                 <IonLabel position="stacked">Response</IonLabel>
                 <IonSelect value={value} placeholder="Select response" interface="action-sheet" onIonChange={(event) => setValue(String(event.detail.value ?? ''))}>
                   {options.map((option) => (
@@ -257,9 +279,10 @@ export default function InspectionItem() {
                 </IonSegmentButton>
               </IonSegment>
             ) : isLongTextType ? (
-              <IonTextarea label="Response" labelPlacement="stacked" autoGrow value={value} onIonInput={(event) => setValue(String(event.detail.value ?? ''))} />
+              <IonTextarea className="inspection-item-field" label="Response" labelPlacement="stacked" autoGrow value={value} onIonInput={(event) => setValue(String(event.detail.value ?? ''))} />
             ) : (
               <IonInput
+                className="inspection-item-field"
                 label="Response"
                 labelPlacement="stacked"
                 type={isNumberType ? 'number' : 'text'}
@@ -268,7 +291,7 @@ export default function InspectionItem() {
               />
             )}
 
-            <IonTextarea label="Notes" labelPlacement="stacked" autoGrow value={notes} onIonInput={(event) => setNotes(String(event.detail.value ?? ''))} />
+            <IonTextarea className="inspection-item-field" label="Notes" labelPlacement="stacked" autoGrow value={notes} onIonInput={(event) => setNotes(String(event.detail.value ?? ''))} />
           </section>
 
           <section className="inspection-item-card">
@@ -300,7 +323,7 @@ export default function InspectionItem() {
           ) : null}
 
           <StickyButtonRow>
-            <IonButton expand="block" fill="outline" onClick={() => void saveAnswer()} disabled={saving}>
+            <IonButton expand="block" fill="outline" onClick={() => void saveAndReturn()} disabled={saving}>
               {saving ? <IonSpinner name="crescent" /> : 'Save'}
             </IonButton>
             <IonButton expand="block" onClick={() => void saveAndNext()} disabled={saving}>

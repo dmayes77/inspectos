@@ -9,6 +9,7 @@ import {
   unauthorized,
 } from '@/lib/supabase';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
+import { ensureMobileInspectionOutlineSnapshot } from '@/lib/mobile-inspection-outline';
 
 type MembershipRow = {
   role: string;
@@ -33,6 +34,14 @@ type CreateOutlinePayload =
       description?: string | null;
       item_type?: string | null;
       is_required?: boolean;
+    }
+  | {
+      type: 'remove_section';
+      section_id: string;
+    }
+  | {
+      type: 'remove_item';
+      item_id: string;
     };
 
 function normalizeProfile(row: MembershipRow): { id?: string; is_inspector?: boolean } | null {
@@ -131,6 +140,16 @@ function parsePayload(body: unknown): CreateOutlinePayload | null {
       is_required: Boolean(row.is_required),
     };
   }
+  if (type === 'remove_section') {
+    const sectionId = typeof row.section_id === 'string' ? row.section_id.trim() : '';
+    if (!sectionId) return null;
+    return { type, section_id: sectionId };
+  }
+  if (type === 'remove_item') {
+    const itemId = typeof row.item_id === 'string' ? row.item_id.trim() : '';
+    if (!itemId) return null;
+    return { type, item_id: itemId };
+  }
   return null;
 }
 
@@ -163,6 +182,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const orderId = await resolveOrderId(supabase, tenant.id, id);
     if (!orderId) return applyCorsHeaders(badRequest('Order not found'), request);
 
+    const { data: orderRow, error: orderError } = await supabase
+      .from('orders')
+      .select('template_id')
+      .eq('tenant_id', tenant.id)
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (orderError) {
+      return applyCorsHeaders(serverError('Failed to resolve order template', orderError), request);
+    }
+
+    await ensureMobileInspectionOutlineSnapshot(supabase, tenant.id, orderId, orderRow?.template_id ?? null, user.userId);
+
     if (payload.type === 'section') {
       const { data, error } = await supabase
         .from('mobile_inspection_custom_sections')
@@ -170,14 +202,45 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
           tenant_id: tenant.id,
           order_id: orderId,
           name: payload.name,
+          description: null,
           created_by: user.userId,
         })
-        .select('id, name, sort_order, created_at')
+        .select('id, name, description, sort_order, created_at')
         .single();
 
       if (error || !data) return applyCorsHeaders(serverError('Failed to create custom section', error), request);
 
       return applyCorsHeaders(Response.json({ success: true, data: { section: data } }), request);
+    }
+
+    if (payload.type === 'remove_section') {
+      const { error } = await supabase
+        .from('mobile_inspection_custom_sections')
+        .update({ is_hidden: true, updated_at: new Date().toISOString() })
+        .eq('tenant_id', tenant.id)
+        .eq('order_id', orderId)
+        .eq('id', payload.section_id);
+
+      if (error) {
+        return applyCorsHeaders(serverError('Failed to remove section from outline', error), request);
+      }
+
+      return applyCorsHeaders(Response.json({ success: true }), request);
+    }
+
+    if (payload.type === 'remove_item') {
+      const { error } = await supabase
+        .from('mobile_inspection_custom_items')
+        .update({ is_hidden: true, updated_at: new Date().toISOString() })
+        .eq('tenant_id', tenant.id)
+        .eq('order_id', orderId)
+        .eq('id', payload.item_id);
+
+      if (error) {
+        return applyCorsHeaders(serverError('Failed to remove item from outline', error), request);
+      }
+
+      return applyCorsHeaders(Response.json({ success: true }), request);
     }
 
     const { data: sectionRow, error: sectionError } = await supabase
@@ -188,65 +251,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .eq('id', payload.section_id)
       .maybeSingle();
 
-    let resolvedCustomSectionId = sectionRow?.id as string | undefined;
-
     if (sectionError) {
       return applyCorsHeaders(serverError('Failed to resolve section', sectionError), request);
     }
 
-    if (!resolvedCustomSectionId) {
-      const { data: orderRow } = await supabase
-        .from('orders')
-        .select('template_id')
-        .eq('tenant_id', tenant.id)
-        .eq('id', orderId)
-        .maybeSingle();
-
-      if (!orderRow?.template_id) {
-        return applyCorsHeaders(badRequest('Custom section not found'), request);
-      }
-
-      const { data: templateSection } = await supabase
-        .from('template_sections')
-        .select('id, name')
-        .eq('id', payload.section_id)
-        .eq('template_id', orderRow.template_id)
-        .maybeSingle();
-
-      if (!templateSection?.name) {
-        return applyCorsHeaders(badRequest('Custom section not found'), request);
-      }
-
-      const { data: existingCustomSection } = await supabase
-        .from('mobile_inspection_custom_sections')
-        .select('id')
-        .eq('tenant_id', tenant.id)
-        .eq('order_id', orderId)
-        .eq('name', templateSection.name)
-        .order('created_at')
-        .limit(1)
-        .maybeSingle();
-
-      if (existingCustomSection?.id) {
-        resolvedCustomSectionId = existingCustomSection.id as string;
-      } else {
-        const { data: insertedSection, error: insertedSectionError } = await supabase
-          .from('mobile_inspection_custom_sections')
-          .insert({
-            tenant_id: tenant.id,
-            order_id: orderId,
-            name: templateSection.name,
-            created_by: user.userId,
-          })
-          .select('id')
-          .single();
-
-        if (insertedSectionError || !insertedSection?.id) {
-          return applyCorsHeaders(serverError('Failed to create matching custom section', insertedSectionError), request);
-        }
-
-        resolvedCustomSectionId = insertedSection.id as string;
-      }
+    if (!sectionRow?.id) {
+      return applyCorsHeaders(badRequest('Outline section not found'), request);
     }
 
     const { data, error } = await supabase
@@ -254,7 +264,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       .insert({
         tenant_id: tenant.id,
         order_id: orderId,
-        section_id: resolvedCustomSectionId,
+        section_id: sectionRow.id,
         name: payload.name,
         description: payload.description ?? null,
         item_type: payload.item_type || 'text',
@@ -272,6 +282,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   }
 }
 
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return POST(request, context);
+}
+
 export async function OPTIONS(request: NextRequest) {
-  return buildCorsPreflightResponse(request, 'POST, OPTIONS');
+  return buildCorsPreflightResponse(request, 'POST, DELETE, OPTIONS');
 }

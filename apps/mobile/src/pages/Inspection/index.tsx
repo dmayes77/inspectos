@@ -1,10 +1,18 @@
 import './inspection.css';
 import { useEffect, useMemo, useState } from 'react';
 import { useHistory, useParams } from 'react-router-dom';
-import { IonButton, IonInput, IonSpinner, IonText } from '@ionic/react';
+import { IonButton, IonIcon, IonInput, IonSpinner, IonText } from '@ionic/react';
+import { checkmarkCircle, removeCircleOutline, trashOutline } from 'ionicons/icons';
 import { MobilePageLayout } from '../../components/MobilePageLayout';
 import { InfoCard, SectionTitle } from '../../components/ui';
-import { createInspectionCustomItem, createInspectionCustomSection, fetchInspectionMedia, fetchOrderDetail } from '../../services/api';
+import {
+  createInspectionCustomItem,
+  createInspectionCustomSection,
+  fetchInspectionMedia,
+  fetchOrderDetail,
+  removeInspectionOutlineItem,
+  removeInspectionOutlineSection,
+} from '../../services/api';
 
 type OrderDetailData = Awaited<ReturnType<typeof fetchOrderDetail>>;
 
@@ -20,6 +28,7 @@ type ItemSummary = {
   isRequired: boolean;
   sectionId: string;
   value: string;
+  notes: string;
   photoCount: number;
 };
 
@@ -36,13 +45,24 @@ function stringifyValue(value: unknown): string {
 
 function toAnswerMap(detail: OrderDetailData | null): Record<string, ItemAnswerState> {
   const map: Record<string, ItemAnswerState> = {};
+  const snapshotIdBySourceId = new Map<string, string>();
+
+  for (const section of detail?.template?.sections ?? []) {
+    for (const item of section.items ?? []) {
+      const sourceId = typeof item.source_template_item_id === 'string' ? item.source_template_item_id : null;
+      if (sourceId) {
+        snapshotIdBySourceId.set(sourceId, item.id);
+      }
+    }
+  }
 
   for (const row of detail?.answers ?? []) {
     const templateItemId = typeof row.template_item_id === 'string' ? row.template_item_id : null;
     const sectionId = typeof row.section_id === 'string' ? row.section_id : '';
     if (!templateItemId) continue;
+    const targetId = snapshotIdBySourceId.get(templateItemId) ?? templateItemId;
 
-    map[templateItemId] = {
+    map[targetId] = {
       sectionId,
       value: stringifyValue(row.value),
       notes: stringifyValue(row.notes),
@@ -73,6 +93,8 @@ export default function Inspection() {
   const [newSectionName, setNewSectionName] = useState('');
   const [addingItemSectionId, setAddingItemSectionId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
+  const [removingSectionId, setRemovingSectionId] = useState<string | null>(null);
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [statusNote, setStatusNote] = useState('');
 
@@ -86,9 +108,19 @@ export default function Inspection() {
         ]);
         setDetail(data);
         setAnswersByItem(toAnswerMap(data));
+        const snapshotIdBySourceId = new Map<string, string>();
+        for (const section of data.template?.sections ?? []) {
+          for (const item of section.items ?? []) {
+            const sourceId = typeof item.source_template_item_id === 'string' ? item.source_template_item_id : null;
+            if (sourceId) {
+              snapshotIdBySourceId.set(sourceId, item.id);
+            }
+          }
+        }
         const counts: Record<string, number> = {};
         for (const item of media) {
-          const key = item.template_item_id ?? '';
+          const rawKey = item.template_item_id ?? '';
+          const key = snapshotIdBySourceId.get(rawKey) ?? rawKey;
           if (!key) continue;
           counts[key] = (counts[key] ?? 0) + 1;
         }
@@ -121,8 +153,13 @@ export default function Inspection() {
   );
   const totalItems = allItems.length;
   const requiredItems = allItems.filter((item) => Boolean(item.is_required));
-  const answeredItems = allItems.filter((item) => (answersByItem[item.id]?.value ?? '').trim().length > 0);
-  const answeredRequired = requiredItems.filter((item) => (answersByItem[item.id]?.value ?? '').trim().length > 0);
+  const isItemComplete = (itemId: string) => {
+    const answer = answersByItem[itemId];
+    return (answer?.value ?? '').trim().length > 0 || (answer?.notes ?? '').trim().length > 0 || (mediaCountByItem[itemId] ?? 0) > 0;
+  };
+
+  const answeredItems = allItems.filter((item) => isItemComplete(item.id));
+  const answeredRequired = requiredItems.filter((item) => isItemComplete(item.id));
   const completionPct = totalItems > 0 ? Math.min(100, Math.round((answeredItems.length / totalItems) * 100)) : 0;
   const itemSummaries = useMemo<ItemSummary[]>(
     () =>
@@ -132,6 +169,7 @@ export default function Inspection() {
         isRequired: Boolean(item.is_required),
         sectionId: item.sectionId,
         value: answersByItem[item.id]?.value ?? '',
+        notes: answersByItem[item.id]?.notes ?? '',
         photoCount: mediaCountByItem[item.id] ?? 0,
       })),
     [allItems, answersByItem, mediaCountByItem]
@@ -176,10 +214,37 @@ export default function Inspection() {
     }
   };
 
+  const removeSection = async (sectionId: string) => {
+    setRemovingSectionId(sectionId);
+    setStatusNote('');
+    try {
+      await removeInspectionOutlineSection(tenantSlug, orderId, sectionId);
+      await loadData();
+      setStatusNote('Section removed from this inspection.');
+    } catch (removeError) {
+      setStatusNote(removeError instanceof Error ? removeError.message : 'Failed to remove section');
+    } finally {
+      setRemovingSectionId(null);
+    }
+  };
+
+  const removeItem = async (itemId: string) => {
+    setRemovingItemId(itemId);
+    setStatusNote('');
+    try {
+      await removeInspectionOutlineItem(tenantSlug, orderId, itemId);
+      await loadData();
+      setStatusNote('Item removed from this inspection.');
+    } catch (removeError) {
+      setStatusNote(removeError instanceof Error ? removeError.message : 'Failed to remove item');
+    } finally {
+      setRemovingItemId(null);
+    }
+  };
+
   return (
     <MobilePageLayout
       title={detail?.order?.property?.address_line1 || detail?.order?.order_number || 'Guided Inspection'}
-      subtitle={detail?.order?.order_number || 'Inspection'}
       showBack
       defaultHref={`/t/${tenantSlug}/order/${orderId}`}
     >
@@ -224,25 +289,58 @@ export default function Inspection() {
 
           {template.sections.map((section) => (
             <section key={section.id} className="inspection-flow-section">
-              <h3>{section.name}</h3>
-              {section.description ? <p className="inspection-flow-section-description">{section.description}</p> : null}
+              <div className="inspection-flow-section-head">
+                <div className="inspection-flow-section-copy">
+                  <h3>{section.name}</h3>
+                  {section.description ? <p className="inspection-flow-section-description">{section.description}</p> : null}
+                </div>
+                <IonButton
+                  size="small"
+                  fill="clear"
+                  color="danger"
+                  className="inspection-flow-icon-action"
+                  onClick={() => void removeSection(section.id)}
+                  disabled={removingSectionId === section.id}
+                  aria-label={`Remove ${section.name} section from this inspection`}
+                >
+                  {removingSectionId === section.id ? <IonSpinner name="crescent" /> : <IonIcon icon={trashOutline} />}
+                </IonButton>
+              </div>
 
               <div className="inspection-flow-items">
                 {itemSummaries
                   .filter((item) => item.sectionId === section.id)
                   .map((item) => {
-                  const status = item.value.trim().length > 0 ? 'Complete' : 'Not started';
+                  const hasValue = item.value.trim().length > 0;
+                  const hasNotes = item.notes.trim().length > 0;
+                  const hasPhotos = item.photoCount > 0;
+                  const isComplete = hasValue || (hasNotes && hasPhotos);
+                  const isInProgress = !isComplete && (hasNotes || hasPhotos);
                   return (
-                    <button type="button" key={item.id} className="inspection-flow-item inspection-flow-item-link" onClick={() => openItem(item)}>
-                      <div className="inspection-flow-item-header">
-                        <strong>{item.name}</strong>
-                        <span>{item.isRequired ? 'Required' : 'Optional'}</span>
-                      </div>
-                      <p className="inspection-flow-item-description">
-                        {status}
-                        {item.photoCount > 0 ? ` • ${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}` : ' • No photos'}
-                      </p>
-                    </button>
+                    <div key={item.id} className="inspection-flow-item">
+                      <button type="button" className="inspection-flow-item-link" onClick={() => openItem(item)}>
+                        <div className="inspection-flow-item-header">
+                          <strong>{item.name}</strong>
+                          <span>{item.isRequired ? 'Required' : 'Optional'}</span>
+                        </div>
+                        <p className={`inspection-flow-item-description ${isComplete ? 'is-complete' : isInProgress ? 'is-in-progress' : ''}`}>
+                          {isComplete ? <IonIcon icon={checkmarkCircle} /> : null}
+                          {isComplete ? 'Complete' : isInProgress ? 'In progress' : 'Not started'}
+                          {item.photoCount > 0 ? ` • ${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}` : ' • No photos'}
+                        </p>
+                      </button>
+                      <IonButton
+                        size="small"
+                        fill="clear"
+                        color="danger"
+                        className="inspection-flow-icon-action"
+                        onClick={() => void removeItem(item.id)}
+                        disabled={removingItemId === item.id}
+                        aria-label={`Remove ${item.name} item from this inspection`}
+                      >
+                        {removingItemId === item.id ? <IonSpinner name="crescent" /> : <IonIcon icon={removeCircleOutline} />}
+                      </IonButton>
+                    </div>
                   );
                 })}
               </div>

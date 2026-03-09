@@ -1,4 +1,8 @@
 
+.order-detail-content {
+  padding-top: 0.75rem;
+}
+
 .inspector-order {
   display: grid;
   gap: 0.875rem;

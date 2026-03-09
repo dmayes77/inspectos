@@ -18,10 +18,11 @@ type TransitionAction = {
 
 const DEVICE_ID_STORAGE_KEY = "inspectos_mobile_device_id";
 
-function deriveInitialWorkflowState(orderStatus?: string | null): InspectionWorkflowState {
+function deriveInitialWorkflowState(orderStatus?: string | null, hasStarted?: boolean): InspectionWorkflowState {
   const normalized = (orderStatus ?? "").toLowerCase();
   if (normalized === "completed" || normalized === "submitted") return "completed";
   if (normalized === "in_progress") return "in_progress";
+  if (hasStarted) return "in_progress";
   return "assigned";
 }
 
@@ -105,10 +106,11 @@ export default function OrderDetail() {
   const order = useMemo(() => detail?.order ?? null, [detail]);
   const totalTemplateItems = useMemo(() => detail?.template?.sections?.reduce((count, section) => count + section.items.length, 0) ?? 0, [detail]);
   const answeredCount = detail?.answers?.length ?? 0;
+  const customAnsweredCount = detail?.custom_answers?.length ?? 0;
   const findingsCount = detail?.findings?.length ?? 0;
   const mediaCount = detail?.media?.length ?? 0;
-  const hasStarted = answeredCount > 0 || findingsCount > 0 || mediaCount > 0;
-  const completionPct = totalTemplateItems > 0 ? Math.min(100, Math.round((answeredCount / totalTemplateItems) * 100)) : 0;
+  const hasStarted = answeredCount > 0 || customAnsweredCount > 0 || findingsCount > 0 || mediaCount > 0;
+  const completionPct = totalTemplateItems > 0 ? Math.min(100, Math.round(((answeredCount + customAnsweredCount) / totalTemplateItems) * 100)) : 0;
   const hasRequiredEvidence = mediaCount > 0;
   const hasRequiredItemsCompleted = totalTemplateItems === 0 || completionPct >= 100;
   const isPendingFieldIntake = (order?.source ?? "").startsWith("mobile_field_intake:") && order?.status === "pending";
@@ -146,8 +148,8 @@ export default function OrderDetail() {
 
   useEffect(() => {
     if (!order) return;
-    setWorkflowState(deriveInitialWorkflowState(order.status));
-  }, [order]);
+    setWorkflowState(deriveInitialWorkflowState(order.status, hasStarted));
+  }, [order, hasStarted]);
 
   const primaryAction = useMemo<TransitionAction | null>(() => {
     switch (workflowState) {
@@ -320,7 +322,12 @@ export default function OrderDetail() {
   };
 
   return (
-    <MobilePageLayout title={order?.order_number || "Inspection Order"} showBack defaultHref={`/t/${tenantSlug}/orders`}>
+    <MobilePageLayout
+      title={order?.order_number || "Inspection Order"}
+      showBack
+      defaultHref={`/t/${tenantSlug}/orders`}
+      contentClassName="order-detail-content"
+    >
       {loading ? <IonSpinner name="crescent" /> : null}
       {error ? (
         <IonText color="danger">

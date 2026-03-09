@@ -664,7 +664,6 @@ export default function ArrivalConfirmed() {
   return (
     <MobilePageLayout
       title={propertyAddress || 'Arrival Confirmed'}
-      subtitle={order?.order_number || 'Order number unavailable'}
       showBack
       defaultHref={`/t/${tenantSlug}/order/${orderId}`}
     >

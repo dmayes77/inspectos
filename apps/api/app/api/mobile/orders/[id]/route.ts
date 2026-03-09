@@ -9,6 +9,7 @@ import {
   unauthorized,
 } from '@/lib/supabase';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
+import { fetchMobileInspectionOutline } from '@/lib/mobile-inspection-outline';
 
 type MembershipRow = {
   role: string;
@@ -116,62 +117,15 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       return applyCorsHeaders(badRequest('Order not found'), request);
     }
 
-    let template = null;
-    if (order.template_id) {
-      const { data: templateRow } = await supabase
-        .from('templates')
-        .select('id, name, description')
-        .eq('id', order.template_id)
-        .eq('tenant_id', tenant.id)
-        .maybeSingle();
-
-      if (templateRow) {
-        const { data: sections } = await supabase
-          .from('template_sections')
-          .select('id, name, description, sort_order')
-          .eq('template_id', templateRow.id)
-          .order('sort_order');
-
-        const sectionsWithItems = await Promise.all(
-          (sections ?? []).map(async (section) => {
-            const { data: items } = await supabase
-              .from('template_items')
-              .select('id, name, description, item_type, options, is_required, sort_order')
-              .eq('section_id', section.id)
-              .order('sort_order');
-            return { ...section, items: items ?? [] };
-          })
-        );
-
-        template = {
-          ...templateRow,
-          sections: sectionsWithItems.map((section) => ({
-            ...section,
-            is_custom: false,
-            items: (section.items ?? []).map((item) => ({
-              ...item,
-              is_custom: false,
-            })),
-          })),
-        };
-      }
-    }
-
-    const [customSectionsRes, customItemsRes, customAnswersRes] = await Promise.all([
-      supabase
-        .from('mobile_inspection_custom_sections')
-        .select('id, name, sort_order, created_at')
-        .eq('tenant_id', tenant.id)
-        .eq('order_id', order.id)
-        .order('sort_order')
-        .order('created_at'),
-      supabase
-        .from('mobile_inspection_custom_items')
-        .select('id, section_id, name, description, item_type, options, is_required, sort_order, created_at')
-        .eq('tenant_id', tenant.id)
-        .eq('order_id', order.id)
-        .order('sort_order')
-        .order('created_at'),
+    const [templateRowRes, customAnswersRes] = await Promise.all([
+      order.template_id
+        ? supabase
+            .from('templates')
+            .select('id, name, description')
+            .eq('id', order.template_id)
+            .eq('tenant_id', tenant.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
       supabase
         .from('mobile_inspection_custom_answers')
         .select('*')
@@ -180,84 +134,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         .order('updated_at', { ascending: false }),
     ]);
 
-    const customSectionItems = (customItemsRes.data ?? []).reduce<
-      Record<
-        string,
-        Array<{
-          id: unknown;
-          name: unknown;
-          description: unknown;
-          item_type: unknown;
-          options: unknown;
-          is_required: unknown;
-          sort_order: unknown;
-          is_custom: boolean;
-        }>
-      >
-    >((acc, item) => {
-      const sectionId = String((item as { section_id?: string }).section_id ?? '');
-      if (!sectionId) return acc;
-      if (!acc[sectionId]) acc[sectionId] = [];
-      acc[sectionId].push({
-        ...item,
-        is_custom: true,
-      });
-      return acc;
-    }, {});
+    const template = await fetchMobileInspectionOutline(
+      supabase,
+      tenant.id,
+      order.id,
+      order.template_id,
+      inspectorIds[0],
+      templateRowRes.data?.name ?? null,
+      templateRowRes.data?.description ?? null
+    );
 
-    const customSections = (customSectionsRes.data ?? []).map((section) => ({
-      ...section,
-      description: null,
-      is_custom: true,
-      items: customSectionItems[String((section as { id?: string }).id ?? '')] ?? [],
-    }));
+    const answersRes = await supabase.from('answers').select('*').eq('order_id', order.id).order('created_at');
 
-    if (template) {
-      const mergedSections = [...(template.sections ?? [])];
-      const templateIndexByName = new Map<string, number>();
-
-      for (let index = 0; index < mergedSections.length; index += 1) {
-        const key = String((mergedSections[index] as { name?: string }).name ?? '')
-          .trim()
-          .toLowerCase();
-        if (!key || templateIndexByName.has(key)) continue;
-        templateIndexByName.set(key, index);
-      }
-
-      for (const customSection of customSections) {
-        const customNameKey = String((customSection as { name?: string }).name ?? '')
-          .trim()
-          .toLowerCase();
-        const targetIndex = customNameKey ? templateIndexByName.get(customNameKey) : undefined;
-
-        if (targetIndex == null) {
-          mergedSections.push(customSection as (typeof mergedSections)[number]);
-          continue;
-        }
-
-        const targetSection = mergedSections[targetIndex] as { items?: Array<Record<string, unknown>> };
-        const customItems = ((customSection as { items?: Array<Record<string, unknown>> }).items ?? []).map((item) => ({
-          ...item,
-          is_custom: true,
-        }));
-        targetSection.items = [...(targetSection.items ?? []), ...customItems];
-      }
-
-      template = {
-        ...template,
-        sections: mergedSections,
-      };
-    } else if (customSections.length > 0) {
-      template = {
-        id: `custom-${order.id}`,
-        name: 'Custom Inspection',
-        description: 'Inspector-created sections and items',
-        sections: customSections,
-      };
-    }
-
-    const [answersRes, findingsRes, signaturesRes, mediaRes] = await Promise.all([
-      supabase.from('answers').select('*').eq('order_id', order.id).eq('tenant_id', tenant.id).order('created_at'),
+    const [findingsRes, signaturesRes, mediaRes] = await Promise.all([
       supabase.from('findings').select('*').eq('order_id', order.id).eq('tenant_id', tenant.id).order('created_at'),
       supabase.from('signatures').select('*').eq('order_id', order.id).eq('tenant_id', tenant.id).order('signed_at'),
       supabase.from('media_assets').select('*').eq('order_id', order.id).eq('tenant_id', tenant.id).order('created_at'),

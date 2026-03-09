@@ -43,6 +43,19 @@
   color: #6b7280;
 }
 
+.inspection-item-field {
+  --border-color: rgba(148, 163, 184, 0.5);
+  --border-width: 0 0 0.0625rem 0;
+  --highlight-color-focused: var(--ion-color-primary);
+  --highlight-height: 0.125rem;
+  border-bottom: 0.0625rem solid rgba(148, 163, 184, 0.5);
+}
+
+.inspection-item-field:focus-within {
+  --border-color: var(--ion-color-primary);
+  border-bottom-color: var(--ion-color-primary);
+}
+
 .inspection-item-media-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

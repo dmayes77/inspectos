@@ -39,6 +39,8 @@ export function MobileAppShell({
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [isOrdersMenuOpen, setIsOrdersMenuOpen] = React.useState(false);
+  const [headerOffset, setHeaderOffset] = React.useState(0);
+  const headerRef = React.useRef<HTMLElement | null>(null);
   const tenantSlug = location.pathname.match(/^\/t\/([^/]+)/)?.[1];
 
   const isDashboard = /\/dashboard$/.test(location.pathname);
@@ -68,10 +70,30 @@ export function MobileAppShell({
     setIsOrdersMenuOpen(false);
   }, [location.pathname]);
 
+  React.useLayoutEffect(() => {
+    const headerEl = headerRef.current;
+    if (!headerEl) return;
+
+    const syncHeaderOffset = () => {
+      setHeaderOffset(headerEl.offsetHeight);
+    };
+
+    syncHeaderOffset();
+
+    const resizeObserver = new ResizeObserver(syncHeaderOffset);
+    resizeObserver.observe(headerEl);
+    window.addEventListener('resize', syncHeaderOffset);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', syncHeaderOffset);
+    };
+  }, []);
+
   return (
     <IonPage>
-      <IonHeader className="mobile-shell-header">
-        <IonToolbar className="mobile-shell-toolbar">
+      <IonHeader ref={headerRef} className="mobile-shell-header">
+        <IonToolbar className={`mobile-shell-toolbar ${showBack ? 'mobile-shell-toolbar--back' : ''}`}>
           {showBack ? (
             <IonButtons slot="start">
               <IonBackButton defaultHref={defaultHref} icon={chevronBackOutline} text="Back" />
@@ -148,7 +170,12 @@ export function MobileAppShell({
           </div>
         </div>
       ) : null}
-      <IonContent className={`mobile-shell-content ${isDashboard ? 'is-dashboard' : ''}`}>{children}</IonContent>
+      <IonContent
+        className={`mobile-shell-content ${isDashboard ? 'is-dashboard' : ''}`}
+        style={{ '--offset-top': `${headerOffset}px` } as React.CSSProperties}
+      >
+        {children}
+      </IonContent>
       <IonFooter className="inspectos-tabbar">
         <IonToolbar>
           <div className="inspectos-tabbar-row">
