@@ -180,7 +180,21 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         .order('updated_at', { ascending: false }),
     ]);
 
-    const customSectionItems = (customItemsRes.data ?? []).reduce<Record<string, Array<Record<string, unknown>>>>((acc, item) => {
+    const customSectionItems = (customItemsRes.data ?? []).reduce<
+      Record<
+        string,
+        Array<{
+          id: unknown;
+          name: unknown;
+          description: unknown;
+          item_type: unknown;
+          options: unknown;
+          is_required: unknown;
+          sort_order: unknown;
+          is_custom: boolean;
+        }>
+      >
+    >((acc, item) => {
       const sectionId = String((item as { section_id?: string }).section_id ?? '');
       if (!sectionId) return acc;
       if (!acc[sectionId]) acc[sectionId] = [];
@@ -199,9 +213,39 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     }));
 
     if (template) {
+      const mergedSections = [...(template.sections ?? [])];
+      const templateIndexByName = new Map<string, number>();
+
+      for (let index = 0; index < mergedSections.length; index += 1) {
+        const key = String((mergedSections[index] as { name?: string }).name ?? '')
+          .trim()
+          .toLowerCase();
+        if (!key || templateIndexByName.has(key)) continue;
+        templateIndexByName.set(key, index);
+      }
+
+      for (const customSection of customSections) {
+        const customNameKey = String((customSection as { name?: string }).name ?? '')
+          .trim()
+          .toLowerCase();
+        const targetIndex = customNameKey ? templateIndexByName.get(customNameKey) : undefined;
+
+        if (targetIndex == null) {
+          mergedSections.push(customSection as (typeof mergedSections)[number]);
+          continue;
+        }
+
+        const targetSection = mergedSections[targetIndex] as { items?: Array<Record<string, unknown>> };
+        const customItems = ((customSection as { items?: Array<Record<string, unknown>> }).items ?? []).map((item) => ({
+          ...item,
+          is_custom: true,
+        }));
+        targetSection.items = [...(targetSection.items ?? []), ...customItems];
+      }
+
       template = {
         ...template,
-        sections: [...(template.sections ?? []), ...customSections],
+        sections: mergedSections,
       };
     } else if (customSections.length > 0) {
       template = {
