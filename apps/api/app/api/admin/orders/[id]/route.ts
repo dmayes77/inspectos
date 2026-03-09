@@ -220,6 +220,8 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 
     updateData.primary_contact_type = nextPrimary;
   }
+  if (payload.template_id !== undefined) updateData.template_id = payload.template_id;
+  if (payload.template_selection_mode !== undefined) updateData.template_selection_mode = payload.template_selection_mode;
 
   if (payload.status === "completed" && !updateData.completed_at) {
     updateData.completed_at = new Date().toISOString();

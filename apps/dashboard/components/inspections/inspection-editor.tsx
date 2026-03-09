@@ -18,6 +18,7 @@ import type { Inspection, InspectionStatusValue } from "@/types/inspection";
 import { useClients } from "@/hooks/use-clients";
 import { useInspectors } from "@/hooks/use-team";
 import { useUpdateInspection, useCreateInspection } from "@/hooks/use-inspections";
+import { useTemplates } from "@/hooks/use-templates";
 import { useApiClient } from "@/lib/api/tenant-context";
 import { useOrderById } from "@/hooks/use-orders";
 import { FOUNDATION_OPTIONS, GARAGE_OPTIONS, STORY_OPTIONS } from "@inspectos/shared/constants/property-options";
@@ -88,10 +89,13 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
 
   const [selectedClientId, setSelectedClientId] = useState<string>(inspection?.order?.client?.id || "");
   const [selectedInspectorId, setSelectedInspectorId] = useState<string>(inspection?.inspector_id || "");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(inspection?.template_id || "");
   const [selectedVendorIds, setSelectedVendorIds] = useState<string[]>(
     inspection?.vendorIds && Array.isArray(inspection.vendorIds) ? inspection.vendorIds : []
   );
   const { data: inspectors = [] } = useInspectors();
+  const { data: templatesData = [] } = useTemplates();
+  const templates = useMemo(() => templatesData.filter((template) => template.type === "inspection"), [templatesData]);
   const orderProperty = linkedOrder?.property;
 
   // React Query mutations
@@ -118,6 +122,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
   const { street, city, state, zip } = addressParts;
   const resolvedClientId = selectedClientId || inspection?.order?.client?.id || linkedOrder?.client?.id || "";
   const resolvedInspectorId = selectedInspectorId || inspection?.inspector_id || linkedOrder?.inspector?.id || "";
+  const resolvedTemplateId = selectedTemplateId || inspection?.template_id || "";
   const resolvedTypeIds = useMemo(() => {
     if (selectedTypeIds.length) return selectedTypeIds;
     if (Array.isArray(inspection?.selected_type_ids)) return inspection.selected_type_ids;
@@ -150,6 +155,11 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
         return;
       }
 
+      if (!resolvedTemplateId) {
+        toast.error("Please select an inspection template");
+        return;
+      }
+
       if (resolvedTypeIds.length === 0) {
         toast.error("Please select at least one service");
         return;
@@ -165,6 +175,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
       const payload: Partial<Inspection> & { orderId?: string } = {
         selected_type_ids: resolvedTypeIds,
         inspector_id: resolvedInspectorId,
+        template_id: resolvedTemplateId || null,
         status: statusValue as InspectionStatusValue,
         notes: getString(raw.notes) || "",
         order_id: orderId || null,
@@ -202,6 +213,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     [
       resolvedTypeIds,
       resolvedInspectorId,
+      resolvedTemplateId,
       inspection,
       updateMutation,
       createMutation,
@@ -248,6 +260,7 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
     [setSelectedClientId, setShowClientForm],
   );
   const handleInspectorSelect = useCallback((value: string) => setSelectedInspectorId(value), [setSelectedInspectorId]);
+  const handleTemplateSelect = useCallback((value: string) => setSelectedTemplateId(value), [setSelectedTemplateId]);
   const handleServiceToggle = useCallback(
     (serviceId: string, isChecked: boolean) => {
       setSelectedTypeIds((ids) => {
@@ -485,6 +498,21 @@ export default function EditInspectionPage(props: { isNew?: boolean; orderId?: s
                         {inspectors.map((inspector) => (
                           <SelectItem key={inspector.teamMemberId} value={inspector.teamMemberId}>
                             {inspector.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="template">Inspection Template</Label>
+                    <Select name="template_id" value={resolvedTemplateId} required onValueChange={handleTemplateSelect}>
+                      <SelectTrigger id="template" className="w-full">
+                        <SelectValue placeholder="Select an inspection template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {templates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
