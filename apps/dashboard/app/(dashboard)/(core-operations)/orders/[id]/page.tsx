@@ -33,6 +33,7 @@ import { useCreateProperty, useProperties, useUpdateProperty } from "@/hooks/use
 import { useServices } from "@/hooks/use-services";
 import { useInspectors } from "@/hooks/use-team";
 import { useVendors } from "@/hooks/use-vendors";
+import { useTemplates } from "@/hooks/use-templates";
 import { cn } from "@/lib/utils";
 import { formatDate, formatTime12, formatTimestamp, formatTimestampFull } from "@inspectos/shared/utils/dates";
 import { formatInvoiceNumber } from "@inspectos/shared/utils/invoices";
@@ -169,8 +170,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const { data: orderNotes = [] } = useOrderNotes(id);
   const createOrderNote = useCreateOrderNote(id);
   const { data: inspectionData, isLoading: inspectionDataLoading } = useInspectionData(order?.id ?? "");
+  const { data: templatesData = [] } = useTemplates();
+  const inspectionTemplates = useMemo(() => templatesData.filter((template) => template.type === "inspection"), [templatesData]);
   const createInvoice = useCreateInvoice();
   const recordPayment = useRecordPayment();
+  const [inspectionTemplateId, setInspectionTemplateId] = useState<string>("__none__");
 
   const serviceNameMap = useMemo(() => {
     return new Map(services.map((service) => [service.name.toLowerCase(), service.serviceId]));
@@ -215,6 +219,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }, [order?.id, order?.inspector_id]);
 
   useEffect(() => {
+    setInspectionTemplateId(inspectionData?.inspection?.template_id ?? "__none__");
+  }, [inspectionData?.inspection?.id, inspectionData?.inspection?.template_id]);
+
+  useEffect(() => {
     setCostForm({
       labor_cost: typeof order?.labor_cost === "number" ? String(order.labor_cost) : "",
       travel_cost: typeof order?.travel_cost === "number" ? String(order.travel_cost) : "",
@@ -235,6 +243,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           selected: true,
           inspectorIds: service.inspector_id ? [service.inspector_id] : [],
           vendorIds: service.vendor_id ? [service.vendor_id] : [],
+          templateId: service.template_id ?? undefined,
         };
       })
       .filter((assignment): assignment is ServiceAssignment => Boolean(assignment));
@@ -787,7 +796,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       if (existing) {
         return prev.map((a) => (a.serviceId === serviceId ? { ...a, selected: checked } : a));
       }
-      return [...prev, { serviceId, selected: checked, inspectorIds: [], vendorIds: [] }];
+      return [...prev, { serviceId, selected: checked, inspectorIds: [], vendorIds: [], templateId: undefined }];
     });
   };
 
@@ -799,6 +808,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, vendorIds } : a)));
   };
 
+  const handleServiceTemplateChange = (serviceId: string, templateId: string | null | undefined) => {
+    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, templateId } : a)));
+  };
+
   const handleSaveServices = () => {
     if (!order) return;
     if (selectedServices.length === 0) {
@@ -808,9 +821,11 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
     const payloadServices = selectedServices.map((service) => {
       const assignment = serviceAssignments.find((a) => a.serviceId === service.serviceId);
+      const resolvedTemplateId =
+        assignment?.templateId === undefined ? (service.templateId ?? undefined) : assignment.templateId;
       return {
         service_id: service.serviceId,
-        template_id: service.templateId ?? undefined,
+        template_id: resolvedTemplateId ?? null,
         name: service.name,
         price: typeof service.price === "number" ? service.price : Number(service.price ?? 0),
         duration_minutes: service.durationMinutes ?? undefined,
@@ -832,6 +847,29 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           toast.error(error instanceof Error ? error.message : "Failed to update services.");
         },
       }
+    );
+  };
+
+  const handleSaveInspectionTemplate = () => {
+    if (!order?.id) {
+      toast.error("No order found.");
+      return;
+    }
+
+    updateOrder.mutate(
+      {
+        id: order.id,
+        template_id: inspectionTemplateId === "__none__" ? null : inspectionTemplateId,
+        template_selection_mode: inspectionTemplateId === "__none__" ? "service_default" : "order_override",
+      },
+      {
+        onSuccess: () => {
+          toast.success("Inspection template updated.");
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : "Failed to update inspection template.");
+        },
+      },
     );
   };
 
@@ -1391,6 +1429,42 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <CardDescription>Edit selected services and assign inspectors/vendors inline.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+          <div className="space-y-1.5">
+            <Label htmlFor="order-inspection-template">Inspection Template</Label>
+            <Select
+              value={inspectionTemplateId}
+              onValueChange={setInspectionTemplateId}
+              disabled={updateOrder.isPending || deleteOrder.isPending || !inspectionData?.inspection?.id}
+            >
+              <SelectTrigger id="order-inspection-template">
+                <SelectValue placeholder="Select template" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No template</SelectItem>
+                {inspectionTemplates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Sets the template used by the inspection record for this order.
+            </p>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSaveInspectionTemplate}
+              disabled={updateOrder.isPending || !inspectionData?.inspection?.id}
+            >
+              {updateOrder.isPending ? "Saving..." : "Save Template"}
+            </Button>
+          </div>
+        </div>
+
         <ServiceAssignmentsSection
           inspectors={inspectors}
           vendors={vendors.map((vendor) => ({
@@ -1405,6 +1479,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           onServiceToggle={handleServiceToggle}
           onServiceInspectorsChange={handleServiceInspectorsChange}
           onServiceVendorsChange={handleServiceVendorsChange}
+          onServiceTemplateChange={handleServiceTemplateChange}
+          templateOptions={inspectionTemplates.map((template) => ({ id: template.id, name: template.name }))}
           searchValue={serviceSearch}
           onSearchChange={setServiceSearch}
           helperText="Each selected service can be assigned to a specific inspector or vendor."

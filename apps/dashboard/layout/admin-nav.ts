@@ -17,6 +17,7 @@ import {
   Folders,
   MapPin,
   IdCard,
+  Target,
 } from "lucide-react";
 
 export type NavItem = {
@@ -44,6 +45,7 @@ export const companyNavSections: NavSection[] = [
   {
     label: "Operations",
     items: [
+      { href: "/services", icon: Target, label: "Services" },
       { href: "/templates", icon: FileText, label: "Inspection Templates" },
       { href: "/tags", icon: Tag, label: "Tags" },
     ],

@@ -22,14 +22,38 @@ import { toSlugIdSegment } from "@/lib/routing/slug-id";
 function getTypeBadge(type: string) {
   switch (type) {
     case "inspection":
-      return <Badge color="primary" variant="solid">Inspection</Badge>;
+      return (
+        <Badge color="primary" variant="light" className="border border-brand-200">
+          Inspection
+        </Badge>
+      );
     case "agreement":
-      return <Badge color="info" variant="solid">Agreement</Badge>;
+      return (
+        <Badge color="info" variant="light" className="border border-blue-light-200">
+          Agreement
+        </Badge>
+      );
     case "report":
-      return <Badge color="success" variant="solid">Report</Badge>;
+      return (
+        <Badge color="success" variant="light" className="border border-success-200">
+          Report
+        </Badge>
+      );
     default:
       return <Badge color="light">{type}</Badge>;
   }
+}
+
+function resolveTemplateType(template: { type?: string | null; name?: string | null }): "inspection" | "agreement" | "report" {
+  const rawType = (template.type ?? "").trim().toLowerCase();
+  if (rawType === "inspection" || rawType === "agreement" || rawType === "report") {
+    return rawType;
+  }
+
+  const name = (template.name ?? "").toLowerCase();
+  if (name.includes("agreement")) return "agreement";
+  if (name.includes("report")) return "report";
+  return "inspection";
 }
 
 export default function TemplatesPage() {
@@ -126,9 +150,9 @@ export default function TemplatesPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <StatCard label="Inspection Templates" value={templates.filter((t) => t.type === "inspection").length} />
-        <StatCard label="Agreement Templates" value={templates.filter((t) => t.type === "agreement").length} />
-        <StatCard label="Report Templates" value={templates.filter((t) => t.type === "report").length} />
+        <StatCard label="Inspection Templates" value={templates.filter((t) => resolveTemplateType(t) === "inspection").length} />
+        <StatCard label="Agreement Templates" value={templates.filter((t) => resolveTemplateType(t) === "agreement").length} />
+        <StatCard label="Report Templates" value={templates.filter((t) => resolveTemplateType(t) === "report").length} />
       </div>
 
       {/* Templates Grid */}
@@ -185,7 +209,7 @@ export default function TemplatesPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap items-center gap-2">
-                {getTypeBadge(template.type)}
+                {getTypeBadge(resolveTemplateType(template))}
                 {template.standard && <Badge color="light">{template.standard}</Badge>}
                 {template.isAddon ? <Badge color="light">Add-on</Badge> : null}
               </div>

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Service } from "@/hooks/use-services";
 import { Clock, Search, User, Building2 } from "lucide-react";
 
@@ -27,6 +28,12 @@ export type ServiceAssignment = {
   selected: boolean;
   inspectorIds: string[];
   vendorIds: string[];
+  templateId?: string | null;
+};
+
+export type TemplateOption = {
+  id: string;
+  name: string;
 };
 
 type ServiceGroup = {
@@ -43,6 +50,8 @@ type ServiceAssignmentsSectionProps = {
   onServiceToggle: (serviceId: string, checked: boolean) => void;
   onServiceInspectorsChange: (serviceId: string, inspectorIds: string[]) => void;
   onServiceVendorsChange: (serviceId: string, vendorIds: string[]) => void;
+  onServiceTemplateChange?: (serviceId: string, templateId: string | null | undefined) => void;
+  templateOptions?: TemplateOption[];
   searchValue?: string;
   onSearchChange?: (value: string) => void;
   helperText?: string;
@@ -56,6 +65,8 @@ export function ServiceAssignmentsSection({
   onServiceToggle,
   onServiceInspectorsChange,
   onServiceVendorsChange,
+  onServiceTemplateChange,
+  templateOptions = [],
   searchValue,
   onSearchChange,
   helperText,
@@ -79,6 +90,11 @@ export function ServiceAssignmentsSection({
     () => vendors.map((v) => ({ value: v.id, label: v.name, meta: v.vendor_type ?? undefined })),
     [vendors],
   );
+  const templateNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    templateOptions.forEach((template) => map.set(template.id, template.name));
+    return map;
+  }, [templateOptions]);
 
   const { coreServices, addonServices, packageServices } = useMemo(() => {
     const filtered = normalizedSearch ? services.filter((service) => service.name.toLowerCase().includes(normalizedSearch)) : services;
@@ -123,6 +139,15 @@ export function ServiceAssignmentsSection({
                   const checked = assignment?.selected ?? false;
                   const inspectorIds = assignment?.inspectorIds ?? [];
                   const vendorIds = assignment?.vendorIds ?? [];
+                  const selectedTemplateValue =
+                    assignment?.templateId === undefined
+                      ? "__service_default__"
+                      : assignment.templateId === null
+                        ? "__none__"
+                        : assignment.templateId;
+                  const serviceDefaultTemplateLabel = service.templateId
+                    ? templateNameById.get(service.templateId) ?? "Linked template"
+                    : "No template";
 
                   return (
                     <div key={service.serviceId} className="rounded-md border">
@@ -178,6 +203,36 @@ export function ServiceAssignmentsSection({
                                   placeholder="Assign vendors..."
                                 />
                               </div>
+
+                              {onServiceTemplateChange ? (
+                                <div className="space-y-1 md:col-span-2">
+                                  <Label htmlFor={`template-${service.serviceId}`} className="text-xs">
+                                    Inspection template
+                                  </Label>
+                                  <Select
+                                    value={selectedTemplateValue}
+                                    onValueChange={(value) =>
+                                      onServiceTemplateChange(
+                                        service.serviceId,
+                                        value === "__service_default__" ? undefined : value === "__none__" ? null : value,
+                                      )
+                                    }
+                                  >
+                                    <SelectTrigger id={`template-${service.serviceId}`}>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="__service_default__">Use service default ({serviceDefaultTemplateLabel})</SelectItem>
+                                      <SelectItem value="__none__">No template</SelectItem>
+                                      {templateOptions.map((template) => (
+                                        <SelectItem key={template.id} value={template.id}>
+                                          {template.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ) : null}
                             </div>
                           )}
                         </div>

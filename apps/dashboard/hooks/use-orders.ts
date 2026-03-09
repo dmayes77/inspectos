@@ -95,6 +95,8 @@ export interface Order {
   // Inspection field data (merged from inspections table in migration 043)
   template_id: string | null;
   template_version: number | null;
+  template_selection_mode?: "service_default" | "order_override";
+  template_locked_at?: string | null;
   started_at: string | null;
   weather_conditions: string | null;
   temperature: string | null;
@@ -227,6 +229,8 @@ export interface UpdateOrderInput {
   internal_notes?: string | null;
   client_notes?: string | null;
   primary_contact_type?: "agent" | "client" | null;
+  template_id?: string | null;
+  template_selection_mode?: "service_default" | "order_override";
 }
 
 export interface OrderFilters {

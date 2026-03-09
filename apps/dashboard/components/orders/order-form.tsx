@@ -18,6 +18,7 @@ import { useAgents } from "@/hooks/use-agents";
 import { useInspectors } from "@/hooks/use-team";
 import { useProperties, useCreateProperty, type Property } from "@/hooks/use-properties";
 import { useServices, type Service } from "@/hooks/use-services";
+import { useTemplates } from "@/hooks/use-templates";
 import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
 import { PropertyFormSections, PropertyFormErrors, createEmptyPropertyFormState, validatePropertyForm } from "@/components/properties/property-form-sections";
@@ -135,6 +136,7 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
   const { data: vendors = [] } = useVendors();
   const { data: properties = [] } = useProperties();
   const { data: services = [] } = useServices();
+  const { data: templatesData = [] } = useTemplates();
   const createProperty = useCreateProperty();
 
   const [serviceSearch, setServiceSearch] = useState("");
@@ -144,6 +146,7 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
   const [showInlinePropertyForm, setShowInlinePropertyForm] = useState(false);
   const [propertyForm, setPropertyForm] = useState(() => createEmptyPropertyFormState());
   const [propertyFormErrors, setPropertyFormErrors] = useState<PropertyFormErrors>({});
+  const inspectionTemplates = useMemo(() => templatesData.filter((template) => template.type === "inspection"), [templatesData]);
 
   const [form, setForm] = useState<OrderFormState>(() => ({
     client_id: order?.client_id ?? initialValues?.client_id ?? null,
@@ -202,6 +205,7 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
         selected: true,
         inspectorIds: service.inspector_id ? [service.inspector_id] : [],
         vendorIds: service.vendor_id ? [service.vendor_id] : [],
+        templateId: service.template_id ?? undefined,
       };
     }).filter((assignment) => Boolean(assignment.serviceId));
 
@@ -251,7 +255,7 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
       if (existing) {
         return prev.map((a) => (a.serviceId === serviceId ? { ...a, selected: checked } : a));
       }
-      return [...prev, { serviceId, selected: checked, inspectorIds: [], vendorIds: [] }];
+      return [...prev, { serviceId, selected: checked, inspectorIds: [], vendorIds: [], templateId: undefined }];
     });
   };
 
@@ -261,6 +265,10 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
 
   const handleServiceVendorsChange = (serviceId: string, vendorIds: string[]) => {
     setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, vendorIds } : a)));
+  };
+
+  const handleServiceTemplateChange = (serviceId: string, templateId: string | null | undefined) => {
+    setServiceAssignments((prev) => prev.map((a) => (a.serviceId === serviceId ? { ...a, templateId } : a)));
   };
 
   const handleSubmit = () => {
@@ -298,10 +306,12 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
       client_notes: form.client_notes || null,
       services: selectedServices.map((service) => {
         const assignment = serviceAssignments.find((a) => a.serviceId === service.serviceId);
+        const resolvedTemplateId =
+          assignment?.templateId === undefined ? (service.templateId ?? undefined) : assignment.templateId;
         // TODO: when DB supports multiple, send full arrays instead of first element
         return {
           service_id: service.serviceId,
-          template_id: service.templateId ?? undefined,
+          template_id: resolvedTemplateId ?? null,
           name: service.name,
           price: getServicePrice(service),
           duration_minutes: service.durationMinutes ?? undefined,
@@ -719,6 +729,8 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
                 onServiceToggle={handleServiceToggle}
                 onServiceInspectorsChange={handleServiceInspectorsChange}
                 onServiceVendorsChange={handleServiceVendorsChange}
+                onServiceTemplateChange={handleServiceTemplateChange}
+                templateOptions={inspectionTemplates.map((template) => ({ id: template.id, name: template.name }))}
                 searchValue={serviceSearch}
                 onSearchChange={setServiceSearch}
                 helperText="For each service, you can optionally assign a specific inspector or vendor. Leave blank to use the order-level inspector."

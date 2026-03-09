@@ -6,7 +6,7 @@ import { z } from "zod";
 
 export const orderServiceSchema = z.object({
   service_id: z.string().uuid("Invalid service ID"),
-  template_id: z.string().uuid("Invalid template ID").optional(),
+  template_id: z.string().uuid("Invalid template ID").optional().nullable(),
   name: z.string().min(1, "Service name is required"),
   price: z.number().min(0, "Price must be non-negative"),
   duration_minutes: z.number().int().positive().optional(),
@@ -76,6 +76,8 @@ export const updateOrderSchema = z.object({
   internal_notes: z.string().max(5000).optional().nullable(),
   client_notes: z.string().max(5000).optional().nullable(),
   primary_contact_type: z.enum(["agent", "client"]).optional().nullable(),
+  template_id: z.string().uuid("Invalid template ID").optional().nullable(),
+  template_selection_mode: z.enum(["service_default", "order_override"]).optional(),
 });
 
 export const scheduleOrderSchema = z.object({

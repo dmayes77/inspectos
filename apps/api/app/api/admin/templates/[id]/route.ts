@@ -85,6 +85,17 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
   if (body.standard !== undefined) updateData.standard = body.standard;
   if (body.isDefault !== undefined) updateData.is_default = body.isDefault;
 
+  const requestedServiceIds =
+    body.serviceIds !== undefined
+      ? Array.isArray(body.serviceIds)
+        ? body.serviceIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+        : []
+      : body.serviceId !== undefined
+        ? typeof body.serviceId === 'string' && body.serviceId.length > 0
+          ? [body.serviceId]
+          : []
+        : null;
+
   const { data, error } = await supabase
     .from('templates')
     .update(updateData)
@@ -94,6 +105,42 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     .single();
 
   if (error) return serverError('Failed to update template', error);
+
+  if (requestedServiceIds !== null) {
+    const { data: currentlyLinked, error: linkedReadError } = await supabase
+      .from('services')
+      .select('id')
+      .eq('tenant_id', tenant.id)
+      .eq('template_id', templateId);
+
+    if (linkedReadError) return serverError('Failed to load currently linked services', linkedReadError);
+
+    const currentIds = new Set((currentlyLinked ?? []).map((row: { id: string }) => row.id));
+    const requestedIds = new Set(requestedServiceIds);
+
+    const toUnlink = [...currentIds].filter((id) => !requestedIds.has(id));
+    const toLink = [...requestedIds].filter((id) => !currentIds.has(id));
+
+    if (toUnlink.length > 0) {
+      const { error: unlinkError } = await supabase
+        .from('services')
+        .update({ template_id: null })
+        .eq('tenant_id', tenant.id)
+        .in('id', toUnlink);
+
+      if (unlinkError) return serverError('Failed to unlink services from template', unlinkError);
+    }
+
+    if (toLink.length > 0) {
+      const { error: linkError } = await supabase
+        .from('services')
+        .update({ template_id: templateId })
+        .eq('tenant_id', tenant.id)
+        .in('id', toLink);
+
+      if (linkError) return serverError('Failed to link services to template', linkError);
+    }
+  }
 
   return success(data);
 });
