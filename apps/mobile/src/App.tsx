@@ -3,6 +3,7 @@ import { IonApp, IonRouterOutlet, IonSpinner, setupIonicReact } from '@ionic/rea
 import { IonReactRouter } from '@ionic/react-router';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ReactQueryProvider } from './lib/react-query';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -121,11 +122,13 @@ function AppRoutes() {
 const App = () => (
   <IonApp>
     <ThemeProvider>
-      <AuthProvider>
-        <IonReactRouter>
-          <AppRoutes />
-        </IonReactRouter>
-      </AuthProvider>
+      <ReactQueryProvider>
+        <AuthProvider>
+          <IonReactRouter>
+            <AppRoutes />
+          </IonReactRouter>
+        </AuthProvider>
+      </ReactQueryProvider>
     </ThemeProvider>
   </IonApp>
 );

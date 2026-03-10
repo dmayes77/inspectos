@@ -1,4 +1,8 @@
 
+.dashboard-briefing {
+  padding-top: 0.5rem;
+}
+
 .dashboard-hub {
   display: grid;
   gap: 0.75rem;

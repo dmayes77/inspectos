@@ -1,11 +1,13 @@
 import "./orders.css";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useHistory, useParams } from "react-router-dom";
 import { IonIcon, IonSpinner, IonText } from "@ionic/react";
 import { briefcaseOutline, businessOutline, chevronForwardOutline, homeOutline, searchOutline } from "ionicons/icons";
 import { useAuth } from "../../contexts/AuthContext";
-import { fetchBootstrap } from "../../services/api";
+import { getOrders } from "../../services/api";
 import { MobilePageLayout } from "../../components/MobilePageLayout";
+import { mobileQueryKeys } from "../../lib/query-keys";
 
 function formatScheduleFriendly(scheduledDate?: string | null, scheduledTime?: string | null): string {
   if (!scheduledDate) return "Unscheduled";
@@ -79,34 +81,17 @@ export default function Orders() {
   const { tenant } = useAuth();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const history = useHistory();
-  const [orders, setOrders] = useState<Awaited<ReturnType<typeof fetchBootstrap>>["orders"]>([]);
-  const [properties, setProperties] = useState<Awaited<ReturnType<typeof fetchBootstrap>>["properties"]>([]);
-  const [clients, setClients] = useState<Awaited<ReturnType<typeof fetchBootstrap>>["clients"]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const run = async () => {
-      if (!tenant) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchBootstrap(tenant.slug);
-        setOrders(data.orders || []);
-        setProperties(data.properties || []);
-        setClients(data.clients || []);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load orders");
-      } finally {
-        setLoading(false);
-      }
-    };
-    void run();
-  }, [tenant]);
+  const ordersQuery = useQuery({
+    queryKey: mobileQueryKeys.orders(tenantSlug),
+    queryFn: () => getOrders(tenantSlug),
+    enabled: Boolean(tenant),
+  });
+  const orders = useMemo(() => ordersQuery.data?.orders ?? [], [ordersQuery.data?.orders]);
+  const properties = useMemo(() => ordersQuery.data?.properties ?? [], [ordersQuery.data?.properties]);
+  const clients = useMemo(() => ordersQuery.data?.clients ?? [], [ordersQuery.data?.clients]);
+  const loading = ordersQuery.isPending;
+  const error = ordersQuery.error instanceof Error ? ordersQuery.error.message : null;
 
   const propertyById = useMemo(() => new Map(properties.map((property) => [property.id, property])), [properties]);
   const clientById = useMemo(() => new Map(clients.map((client) => [client.id, client])), [clients]);

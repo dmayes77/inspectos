@@ -114,6 +114,13 @@ export type MobileOrderDetailPayload = {
   findings: Array<Record<string, unknown>>;
   signatures: Array<Record<string, unknown>>;
   media: Array<Record<string, unknown>>;
+  progress_summary?: {
+    total_items: number;
+    answered_count: number;
+    custom_answered_count: number;
+    findings_count: number;
+    media_count: number;
+  };
 };
 
 export type InspectionAnswerPayload = {
@@ -371,7 +378,7 @@ export async function fetchMobileSession(): Promise<MobileSessionPayload> {
   return json.data;
 }
 
-export async function fetchBootstrap(tenantSlug: string): Promise<BootstrapPayload> {
+export async function getOrders(tenantSlug: string): Promise<BootstrapPayload> {
   const json = await apiGet<{ success?: boolean; data?: BootstrapPayload; error?: string }>(
     `/api/sync/bootstrap?business=${encodeURIComponent(tenantSlug)}&scope=orders`
   );
@@ -381,9 +388,14 @@ export async function fetchBootstrap(tenantSlug: string): Promise<BootstrapPaylo
   return json.data;
 }
 
-export async function fetchOrderDetail(tenantSlug: string, orderId: string): Promise<MobileOrderDetailPayload> {
+export async function getOrder(
+  tenantSlug: string,
+  orderId: string,
+  options?: { includeInspection?: boolean }
+): Promise<MobileOrderDetailPayload> {
+  const includeInspectionQuery = options?.includeInspection ? '&include=inspection' : '';
   const json = await apiGet<{ success?: boolean; data?: MobileOrderDetailPayload; error?: string }>(
-    `/api/mobile/orders/${encodeURIComponent(orderId)}?business=${encodeURIComponent(tenantSlug)}`
+    `/api/mobile/orders/${encodeURIComponent(orderId)}?business=${encodeURIComponent(tenantSlug)}${includeInspectionQuery}`
   );
   if (!json?.success || !json?.data) {
     throw new Error(json?.error || 'Order detail failed');
@@ -561,7 +573,7 @@ export async function createQuickCapture(
   return json.data.item;
 }
 
-export async function fetchArrivalChecklist(
+export async function getOrderArrivalChecklist(
   tenantSlug: string,
   orderId: string
 ): Promise<{ checklist: ArrivalChecklistPayload; updated_at: string } | null> {
@@ -588,7 +600,7 @@ export async function fetchArrivalChecklist(
   };
 }
 
-export async function saveArrivalChecklist(
+export async function saveOrderArrivalChecklist(
   tenantSlug: string,
   orderId: string,
   checklist: ArrivalChecklistPayload
@@ -612,7 +624,7 @@ export async function saveArrivalChecklist(
   };
 }
 
-export async function fetchInspectionAnswers(
+export async function getOrderInspectionAnswers(
   tenantSlug: string,
   orderId: string
 ): Promise<InspectionAnswerPayload[]> {
@@ -631,7 +643,7 @@ export async function fetchInspectionAnswers(
   return json?.data?.items ?? [];
 }
 
-export async function saveInspectionAnswers(
+export async function saveOrderInspectionAnswers(
   tenantSlug: string,
   orderId: string,
   answers: InspectionAnswerPayload[]
@@ -652,7 +664,7 @@ export async function saveInspectionAnswers(
   return json?.data?.items ?? [];
 }
 
-export async function fetchInspectionMedia(
+export async function getOrderInspectionMedia(
   tenantSlug: string,
   orderId: string,
   templateItemId?: string
@@ -673,7 +685,7 @@ export async function fetchInspectionMedia(
   return json?.data?.items ?? [];
 }
 
-export async function createInspectionMedia(
+export async function createOrderInspectionMedia(
   tenantSlug: string,
   orderId: string,
   input: {
@@ -711,6 +723,10 @@ export async function createInspectionMedia(
   }
 
   return json.data.item;
+}
+
+export async function getOrderInspectionDetail(tenantSlug: string, orderId: string): Promise<MobileOrderDetailPayload> {
+  return getOrder(tenantSlug, orderId, { includeInspection: true });
 }
 
 export async function createInspectionCustomSection(

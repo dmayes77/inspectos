@@ -1,5 +1,6 @@
 import './profile.css';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   applySocialLinksToPayload,
   buildSocialLinksFromProfile,
@@ -14,6 +15,7 @@ import {
 import { MobileAppShell } from '../../components/MobileAppShell';
 import { SocialLinksEditor } from '../../components/profile/SocialLinksEditor';
 import { fetchProfile, type MobileProfilePayload, updateProfile, uploadAvatar } from '../../services/api';
+import { mobileQueryKeys } from '../../lib/query-keys';
 
 type ProfileForm = {
   full_name: string;
@@ -54,38 +56,57 @@ function toForm(profile: MobileProfilePayload): ProfileForm {
 }
 
 export default function Profile() {
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<MobileProfilePayload | null>(null);
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [avatarUrl, setAvatarUrl] = useState('');
   const [socialLinks, setSocialLinks] = useState<string[]>(['']);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const photosInputRef = useRef<HTMLInputElement | null>(null);
+  const profileQuery = useQuery({
+    queryKey: mobileQueryKeys.profile(),
+    queryFn: fetchProfile,
+  });
+  const avatarMutation = useMutation({
+    mutationFn: uploadAvatar,
+    onSuccess: (uploadedAvatarUrl) => {
+      setAvatarUrl(uploadedAvatarUrl);
+      setStatus('Avatar updated.');
+    },
+  });
+  const updateProfileMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: (data) => {
+      queryClient.setQueryData(mobileQueryKeys.profile(), data);
+      setProfile(data);
+      setForm(toForm(data));
+      setSocialLinks(buildSocialLinksFromProfile(data));
+      setAvatarUrl(data.avatar_url ?? '');
+      setStatus('Profile saved.');
+    },
+  });
 
   useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      setStatus(null);
-      try {
-        const data = await fetchProfile();
-        setProfile(data);
-        setForm(toForm(data));
-        setSocialLinks(buildSocialLinksFromProfile(data));
-        setAvatarUrl(data.avatar_url ?? '');
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : 'Failed to load profile');
-      } finally {
-        setLoading(false);
+    const data = profileQuery.data;
+    if (!data) {
+      if (profileQuery.error instanceof Error) {
+        setStatus(profileQuery.error.message);
       }
-    };
-    void run();
-  }, []);
+      return;
+    }
+    setProfile(data);
+    setForm(toForm(data));
+    setSocialLinks(buildSocialLinksFromProfile(data));
+    setAvatarUrl(data.avatar_url ?? '');
+    setStatus(null);
+  }, [profileQuery.data, profileQuery.error]);
 
   const emailValue = profile?.email ?? '—';
   const avatarPreview = useMemo(() => avatarUrl.trim(), [avatarUrl]);
+  const loading = profileQuery.isPending;
 
   const handleChange = (field: keyof ProfileForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -99,9 +120,8 @@ export default function Profile() {
     setAvatarUploading(true);
     setStatus(null);
     try {
-      const uploadedAvatarUrl = await uploadAvatar(file);
+      const uploadedAvatarUrl = await avatarMutation.mutateAsync(file);
       setAvatarUrl(uploadedAvatarUrl);
-      setStatus('Avatar updated.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to upload avatar');
     } finally {
@@ -126,12 +146,7 @@ export default function Profile() {
         postal_code: form.postal_code.trim(),
       };
       const payload = applySocialLinksToPayload(basePayload, socialLinks);
-      const data = await updateProfile(payload);
-      setProfile(data);
-      setForm(toForm(data));
-      setSocialLinks(buildSocialLinksFromProfile(data));
-      setAvatarUrl(data.avatar_url ?? '');
-      setStatus('Profile saved.');
+      await updateProfileMutation.mutateAsync(payload);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Failed to save profile');
     } finally {

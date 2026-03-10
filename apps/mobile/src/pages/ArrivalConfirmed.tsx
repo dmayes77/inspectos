@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CameraSource } from '@capacitor/camera';
 import {
   IonButton,
@@ -12,12 +13,13 @@ import { useHistory, useParams } from 'react-router-dom';
 import { MobilePageLayout } from '../components/MobilePageLayout';
 import { useCamera } from '../hooks/useCamera';
 import {
-  fetchArrivalChecklist,
-  fetchOrderDetail,
-  saveArrivalChecklist,
+  getOrder,
+  getOrderArrivalChecklist,
+  saveOrderArrivalChecklist,
   transitionOrderInspectionState,
   type ArrivalChecklistPayload,
 } from '../services/api';
+import { mobileQueryKeys } from '../lib/query-keys';
 import { enqueueQuickCapture } from '../services/quickCaptureOfflineQueue';
 import { buildInspectionTransitionRequest, validateInspectionTransition } from '../lib/inspection-state-machine';
 import type {
@@ -125,12 +127,10 @@ function buildDefaultPhotos(): ArrivalPhotoDraft[] {
 
 export default function ArrivalConfirmed() {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const { tenantSlug, orderId } = useParams<{ tenantSlug: string; orderId: string }>();
   const { capture, isCancelError } = useCamera();
 
-  const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchOrderDetail>> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string>('');
   const [transitionBusy, setTransitionBusy] = useState(false);
   const [capturedAt, setCapturedAt] = useState<string>(new Date().toISOString());
@@ -158,6 +158,27 @@ export default function ArrivalConfirmed() {
 
   const [photos, setPhotos] = useState<ArrivalPhotoDraft[]>(buildDefaultPhotos);
   const [photoBusyKey, setPhotoBusyKey] = useState<ArrivalPhotoKind | null>(null);
+  const orderQuery = useQuery({
+    queryKey: mobileQueryKeys.order(tenantSlug, orderId),
+    queryFn: () => getOrder(tenantSlug, orderId),
+  });
+  const arrivalChecklistQuery = useQuery({
+    queryKey: mobileQueryKeys.orderArrivalChecklist(tenantSlug, orderId),
+    queryFn: () => getOrderArrivalChecklist(tenantSlug, orderId),
+  });
+  const saveArrivalChecklistMutation = useMutation({
+    mutationFn: (checklist: ArrivalChecklistPayload) => saveOrderArrivalChecklist(tenantSlug, orderId, checklist),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(mobileQueryKeys.orderArrivalChecklist(tenantSlug, orderId), saved);
+    },
+  });
+  const detail = orderQuery.data ?? null;
+  const loading = orderQuery.isPending || arrivalChecklistQuery.isPending;
+  const error = orderQuery.error instanceof Error
+    ? orderQuery.error.message
+    : arrivalChecklistQuery.error instanceof Error
+      ? arrivalChecklistQuery.error.message
+      : null;
 
   const buildChecklistPayload = (
     overrides: Partial<ArrivalChecklistPayload> = {}
@@ -199,7 +220,7 @@ export default function ArrivalConfirmed() {
     setUtilitiesNotes(checklist.utilities_notes || '');
   };
 
-  const persistChecklistDraft = async (checklist: ArrivalChecklistPayload) => {
+  const persistChecklistDraft = useCallback(async (checklist: ArrivalChecklistPayload) => {
     const now = new Date().toISOString();
     writeLocalArrivalChecklistDraft(tenantSlug, orderId, {
       checklist,
@@ -210,7 +231,7 @@ export default function ArrivalConfirmed() {
     if (!navigator.onLine) return;
 
     try {
-      const saved = await saveArrivalChecklist(tenantSlug, orderId, checklist);
+      const saved = await saveArrivalChecklistMutation.mutateAsync(checklist);
       writeLocalArrivalChecklistDraft(tenantSlug, orderId, {
         checklist: saved.checklist,
         updated_at: saved.updated_at,
@@ -219,7 +240,7 @@ export default function ArrivalConfirmed() {
     } catch (saveError) {
       setActionNote(saveError instanceof Error ? saveError.message : 'Failed to save arrival draft');
     }
-  };
+  }, [orderId, saveArrivalChecklistMutation, tenantSlug]);
 
   const deviceId = useMemo(() => {
     const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY);
@@ -230,31 +251,14 @@ export default function ArrivalConfirmed() {
   }, []);
 
   useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchOrderDetail(tenantSlug, orderId);
-        setDetail(data);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load arrival flow');
-      } finally {
-        setLoading(false);
-      }
-    };
-    void run();
-  }, [tenantSlug, orderId]);
-
-  useEffect(() => {
     const localDraft = readLocalArrivalChecklistDraft(tenantSlug, orderId);
     if (localDraft?.checklist) {
       applyChecklistPayload(localDraft.checklist);
     }
 
     void (async () => {
-      if (!navigator.onLine) return;
       try {
-        const remoteDraft = await fetchArrivalChecklist(tenantSlug, orderId);
+        const remoteDraft = arrivalChecklistQuery.data;
         if (!remoteDraft) {
           if (localDraft?.dirty) {
             await persistChecklistDraft(localDraft.checklist);
@@ -282,7 +286,7 @@ export default function ArrivalConfirmed() {
         setActionNote(syncError instanceof Error ? syncError.message : 'Failed to sync arrival draft');
       }
     })();
-  }, [tenantSlug, orderId]);
+  }, [arrivalChecklistQuery.data, orderId, persistChecklistDraft, tenantSlug]);
 
   useEffect(() => {
     const onOnline = () => {
@@ -293,7 +297,7 @@ export default function ArrivalConfirmed() {
 
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
-  }, [tenantSlug, orderId]);
+  }, [orderId, persistChecklistDraft, tenantSlug]);
 
   useEffect(() => {
     return () => {
@@ -476,6 +480,8 @@ export default function ArrivalConfirmed() {
         },
       });
       await transitionOrderInspectionState(tenantSlug, order.id, payload);
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, orderId) });
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.orders(tenantSlug) });
       history.replace(`/t/${tenantSlug}/order/${order.id}/inspection`);
     } catch (transitionError) {
       setActionNote(transitionError instanceof Error ? transitionError.message : 'Failed to begin inspection');

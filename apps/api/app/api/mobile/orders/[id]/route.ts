@@ -16,6 +16,38 @@ type MembershipRow = {
   profiles: { id?: string; is_inspector?: boolean } | { id?: string; is_inspector?: boolean }[] | null;
 };
 
+type TemplateSectionIdRow = {
+  id: string;
+};
+
+type CountQueryResult = {
+  count: number | null;
+  error: { message?: string | null } | null;
+};
+
+function isMissingRelationError(error: { message?: string | null } | null | undefined): boolean {
+  const message = error?.message?.toLowerCase() ?? '';
+  return (
+    message.includes('does not exist') ||
+    message.includes('relation') ||
+    message.includes('column') ||
+    message.includes('schema cache') ||
+    message.includes('could not find')
+  );
+}
+
+function resolveCountOrFallback(result: CountQueryResult, fallback = 0): { count: number; error: { message?: string | null } | null } {
+  if (!result.error) {
+    return { count: result.count ?? fallback, error: null };
+  }
+
+  if (isMissingRelationError(result.error)) {
+    return { count: fallback, error: null };
+  }
+
+  return { count: fallback, error: result.error };
+}
+
 function normalizeProfile(row: MembershipRow): { id?: string; is_inspector?: boolean } | null {
   const profile = row.profiles;
   if (Array.isArray(profile)) return profile[0] ?? null;
@@ -39,6 +71,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     if (!businessIdentifier) {
       return applyCorsHeaders(badRequest('Missing business parameter'), request);
     }
+    const includeInspection = request.nextUrl.searchParams.get('include') === 'inspection';
 
     const lookup = resolveIdLookup(id, {
       publicColumn: 'order_number',
@@ -117,6 +150,76 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       return applyCorsHeaders(badRequest('Order not found'), request);
     }
 
+    if (!includeInspection) {
+      const templateSectionIdsRes = order.template_id
+        ? await supabase.from('template_sections').select('id').eq('template_id', order.template_id)
+        : { data: [] as TemplateSectionIdRow[], error: null };
+
+      if (templateSectionIdsRes.error && !isMissingRelationError(templateSectionIdsRes.error)) {
+        return applyCorsHeaders(serverError('Failed to load template sections', templateSectionIdsRes.error), request);
+      }
+
+      const templateSectionIds = ((templateSectionIdsRes.error ? [] : templateSectionIdsRes.data ?? []) as TemplateSectionIdRow[])
+        .map((row) => row.id)
+        .filter((value): value is string => Boolean(value));
+
+      const [answersCountRes, customAnswersCountRes, findingsCountRes, mediaCountRes, templateItemsCountRes] = await Promise.all([
+        supabase.from('answers').select('*', { count: 'exact', head: true }).eq('order_id', order.id),
+        supabase
+          .from('mobile_inspection_custom_answers')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', tenant.id)
+          .eq('order_id', order.id),
+        supabase.from('findings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('order_id', order.id),
+        supabase.from('media_assets').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('order_id', order.id),
+        templateSectionIds.length > 0
+          ? supabase.from('template_items').select('*', { count: 'exact', head: true }).in('section_id', templateSectionIds)
+          : Promise.resolve({ count: 0, error: null }),
+      ]);
+
+      const answersCount = resolveCountOrFallback(answersCountRes);
+      const customAnswersCount = resolveCountOrFallback(customAnswersCountRes);
+      const findingsCount = resolveCountOrFallback(findingsCountRes);
+      const mediaCount = resolveCountOrFallback(mediaCountRes);
+      const templateItemsCount = resolveCountOrFallback(templateItemsCountRes);
+
+      if (answersCount.error) {
+        return applyCorsHeaders(serverError('Failed to load answer counts', answersCount.error), request);
+      }
+      if (customAnswersCount.error) {
+        return applyCorsHeaders(serverError('Failed to load custom answer counts', customAnswersCount.error), request);
+      }
+      if (mediaCount.error) {
+        return applyCorsHeaders(serverError('Failed to load media count', mediaCount.error), request);
+      }
+      if (templateItemsCount.error) {
+        return applyCorsHeaders(serverError('Failed to load template item count', templateItemsCount.error), request);
+      }
+
+      return applyCorsHeaders(
+        Response.json({
+          success: true,
+          data: {
+            order,
+            template: null,
+            answers: [],
+            custom_answers: [],
+            findings: [],
+            signatures: [],
+            media: [],
+            progress_summary: {
+              total_items: templateItemsCount.count,
+              answered_count: answersCount.count,
+              custom_answered_count: customAnswersCount.count,
+              findings_count: findingsCount.count,
+              media_count: mediaCount.count,
+            },
+          },
+        }),
+        request
+      );
+    }
+
     const [templateRowRes, customAnswersRes] = await Promise.all([
       order.template_id
         ? supabase
@@ -163,6 +266,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
           findings: findingsRes.data ?? [],
           signatures: signaturesRes.data ?? [],
           media: mediaRes.data ?? [],
+          progress_summary: {
+            total_items: template?.sections?.reduce((count, section) => count + section.items.length, 0) ?? 0,
+            answered_count: answersRes.data?.length ?? 0,
+            custom_answered_count: customAnswersRes.data?.length ?? 0,
+            findings_count: findingsRes.data?.length ?? 0,
+            media_count: mediaRes.data?.length ?? 0,
+          },
         },
       }),
       request

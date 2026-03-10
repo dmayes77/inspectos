@@ -1,9 +1,11 @@
 import { Capacitor } from '@capacitor/core';
 import { IonButton, IonIcon, IonSpinner, IonText } from '@ionic/react';
 import { locationOutline, timeOutline } from 'ionicons/icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useHistory, useParams } from 'react-router-dom';
 import { MobilePageLayout } from '../components/MobilePageLayout';
+import { mobileQueryKeys } from '../lib/query-keys';
 import { fetchQuickCaptureById, type QuickCaptureMediaPayload } from '../services/api';
 
 function formatDateTime(dateIso: string) {
@@ -22,24 +24,13 @@ function formatDateTime(dateIso: string) {
 export default function QuickCaptureDetail() {
   const history = useHistory();
   const { tenantSlug, captureId } = useParams<{ tenantSlug: string; captureId: string }>();
-  const [item, setItem] = useState<QuickCaptureMediaPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchQuickCaptureById(tenantSlug, captureId);
-        setItem(data);
-      } catch (fetchError) {
-        setError(fetchError instanceof Error ? fetchError.message : 'Failed to load capture');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [tenantSlug, captureId]);
+  const detailQuery = useQuery({
+    queryKey: mobileQueryKeys.quickCaptureDetail(tenantSlug, captureId),
+    queryFn: () => fetchQuickCaptureById(tenantSlug, captureId),
+  });
+  const item: QuickCaptureMediaPayload | null = detailQuery.data ?? null;
+  const loading = detailQuery.isPending;
+  const error = detailQuery.error instanceof Error ? detailQuery.error.message : null;
 
   const mapEmbedUrl = useMemo(() => {
     if (!item) return null;

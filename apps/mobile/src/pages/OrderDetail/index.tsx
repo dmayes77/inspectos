@@ -1,11 +1,13 @@
 import "./order-detail.css";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useHistory, useParams } from "react-router-dom";
 import { IonButton, IonSpinner, IonText } from "@ionic/react";
 import { Capacitor } from "@capacitor/core";
 import { MobilePageLayout } from "../../components/MobilePageLayout";
 import { InfoCard, SectionTitle, StatusChipRow, StickyButtonRow } from "../../components/ui";
-import { fetchOrderDetail, transitionOrderInspectionState } from "../../services/api";
+import { getOrder, transitionOrderInspectionState } from "../../services/api";
+import { mobileQueryKeys } from "../../lib/query-keys";
 import { buildInspectionTransitionRequest, validateInspectionTransition } from "../../lib/inspection-state-machine";
 import type { InspectionTransitionCheck, InspectionTransitionTrigger, InspectionWorkflowState } from "../../../../../shared/types/inspection-state-machine";
 
@@ -71,9 +73,6 @@ function formatScheduleFriendly(scheduledDate?: string | null, scheduledTime?: s
 export default function OrderDetail() {
   const history = useHistory();
   const { tenantSlug, orderId } = useParams<{ tenantSlug: string; orderId: string }>();
-  const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchOrderDetail>> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string>("");
   const [workflowState, setWorkflowState] = useState<InspectionWorkflowState>("assigned");
   const [transitionBusy, setTransitionBusy] = useState(false);
@@ -86,29 +85,20 @@ export default function OrderDetail() {
     return generated;
   }, []);
 
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchOrderDetail(tenantSlug, orderId);
-        setDetail(data);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load order");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void run();
-  }, [tenantSlug, orderId]);
+  const orderQuery = useQuery({
+    queryKey: mobileQueryKeys.order(tenantSlug, orderId),
+    queryFn: () => getOrder(tenantSlug, orderId),
+  });
+  const detail = orderQuery.data ?? null;
+  const loading = orderQuery.isPending;
+  const error = orderQuery.error instanceof Error ? orderQuery.error.message : null;
 
   const order = useMemo(() => detail?.order ?? null, [detail]);
-  const totalTemplateItems = useMemo(() => detail?.template?.sections?.reduce((count, section) => count + section.items.length, 0) ?? 0, [detail]);
-  const answeredCount = detail?.answers?.length ?? 0;
-  const customAnsweredCount = detail?.custom_answers?.length ?? 0;
-  const findingsCount = detail?.findings?.length ?? 0;
-  const mediaCount = detail?.media?.length ?? 0;
+  const totalTemplateItems = detail?.progress_summary?.total_items ?? 0;
+  const answeredCount = detail?.progress_summary?.answered_count ?? 0;
+  const customAnsweredCount = detail?.progress_summary?.custom_answered_count ?? 0;
+  const findingsCount = detail?.progress_summary?.findings_count ?? 0;
+  const mediaCount = detail?.progress_summary?.media_count ?? 0;
   const hasStarted = answeredCount > 0 || customAnsweredCount > 0 || findingsCount > 0 || mediaCount > 0;
   const completionPct = totalTemplateItems > 0 ? Math.min(100, Math.round(((answeredCount + customAnsweredCount) / totalTemplateItems) * 100)) : 0;
   const hasRequiredEvidence = mediaCount > 0;

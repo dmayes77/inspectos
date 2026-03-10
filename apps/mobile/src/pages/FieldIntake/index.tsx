@@ -1,5 +1,6 @@
 import './field-intake.css';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useHistory, useParams } from 'react-router-dom';
 import {
   IonButton,
@@ -17,10 +18,11 @@ import {
 import { MobilePageLayout } from '../../components/MobilePageLayout';
 import {
   createFieldIntakeOrder,
-  fetchOrderDetail,
+  getOrder,
   updateFieldIntakeOrder,
   type CreateFieldIntakeOrderInput,
 } from '../../services/api';
+import { mobileQueryKeys } from '../../lib/query-keys';
 
 const fieldIntakeDefaults: CreateFieldIntakeOrderInput = {
   address_line1: '',
@@ -40,47 +42,48 @@ export default function FieldIntake() {
   const isEditMode = Boolean(orderId);
   const [fieldIntake, setFieldIntake] = useState<CreateFieldIntakeOrderInput>(fieldIntakeDefaults);
   const [saving, setSaving] = useState(false);
-  const [loadingExisting, setLoadingExisting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [canEditExisting, setCanEditExisting] = useState(true);
+  const existingOrderQuery = useQuery({
+    queryKey: mobileQueryKeys.order(tenantSlug, orderId ?? 'new'),
+    queryFn: () => getOrder(tenantSlug, orderId!),
+    enabled: isEditMode && Boolean(orderId),
+  });
+  const loadingExisting = existingOrderQuery.isPending;
 
   useEffect(() => {
     if (!isEditMode || !orderId) return;
-
-    const load = async () => {
-      setLoadingExisting(true);
-      setStatus(null);
-      try {
-        const detail = await fetchOrderDetail(tenantSlug, orderId);
-        const order = detail.order;
-        const isPendingFieldIntake =
-          (order.source ?? '').startsWith('mobile_field_intake:') &&
-          order.status === 'pending';
-
-        if (!isPendingFieldIntake) {
-          setCanEditExisting(false);
-          setStatus('This Field Intake has already been deployed. You can no longer edit it from mobile.');
-          return;
-        }
-
-        setFieldIntake((prev) => ({
-          ...prev,
-          address_line1: order.property?.address_line1 ?? '',
-          city: order.property?.city ?? '',
-          state: order.property?.state ?? '',
-          zip_code: order.property?.zip_code ?? '',
-          contact_name: order.client?.name ?? '',
-        }));
-      } catch (loadError) {
+    const detail = existingOrderQuery.data;
+    if (!detail) {
+      if (existingOrderQuery.error instanceof Error) {
         setCanEditExisting(false);
-        setStatus(loadError instanceof Error ? loadError.message : 'Failed to load Field Intake');
-      } finally {
-        setLoadingExisting(false);
+        setStatus(existingOrderQuery.error.message);
       }
-    };
+      return;
+    }
 
-    void load();
-  }, [isEditMode, orderId, tenantSlug]);
+    setStatus(null);
+    const order = detail.order;
+    const isPendingFieldIntake =
+      (order.source ?? '').startsWith('mobile_field_intake:') &&
+      order.status === 'pending';
+
+    if (!isPendingFieldIntake) {
+      setCanEditExisting(false);
+      setStatus('This Field Intake has already been deployed. You can no longer edit it from mobile.');
+      return;
+    }
+
+    setCanEditExisting(true);
+    setFieldIntake((prev) => ({
+      ...prev,
+      address_line1: order.property?.address_line1 ?? '',
+      city: order.property?.city ?? '',
+      state: order.property?.state ?? '',
+      zip_code: order.property?.zip_code ?? '',
+      contact_name: order.client?.name ?? '',
+    }));
+  }, [existingOrderQuery.data, existingOrderQuery.error, isEditMode, orderId]);
 
   const canSubmitCreate = useMemo(
     () =>

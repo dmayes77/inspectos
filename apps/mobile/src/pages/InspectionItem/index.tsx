@@ -1,5 +1,6 @@
 import './inspection-item.css';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useHistory, useParams } from 'react-router-dom';
 import {
   IonButton,
@@ -19,17 +20,29 @@ import { CameraSource } from '@capacitor/camera';
 import { cameraOutline, chevronForwardOutline } from 'ionicons/icons';
 import { MobilePageLayout } from '../../components/MobilePageLayout';
 import { SectionTitle, StickyButtonRow } from '../../components/ui';
+import { mobileQueryKeys } from '../../lib/query-keys';
 import {
-  createInspectionMedia,
-  fetchInspectionMedia,
-  fetchOrderDetail,
-  saveInspectionAnswers,
+  createOrderInspectionMedia,
+  getOrderInspectionDetail,
+  getOrderInspectionMedia,
+  saveOrderInspectionAnswers,
   saveInspectionCustomAnswers,
   type InspectionMediaPayload,
 } from '../../services/api';
+import {
+  enqueueInspectionCustomAnswerMutation,
+  enqueueInspectionTemplateAnswerMutation,
+} from '../../services/inspectionOfflineQueue';
 import { useCamera } from '../../hooks/useCamera';
 
-type Detail = Awaited<ReturnType<typeof fetchOrderDetail>>;
+type Detail = Awaited<ReturnType<typeof getOrderInspectionDetail>>;
+
+type FlattenedInspectionItem = NonNullable<Detail['template']>['sections'][number]['items'][number] & {
+  sectionId: string;
+  sectionName: string;
+  sourceSectionId: string;
+  sourceTemplateItemId: string | null;
+};
 
 function stringifyValue(value: unknown): string {
   if (value == null) return '';
@@ -68,70 +81,132 @@ function formatDateTime(dateIso: string) {
   }).format(date);
 }
 
+function flattenInspectionItems(detail: Detail | null): FlattenedInspectionItem[] {
+  return (
+    detail?.template?.sections.flatMap((section) =>
+      section.items.map((entry) => ({
+        ...entry,
+        sectionId: section.id,
+        sectionName: section.name,
+        sourceSectionId: entry.source_section_id ?? section.source_template_section_id ?? section.id,
+        sourceTemplateItemId: entry.source_template_item_id ?? null,
+      }))
+    ) ?? []
+  );
+}
+
+function applyAnswerState(detail: Detail | null, itemId: string): { item: FlattenedInspectionItem | null; value: string; notes: string; mediaKey: string | null } {
+  const flattened = flattenInspectionItems(detail);
+  const resolvedItem = flattened.find((entry) => entry.id === itemId) ?? null;
+  if (!resolvedItem) {
+    return {
+      item: null,
+      value: '',
+      notes: '',
+      mediaKey: null,
+    };
+  }
+
+  const answerLookupId = resolvedItem.sourceTemplateItemId ?? itemId;
+  const existingAnswer = detail?.answers.find((row) => row.template_item_id === answerLookupId);
+  const existingCustomAnswer = (detail?.custom_answers ?? []).find((row) => row.custom_item_id === itemId);
+  const answerRow = existingCustomAnswer ?? existingAnswer;
+
+  return {
+    item: resolvedItem,
+    value: stringifyValue(answerRow?.value),
+    notes: stringifyValue(answerRow?.notes),
+    mediaKey: answerLookupId,
+  };
+}
+
+function upsertSavedAnswer(detail: Detail, item: FlattenedInspectionItem, nextValue: string, nextNotes: string): Detail {
+  if (item.sourceTemplateItemId) {
+    const answers = [...detail.answers];
+    const existingIndex = answers.findIndex((row) => row.template_item_id === item.sourceTemplateItemId);
+    const nextAnswer = {
+      ...(existingIndex >= 0 ? answers[existingIndex] : {}),
+      template_item_id: item.sourceTemplateItemId,
+      section_id: item.sourceSectionId ?? item.sectionId,
+      value: nextValue || null,
+      notes: nextNotes || null,
+    };
+
+    if (existingIndex >= 0) {
+      answers[existingIndex] = nextAnswer;
+    } else {
+      answers.push(nextAnswer);
+    }
+
+    return {
+      ...detail,
+      answers,
+    };
+  }
+
+  const customAnswers = [...(detail.custom_answers ?? [])];
+  const existingIndex = customAnswers.findIndex((row) => row.custom_item_id === item.id);
+  const nextAnswer = {
+    ...(existingIndex >= 0 ? customAnswers[existingIndex] : {}),
+    custom_item_id: item.id,
+    section_id: item.sectionId,
+    value: nextValue || null,
+    notes: nextNotes || null,
+  };
+
+  if (existingIndex >= 0) {
+    customAnswers[existingIndex] = nextAnswer;
+  } else {
+    customAnswers.push(nextAnswer);
+  }
+
+  return {
+    ...detail,
+    custom_answers: customAnswers,
+  };
+}
+
 export default function InspectionItem() {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const { capture, isCancelError } = useCamera();
   const { tenantSlug, orderId, itemId } = useParams<{ tenantSlug: string; orderId: string; itemId: string }>();
-  const [detail, setDetail] = useState<Detail | null>(null);
   const [value, setValue] = useState('');
   const [notes, setNotes] = useState('');
-  const [media, setMedia] = useState<InspectionMediaPayload[]>([]);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [statusNote, setStatusNote] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const orderDetail = await fetchOrderDetail(tenantSlug, orderId);
-        setDetail(orderDetail);
-
-        const flattened = orderDetail.template?.sections.flatMap((section) =>
-          section.items.map((entry) => ({
-            ...entry,
-            sectionId: section.id,
-            sourceSectionId: entry.source_section_id ?? section.source_template_section_id ?? section.id,
-            sourceTemplateItemId: entry.source_template_item_id ?? null,
-          }))
-        ) ?? [];
-        const resolvedItem = flattened.find((entry) => entry.id === itemId) ?? null;
-        const answerLookupId = resolvedItem?.sourceTemplateItemId ?? itemId;
-        const existingAnswer = orderDetail.answers.find((row) => row.template_item_id === answerLookupId);
-        const existingCustomAnswer = (orderDetail.custom_answers ?? []).find((row) => row.custom_item_id === itemId);
-        const answerRow = existingCustomAnswer ?? existingAnswer;
-        setValue(stringifyValue(answerRow?.value));
-        setNotes(stringifyValue(answerRow?.notes));
-        const mediaItems = await fetchInspectionMedia(tenantSlug, orderId, answerLookupId);
-        setMedia(mediaItems);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load inspection item');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void run();
-  }, [tenantSlug, orderId, itemId]);
-
-  const flattenedItems = useMemo(
-    () =>
-      detail?.template?.sections.flatMap((section) =>
-        section.items.map((item) => ({
-          ...item,
-          sectionId: section.id,
-          sectionName: section.name,
-        }))
-      ) ?? [],
-    [detail]
-  );
-
-  const itemIndex = flattenedItems.findIndex((item) => item.id === itemId);
+  const detailQuery = useQuery({
+    queryKey: mobileQueryKeys.orderInspectionDetail(tenantSlug, orderId),
+    queryFn: () => getOrderInspectionDetail(tenantSlug, orderId),
+  });
+  const detail = detailQuery.data ?? null;
+  const flattenedItems = useMemo(() => flattenInspectionItems(detail), [detail]);
+  const itemIndex = flattenedItems.findIndex((entry) => entry.id === itemId);
   const item = itemIndex >= 0 ? flattenedItems[itemIndex] : null;
   const nextItem = itemIndex >= 0 && itemIndex < flattenedItems.length - 1 ? flattenedItems[itemIndex + 1] : null;
+  const mediaKey = item?.sourceTemplateItemId ?? itemId;
+  const mediaQuery = useQuery({
+    queryKey: mobileQueryKeys.orderInspectionMedia(tenantSlug, orderId, mediaKey),
+    queryFn: () => getOrderInspectionMedia(tenantSlug, orderId, mediaKey),
+    enabled: Boolean(item),
+  });
+  const media = mediaQuery.data ?? [];
+  const loading = detailQuery.isPending || mediaQuery.isPending;
+  const error = detailQuery.error instanceof Error
+    ? detailQuery.error.message
+    : mediaQuery.error instanceof Error
+      ? mediaQuery.error.message
+      : null;
+
+  useEffect(() => {
+    if (detail) {
+      const itemState = applyAnswerState(detail, itemId);
+      setValue(itemState.value);
+      setNotes(itemState.notes);
+    }
+  }, [detail, itemId, orderId, tenantSlug]);
+
   const previousHref = `/t/${tenantSlug}/order/${orderId}/inspection`;
 
   const itemType = (item?.item_type ?? 'text').toLowerCase();
@@ -151,27 +226,42 @@ export default function InspectionItem() {
     setStatusNote('');
     try {
       if (isCustomItem) {
-        await saveInspectionCustomAnswers(tenantSlug, orderId, [
+        const payload = [
           {
             custom_item_id: item.id,
             value: value.trim() || null,
             notes: notes.trim() || null,
           },
-        ]);
+        ];
+        if (!navigator.onLine) {
+          await enqueueInspectionCustomAnswerMutation(tenantSlug, orderId, payload);
+        } else {
+          await saveInspectionCustomAnswers(tenantSlug, orderId, payload);
+        }
       } else {
         if (!sourceTemplateItemId) {
           throw new Error('Missing source template item for inspection response.');
         }
-        await saveInspectionAnswers(tenantSlug, orderId, [
+        const payload = [
           {
             template_item_id: sourceTemplateItemId,
             section_id: sourceSectionId ?? item.sectionId,
             value: value.trim() || null,
             notes: notes.trim() || null,
           },
-        ]);
+        ];
+        if (!navigator.onLine) {
+          await enqueueInspectionTemplateAnswerMutation(tenantSlug, orderId, payload);
+        } else {
+          await saveOrderInspectionAnswers(tenantSlug, orderId, payload);
+        }
       }
-      setStatusNote('Item response saved.');
+      setStatusNote(navigator.onLine ? 'Item response saved.' : 'Saved offline. Will sync automatically.');
+      if (detail && item) {
+        const nextDetail = upsertSavedAnswer(detail, item, value.trim(), notes.trim());
+        queryClient.setQueryData(mobileQueryKeys.orderInspectionDetail(tenantSlug, orderId), nextDetail);
+        void queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, orderId) });
+      }
       return true;
     } catch (saveError) {
       setStatusNote(saveError instanceof Error ? saveError.message : 'Failed to save item response');
@@ -196,7 +286,7 @@ export default function InspectionItem() {
         throw new Error('Location is required for inspection photos.');
       }
 
-      const uploaded = await createInspectionMedia(tenantSlug, orderId, {
+      const uploaded = await createOrderInspectionMedia(tenantSlug, orderId, {
         file: captureResult.file,
         template_item_id: sourceTemplateItemId ?? item.id,
         section_id: sourceSectionId ?? item.sectionId,
@@ -205,7 +295,12 @@ export default function InspectionItem() {
         longitude: captureResult.longitude,
         accuracy_meters: captureResult.accuracyMeters ?? null,
       });
-      setMedia((current) => [uploaded, ...current]);
+      queryClient.setQueryData<InspectionMediaPayload[]>(
+        mobileQueryKeys.orderInspectionMedia(tenantSlug, orderId, mediaKey),
+        (current) => [uploaded, ...(current ?? [])]
+      );
+      void queryClient.invalidateQueries({ queryKey: mobileQueryKeys.orderInspectionMedia(tenantSlug, orderId) });
+      void queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, orderId) });
       setStatusNote('Photo uploaded.');
     } catch (captureError) {
       if (isCancelError(captureError)) return;

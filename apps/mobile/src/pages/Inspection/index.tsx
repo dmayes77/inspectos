@@ -1,20 +1,22 @@
 import './inspection.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useHistory, useParams } from 'react-router-dom';
 import { IonButton, IonIcon, IonInput, IonSpinner, IonText } from '@ionic/react';
 import { checkmarkCircle, removeCircleOutline, trashOutline } from 'ionicons/icons';
 import { MobilePageLayout } from '../../components/MobilePageLayout';
 import { InfoCard, SectionTitle } from '../../components/ui';
+import { mobileQueryKeys } from '../../lib/query-keys';
 import {
   createInspectionCustomItem,
   createInspectionCustomSection,
-  fetchInspectionMedia,
-  fetchOrderDetail,
+  getOrderInspectionDetail,
+  getOrderInspectionMedia,
   removeInspectionOutlineItem,
   removeInspectionOutlineSection,
 } from '../../services/api';
 
-type OrderDetailData = Awaited<ReturnType<typeof fetchOrderDetail>>;
+type OrderDetailData = Awaited<ReturnType<typeof getOrderInspectionDetail>>;
 
 type ItemAnswerState = {
   sectionId: string;
@@ -84,60 +86,55 @@ function toAnswerMap(detail: OrderDetailData | null): Record<string, ItemAnswerS
 
 export default function Inspection() {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const { tenantSlug, orderId } = useParams<{ tenantSlug: string; orderId: string }>();
-  const [detail, setDetail] = useState<OrderDetailData | null>(null);
-  const [mediaCountByItem, setMediaCountByItem] = useState<Record<string, number>>({});
-  const [answersByItem, setAnswersByItem] = useState<Record<string, ItemAnswerState>>({});
-  const [loading, setLoading] = useState(true);
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [addingItemSectionId, setAddingItemSectionId] = useState<string | null>(null);
   const [newItemName, setNewItemName] = useState('');
   const [removingSectionId, setRemovingSectionId] = useState<string | null>(null);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [statusNote, setStatusNote] = useState('');
-
-  const loadData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [data, media] = await Promise.all([
-          fetchOrderDetail(tenantSlug, orderId),
-          fetchInspectionMedia(tenantSlug, orderId),
-        ]);
-        setDetail(data);
-        setAnswersByItem(toAnswerMap(data));
-        const snapshotIdBySourceId = new Map<string, string>();
-        for (const section of data.template?.sections ?? []) {
-          for (const item of section.items ?? []) {
-            const sourceId = typeof item.source_template_item_id === 'string' ? item.source_template_item_id : null;
-            if (sourceId) {
-              snapshotIdBySourceId.set(sourceId, item.id);
-            }
-          }
+  const detailQuery = useQuery({
+    queryKey: mobileQueryKeys.orderInspectionDetail(tenantSlug, orderId),
+    queryFn: () => getOrderInspectionDetail(tenantSlug, orderId),
+  });
+  const mediaQuery = useQuery({
+    queryKey: mobileQueryKeys.orderInspectionMedia(tenantSlug, orderId),
+    queryFn: () => getOrderInspectionMedia(tenantSlug, orderId),
+  });
+  const invalidateInspectionQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.orderInspectionDetail(tenantSlug, orderId) });
+    await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.orderInspectionMedia(tenantSlug, orderId) });
+    await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, orderId) });
+  };
+  const detail = detailQuery.data ?? null;
+  const answersByItem = useMemo(() => toAnswerMap(detail), [detail]);
+  const mediaCountByItem = useMemo(() => {
+    const snapshotIdBySourceId = new Map<string, string>();
+    for (const section of detail?.template?.sections ?? []) {
+      for (const item of section.items ?? []) {
+        const sourceId = typeof item.source_template_item_id === 'string' ? item.source_template_item_id : null;
+        if (sourceId) {
+          snapshotIdBySourceId.set(sourceId, item.id);
         }
-        const counts: Record<string, number> = {};
-        for (const item of media) {
-          const rawKey = item.template_item_id ?? '';
-          const key = snapshotIdBySourceId.get(rawKey) ?? rawKey;
-          if (!key) continue;
-          counts[key] = (counts[key] ?? 0) + 1;
-        }
-        setMediaCountByItem(counts);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load inspection template');
-      } finally {
-        setLoading(false);
       }
-    };
-
-  useEffect(() => {
-    void run();
-    async function run() {
-      await loadData();
     }
-  }, [tenantSlug, orderId]);
+    const counts: Record<string, number> = {};
+    for (const item of mediaQuery.data ?? []) {
+      const rawKey = item.template_item_id ?? '';
+      const key = snapshotIdBySourceId.get(rawKey) ?? rawKey;
+      if (!key) continue;
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    return counts;
+  }, [detail, mediaQuery.data]);
+  const loading = detailQuery.isPending || mediaQuery.isPending;
+  const error = detailQuery.error instanceof Error
+    ? detailQuery.error.message
+    : mediaQuery.error instanceof Error
+      ? mediaQuery.error.message
+      : null;
 
   const template = detail?.template ?? null;
   const allItems = useMemo(
@@ -187,7 +184,7 @@ export default function Inspection() {
     try {
       await createInspectionCustomSection(tenantSlug, orderId, { name });
       setNewSectionName('');
-      await loadData();
+      await invalidateInspectionQueries();
       setStatusNote('Custom section added.');
     } catch (createError) {
       setStatusNote(createError instanceof Error ? createError.message : 'Failed to add section');
@@ -207,7 +204,7 @@ export default function Inspection() {
       });
       setNewItemName('');
       setAddingItemSectionId(null);
-      await loadData();
+      await invalidateInspectionQueries();
       setStatusNote('Custom item added.');
     } catch (createError) {
       setStatusNote(createError instanceof Error ? createError.message : 'Failed to add item');
@@ -219,7 +216,7 @@ export default function Inspection() {
     setStatusNote('');
     try {
       await removeInspectionOutlineSection(tenantSlug, orderId, sectionId);
-      await loadData();
+      await invalidateInspectionQueries();
       setStatusNote('Section removed from this inspection.');
     } catch (removeError) {
       setStatusNote(removeError instanceof Error ? removeError.message : 'Failed to remove section');
@@ -233,7 +230,7 @@ export default function Inspection() {
     setStatusNote('');
     try {
       await removeInspectionOutlineItem(tenantSlug, orderId, itemId);
-      await loadData();
+      await invalidateInspectionQueries();
       setStatusNote('Item removed from this inspection.');
     } catch (removeError) {
       setStatusNote(removeError instanceof Error ? removeError.message : 'Failed to remove item');

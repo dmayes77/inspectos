@@ -96,7 +96,7 @@ export function MobileAppShell({
         <IonToolbar className={`mobile-shell-toolbar ${showBack ? 'mobile-shell-toolbar--back' : ''}`}>
           {showBack ? (
             <IonButtons slot="start">
-              <IonBackButton defaultHref={defaultHref} icon={chevronBackOutline} text="Back" />
+              <IonBackButton defaultHref={defaultHref} icon={chevronBackOutline} text="" />
             </IonButtons>
           ) : null}
           <IonTitle>{title}</IonTitle>

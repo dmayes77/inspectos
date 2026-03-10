@@ -26,7 +26,7 @@ type EnqueueInput = {
 };
 
 const DB_NAME = 'inspectos-mobile-offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'quick_capture_queue';
 
 function isNetworkError(error: unknown): boolean {

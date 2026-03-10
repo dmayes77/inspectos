@@ -1,6 +1,7 @@
 import './dashboard.css';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { IonButton, IonIcon, IonSpinner, IonText } from '@ionic/react';
+import { useQuery } from '@tanstack/react-query';
 import {
   addCircleOutline,
   alertCircleOutline,
@@ -15,10 +16,11 @@ import {
 } from 'ionicons/icons';
 import { useHistory } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { fetchBootstrap } from '../../services/api';
+import { getOrders } from '../../services/api';
 import { MobileAppShell } from '../../components/MobileAppShell';
+import { mobileQueryKeys } from '../../lib/query-keys';
 
-type BootstrapPayload = Awaited<ReturnType<typeof fetchBootstrap>>;
+type BootstrapPayload = Awaited<ReturnType<typeof getOrders>>;
 type BootstrapOrders = BootstrapPayload['orders'];
 
 type OrderStateTone = 'info' | 'warning' | 'danger';
@@ -53,42 +55,29 @@ function toneForOrder(status: string, date: string, todayDate: string): OrderSta
 export default function Dashboard() {
   const { tenant } = useAuth();
   const history = useHistory();
-  const [orders, setOrders] = useState<BootstrapOrders>([]);
-  const [propertyAddressById, setPropertyAddressById] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-
-  const loadDashboard = useCallback(async () => {
-    if (!tenant) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchBootstrap(tenant.slug);
-      setOrders(data.orders || []);
-      const nextPropertyAddressById = Object.fromEntries(
-        (data.properties || []).map((property) => [
+  const dashboardQuery = useQuery({
+    queryKey: tenant ? mobileQueryKeys.orders(tenant.slug) : ['mobile', 'orders', 'anonymous'],
+    queryFn: async () => {
+      const data = await getOrders(tenant!.slug);
+      setLastUpdatedAt(new Date());
+      return data;
+    },
+    enabled: Boolean(tenant),
+  });
+  const orders = useMemo(() => dashboardQuery.data?.orders ?? [], [dashboardQuery.data?.orders]);
+  const propertyAddressById = useMemo(
+    () =>
+      Object.fromEntries(
+        (dashboardQuery.data?.properties || []).map((property) => [
           property.id,
           [property.address_line1, property.city, property.state, property.zip_code].filter(Boolean).join(', '),
         ])
-      );
-      setPropertyAddressById(nextPropertyAddressById);
-      setLastUpdatedAt(new Date());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load dashboard');
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant]);
-
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
+      ),
+    [dashboardQuery.data?.properties]
+  );
+  const loading = dashboardQuery.isPending;
+  const error = dashboardQuery.error instanceof Error ? dashboardQuery.error.message : null;
 
   const todayDate = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -195,7 +184,7 @@ export default function Dashboard() {
             <strong>{syncState.label}</strong>
             <small>{syncState.detail}</small>
           </div>
-          <button type="button" onClick={() => void loadDashboard()}>
+          <button type="button" onClick={() => void dashboardQuery.refetch()}>
             Refresh
           </button>
         </section>

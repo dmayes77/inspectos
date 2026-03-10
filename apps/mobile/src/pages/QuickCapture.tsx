@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IonButton, IonIcon, IonSpinner, IonText, IonTextarea } from '@ionic/react';
 import { CameraSource } from '@capacitor/camera';
 import { cameraOutline, locationOutline, timeOutline } from 'ionicons/icons';
 import { useHistory, useParams } from 'react-router-dom';
 import { MobilePageLayout } from '../components/MobilePageLayout';
 import { useCamera } from '../hooks/useCamera';
+import { mobileQueryKeys } from '../lib/query-keys';
 import {
   fetchQuickCaptures,
-  type QuickCaptureMediaPayload,
 } from '../services/api';
 import {
   enqueueQuickCapture,
   listPendingQuickCaptures,
   syncPendingQuickCaptures,
-  type PendingQuickCaptureRecord,
 } from '../services/quickCaptureOfflineQueue';
 
 type CaptureDraft = {
@@ -38,35 +38,24 @@ function formatDateTime(dateIso: string) {
 
 export default function QuickCapture() {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const { tenantSlug } = useParams<{ tenantSlug: string }>();
   const { capture, isCancelError } = useCamera();
-  const [items, setItems] = useState<QuickCaptureMediaPayload[]>([]);
-  const [pendingItems, setPendingItems] = useState<PendingQuickCaptureRecord[]>([]);
   const [draft, setDraft] = useState<CaptureDraft | null>(null);
   const [note, setNote] = useState('');
   const [capturing, setCapturing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-
-  const reloadItems = () => {
-    setStatus(null);
-    void (async () => {
-      try {
-        const [data, pending] = await Promise.all([
-          fetchQuickCaptures(tenantSlug),
-          listPendingQuickCaptures(tenantSlug),
-        ]);
-        setItems(data);
-        setPendingItems(pending);
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : 'Failed to load capture gallery.');
-      }
-    })();
-  };
-
-  useEffect(() => {
-    reloadItems();
-  }, [tenantSlug]);
+  const quickCapturesQuery = useQuery({
+    queryKey: mobileQueryKeys.quickCaptures(tenantSlug),
+    queryFn: () => fetchQuickCaptures(tenantSlug),
+  });
+  const pendingCapturesQuery = useQuery({
+    queryKey: mobileQueryKeys.pendingQuickCaptures(tenantSlug),
+    queryFn: () => listPendingQuickCaptures(tenantSlug),
+  });
+  const items = useMemo(() => quickCapturesQuery.data ?? [], [quickCapturesQuery.data]);
+  const pendingItems = useMemo(() => pendingCapturesQuery.data ?? [], [pendingCapturesQuery.data]);
 
   useEffect(() => {
     return () => {
@@ -76,7 +65,7 @@ export default function QuickCapture() {
     };
   }, [draft]);
 
-  const syncPending = () => {
+  const syncPending = useCallback(() => {
     void (async () => {
       if (!navigator.onLine) return;
       const result = await syncPendingQuickCaptures(tenantSlug);
@@ -85,16 +74,17 @@ export default function QuickCapture() {
       } else if (result.stoppedByNetwork) {
         setStatus('Offline. Your captures are queued and safe.');
       }
-      reloadItems();
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.quickCaptures(tenantSlug) });
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.pendingQuickCaptures(tenantSlug) });
     })();
-  };
+  }, [queryClient, tenantSlug]);
 
   useEffect(() => {
     syncPending();
     const onOnline = () => syncPending();
     window.addEventListener('online', onOnline);
     return () => window.removeEventListener('online', onOnline);
-  }, [tenantSlug]);
+  }, [syncPending]);
 
   const locationLabel = useMemo(() => {
     if (!draft) return '';
@@ -173,7 +163,7 @@ export default function QuickCapture() {
       setDraft(null);
       setNote('');
       setStatus('Saved offline. Uploading when connected.');
-      reloadItems();
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.pendingQuickCaptures(tenantSlug) });
 
       if (navigator.onLine) {
         syncPending();
@@ -267,6 +257,17 @@ export default function QuickCapture() {
         {status ? (
           <IonText color="danger">
             <p>{status}</p>
+          </IonText>
+        ) : null}
+        {!status && (quickCapturesQuery.error || pendingCapturesQuery.error) ? (
+          <IonText color="danger">
+            <p>
+              {(quickCapturesQuery.error instanceof Error
+                ? quickCapturesQuery.error.message
+                : pendingCapturesQuery.error instanceof Error
+                  ? pendingCapturesQuery.error.message
+                  : 'Failed to load capture gallery.')}
+            </p>
           </IonText>
         ) : null}
       </div>
