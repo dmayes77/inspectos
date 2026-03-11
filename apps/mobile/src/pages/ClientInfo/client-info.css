@@ -1,0 +1,68 @@
+.client-info-content {
+  padding-top: 0.75rem;
+}
+
+.client-info-page {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.client-info-card,
+.client-info-details {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.22);
+  border-radius: var(--app-radius);
+  background: var(--ion-card-background);
+  padding: 0.875rem;
+}
+
+.client-info-card h2 {
+  margin: 0.2rem 0 0.35rem;
+  font-size: 1.05rem;
+  color: var(--ion-text-color);
+}
+
+.client-info-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.client-info-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.client-info-details {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.client-info-row {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.client-info-row span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.client-info-row strong {
+  font-size: 0.94rem;
+  color: var(--ion-text-color);
+}
+
+.client-info-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+:root[data-theme='dark'] .client-info-card p,
+:root[data-theme='dark'] .client-info-label,
+:root[data-theme='dark'] .client-info-row span {
+  color: #94a3b8;
+}

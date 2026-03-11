@@ -588,13 +588,6 @@ ion-button {
   max-width: calc(100% - 14rem);
 }
 
-.mobile-shell-header ion-back-button {
-  --color: #ffffff;
-  --icon-font-size: 1.15rem;
-  font-size: 0.98rem;
-  font-weight: 600;
-}
-
 .mobile-header-left {
   display: inline-flex;
   align-items: center;

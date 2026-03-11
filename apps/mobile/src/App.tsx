@@ -19,6 +19,7 @@ import QuickCaptureDetail from './pages/QuickCaptureDetail';
 import ArrivalConfirmed from './pages/ArrivalConfirmed';
 import Inspection from './pages/Inspection';
 import InspectionItem from './pages/InspectionItem';
+import ClientInfo from './pages/ClientInfo';
 
 import '@ionic/react/css/core.css';
 import '@ionic/react/css/normalize.css';
@@ -81,6 +82,10 @@ function AppRoutes() {
 
         <Route exact path="/t/:tenantSlug/order/:orderId/inspection/item/:itemId">
           {user && tenant ? <InspectionItem /> : <Redirect to="/login" />}
+        </Route>
+
+        <Route exact path="/t/:tenantSlug/order/:orderId/client">
+          {user && tenant ? <ClientInfo /> : <Redirect to="/login" />}
         </Route>
 
         <Route exact path="/t/:tenantSlug/profile">

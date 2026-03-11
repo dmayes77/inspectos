@@ -26,8 +26,9 @@ type EnqueueInput = {
 };
 
 const DB_NAME = 'inspectos-mobile-offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = 'quick_capture_queue';
+const INSPECTION_MUTATION_STORE_NAME = 'inspection_mutation_queue';
 
 function isNetworkError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
@@ -45,6 +46,10 @@ function openQueueDb(): Promise<QueueDb> {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'local_id' });
         store.createIndex('tenant_created', ['tenant_slug', 'created_at'], { unique: false });
       }
+      if (!db.objectStoreNames.contains(INSPECTION_MUTATION_STORE_NAME)) {
+        const inspectionStore = db.createObjectStore(INSPECTION_MUTATION_STORE_NAME, { keyPath: 'local_id' });
+        inspectionStore.createIndex('tenant_order_created', ['tenant_slug', 'order_id', 'created_at'], { unique: false });
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -59,6 +64,12 @@ function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => 
       db = await openQueueDb();
     } catch (error) {
       reject(error);
+      return;
+    }
+
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+      db.close();
+      reject(new Error(`Missing IndexedDB store: ${STORE_NAME}`));
       return;
     }
 

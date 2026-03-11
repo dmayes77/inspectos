@@ -28,7 +28,7 @@ type PendingInspectionMutationRecord =
     };
 
 const DB_NAME = 'inspectos-mobile-offline';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const QUICK_CAPTURE_STORE_NAME = 'quick_capture_queue';
 const INSPECTION_MUTATION_STORE_NAME = 'inspection_mutation_queue';
 
@@ -66,6 +66,12 @@ function withStore<T>(storeName: string, mode: IDBTransactionMode, run: (store: 
       db = await openQueueDb();
     } catch (error) {
       reject(error);
+      return;
+    }
+
+    if (!db.objectStoreNames.contains(storeName)) {
+      db.close();
+      reject(new Error(`Missing IndexedDB store: ${storeName}`));
       return;
     }
 
@@ -165,4 +171,3 @@ export async function syncPendingInspectionMutations(tenantSlug: string): Promis
 
   return { synced, stoppedByNetwork: false };
 }
-

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import {
+  createServiceClient,
   createUserClient,
   getAccessToken,
   getUserFromToken,
@@ -10,6 +11,21 @@ import {
 } from '@/lib/supabase';
 import { verifyBusinessBillingAccessByTenantId } from '@/lib/billing/access';
 import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
+
+const QUICK_CAPTURE_BUCKET = 'quick-captures';
+
+type QuickCaptureAvatarRow = {
+  id: string;
+  note: string | null;
+  storage_path: string;
+  captured_at: string;
+};
+
+function extractOrderIdFromQuickCaptureNote(note: string | null | undefined): string | null {
+  if (!note) return null;
+  const match = note.match(/order_id=([0-9a-f-]{36})/i);
+  return match?.[1] ?? null;
+}
 
 /**
  * GET /api/sync/bootstrap
@@ -46,6 +62,7 @@ export async function GET(request: NextRequest) {
     }
 
     const supabase = createUserClient(accessToken);
+    const serviceClient = createServiceClient();
 
     // Get tenant and verify membership
     const { data: tenantBySlug, error: tenantSlugError } = await supabase
@@ -174,6 +191,44 @@ export async function GET(request: NextRequest) {
           .in('id', propertyIds)
       : { data: [] };
 
+    const orderIds = (orders || []).map(o => o.id);
+    const propertyIdByOrderId = new Map(
+      (orders || [])
+        .filter((order) => Boolean(order.id && order.property_id))
+        .map((order) => [order.id, order.property_id])
+    );
+
+    const propertyAvatarByPropertyId = new Map<string, string>();
+    if (orderIds.length > 0 && properties && properties.length > 0) {
+      const { data: quickCaptureRows } = await supabase
+        .from('quick_capture_media')
+        .select('id, note, storage_path, captured_at')
+        .eq('tenant_id', tenant.id)
+        .ilike('note', '%keep_for_property_avatar=true%')
+        .order('captured_at', { ascending: false })
+        .limit(500);
+
+      const avatarRows = (quickCaptureRows ?? []) as QuickCaptureAvatarRow[];
+      for (const row of avatarRows) {
+        const orderId = extractOrderIdFromQuickCaptureNote(row.note);
+        if (!orderId || !propertyIdByOrderId.has(orderId)) continue;
+        const propertyId = propertyIdByOrderId.get(orderId);
+        if (!propertyId || propertyAvatarByPropertyId.has(propertyId)) continue;
+
+        const { data: signedData, error: signedError } = await serviceClient.storage
+          .from(QUICK_CAPTURE_BUCKET)
+          .createSignedUrl(row.storage_path, 60 * 60);
+
+        if (signedError || !signedData?.signedUrl) continue;
+        propertyAvatarByPropertyId.set(propertyId, signedData.signedUrl);
+      }
+    }
+
+    const propertiesWithAvatars = (properties || []).map((property) => ({
+      ...property,
+      image_url: propertyAvatarByPropertyId.get(property.id) ?? null,
+    }));
+
     // Get clients for these orders
     const { data: clients } = clientIds.length > 0
       ? await supabase
@@ -205,7 +260,6 @@ export async function GET(request: NextRequest) {
             .order('name')
         ).data || [];
 
-    const orderIds = (orders || []).map(o => o.id);
     const inspections = ordersOnlyScope
       ? []
       : orderIds.length > 0
@@ -240,7 +294,7 @@ export async function GET(request: NextRequest) {
         },
         templates: templates || [],
         orders: orders || [],
-        properties: properties || [],
+        properties: propertiesWithAvatars,
         clients: clients || [],
         defect_library: defectLibrary || [],
         services: services || [],

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useHistory, useParams } from "react-router-dom";
 import { IonIcon, IonSpinner, IonText } from "@ionic/react";
-import { briefcaseOutline, businessOutline, chevronForwardOutline, homeOutline, searchOutline } from "ionicons/icons";
+import { briefcaseOutline, businessOutline, calendarOutline, chevronForwardOutline, homeOutline, personOutline, searchOutline } from "ionicons/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import { getOrders } from "../../services/api";
 import { MobilePageLayout } from "../../components/MobilePageLayout";
@@ -57,6 +57,16 @@ function toStatusClass(status?: string | null): string {
   return "is-default";
 }
 
+function formatStatusLabel(status?: string | null): string {
+  const normalized = (status ?? "").trim();
+  if (!normalized) return "Active";
+  return normalized
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
 function formatShortDate(scheduledDate?: string | null): string {
   if (!scheduledDate) return "---";
   const [yearRaw, monthRaw, dayRaw] = scheduledDate.split("-");
@@ -75,6 +85,20 @@ function getPropertyIcon(property: unknown) {
   if (!normalized || typeof normalized !== "string") return homeOutline;
   const value = normalized.toLowerCase().trim();
   return value === "commercial" ? businessOutline : homeOutline;
+}
+
+function getPropertyImageUrl(property: unknown): string | null {
+  if (!property || typeof property !== "object") return null;
+  const propertyRecord = property as Record<string, unknown>;
+  const candidates = [
+    propertyRecord.avatar_url,
+    propertyRecord.image_url,
+    propertyRecord.photo_url,
+    propertyRecord.cover_image_url,
+    propertyRecord.cover_photo_url,
+  ];
+  const match = candidates.find((value) => typeof value === "string" && value.trim().length > 0);
+  return typeof match === "string" ? match.trim() : null;
 }
 
 export default function Orders() {
@@ -159,18 +183,48 @@ export default function Orders() {
               "City, State unavailable";
             const clientLabel = client?.name || order.order_number || "Inspection";
             const propertyIcon = getPropertyIcon(property);
+            const propertyImageUrl = getPropertyImageUrl(property);
             return (
               <button key={order.id} type="button" className="orders-row" onClick={() => history.push(`/t/${tenantSlug}/order/${order.id}`)}>
                 <span className={`orders-row-icon ${toStatusClass(order.status)}`}>
-                  <IonIcon icon={propertyIcon} />
+                  {propertyImageUrl ? (
+                    <img
+                      src={propertyImageUrl}
+                      alt={streetAddress}
+                      className="orders-row-avatar"
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                        const nextSibling = event.currentTarget.nextElementSibling;
+                        if (nextSibling instanceof HTMLElement) {
+                          nextSibling.style.display = "";
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <IonIcon icon={propertyIcon} style={propertyImageUrl ? { display: "none" } : undefined} />
                 </span>
                 <div className="orders-row-main">
+                  <div className="orders-row-topline">
+                    <span className={`orders-row-status ${toStatusClass(order.status)}`}>{formatStatusLabel(order.status)}</span>
+                    <span className="orders-row-order-number">{order.order_number || "Inspection"}</span>
+                  </div>
                   <h3>{streetAddress}</h3>
                   <p className="orders-row-city-state">{cityState}</p>
-                  <p className="orders-row-client">{clientLabel}</p>
-                  <p className="orders-row-time">{formatScheduleFriendly(order.scheduled_date, order.scheduled_time)}</p>
+                  <div className="orders-row-meta">
+                    <p className="orders-row-client">
+                      <IonIcon icon={personOutline} />
+                      <span>{clientLabel}</span>
+                    </p>
+                    <p className="orders-row-time">
+                      <IonIcon icon={calendarOutline} />
+                      <span>{formatScheduleFriendly(order.scheduled_date, order.scheduled_time)}</span>
+                    </p>
+                  </div>
                 </div>
-                <span className="orders-row-date">{formatShortDate(order.scheduled_date)}</span>
+                <div className="orders-row-side">
+                  <span className="orders-row-date">{formatShortDate(order.scheduled_date)}</span>
+                  <IonIcon className="orders-row-chevron" icon={chevronForwardOutline} />
+                </div>
               </button>
             );
           })}

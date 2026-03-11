@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CameraSource } from '@capacitor/camera';
 import {
@@ -9,15 +9,18 @@ import {
   IonTextarea,
 } from '@ionic/react';
 import { Geolocation } from '@capacitor/geolocation';
-import { useHistory, useParams } from 'react-router-dom';
+import { useHistory, useLocation, useParams } from 'react-router-dom';
 import { MobilePageLayout } from '../components/MobilePageLayout';
 import { useCamera } from '../hooks/useCamera';
 import {
+  createQuickCapture,
+  fetchQuickCaptures,
   getOrder,
   getOrderArrivalChecklist,
   saveOrderArrivalChecklist,
   transitionOrderInspectionState,
   type ArrivalChecklistPayload,
+  type QuickCaptureMediaPayload,
 } from '../services/api';
 import { mobileQueryKeys } from '../lib/query-keys';
 import { enqueueQuickCapture } from '../services/quickCaptureOfflineQueue';
@@ -125,11 +128,21 @@ function buildDefaultPhotos(): ArrivalPhotoDraft[] {
   ];
 }
 
+function buildArrivalPhotoNote(kind: ArrivalPhotoKind, orderId: string) {
+  return `[ARRIVAL_PHOTO] type=${kind}; order_id=${orderId}; keep_for_property_avatar=true`;
+}
+
+function matchesArrivalPhoto(item: QuickCaptureMediaPayload, orderId: string, kind: ArrivalPhotoKind) {
+  return item.note.includes(`[ARRIVAL_PHOTO]`) && item.note.includes(`order_id=${orderId}`) && item.note.includes(`type=${kind}`);
+}
+
 export default function ArrivalConfirmed() {
   const history = useHistory();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const { tenantSlug, orderId } = useParams<{ tenantSlug: string; orderId: string }>();
   const { capture, isCancelError } = useCamera();
+  const isReviewMode = new URLSearchParams(location.search).get('mode') === 'review';
 
   const [actionNote, setActionNote] = useState<string>('');
   const [transitionBusy, setTransitionBusy] = useState(false);
@@ -158,6 +171,7 @@ export default function ArrivalConfirmed() {
 
   const [photos, setPhotos] = useState<ArrivalPhotoDraft[]>(buildDefaultPhotos);
   const [photoBusyKey, setPhotoBusyKey] = useState<ArrivalPhotoKind | null>(null);
+  const didHydrateArrivalDraftRef = useRef(false);
   const orderQuery = useQuery({
     queryKey: mobileQueryKeys.order(tenantSlug, orderId),
     queryFn: () => getOrder(tenantSlug, orderId),
@@ -165,6 +179,10 @@ export default function ArrivalConfirmed() {
   const arrivalChecklistQuery = useQuery({
     queryKey: mobileQueryKeys.orderArrivalChecklist(tenantSlug, orderId),
     queryFn: () => getOrderArrivalChecklist(tenantSlug, orderId),
+  });
+  const quickCapturesQuery = useQuery({
+    queryKey: mobileQueryKeys.quickCaptures(tenantSlug),
+    queryFn: () => fetchQuickCaptures(tenantSlug),
   });
   const saveArrivalChecklistMutation = useMutation({
     mutationFn: (checklist: ArrivalChecklistPayload) => saveOrderArrivalChecklist(tenantSlug, orderId, checklist),
@@ -178,6 +196,8 @@ export default function ArrivalConfirmed() {
     ? orderQuery.error.message
     : arrivalChecklistQuery.error instanceof Error
       ? arrivalChecklistQuery.error.message
+      : quickCapturesQuery.error instanceof Error
+        ? quickCapturesQuery.error.message
       : null;
 
   const buildChecklistPayload = (
@@ -251,6 +271,9 @@ export default function ArrivalConfirmed() {
   }, []);
 
   useEffect(() => {
+    if (didHydrateArrivalDraftRef.current) return;
+    if (arrivalChecklistQuery.isPending) return;
+
     const localDraft = readLocalArrivalChecklistDraft(tenantSlug, orderId);
     if (localDraft?.checklist) {
       applyChecklistPayload(localDraft.checklist);
@@ -263,12 +286,14 @@ export default function ArrivalConfirmed() {
           if (localDraft?.dirty) {
             await persistChecklistDraft(localDraft.checklist);
           }
+          didHydrateArrivalDraftRef.current = true;
           return;
         }
 
         const hasLocalDirty = Boolean(localDraft?.dirty && localDraft.checklist);
         if (hasLocalDirty && localDraft) {
           await persistChecklistDraft(localDraft.checklist);
+          didHydrateArrivalDraftRef.current = true;
           return;
         }
 
@@ -282,11 +307,17 @@ export default function ArrivalConfirmed() {
             dirty: false,
           });
         }
+        didHydrateArrivalDraftRef.current = true;
       } catch (syncError) {
         setActionNote(syncError instanceof Error ? syncError.message : 'Failed to sync arrival draft');
+        didHydrateArrivalDraftRef.current = true;
       }
     })();
-  }, [arrivalChecklistQuery.data, orderId, persistChecklistDraft, tenantSlug]);
+  }, [arrivalChecklistQuery.data, arrivalChecklistQuery.isPending, orderId, persistChecklistDraft, tenantSlug]);
+
+  useEffect(() => {
+    didHydrateArrivalDraftRef.current = false;
+  }, [orderId, tenantSlug]);
 
   useEffect(() => {
     const onOnline = () => {
@@ -308,6 +339,28 @@ export default function ArrivalConfirmed() {
       });
     };
   }, [photos]);
+
+  useEffect(() => {
+    const items = quickCapturesQuery.data ?? [];
+    if (items.length === 0) return;
+
+    setPhotos((prev) =>
+      prev.map((photo) => {
+        if (photo.imageBlob || photo.previewUrl) return photo;
+        const match = items.find((item) => matchesArrivalPhoto(item, orderId, photo.kind));
+        if (!match) return photo;
+        return {
+          ...photo,
+          previewUrl: match.image_url,
+          capturedAt: match.captured_at,
+          latitude: match.latitude,
+          longitude: match.longitude,
+          accuracyMeters: match.accuracy_meters ?? null,
+          queued: true,
+        };
+      })
+    );
+  }, [orderId, quickCapturesQuery.data]);
 
   const refreshLocation = async () => {
     try {
@@ -399,15 +452,30 @@ export default function ArrivalConfirmed() {
     );
 
     for (const photo of photosToQueue) {
-      await enqueueQuickCapture({
-        tenantSlug,
-        note: `[ARRIVAL_PHOTO] type=${photo.kind}; order_id=${orderId}; keep_for_property_avatar=true`,
-        capturedAt: photo.capturedAt as string,
-        latitude: photo.latitude as number,
-        longitude: photo.longitude as number,
-        accuracyMeters: photo.accuracyMeters,
-        imageBlob: photo.imageBlob as Blob,
-      });
+      const note = buildArrivalPhotoNote(photo.kind, orderId);
+      if (navigator.onLine) {
+        const file = new File([photo.imageBlob as Blob], `arrival-${photo.kind}-${Date.now()}.jpg`, {
+          type: (photo.imageBlob as Blob).type || 'image/jpeg',
+        });
+        await createQuickCapture(tenantSlug, {
+          file,
+          note,
+          captured_at: photo.capturedAt as string,
+          latitude: photo.latitude as number,
+          longitude: photo.longitude as number,
+          accuracy_meters: photo.accuracyMeters,
+        });
+      } else {
+        await enqueueQuickCapture({
+          tenantSlug,
+          note,
+          capturedAt: photo.capturedAt as string,
+          latitude: photo.latitude as number,
+          longitude: photo.longitude as number,
+          accuracyMeters: photo.accuracyMeters,
+          imageBlob: photo.imageBlob as Blob,
+        });
+      }
     }
 
     if (photosToQueue.length > 0) {
@@ -418,6 +486,8 @@ export default function ArrivalConfirmed() {
             : photo
         )
       );
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.quickCaptures(tenantSlug) });
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.pendingQuickCaptures(tenantSlug) });
     }
   };
 
@@ -485,6 +555,24 @@ export default function ArrivalConfirmed() {
       history.replace(`/t/${tenantSlug}/order/${order.id}/inspection`);
     } catch (transitionError) {
       setActionNote(transitionError instanceof Error ? transitionError.message : 'Failed to begin inspection');
+    } finally {
+      setTransitionBusy(false);
+    }
+  };
+
+  const saveArrivalReview = async () => {
+    setTransitionBusy(true);
+    setActionNote('');
+    try {
+      const checklist = buildChecklistPayload();
+      await persistChecklistDraft(checklist);
+      await queueArrivalPhotos();
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.orderArrivalChecklist(tenantSlug, orderId) });
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, orderId) });
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.orders(tenantSlug) });
+      history.replace(`/t/${tenantSlug}/order/${orderId}`);
+    } catch (saveError) {
+      setActionNote(saveError instanceof Error ? saveError.message : 'Failed to save arrival review');
     } finally {
       setTransitionBusy(false);
     }
@@ -756,13 +844,13 @@ export default function ArrivalConfirmed() {
             <IonButton
               expand="block"
               className="inspector-primary-action"
-              disabled={!canBeginInspection || transitionBusy}
-              onClick={() => void beginInspection()}
+              disabled={isReviewMode ? transitionBusy : !canBeginInspection || transitionBusy}
+              onClick={() => void (isReviewMode ? saveArrivalReview() : beginInspection())}
             >
-              {transitionBusy ? <IonSpinner name="crescent" /> : 'Begin Inspection'}
+              {transitionBusy ? <IonSpinner name="crescent" /> : isReviewMode ? 'Save Arrival' : 'Begin Inspection'}
             </IonButton>
           </div>
-          {!canBeginInspection ? (
+          {!isReviewMode && !canBeginInspection ? (
             <IonText color="medium" className="inspector-status-note">
               <p className="inspector-order-subtle">
                 Complete all required confirmations, capture location, and add the full-front photo to continue.

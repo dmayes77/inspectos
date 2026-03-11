@@ -55,6 +55,11 @@ export type BootstrapPayload = {
     city: string;
     state: string;
     zip_code: string;
+    avatar_url?: string | null;
+    image_url?: string | null;
+    photo_url?: string | null;
+    cover_image_url?: string | null;
+    cover_photo_url?: string | null;
   }>;
   clients: Array<{ id: string; name: string }>;
 };

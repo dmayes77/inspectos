@@ -17,9 +17,9 @@ import {
   chevronBackOutline,
   ellipsisVertical,
   homeOutline,
+  imagesOutline,
   listOutline,
   optionsOutline,
-  peopleOutline,
 } from 'ionicons/icons';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -45,7 +45,7 @@ export function MobileAppShell({
 
   const isDashboard = /\/dashboard$/.test(location.pathname);
   const isOrders = /\/orders(\/|$)|\/order\//.test(location.pathname);
-  const isPeople = /\/people$/.test(location.pathname);
+  const isGallery = /\/quick-capture(\/|$)/.test(location.pathname);
   const isCalendar = /\/calendar$/.test(location.pathname);
   const isTitleOnlyPage = Boolean(showBack);
   const displayName = user?.email
@@ -187,9 +187,9 @@ export function MobileAppShell({
               <IonIcon icon={listOutline} />
               <span>Orders</span>
             </button>
-            <button className={`inspectos-tab-btn ${isPeople ? 'active' : ''}`} onClick={() => tenantSlug && history.replace(`/t/${tenantSlug}/people`)}>
-              <IonIcon icon={peopleOutline} />
-              <span>People</span>
+            <button className={`inspectos-tab-btn ${isGallery ? 'active' : ''}`} onClick={() => tenantSlug && history.replace(`/t/${tenantSlug}/quick-capture`)}>
+              <IonIcon icon={imagesOutline} />
+              <span>Gallery</span>
             </button>
             <button className={`inspectos-tab-btn ${isCalendar ? 'active' : ''}`} onClick={() => tenantSlug && history.replace(`/t/${tenantSlug}/calendar`)}>
               <IonIcon icon={calendarOutline} />

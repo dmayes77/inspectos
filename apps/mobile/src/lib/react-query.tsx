@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider, dehydrate, hydrate } from '@tanstack/
 import { defaultReactQueryClientOptions } from '@inspectos/shared/query';
 import { useEffect, useState, type ReactNode } from 'react';
 import { syncPendingInspectionMutations } from '../services/inspectionOfflineQueue';
+import { syncPendingQuickCaptures } from '../services/quickCaptureOfflineQueue';
 
 const QUERY_CACHE_STORAGE_KEY = 'inspectos:mobile:query-cache';
 
@@ -46,10 +47,16 @@ export function ReactQueryProvider({ children }: { children: ReactNode }) {
       });
 
       for (const tenantSlug of tenantSlugs) {
-        const result = await syncPendingInspectionMutations(tenantSlug);
-        if (result.synced > 0) {
+        const [inspectionResult, quickCaptureResult] = await Promise.all([
+          syncPendingInspectionMutations(tenantSlug),
+          syncPendingQuickCaptures(tenantSlug),
+        ]);
+
+        if (inspectionResult.synced > 0 || quickCaptureResult.synced > 0) {
           await queryClient.invalidateQueries({ queryKey: ['mobile', 'order', tenantSlug] });
           await queryClient.invalidateQueries({ queryKey: ['mobile', 'orders', tenantSlug] });
+          await queryClient.invalidateQueries({ queryKey: ['mobile', 'quick-captures', tenantSlug] });
+          await queryClient.invalidateQueries({ queryKey: ['mobile', 'quick-captures', tenantSlug, 'pending'] });
         }
       }
     };
