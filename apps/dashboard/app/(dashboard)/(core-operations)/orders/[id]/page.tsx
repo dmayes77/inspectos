@@ -234,19 +234,19 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   useEffect(() => {
     if (!order) return;
     const existing = order.services ?? [];
-    const assignments: ServiceAssignment[] = existing
-      .map((service) => {
-        const serviceId = service.service_id ?? serviceNameMap.get(service.name?.toLowerCase() ?? "");
-        if (!serviceId) return null;
-        return {
+    const assignments: ServiceAssignment[] = existing.flatMap((service) => {
+      const serviceId = service.service_id ?? serviceNameMap.get(service.name?.toLowerCase() ?? "");
+      if (!serviceId) return [];
+      return [
+        {
           serviceId,
           selected: true,
           inspectorIds: service.inspector_id ? [service.inspector_id] : [],
           vendorIds: service.vendor_id ? [service.vendor_id] : [],
           templateId: service.template_id ?? undefined,
-        };
-      })
-      .filter((assignment): assignment is ServiceAssignment => Boolean(assignment));
+        },
+      ];
+    });
 
     setServiceAssignments(assignments);
   }, [order?.id, order?.services, serviceNameMap]);
