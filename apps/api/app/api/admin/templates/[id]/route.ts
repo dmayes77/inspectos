@@ -115,8 +115,8 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 
     if (linkedReadError) return serverError('Failed to load currently linked services', linkedReadError);
 
-    const currentIds = new Set((currentlyLinked ?? []).map((row: { id: string }) => row.id));
-    const requestedIds = new Set(requestedServiceIds);
+    const currentIds = new Set<string>((currentlyLinked ?? []).map((row: { id: string }) => row.id));
+    const requestedIds = new Set<string>(requestedServiceIds);
 
     const toUnlink = [...currentIds].filter((id) => !requestedIds.has(id));
     const toLink = [...requestedIds].filter((id) => !currentIds.has(id));
