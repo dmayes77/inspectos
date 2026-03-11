@@ -311,7 +311,7 @@ export function OrderForm({ mode, order, initialValues }: OrderFormProps) {
         // TODO: when DB supports multiple, send full arrays instead of first element
         return {
           service_id: service.serviceId,
-          template_id: resolvedTemplateId ?? null,
+          template_id: resolvedTemplateId ?? undefined,
           name: service.name,
           price: getServicePrice(service),
           duration_minutes: service.durationMinutes ?? undefined,
