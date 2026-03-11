@@ -825,7 +825,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         assignment?.templateId === undefined ? (service.templateId ?? undefined) : assignment.templateId;
       return {
         service_id: service.serviceId,
-        template_id: resolvedTemplateId ?? null,
+        template_id: resolvedTemplateId ?? undefined,
         name: service.name,
         price: typeof service.price === "number" ? service.price : Number(service.price ?? 0),
         duration_minutes: service.durationMinutes ?? undefined,
