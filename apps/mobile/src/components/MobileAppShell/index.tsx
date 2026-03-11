@@ -40,7 +40,7 @@ export function MobileAppShell({
   const { user, signOut } = useAuth();
   const [isOrdersMenuOpen, setIsOrdersMenuOpen] = React.useState(false);
   const [headerOffset, setHeaderOffset] = React.useState(0);
-  const headerRef = React.useRef<HTMLElement | null>(null);
+  const headerRef = React.useRef<HTMLIonHeaderElement | null>(null);
   const tenantSlug = location.pathname.match(/^\/t\/([^/]+)/)?.[1];
 
   const isDashboard = /\/dashboard$/.test(location.pathname);
