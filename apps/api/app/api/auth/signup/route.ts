@@ -34,6 +34,7 @@ function inferRedirectBaseUrl(request: NextRequest): string {
 }
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const body = (await request.json().catch(() => ({}))) as SignupBody;
   const email = body.email?.trim();
   const password = body.password;
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     return setSessionCookies(response, {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
-    });
+    }, { origin });
   }
 
   return response;

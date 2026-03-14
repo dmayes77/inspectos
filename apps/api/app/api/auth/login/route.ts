@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       setSessionCookies(response, {
         accessToken: data.session.access_token,
         refreshToken: data.session.refresh_token,
-      }),
+      }, { origin }),
       origin
     );
   } catch (error) {

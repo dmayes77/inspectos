@@ -4,6 +4,7 @@ import { createAnonClient } from "@/lib/supabase";
 import { applyCorsHeaders, buildCorsPreflightResponse } from "@/lib/cors";
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
 
   if (accessToken && refreshToken) {
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const response = NextResponse.json({ success: true, data: { loggedOut: true } });
-  return applyCorsHeaders(clearSessionCookies(response), request);
+  return applyCorsHeaders(clearSessionCookies(response, { origin }), request);
 }
 
 export async function OPTIONS(request: NextRequest) {

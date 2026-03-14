@@ -15,10 +15,18 @@ function cookieDomain(): string | undefined {
   return ".inspectos.co";
 }
 
-function cookieBaseOptions() {
+function isMobileAppOrigin(origin: string | null | undefined): boolean {
+  return origin === "capacitor://localhost" || origin === "ionic://localhost";
+}
+
+function resolveSameSite(origin: string | null | undefined): "lax" | "none" {
+  return isMobileAppOrigin(origin) ? "none" : "lax";
+}
+
+function cookieBaseOptions(origin?: string | null) {
   return {
     httpOnly: true as const,
-    sameSite: "lax" as const,
+    sameSite: resolveSameSite(origin),
     secure: isProduction(),
     path: "/",
     domain: cookieDomain(),
@@ -37,18 +45,19 @@ export function readSessionTokensFromCookies(request: NextRequest): {
 
 export function setSessionCookies(
   response: NextResponse,
-  tokens: { accessToken?: string | null; refreshToken?: string | null }
+  tokens: { accessToken?: string | null; refreshToken?: string | null },
+  options?: { origin?: string | null }
 ): NextResponse {
   if (tokens.accessToken) {
     response.cookies.set(ACCESS_COOKIE_NAME, tokens.accessToken, {
-      ...cookieBaseOptions(),
+      ...cookieBaseOptions(options?.origin),
       maxAge: ACCESS_COOKIE_TTL_SECONDS,
     });
   }
 
   if (tokens.refreshToken) {
     response.cookies.set(REFRESH_COOKIE_NAME, tokens.refreshToken, {
-      ...cookieBaseOptions(),
+      ...cookieBaseOptions(options?.origin),
       maxAge: REFRESH_COOKIE_TTL_SECONDS,
     });
   }
@@ -56,13 +65,13 @@ export function setSessionCookies(
   return response;
 }
 
-export function clearSessionCookies(response: NextResponse): NextResponse {
+export function clearSessionCookies(response: NextResponse, options?: { origin?: string | null }): NextResponse {
   response.cookies.set(ACCESS_COOKIE_NAME, "", {
-    ...cookieBaseOptions(),
+    ...cookieBaseOptions(options?.origin),
     maxAge: 0,
   });
   response.cookies.set(REFRESH_COOKIE_NAME, "", {
-    ...cookieBaseOptions(),
+    ...cookieBaseOptions(options?.origin),
     maxAge: 0,
   });
   return response;

@@ -23,6 +23,7 @@ import {
   buildOrderCancelledPayload,
   buildSchedulePayload
 } from '@/lib/webhooks/payloads';
+import { deriveInspectionWorkflowState, fetchOrderWorkflowSummary } from '@/lib/order-workflow';
 
 const mapOrderStatusToScheduleStatus = (status?: string | null, scheduledDate?: string | null) => {
   switch (status) {
@@ -86,7 +87,16 @@ export const GET = withAuth<{ id: string }>(async ({ supabase, tenant, params })
     .maybeSingle();
 
   if (error || !data) return notFound(error?.message ?? "Order not found.");
-  return success(data);
+  const workflow = await fetchOrderWorkflowSummary(
+    supabase,
+    tenant.id,
+    data.id,
+    deriveInspectionWorkflowState(data.status, Boolean(data.started_at))
+  );
+  return success({
+    ...data,
+    workflow,
+  });
 });
 
 /**
@@ -237,6 +247,17 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
 
   if (error || !data) return serverError(error?.message ?? "Failed to update order.", error);
 
+  const workflow = await fetchOrderWorkflowSummary(
+    supabase,
+    tenant.id,
+    data.id,
+    deriveInspectionWorkflowState(data.status, Boolean(data.started_at))
+  );
+  const dataWithWorkflow = {
+    ...data,
+    workflow,
+  };
+
   // Update per-service inspector/vendor assignments if services payload provided
   if (payload.services && Array.isArray(payload.services) && payload.services.length > 0) {
     const existingServices = Array.isArray(data.services) ? data.services : [];
@@ -256,8 +277,8 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     }
   }
 
-  const propertyId = data.property_id;
-  const assignedClientId = data.client?.id ?? data.client_id ?? null;
+  const propertyId = dataWithWorkflow.property_id;
+  const assignedClientId = dataWithWorkflow.client?.id ?? dataWithWorkflow.client_id ?? null;
   if (propertyId && assignedClientId) {
     const ownerDate = format(new Date(), "yyyy-MM-dd");
     await supabase.from("property_owners").update({ end_date: ownerDate, is_primary: false }).eq("tenant_id", tenant.id).eq("property_id", propertyId).is("end_date", null);
@@ -375,7 +396,10 @@ export const PUT = withAuth<{ id: string }>(async ({ supabase, tenant, params, r
     console.error("Failed to trigger webhook:", error);
   }
 
-  return success(data);
+  return success({
+    ...dataWithWorkflow,
+    schedules: data.schedules,
+  });
 });
 
 /**

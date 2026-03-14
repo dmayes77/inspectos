@@ -1,6 +1,6 @@
 import "./order-detail.css";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHistory, useParams } from "react-router-dom";
 import { IonButton, IonModal, IonSpinner, IonText, IonTextarea } from "@ionic/react";
 import { Capacitor } from "@capacitor/core";
@@ -19,16 +19,7 @@ type TransitionAction = {
   successMessage: string;
 };
 
-type LocalBlockerState = {
-  workflowState: InspectionWorkflowState;
-  blockerType: string | null;
-  blockerNotes: string | null;
-  resolutionNotes: string | null;
-  updatedAt: string;
-};
-
 const DEVICE_ID_STORAGE_KEY = "inspectos_mobile_device_id";
-const ORDER_WORKFLOW_STORAGE_PREFIX = "inspectos_mobile_order_workflow";
 const BLOCKER_OPTIONS = [
   "Access Issue",
   "Client Answer",
@@ -43,32 +34,9 @@ function matchesArrivalPropertyPhoto(note: string | null | undefined, orderId: s
   return note.includes("[ARRIVAL_PHOTO]") && note.includes(`order_id=${orderId}`) && note.includes("type=front_exterior");
 }
 
-function buildOrderWorkflowStorageKey(tenantSlug: string, orderId: string) {
-  return `${ORDER_WORKFLOW_STORAGE_PREFIX}:${tenantSlug}:${orderId}`;
-}
-
-function readLocalBlockerState(tenantSlug: string, orderId: string): LocalBlockerState | null {
-  const raw = window.localStorage.getItem(buildOrderWorkflowStorageKey(tenantSlug, orderId));
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as LocalBlockerState;
-    if (!parsed || typeof parsed !== "object" || typeof parsed.workflowState !== "string") return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function writeLocalBlockerState(tenantSlug: string, orderId: string, value: LocalBlockerState) {
-  window.localStorage.setItem(buildOrderWorkflowStorageKey(tenantSlug, orderId), JSON.stringify(value));
-}
-
-function clearLocalBlockerState(tenantSlug: string, orderId: string) {
-  window.localStorage.removeItem(buildOrderWorkflowStorageKey(tenantSlug, orderId));
-}
-
 export default function OrderDetail() {
   const history = useHistory();
+  const queryClient = useQueryClient();
   const { tenantSlug, orderId } = useParams<{ tenantSlug: string; orderId: string }>();
   const [actionNote, setActionNote] = useState<string>("");
   const [workflowState, setWorkflowState] = useState<InspectionWorkflowState>("assigned");
@@ -78,7 +46,13 @@ export default function OrderDetail() {
   const [blockerNotes, setBlockerNotes] = useState("");
   const [isResolveBlockerOpen, setIsResolveBlockerOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState("");
-  const [activeBlocker, setActiveBlocker] = useState<LocalBlockerState | null>(null);
+  const [activeBlocker, setActiveBlocker] = useState<{
+    type: string | null;
+    notes: string | null;
+    resolution_notes: string | null;
+    reported_at: string | null;
+    resolved_at: string | null;
+  } | null>(null);
 
   const deviceId = useMemo(() => {
     const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY);
@@ -151,23 +125,19 @@ export default function OrderDetail() {
   useEffect(() => {
     if (!order) return;
     const derived = deriveInitialInspectionWorkflowState(order.status, hasStarted);
-    const localBlockerState = readLocalBlockerState(tenantSlug, orderId);
-    if (derived === "completed") {
-      clearLocalBlockerState(tenantSlug, orderId);
-      setActiveBlocker(null);
-      setWorkflowState(derived);
-      return;
-    }
-
-    if (localBlockerState) {
-      setWorkflowState(localBlockerState.workflowState);
-      setActiveBlocker(localBlockerState);
-      return;
-    }
-
-    setActiveBlocker(null);
-    setWorkflowState(derived);
-  }, [order, hasStarted, orderId, tenantSlug]);
+    setWorkflowState(order.workflow?.current_state ?? derived);
+    setActiveBlocker(
+      order.workflow?.blocker
+        ? {
+            type: order.workflow.blocker.type,
+            notes: order.workflow.blocker.notes,
+            resolution_notes: order.workflow.blocker.resolution_notes,
+            reported_at: order.workflow.blocker.reported_at,
+            resolved_at: order.workflow.blocker.resolved_at,
+          }
+        : null
+    );
+  }, [order, hasStarted]);
 
   const primaryAction = useMemo<TransitionAction | null>(() => {
     switch (workflowState) {
@@ -344,19 +314,17 @@ export default function OrderDetail() {
       const response = await transitionOrderInspectionState(tenantSlug, order.id, payload);
       setWorkflowState(response.to_state);
       if (action.trigger === "BLOCKER_REPORTED") {
-        const nextBlockerState: LocalBlockerState = {
-          workflowState: response.to_state,
-          blockerType: typeof metadata?.blocker_type === "string" ? metadata.blocker_type : null,
-          blockerNotes: typeof metadata?.blocker_notes === "string" ? metadata.blocker_notes : null,
-          resolutionNotes: null,
-          updatedAt: new Date().toISOString(),
-        };
-        writeLocalBlockerState(tenantSlug, order.id, nextBlockerState);
-        setActiveBlocker(nextBlockerState);
+        setActiveBlocker({
+          type: typeof metadata?.blocker_type === "string" ? metadata.blocker_type : null,
+          notes: typeof metadata?.blocker_notes === "string" ? metadata.blocker_notes : null,
+          resolution_notes: null,
+          reported_at: new Date().toISOString(),
+          resolved_at: null,
+        });
       } else if (action.trigger === "BLOCKER_CLEARED") {
-        clearLocalBlockerState(tenantSlug, order.id);
         setActiveBlocker(null);
       }
+      await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, order.id) });
       setActionNote(action.successMessage);
       if (action.trigger === "ARRIVAL_CONFIRMED") {
         history.push(`/t/${tenantSlug}/order/${order.id}/arrival`);
@@ -387,7 +355,7 @@ export default function OrderDetail() {
     if (!resolveBlockerAction) return;
     await runTransition(resolveBlockerAction, {
       blocker_resolution_notes: resolutionNotes.trim() || null,
-      blocker_type: activeBlocker?.blockerType ?? null,
+      blocker_type: activeBlocker?.type ?? null,
     });
     setIsResolveBlockerOpen(false);
     setResolutionNotes("");
@@ -493,10 +461,10 @@ export default function OrderDetail() {
             <section className="inspector-blocker-card">
               <div className="inspector-blocker-card-head">
                 <span className="inspector-progress-label">Open Blocker</span>
-                <strong>{activeBlocker.blockerType || "Info Needed"}</strong>
+                <strong>{activeBlocker.type || "Info Needed"}</strong>
               </div>
               <p className="inspector-order-subtle">
-                {activeBlocker.blockerNotes || "Waiting for additional information before inspection can continue."}
+                {activeBlocker.notes || "Waiting for additional information before inspection can continue."}
               </p>
               <IonButton fill="outline" onClick={() => setIsResolveBlockerOpen(true)} disabled={transitionBusy}>
                 Resolve Blocker
@@ -598,8 +566,8 @@ export default function OrderDetail() {
 
               <div className="inspector-blocker-summary">
                 <span className="inspector-progress-label">Open Issue</span>
-                <strong>{activeBlocker?.blockerType || "Info Needed"}</strong>
-                <p>{activeBlocker?.blockerNotes || "No blocker notes provided."}</p>
+                <strong>{activeBlocker?.type || "Info Needed"}</strong>
+                <p>{activeBlocker?.notes || "No blocker notes provided."}</p>
               </div>
 
               <IonTextarea

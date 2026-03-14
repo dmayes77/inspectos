@@ -21,6 +21,7 @@ function parseJwtIssuer(token: string | null | undefined): string | null {
 }
 
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseHost = (() => {
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
             id: data.user.id,
             email: data.user.email ?? null,
           },
+          access_token: accessToken,
         },
       });
     }
@@ -72,7 +74,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: "UNAUTHORIZED", message: "Session expired" } },
       { status: 401 }
     );
-    return clearSessionCookies(response);
+    return clearSessionCookies(response, { origin });
   }
 
   const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: "UNAUTHORIZED", message: "Session expired" } },
       { status: 401 }
     );
-    return clearSessionCookies(response);
+    return clearSessionCookies(response, { origin });
   }
 
   const response = NextResponse.json({
@@ -98,6 +100,7 @@ export async function GET(request: NextRequest) {
         id: refreshed.user.id,
         email: refreshed.user.email ?? null,
       },
+      access_token: refreshed.session.access_token,
     },
   });
   console.info("[api:auth:session] refresh succeeded", { userId: refreshed.user.id });
@@ -105,5 +108,5 @@ export async function GET(request: NextRequest) {
   return setSessionCookies(response, {
     accessToken: refreshed.session.access_token,
     refreshToken: refreshed.session.refresh_token,
-  });
+  }, { origin });
 }

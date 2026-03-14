@@ -3,6 +3,7 @@
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,12 +22,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar, Check, Clock, DollarSign, Download, Mail, MapPin, Phone, Send, Tag, User } from "lucide-react";
+import { AlertTriangle, Calendar, Check, Clock, DollarSign, Download, Mail, MapPin, Phone, Send, Tag, User } from "lucide-react";
 import { useOrderById, useUpdateOrder, useDeleteOrder } from "@/hooks/use-orders";
 import { useCreateOrderNote, useOrderNotes } from "@/hooks/use-order-notes";
 import { useInspectionData } from "@/hooks/use-inspection-data";
 import { useCreateInvoice } from "@/hooks/use-invoices";
 import { useRecordPayment } from "@/hooks/use-payments";
+import { useAuthSession } from "@/hooks/use-auth";
 import { useClients } from "@/hooks/use-clients";
 import { useAgents } from "@/hooks/use-agents";
 import { useCreateProperty, useProperties, useUpdateProperty } from "@/hooks/use-properties";
@@ -48,6 +50,9 @@ import { InlineClientDialog } from "@/components/orders/inline-client-dialog";
 import { InlineAgentDialog } from "@/components/orders/inline-agent-dialog";
 import { toSlugIdSegment } from "@/lib/routing/slug-id";
 import { getAllowedNextOrderStatuses, type OrderStatus } from "@inspectos/shared/constants/order-lifecycle";
+import { ordersQueryKeys } from "@inspectos/shared/query";
+import { inspectionDataQueryKeys } from "@inspectos/shared/query";
+import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 function getStatusBadgeClasses(status: string) {
   switch (status) {
@@ -121,8 +126,10 @@ const paymentStatusOptions = ["unpaid", "partial", "paid", "refunded"] as const;
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: order, isLoading, isError } = useOrderById(id);
+  const { data: sessionData } = useAuthSession();
   const { data: clients = [] } = useClients();
   const { data: agents = [] } = useAgents();
   const { data: properties = [] } = useProperties();
@@ -175,6 +182,12 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const createInvoice = useCreateInvoice();
   const recordPayment = useRecordPayment();
   const [inspectionTemplateId, setInspectionTemplateId] = useState<string>("__none__");
+  const shouldLiveRefreshOrder = order
+    ? ["arrived", "in_progress", "paused", "waiting_for_info", "uploading", "ready_for_review", "corrections_required"].includes(
+        order.workflow?.current_state ?? ""
+      )
+    : false;
+  const sessionAccessToken = sessionData?.access_token ?? null;
 
   const serviceNameMap = useMemo(() => {
     return new Map(services.map((service) => [service.name.toLowerCase(), service.serviceId]));
@@ -270,6 +283,131 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     setStatusDraft(order.status as OrderStatus);
     setPaymentStatusDraft(order.payment_status);
   }, [order?.id, order?.status, order?.payment_status]);
+
+  useEffect(() => {
+    if (!shouldLiveRefreshOrder) return;
+
+    const refreshOrder = () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      void queryClient.invalidateQueries({ queryKey: ordersQueryKeys.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: inspectionDataQueryKeys.detail(id) });
+    };
+
+    const supabase = getBrowserSupabaseClient();
+    if (!supabase || !sessionAccessToken) {
+      refreshOrder();
+      const intervalId = window.setInterval(refreshOrder, 5000);
+      document.addEventListener("visibilitychange", refreshOrder);
+
+      return () => {
+        window.clearInterval(intervalId);
+        document.removeEventListener("visibilitychange", refreshOrder);
+      };
+    }
+
+    supabase.realtime.setAuth(sessionAccessToken);
+    const channel = supabase
+      .channel(`order-live:${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "order_workflow_states",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "order_workflow_events",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "answers",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "findings",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "media_assets",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "mobile_inspection_custom_answers",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "signatures",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "mobile_arrival_checklists",
+          filter: `order_id=eq.${id}`,
+        },
+        refreshOrder
+      )
+      .subscribe();
+
+    const handleVisibilityChange = () => refreshOrder();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void supabase.removeChannel(channel);
+    };
+  }, [id, queryClient, sessionAccessToken, shouldLiveRefreshOrder]);
 
   const handleStatusDraftChange = (newStatus: string) => {
     if (!order) return;
@@ -940,6 +1078,24 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </p>
           </div>
         </div>
+        {order.workflow?.current_state === "waiting_for_info" && order.workflow.blocker ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-950">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="space-y-2">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wide text-amber-800">Open Blocker</p>
+                  <p className="text-sm font-semibold">{order.workflow.blocker.type || "Info Needed"}</p>
+                </div>
+                <p className="text-sm">{order.workflow.blocker.notes || "Waiting for more information before the inspection can continue."}</p>
+                <p className="text-xs text-amber-900/80">
+                  Reported {order.workflow.blocker.reported_at ? formatTimestampFull(order.workflow.blocker.reported_at) : "recently"}
+                  {order.workflow.blocker.reported_by?.full_name ? ` by ${order.workflow.blocker.reported_by.full_name}` : ""}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr]">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground uppercase tracking-wide">Order Status</p>

@@ -8,6 +8,7 @@ type SetSessionBody = {
 };
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const body = (await request.json().catch(() => ({}))) as SetSessionBody;
   const accessToken = body.access_token?.trim();
   const refreshToken = body.refresh_token?.trim();
@@ -42,5 +43,5 @@ export async function POST(request: NextRequest) {
   return setSessionCookies(response, {
     accessToken: data.session.access_token,
     refreshToken: data.session.refresh_token,
-  });
+  }, { origin });
 }

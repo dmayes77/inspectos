@@ -4,6 +4,7 @@ import type { InspectionSchedule, InspectionScheduleStatus, InspectionScheduleTy
 import { useApiClient } from "@/lib/api/tenant-context";
 import { createOrdersApi } from "@inspectos/shared/api";
 import { ordersQueryKeys } from "@inspectos/shared/query";
+import type { InspectionWorkflowState } from "@inspectos/shared/types/inspection-state-machine";
 
 export type OrderStatus = "pending" | "scheduled" | "in_progress" | "pending_report" | "delivered" | "completed" | "cancelled";
 export type PaymentStatus = "unpaid" | "partial" | "paid" | "refunded";
@@ -174,6 +175,44 @@ export interface Order {
     issued_at: string | null;
     due_at: string | null;
   }>;
+  workflow?: {
+    current_state: InspectionWorkflowState;
+    updated_at: string | null;
+    blocker: {
+      type: string | null;
+      notes: string | null;
+      reported_at: string | null;
+      reported_by: {
+        id: string;
+        full_name: string | null;
+        email: string | null;
+        avatar_url: string | null;
+      } | null;
+      resolution_notes: string | null;
+      resolved_at: string | null;
+      resolved_by: {
+        id: string;
+        full_name: string | null;
+        email: string | null;
+        avatar_url: string | null;
+      } | null;
+    } | null;
+    history: Array<{
+      id: string;
+      event_id: string;
+      event_time: string;
+      from_state: InspectionWorkflowState;
+      to_state: InspectionWorkflowState;
+      trigger: string;
+      metadata: Record<string, unknown>;
+      actor: {
+        id: string;
+        full_name: string | null;
+        email: string | null;
+        avatar_url: string | null;
+      } | null;
+    }>;
+  } | null;
 }
 
 export interface OrderService {

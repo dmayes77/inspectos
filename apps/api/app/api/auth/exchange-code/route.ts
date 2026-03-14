@@ -7,6 +7,7 @@ type ExchangeCodeBody = {
 };
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const body = (await request.json().catch(() => ({}))) as ExchangeCodeBody;
   const code = body.code?.trim();
   if (!code) {
@@ -36,5 +37,5 @@ export async function POST(request: NextRequest) {
   return setSessionCookies(response, {
     accessToken: data.session.access_token,
     refreshToken: data.session.refresh_token,
-  });
+  }, { origin });
 }

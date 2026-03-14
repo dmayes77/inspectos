@@ -1,6 +1,7 @@
 import type {
   InspectionTransitionRequestPayload,
   InspectionTransitionResponsePayload,
+  InspectionWorkflowState,
 } from '../../../../shared/types/inspection-state-machine';
 
 const rawApiBaseUrl = (import.meta.env.VITE_API_URL || '').trim();
@@ -87,6 +88,44 @@ export type MobileOrderDetailPayload = {
       name?: string | null;
       email?: string | null;
       phone?: string | null;
+    } | null;
+    workflow?: {
+      current_state: InspectionWorkflowState;
+      updated_at: string | null;
+      blocker: {
+        type: string | null;
+        notes: string | null;
+        reported_at: string | null;
+        reported_by: {
+          id: string;
+          full_name: string | null;
+          email: string | null;
+          avatar_url: string | null;
+        } | null;
+        resolution_notes: string | null;
+        resolved_at: string | null;
+        resolved_by: {
+          id: string;
+          full_name: string | null;
+          email: string | null;
+          avatar_url: string | null;
+        } | null;
+      } | null;
+      history: Array<{
+        id: string;
+        event_id: string;
+        event_time: string;
+        from_state: InspectionWorkflowState;
+        to_state: InspectionWorkflowState;
+        trigger: string;
+        metadata: Record<string, unknown>;
+        actor: {
+          id: string;
+          full_name: string | null;
+          email: string | null;
+          avatar_url: string | null;
+        } | null;
+      }>;
     } | null;
   };
   template: {

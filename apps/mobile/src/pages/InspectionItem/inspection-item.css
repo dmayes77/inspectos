@@ -4,6 +4,137 @@
   padding-bottom: calc(env(safe-area-inset-bottom) + 8.5rem);
 }
 
+.inspection-item-shell {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.inspection-item-rail {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.inspection-item-rail--horizontal {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.inspection-item-rail--vertical {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inspection-item-nav-chip,
+.inspection-item-nav-pill {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.24);
+  border-radius: var(--app-radius);
+  background: rgba(255, 255, 255, 0.92);
+  color: #111827;
+  min-height: 2.625rem;
+  padding: 0.625rem 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.inspection-item-nav-chip:disabled,
+.inspection-item-nav-pill:disabled {
+  opacity: 0.45;
+}
+
+.inspection-item-position {
+  display: grid;
+  gap: 0.125rem;
+  text-align: center;
+}
+
+.inspection-item-position span {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inspection-item-position strong {
+  font-size: 0.82rem;
+  color: #111827;
+}
+
+.inspection-item-focus-card {
+  border: 0.0625rem solid rgba(148, 163, 184, 0.18);
+  border-radius: calc(var(--app-radius) + 0.125rem);
+  background:
+    linear-gradient(160deg, rgba(239, 246, 255, 0.82), rgba(255, 255, 255, 0.98)),
+    var(--ion-card-background);
+  padding: 0.95rem;
+  display: grid;
+  gap: 0.75rem;
+  box-shadow: 0 0.875rem 2.25rem rgba(15, 23, 42, 0.06);
+}
+
+.inspection-item-progress-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.inspection-item-progress-head h2 {
+  margin: 0.125rem 0 0;
+  font-size: 1.15rem;
+  line-height: 1.15;
+  color: #111827;
+}
+
+.inspection-item-progress-label {
+  display: inline-block;
+  font-size: 0.72rem;
+  color: #0f766e;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inspection-item-progress-badges {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: end;
+}
+
+.inspection-item-progress-badges span,
+.inspection-item-progress-badges strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.85rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inspection-item-progress-badges span {
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+}
+
+.inspection-item-progress-badges strong {
+  background: rgba(15, 138, 219, 0.1);
+  color: #0f8adb;
+}
+
+.inspection-item-description {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #374151;
+}
+
 .inspection-item-card {
   border: 0.0625rem solid rgba(148, 163, 184, 0.22);
   border-radius: var(--app-radius);
@@ -56,6 +187,36 @@
   border-bottom-color: var(--ion-color-primary);
 }
 
+.inspection-item-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.inspection-item-save-state {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.inspection-item-save-state.is-saving {
+  color: #0f8adb;
+}
+
+.inspection-item-save-state.is-saved {
+  color: #15803d;
+}
+
+.inspection-item-save-state.is-error {
+  color: #dc2626;
+}
+
+.inspection-item-gesture-hint {
+  font-size: 0.72rem;
+  color: #6b7280;
+  text-align: right;
+}
+
 .inspection-item-media-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -84,7 +245,10 @@
 }
 
 :root[data-theme='dark'] .inspection-item-card,
-:root[data-theme='dark'] .inspection-item-media-card {
+:root[data-theme='dark'] .inspection-item-media-card,
+:root[data-theme='dark'] .inspection-item-nav-chip,
+:root[data-theme='dark'] .inspection-item-nav-pill,
+:root[data-theme='dark'] .inspection-item-focus-card {
   border-color: rgba(71, 85, 105, 0.55);
   background: #111827;
 }
@@ -92,6 +256,35 @@
 :root[data-theme='dark'] .inspection-item-card p,
 :root[data-theme='dark'] .inspection-item-note,
 :root[data-theme='dark'] .inspection-item-meta span,
-:root[data-theme='dark'] .inspection-item-media-card figcaption {
+:root[data-theme='dark'] .inspection-item-media-card figcaption,
+:root[data-theme='dark'] .inspection-item-position span,
+:root[data-theme='dark'] .inspection-item-gesture-hint,
+:root[data-theme='dark'] .inspection-item-description {
   color: #94a3b8;
+}
+
+:root[data-theme='dark'] .inspection-item-progress-head h2,
+:root[data-theme='dark'] .inspection-item-position strong,
+:root[data-theme='dark'] .inspection-item-nav-chip,
+:root[data-theme='dark'] .inspection-item-nav-pill {
+  color: #f8fafc;
+}
+
+@media (max-width: 420px) {
+  .inspection-item-rail--horizontal {
+    grid-template-columns: 1fr;
+  }
+
+  .inspection-item-position {
+    order: -1;
+  }
+
+  .inspection-item-save-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .inspection-item-gesture-hint {
+    text-align: left;
+  }
 }

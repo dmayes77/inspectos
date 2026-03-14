@@ -15,14 +15,11 @@ import {
   removeInspectionOutlineItem,
   removeInspectionOutlineSection,
 } from '../../services/api';
-
-type OrderDetailData = Awaited<ReturnType<typeof getOrderInspectionDetail>>;
-
-type ItemAnswerState = {
-  sectionId: string;
-  value: string;
-  notes: string;
-};
+import {
+  buildAnswerStateMap,
+  getInspectionResumeItemId,
+  isInspectionItemComplete,
+} from './inspection-flow';
 
 type ItemSummary = {
   id: string;
@@ -33,56 +30,6 @@ type ItemSummary = {
   notes: string;
   photoCount: number;
 };
-
-function stringifyValue(value: unknown): string {
-  if (value == null) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '';
-  }
-}
-
-function toAnswerMap(detail: OrderDetailData | null): Record<string, ItemAnswerState> {
-  const map: Record<string, ItemAnswerState> = {};
-  const snapshotIdBySourceId = new Map<string, string>();
-
-  for (const section of detail?.template?.sections ?? []) {
-    for (const item of section.items ?? []) {
-      const sourceId = typeof item.source_template_item_id === 'string' ? item.source_template_item_id : null;
-      if (sourceId) {
-        snapshotIdBySourceId.set(sourceId, item.id);
-      }
-    }
-  }
-
-  for (const row of detail?.answers ?? []) {
-    const templateItemId = typeof row.template_item_id === 'string' ? row.template_item_id : null;
-    const sectionId = typeof row.section_id === 'string' ? row.section_id : '';
-    if (!templateItemId) continue;
-    const targetId = snapshotIdBySourceId.get(templateItemId) ?? templateItemId;
-
-    map[targetId] = {
-      sectionId,
-      value: stringifyValue(row.value),
-      notes: stringifyValue(row.notes),
-    };
-  }
-
-  for (const row of detail?.custom_answers ?? []) {
-    const customItemId = typeof row.custom_item_id === 'string' ? row.custom_item_id : null;
-    if (!customItemId) continue;
-    map[customItemId] = {
-      sectionId: typeof row.section_id === 'string' ? row.section_id : '',
-      value: stringifyValue(row.value),
-      notes: stringifyValue(row.notes),
-    };
-  }
-
-  return map;
-}
 
 export default function Inspection() {
   const history = useHistory();
@@ -109,7 +56,7 @@ export default function Inspection() {
     await queryClient.invalidateQueries({ queryKey: mobileQueryKeys.order(tenantSlug, orderId) });
   };
   const detail = detailQuery.data ?? null;
-  const answersByItem = useMemo(() => toAnswerMap(detail), [detail]);
+  const answersByItem = useMemo(() => buildAnswerStateMap(detail), [detail]);
   const mediaCountByItem = useMemo(() => {
     const snapshotIdBySourceId = new Map<string, string>();
     for (const section of detail?.template?.sections ?? []) {
@@ -150,14 +97,12 @@ export default function Inspection() {
   );
   const totalItems = allItems.length;
   const requiredItems = allItems.filter((item) => Boolean(item.is_required));
-  const isItemComplete = (itemId: string) => {
-    const answer = answersByItem[itemId];
-    return (answer?.value ?? '').trim().length > 0 || (answer?.notes ?? '').trim().length > 0 || (mediaCountByItem[itemId] ?? 0) > 0;
-  };
+  const isItemComplete = (itemId: string) => isInspectionItemComplete(answersByItem, mediaCountByItem, itemId);
 
   const answeredItems = allItems.filter((item) => isItemComplete(item.id));
   const answeredRequired = requiredItems.filter((item) => isItemComplete(item.id));
   const completionPct = totalItems > 0 ? Math.min(100, Math.round((answeredItems.length / totalItems) * 100)) : 0;
+  const resumeItemId = useMemo(() => getInspectionResumeItemId(detail, mediaCountByItem), [detail, mediaCountByItem]);
   const itemSummaries = useMemo<ItemSummary[]>(
     () =>
       allItems.map((item) => ({
@@ -266,6 +211,12 @@ export default function Inspection() {
             <InfoCard label="Answered" value={`${answeredItems.length}/${totalItems}`} />
             <InfoCard label="Required" value={`${answeredRequired.length}/${requiredItems.length}`} />
           </div>
+
+          {resumeItemId ? (
+            <IonButton expand="block" onClick={() => history.push(`/t/${tenantSlug}/order/${orderId}/inspection/item/${resumeItemId}`)}>
+              Open Swipe Inspection
+            </IonButton>
+          ) : null}
 
           <section className="inspection-flow-section">
             <h3>Add Building Blocks</h3>

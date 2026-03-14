@@ -13,14 +13,14 @@ export function useAuthSession() {
     queryKey: authSessionQueryKey,
     queryFn: () =>
       authApi
-        .getSession<{ user: { id: string; email: string | null } | null }>()
+        .getSession<{ user: { id: string; email: string | null } | null; access_token?: string | null }>()
         .catch((error) => {
           if (error instanceof ApiError && error.status === 401) {
-            return { user: null };
+            return { user: null, access_token: null };
           }
           const message = error instanceof Error ? error.message : "";
           if (message.toLowerCase().includes("not authenticated") || message.toLowerCase().includes("session expired")) {
-            return { user: null };
+            return { user: null, access_token: null };
           }
           throw error;
         }),

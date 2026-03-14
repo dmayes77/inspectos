@@ -67,6 +67,7 @@ function getSafeRedirectPath(nextParam: string | null, fallback: string): string
 }
 
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const tokenHash = request.nextUrl.searchParams.get("token_hash")?.trim();
   const type = request.nextUrl.searchParams.get("type")?.trim() as EmailOtpType | null;
   const next = request.nextUrl.searchParams.get("next");
@@ -120,13 +121,14 @@ export async function GET(request: NextRequest) {
     return setSessionCookies(response, {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
-    });
+    }, { origin });
   }
 
   return response;
 }
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const body = (await request.json().catch(() => ({}))) as ConfirmBody;
   const tokenHash = body.token_hash?.trim();
   const type = body.type;
@@ -160,7 +162,7 @@ export async function POST(request: NextRequest) {
     return setSessionCookies(response, {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
-    });
+    }, { origin });
   }
 
   return response;

@@ -17,6 +17,7 @@ import {
 } from '@/lib/supabase';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
 import { fetchMobileInspectionOutline } from '@/lib/mobile-inspection-outline';
+import { deriveInspectionWorkflowState, fetchOrderWorkflowSummary } from '@/lib/order-workflow';
 
 type TemplateSectionIdRow = {
   id: string;
@@ -168,11 +169,26 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
         return applyCorsHeaders(serverError('Failed to load template item count', templateItemsCount.error), request);
       }
 
+      const hasStarted =
+        answersCount.count > 0 ||
+        customAnswersCount.count > 0 ||
+        findingsCount.count > 0 ||
+        mediaCount.count > 0;
+      const workflow = await fetchOrderWorkflowSummary(
+        supabase,
+        tenant.id,
+        order.id,
+        deriveInspectionWorkflowState(typeof order.status === 'string' ? order.status : null, hasStarted)
+      );
+
       return applyCorsHeaders(
         Response.json({
           success: true,
           data: {
-            order,
+            order: {
+              ...order,
+              workflow,
+            },
             template: null,
             answers: [],
             custom_answers: [],
@@ -227,17 +243,34 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       supabase.from('media_assets').select('*').eq('order_id', order.id).eq('tenant_id', tenant.id).order('created_at'),
     ]);
 
+    const answers = answersRes.data ?? [];
+    const customAnswers = customAnswersRes.data ?? [];
+    const findings = findingsRes.data ?? [];
+    const media = mediaRes.data ?? [];
+    const workflow = await fetchOrderWorkflowSummary(
+      supabase,
+      tenant.id,
+      order.id,
+      deriveInspectionWorkflowState(
+        typeof order.status === 'string' ? order.status : null,
+        answers.length > 0 || customAnswers.length > 0 || findings.length > 0 || media.length > 0
+      )
+    );
+
     return applyCorsHeaders(
       Response.json({
         success: true,
         data: {
-          order,
+          order: {
+            ...order,
+            workflow,
+          },
           template,
-          answers: answersRes.data ?? [],
-          custom_answers: customAnswersRes.data ?? [],
-          findings: findingsRes.data ?? [],
+          answers,
+          custom_answers: customAnswers,
+          findings,
           signatures: signaturesRes.data ?? [],
-          media: mediaRes.data ?? [],
+          media,
           progress_summary: {
             total_items: template?.sections?.reduce((count, section) => count + section.items.length, 0) ?? 0,
             answered_count: answersRes.data?.length ?? 0,

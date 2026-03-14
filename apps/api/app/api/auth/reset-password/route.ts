@@ -10,6 +10,7 @@ type ResetPasswordBody = {
 };
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const body = (await request.json().catch(() => ({}))) as ResetPasswordBody;
   const password = body.password;
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     return setSessionCookies(response, {
       accessToken: refreshed.session.access_token,
       refreshToken: refreshed.session.refresh_token,
-    });
+    }, { origin });
   }
 
   return response;

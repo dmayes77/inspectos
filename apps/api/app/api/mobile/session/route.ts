@@ -61,6 +61,7 @@ async function resolveTenantForUser(userId: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin') ?? null;
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
   if (!accessToken && !refreshToken) {
     return applyCorsHeaders(unauthorized('Not authenticated'), request);
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired' } },
       { status: 401 }
     );
-    return applyCorsHeaders(clearSessionCookies(response), request);
+    return applyCorsHeaders(clearSessionCookies(response, { origin }), request);
   }
 
   const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
@@ -120,7 +121,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired' } },
       { status: 401 }
     );
-    return applyCorsHeaders(clearSessionCookies(response), request);
+    return applyCorsHeaders(clearSessionCookies(response, { origin }), request);
   }
 
   const payload = await buildPayload(refreshed.user);
@@ -133,7 +134,7 @@ export async function GET(request: NextRequest) {
     setSessionCookies(response, {
       accessToken: refreshed.session.access_token,
       refreshToken: refreshed.session.refresh_token,
-    }),
+    }, { origin }),
     request
   );
 }

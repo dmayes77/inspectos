@@ -55,6 +55,7 @@ async function fetchWorkspaces(email: string) {
 }
 
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get("origin") ?? null;
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
   if (!accessToken && !refreshToken) {
     return unauthorized("Not authenticated");
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: "UNAUTHORIZED", message: "Session expired" } },
       { status: 401 }
     );
-    return clearSessionCookies(response);
+    return clearSessionCookies(response, { origin });
   }
 
   const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession({
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: "UNAUTHORIZED", message: "Session expired" } },
       { status: 401 }
     );
-    return clearSessionCookies(response);
+    return clearSessionCookies(response, { origin });
   }
 
   const email = refreshed.user.email?.trim().toLowerCase();
@@ -103,7 +104,7 @@ export async function GET(request: NextRequest) {
       { success: false, error: { code: "UNAUTHORIZED", message: "No email associated with account" } },
       { status: 401 }
     );
-    return clearSessionCookies(response);
+    return clearSessionCookies(response, { origin });
   }
 
   const workspaces = await fetchWorkspaces(email);
@@ -117,5 +118,5 @@ export async function GET(request: NextRequest) {
   return setSessionCookies(response, {
     accessToken: refreshed.session.access_token,
     refreshToken: refreshed.session.refresh_token,
-  });
+  }, { origin });
 }
