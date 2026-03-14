@@ -17,6 +17,18 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react(), legacy()],
+    resolve: {
+      alias: [
+        {
+          find: /^@inspectos\/domains\/(.+)$/,
+          replacement: resolve(__dirname, "../../packages/domains/$1/index.ts"),
+        },
+        {
+          find: /^@inspectos\/platform\/(.+)$/,
+          replacement: resolve(__dirname, "../../packages/platform/$1/index.ts"),
+        },
+      ],
+    },
     server: {
       fs: {
         allow: [workspaceRoot, sharedPath],

@@ -27,6 +27,12 @@
       "@/*": [
         "./*"
       ],
+      "@inspectos/domains/*": [
+        "../../packages/domains/*/index.ts"
+      ],
+      "@inspectos/platform/*": [
+        "../../packages/platform/*/index.ts"
+      ],
       "@inspectos/database/client": [
         "../../database/client/index.ts"
       ],

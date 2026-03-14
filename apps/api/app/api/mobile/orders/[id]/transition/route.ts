@@ -1,14 +1,15 @@
 import type { NextRequest } from 'next/server';
 import {
-  INSPECTION_STATE_MACHINE_VERSION,
-  INSPECTION_TRANSITION_TRIGGERS,
-  INSPECTION_WORKFLOW_STATES,
-  findInspectionTransitionRule,
-  type InspectionTransitionRequestPayload,
-  type InspectionTransitionResponsePayload,
-  type InspectionTransitionTrigger,
-  type InspectionWorkflowState,
-} from '../../../../../../../../shared/types/inspection-state-machine';
+  parseTransitionRequestBody,
+  validateInspectionTransitionRequest,
+} from '@inspectos/domains/orders';
+import {
+  buildInspectorScopeUserIds,
+  hasInspectorSeatAccess,
+  resolveInspectorMembership,
+  resolveOrderForTenantLookup,
+  resolveTenantForBusinessIdentifier,
+} from '@inspectos/platform/mobile-orders-access';
 import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
 import {
   badRequest,
@@ -19,55 +20,6 @@ import {
   unauthorized,
 } from '@/lib/supabase';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
-
-type MembershipRow = {
-  role: string;
-  profiles: { id?: string; is_inspector?: boolean } | { id?: string; is_inspector?: boolean }[] | null;
-};
-
-function normalizeProfile(row: MembershipRow): { id?: string; is_inspector?: boolean } | null {
-  const profile = row.profiles;
-  if (Array.isArray(profile)) return profile[0] ?? null;
-  return profile ?? null;
-}
-
-function isWorkflowState(value: unknown): value is InspectionWorkflowState {
-  return typeof value === 'string' && INSPECTION_WORKFLOW_STATES.includes(value as InspectionWorkflowState);
-}
-
-function isTransitionTrigger(value: unknown): value is InspectionTransitionTrigger {
-  return typeof value === 'string' && INSPECTION_TRANSITION_TRIGGERS.includes(value as InspectionTransitionTrigger);
-}
-
-function parseTransitionRequestBody(value: unknown): InspectionTransitionRequestPayload | null {
-  if (!value || typeof value !== 'object') return null;
-  const raw = value as Partial<InspectionTransitionRequestPayload>;
-
-  if (
-    typeof raw.event_id !== 'string' ||
-    typeof raw.event_time !== 'string' ||
-    typeof raw.device_id !== 'string' ||
-    raw.state_machine_version !== INSPECTION_STATE_MACHINE_VERSION ||
-    !isWorkflowState(raw.from_state) ||
-    !isWorkflowState(raw.to_state) ||
-    !isTransitionTrigger(raw.trigger)
-  ) {
-    return null;
-  }
-
-  return {
-    event_id: raw.event_id,
-    event_time: raw.event_time,
-    device_id: raw.device_id,
-    state_machine_version: raw.state_machine_version,
-    from_state: raw.from_state,
-    to_state: raw.to_state,
-    trigger: raw.trigger,
-    checklist_version: typeof raw.checklist_version === 'string' ? raw.checklist_version : undefined,
-    checks: raw.checks && typeof raw.checks === 'object' ? raw.checks : undefined,
-    metadata: raw.metadata && typeof raw.metadata === 'object' ? raw.metadata : undefined,
-  };
-}
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -100,67 +52,38 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const supabase = createUserClient(accessToken);
 
-    const { data: tenantBySlug, error: tenantSlugError } = await supabase
-      .from('tenants')
-      .select('id, name, slug, business_id')
-      .eq('slug', businessIdentifier)
-      .maybeSingle();
-
-    const tenantByBusinessId = !tenantBySlug
-      ? await supabase
-          .from('tenants')
-          .select('id, name, slug, business_id')
-          .eq('business_id', businessIdentifier.toUpperCase())
-          .maybeSingle()
-      : { data: null, error: null };
-
-    const tenant = tenantBySlug ?? tenantByBusinessId.data;
-    const tenantError = tenantBySlug ? tenantSlugError : tenantByBusinessId.error;
-    if (tenantError || !tenant) {
+    const tenant = await resolveTenantForBusinessIdentifier<{ id: string; name: string; slug: string; business_id?: string | null }>(
+      supabase,
+      businessIdentifier,
+      'id, name, slug, business_id'
+    );
+    if (!tenant) {
       return applyCorsHeaders(badRequest('Business not found'), request);
     }
 
-    const { data: membershipRaw, error: membershipError } = await supabase
-      .from('tenant_members')
-      .select('role, profiles!left(id, is_inspector)')
-      .eq('tenant_id', tenant.id)
-      .eq('user_id', user.userId)
-      .single();
-
-    const membership = membershipRaw as MembershipRow | null;
-    if (membershipError || !membership) {
+    const membership = await resolveInspectorMembership(supabase, tenant.id, user.userId);
+    if (!membership) {
       return applyCorsHeaders(unauthorized('Not a member of this business'), request);
     }
 
-    const profile = normalizeProfile(membership);
-    const role = membership.role;
-    const hasInspectorAccess =
-      role === 'owner' ||
-      role === 'admin' ||
-      role === 'inspector' ||
-      Boolean(profile?.is_inspector);
+    const hasInspectorAccess = hasInspectorSeatAccess(membership.role, membership.isInspectorFlag);
 
     if (!hasInspectorAccess) {
       return applyCorsHeaders(unauthorized('Inspector mobile access is restricted to inspector seats.'), request);
     }
 
-    const inspectorIds = [user.userId];
-    if (profile?.id && profile.id !== user.userId) {
-      inspectorIds.push(profile.id);
-    }
+    const inspectorIds = buildInspectorScopeUserIds(user.userId, membership.profileId);
+    const scopedInspectorIds =
+      membership.role === 'owner' || membership.role === 'admin' ? undefined : inspectorIds;
 
-    let orderQuery = supabase
-      .from('orders')
-      .select('id, status, inspector_id, source')
-      .eq(lookup.column, lookup.value)
-      .eq('tenant_id', tenant.id);
-
-    if (role !== 'owner' && role !== 'admin') {
-      orderQuery = orderQuery.in('inspector_id', inspectorIds);
-    }
-
-    const { data: order, error: orderError } = await orderQuery.limit(1).maybeSingle();
-    if (orderError || !order) {
+    const order = await resolveOrderForTenantLookup<{ id: string; status: string; inspector_id?: string | null; source?: string | null }>(
+      supabase,
+      tenant.id,
+      lookup,
+      'id, status, inspector_id, source',
+      scopedInspectorIds
+    );
+    if (!order) {
       return applyCorsHeaders(badRequest('Order not found'), request);
     }
 
@@ -185,53 +108,42 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       );
     }
 
-    const transitionRule = findInspectionTransitionRule(
-      body.from_state,
-      body.to_state,
-      body.trigger
-    );
+    const transition = validateInspectionTransitionRequest(body, order.id);
+    if (!transition.ok) {
+      if (transition.failure.code === 'TRANSITION_NOT_ALLOWED') {
+        return applyCorsHeaders(
+          badRequest(transition.failure.message),
+          request
+        );
+      }
 
-    if (!transitionRule) {
-      return applyCorsHeaders(
-        badRequest(`Transition not allowed: ${body.from_state} -> ${body.to_state} (${body.trigger})`),
-        request
-      );
-    }
-
-    const missingChecks = transitionRule.required_checks.filter((check) => !body.checks?.[check]);
-    if (missingChecks.length > 0) {
-      return applyCorsHeaders(
-        Response.json(
-          {
-            success: false,
-            error: {
-              code: 'TRANSITION_CHECKS_FAILED',
-              message: 'One or more required transition checks are missing',
-              missing_checks: missingChecks,
+      if (transition.failure.code === 'TRANSITION_CHECKS_FAILED') {
+        return applyCorsHeaders(
+          Response.json(
+            {
+              success: false,
+              error: {
+                code: transition.failure.code,
+                message: transition.failure.message,
+                missing_checks: transition.failure.missingChecks,
+              },
             },
-          },
-          { status: 409 }
-        ),
+            { status: 409 }
+          ),
+          request
+        );
+      }
+
+      return applyCorsHeaders(
+        badRequest(transition.failure.message),
         request
       );
     }
-
-    const result: InspectionTransitionResponsePayload = {
-      accepted: true,
-      order_id: order.id,
-      event_id: body.event_id,
-      accepted_at: new Date().toISOString(),
-      state_machine_version: INSPECTION_STATE_MACHINE_VERSION,
-      from_state: body.from_state,
-      to_state: body.to_state,
-      trigger: body.trigger,
-      missing_checks: [],
-    };
 
     return applyCorsHeaders(
       Response.json({
         success: true,
-        data: result,
+        data: transition.result,
       }),
       request
     );

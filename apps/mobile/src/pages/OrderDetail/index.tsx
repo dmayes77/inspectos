@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useHistory, useParams } from "react-router-dom";
 import { IonButton, IonModal, IonSpinner, IonText, IonTextarea } from "@ionic/react";
 import { Capacitor } from "@capacitor/core";
+import { deriveInitialInspectionWorkflowState, formatOrderScheduleFriendly } from "@inspectos/domains/orders";
 import { MobilePageLayout } from "../../components/MobilePageLayout";
 import { InfoCard, SectionTitle, StatusChipRow, StickyButtonRow } from "../../components/ui";
 import { fetchQuickCaptures, getOrder, transitionOrderInspectionState } from "../../services/api";
@@ -40,55 +41,6 @@ const BLOCKER_OPTIONS = [
 function matchesArrivalPropertyPhoto(note: string | null | undefined, orderId: string): boolean {
   if (!note) return false;
   return note.includes("[ARRIVAL_PHOTO]") && note.includes(`order_id=${orderId}`) && note.includes("type=front_exterior");
-}
-
-function deriveInitialWorkflowState(orderStatus?: string | null, hasStarted?: boolean): InspectionWorkflowState {
-  const normalized = (orderStatus ?? "").toLowerCase();
-  if (normalized === "completed" || normalized === "submitted") return "completed";
-  if (normalized === "in_progress") return "in_progress";
-  if (hasStarted) return "in_progress";
-  return "assigned";
-}
-
-function formatScheduleFriendly(scheduledDate?: string | null, scheduledTime?: string | null): string {
-  if (!scheduledDate) return "Unscheduled";
-
-  const [yearRaw, monthRaw, dayRaw] = scheduledDate.split("-");
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  const day = Number(dayRaw);
-
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return [scheduledDate, scheduledTime].filter(Boolean).join(" ");
-  }
-
-  let hours = 0;
-  let minutes = 0;
-  if (scheduledTime) {
-    const [hoursRaw, minutesRaw] = scheduledTime.split(":");
-    hours = Number(hoursRaw);
-    minutes = Number(minutesRaw);
-  }
-
-  const date = new Date(year, month - 1, day, hours, minutes);
-  if (Number.isNaN(date.getTime())) {
-    return [scheduledDate, scheduledTime].filter(Boolean).join(" ");
-  }
-
-  const datePart = new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-
-  if (!scheduledTime) return datePart;
-
-  const timePart = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-
-  return `${datePart} at ${timePart}`;
 }
 
 function buildOrderWorkflowStorageKey(tenantSlug: string, orderId: string) {
@@ -198,7 +150,7 @@ export default function OrderDetail() {
 
   useEffect(() => {
     if (!order) return;
-    const derived = deriveInitialWorkflowState(order.status, hasStarted);
+    const derived = deriveInitialInspectionWorkflowState(order.status, hasStarted);
     const localBlockerState = readLocalBlockerState(tenantSlug, orderId);
     if (derived === "completed") {
       clearLocalBlockerState(tenantSlug, orderId);
@@ -491,7 +443,7 @@ export default function OrderDetail() {
 
           <SectionTitle>Inspection Details</SectionTitle>
           <div className="inspector-meta-cards">
-            <InfoCard label="Scheduled" value={formatScheduleFriendly(order.scheduled_date, order.scheduled_time)} tone="scheduled" />
+            <InfoCard label="Scheduled" value={formatOrderScheduleFriendly(order.scheduled_date, order.scheduled_time, { includeYear: true })} tone="scheduled" />
             <button
               type="button"
               className="inspector-meta-card-button"

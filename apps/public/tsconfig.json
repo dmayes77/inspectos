@@ -16,7 +16,9 @@
     "plugins": [{ "name": "next" }],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@inspectos/domains/*": ["../../packages/domains/*/index.ts"],
+      "@inspectos/platform/*": ["../../packages/platform/*/index.ts"]
     }
   },
   "include": [

@@ -1,4 +1,11 @@
 import type { NextRequest } from 'next/server';
+import {
+  buildInspectorScopeUserIds,
+  hasInspectorSeatAccess,
+  resolveInspectorMembership,
+  resolveOrderForTenantLookup,
+  resolveTenantForBusinessIdentifier,
+} from '@inspectos/platform/mobile-orders-access';
 import { applyCorsHeaders, buildCorsPreflightResponse } from '@/lib/cors';
 import {
   badRequest,
@@ -10,11 +17,6 @@ import {
 } from '@/lib/supabase';
 import { resolveIdLookup } from '@/lib/identifiers/lookup';
 
-type MembershipRow = {
-  role: string;
-  profiles: { id?: string; is_inspector?: boolean } | { id?: string; is_inspector?: boolean }[] | null;
-};
-
 type FieldIntakePatchRequest = {
   contact_name?: string;
   address_line1?: string;
@@ -22,12 +24,6 @@ type FieldIntakePatchRequest = {
   state?: string;
   zip_code?: string;
 };
-
-function normalizeProfile(row: MembershipRow): { id?: string; is_inspector?: boolean } | null {
-  const profile = row.profiles;
-  if (Array.isArray(profile)) return profile[0] ?? null;
-  return profile ?? null;
-}
 
 function parsePatchBody(value: unknown): FieldIntakePatchRequest | null {
   if (!value || typeof value !== 'object') return null;
@@ -82,67 +78,45 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 
     const supabase = createUserClient(accessToken);
 
-    const { data: tenantBySlug, error: tenantSlugError } = await supabase
-      .from('tenants')
-      .select('id, name, slug, business_id')
-      .eq('slug', businessIdentifier)
-      .maybeSingle();
-
-    const tenantByBusinessId = !tenantBySlug
-      ? await supabase
-          .from('tenants')
-          .select('id, name, slug, business_id')
-          .eq('business_id', businessIdentifier.toUpperCase())
-          .maybeSingle()
-      : { data: null, error: null };
-
-    const tenant = tenantBySlug ?? tenantByBusinessId.data;
-    const tenantError = tenantBySlug ? tenantSlugError : tenantByBusinessId.error;
-    if (tenantError || !tenant) {
+    const tenant = await resolveTenantForBusinessIdentifier<{ id: string; name: string; slug: string; business_id?: string | null }>(
+      supabase,
+      businessIdentifier,
+      'id, name, slug, business_id'
+    );
+    if (!tenant) {
       return applyCorsHeaders(badRequest('Business not found'), request);
     }
 
-    const { data: membershipRaw, error: membershipError } = await supabase
-      .from('tenant_members')
-      .select('role, profiles!left(id, is_inspector)')
-      .eq('tenant_id', tenant.id)
-      .eq('user_id', user.userId)
-      .single();
-
-    const membership = membershipRaw as MembershipRow | null;
-    if (membershipError || !membership) {
+    const membership = await resolveInspectorMembership(supabase, tenant.id, user.userId);
+    if (!membership) {
       return applyCorsHeaders(unauthorized('Not a member of this business'), request);
     }
 
-    const profile = normalizeProfile(membership);
-    const role = membership.role;
-    const hasInspectorAccess =
-      role === 'owner' ||
-      role === 'admin' ||
-      role === 'inspector' ||
-      Boolean(profile?.is_inspector);
+    const hasInspectorAccess = hasInspectorSeatAccess(membership.role, membership.isInspectorFlag);
 
     if (!hasInspectorAccess) {
       return applyCorsHeaders(unauthorized('Inspector mobile access is restricted to inspector seats.'), request);
     }
 
-    const inspectorIds = [user.userId];
-    if (profile?.id && profile.id !== user.userId) {
-      inspectorIds.push(profile.id);
-    }
+    const inspectorIds = buildInspectorScopeUserIds(user.userId, membership.profileId);
+    const scopedInspectorIds =
+      membership.role === 'owner' || membership.role === 'admin' ? undefined : inspectorIds;
 
-    let orderQuery = supabase
-      .from('orders')
-      .select('id, status, source, inspector_id, client_id, property_id')
-      .eq(lookup.column, lookup.value)
-      .eq('tenant_id', tenant.id);
-
-    if (role !== 'owner' && role !== 'admin') {
-      orderQuery = orderQuery.in('inspector_id', inspectorIds);
-    }
-
-    const { data: order, error: orderError } = await orderQuery.limit(1).maybeSingle();
-    if (orderError || !order) {
+    const order = await resolveOrderForTenantLookup<{
+      id: string;
+      status: string;
+      source?: string | null;
+      inspector_id?: string | null;
+      client_id?: string | null;
+      property_id?: string | null;
+    }>(
+      supabase,
+      tenant.id,
+      lookup,
+      'id, status, source, inspector_id, client_id, property_id',
+      scopedInspectorIds
+    );
+    if (!order) {
       return applyCorsHeaders(badRequest('Order not found'), request);
     }
 

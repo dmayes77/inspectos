@@ -4,76 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useHistory, useParams } from "react-router-dom";
 import { IonIcon, IonSpinner, IonText } from "@ionic/react";
 import { briefcaseOutline, businessOutline, calendarOutline, chevronForwardOutline, homeOutline, personOutline, searchOutline } from "ionicons/icons";
+import { formatOrderScheduleFriendly, formatOrderShortDate, formatOrderStatusLabel, getOrderStatusTone } from "@inspectos/domains/orders";
 import { useAuth } from "../../contexts/AuthContext";
 import { getOrders } from "../../services/api";
 import { MobilePageLayout } from "../../components/MobilePageLayout";
 import { mobileQueryKeys } from "../../lib/query-keys";
-
-function formatScheduleFriendly(scheduledDate?: string | null, scheduledTime?: string | null): string {
-  if (!scheduledDate) return "Unscheduled";
-
-  const [yearRaw, monthRaw, dayRaw] = scheduledDate.split("-");
-  const year = Number(yearRaw);
-  const month = Number(monthRaw);
-  const day = Number(dayRaw);
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    return [scheduledDate, scheduledTime].filter(Boolean).join(" ");
-  }
-
-  let hours = 0;
-  let minutes = 0;
-  if (scheduledTime) {
-    const [hoursRaw, minutesRaw] = scheduledTime.split(":");
-    hours = Number(hoursRaw);
-    minutes = Number(minutesRaw);
-  }
-
-  const date = new Date(year, month - 1, day, hours, minutes);
-  if (Number.isNaN(date.getTime())) {
-    return [scheduledDate, scheduledTime].filter(Boolean).join(" ");
-  }
-
-  const datePart = new Intl.DateTimeFormat(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  }).format(date);
-
-  if (!scheduledTime) return datePart;
-
-  const timePart = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-
-  return `on ${datePart} at ${timePart}`;
-}
-
-function toStatusClass(status?: string | null): string {
-  const normalized = (status ?? "").toLowerCase();
-  if (normalized === "completed" || normalized === "submitted") return "is-completed";
-  if (normalized === "in_progress") return "is-in-progress";
-  if (normalized === "pending") return "is-pending";
-  return "is-default";
-}
-
-function formatStatusLabel(status?: string | null): string {
-  const normalized = (status ?? "").trim();
-  if (!normalized) return "Active";
-  return normalized
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function formatShortDate(scheduledDate?: string | null): string {
-  if (!scheduledDate) return "---";
-  const [yearRaw, monthRaw, dayRaw] = scheduledDate.split("-");
-  const date = new Date(Number(yearRaw), Number(monthRaw) - 1, Number(dayRaw));
-  if (Number.isNaN(date.getTime())) return scheduledDate;
-  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
-}
 
 function getPropertyIcon(property: unknown) {
   if (!property || typeof property !== "object") return homeOutline;
@@ -184,9 +119,10 @@ export default function Orders() {
             const clientLabel = client?.name || order.order_number || "Inspection";
             const propertyIcon = getPropertyIcon(property);
             const propertyImageUrl = getPropertyImageUrl(property);
+            const statusTone = getOrderStatusTone(order.status);
             return (
               <button key={order.id} type="button" className="orders-row" onClick={() => history.push(`/t/${tenantSlug}/order/${order.id}`)}>
-                <span className={`orders-row-icon ${toStatusClass(order.status)}`}>
+                <span className={`orders-row-icon ${statusTone}`}>
                   {propertyImageUrl ? (
                     <img
                       src={propertyImageUrl}
@@ -205,7 +141,7 @@ export default function Orders() {
                 </span>
                 <div className="orders-row-main">
                   <div className="orders-row-topline">
-                    <span className={`orders-row-status ${toStatusClass(order.status)}`}>{formatStatusLabel(order.status)}</span>
+                    <span className={`orders-row-status ${statusTone}`}>{formatOrderStatusLabel(order.status)}</span>
                     <span className="orders-row-order-number">{order.order_number || "Inspection"}</span>
                   </div>
                   <h3>{streetAddress}</h3>
@@ -217,12 +153,12 @@ export default function Orders() {
                     </p>
                     <p className="orders-row-time">
                       <IonIcon icon={calendarOutline} />
-                      <span>{formatScheduleFriendly(order.scheduled_date, order.scheduled_time)}</span>
+                      <span>{formatOrderScheduleFriendly(order.scheduled_date, order.scheduled_time, { includeWeekday: true, includeOnPrefix: true })}</span>
                     </p>
                   </div>
                 </div>
                 <div className="orders-row-side">
-                  <span className="orders-row-date">{formatShortDate(order.scheduled_date)}</span>
+                  <span className="orders-row-date">{formatOrderShortDate(order.scheduled_date)}</span>
                   <IonIcon className="orders-row-chevron" icon={chevronForwardOutline} />
                 </div>
               </button>

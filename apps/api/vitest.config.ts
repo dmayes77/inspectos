@@ -11,6 +11,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./"),
+      "@inspectos/domains": resolve(__dirname, "../../packages/domains"),
+      "@inspectos/platform": resolve(__dirname, "../../packages/platform"),
     },
   },
 });
