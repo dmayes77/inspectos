@@ -79,10 +79,18 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin") ?? "";
+  const cookieHeader = request.headers.get("cookie") ?? "";
   try {
     const body = (await request.json().catch(() => ({}))) as LoginBody;
     const email = body.email?.trim();
     const password = body.password;
+    console.info("[api:auth:login] POST start", {
+      origin,
+      hasCookieHeader: Boolean(cookieHeader),
+      cookieHeaderLength: cookieHeader.length,
+      hasEmail: Boolean(email),
+      hasPassword: Boolean(password),
+    });
     logger.info("Auth login request", {
       origin,
       allowedOrigin: isAllowedOrigin(origin),
@@ -129,6 +137,11 @@ export async function POST(request: NextRequest) {
       userId: data.user?.id ?? null,
       email: data.user?.email ?? null,
       tokenIssuer: parseJwtIssuer(data.session.access_token),
+      refreshTokenLength: data.session.refresh_token?.length ?? 0,
+    });
+    console.info("[api:auth:login] setting session cookies", {
+      origin,
+      accessTokenLength: data.session.access_token?.length ?? 0,
       refreshTokenLength: data.session.refresh_token?.length ?? 0,
     });
     return applyCorsHeaders(

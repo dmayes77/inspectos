@@ -19,10 +19,17 @@ export default function Login() {
     setLoading(true);
     setStatus("Signing in...");
     try {
+      console.log("[Mobile Login] signIn start", {
+        email,
+        hasPassword: Boolean(password),
+      });
       await login(email, password);
+      console.log("[Mobile Login] login request succeeded");
       await refreshSession();
+      console.log("[Mobile Login] refreshSession succeeded");
       history.replace("/");
     } catch (error) {
+      console.error("[Mobile Login] signIn failed", error);
       setStatus(error instanceof Error ? error.message : "Sign in failed");
     } finally {
       setLoading(false);

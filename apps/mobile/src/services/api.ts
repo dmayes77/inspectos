@@ -316,30 +316,79 @@ async function parseApiError(response: Response): Promise<string> {
 }
 
 async function apiGet<T>(path: string): Promise<T> {
+  console.log('[Mobile API] GET start', {
+    path,
+    url: `${API_BASE_URL}${path}`,
+  });
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: 'GET',
     credentials: 'include',
   });
 
+  console.log('[Mobile API] GET response', {
+    path,
+    status: response.status,
+    ok: response.ok,
+    url: response.url,
+    responseType: response.type,
+  });
+
   if (!response.ok) {
-    throw new Error(await parseApiError(response));
+    const message = await parseApiError(response);
+    console.error('[Mobile API] GET failed', {
+      path,
+      status: response.status,
+      message,
+    });
+    throw new Error(message);
   }
 
   return (await response.json()) as T;
 }
 
 async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
+  const url = `${API_BASE_URL}${path}`;
+  console.log('[Mobile API] POST start', {
+    path,
+    url,
+    body,
+  });
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    console.error('[Mobile API] POST network error', {
+      path,
+      url,
+      error,
+    });
+    throw error;
+  }
+
+  console.log('[Mobile API] POST response', {
+    path,
+    status: response.status,
+    ok: response.ok,
+    url: response.url,
+    responseType: response.type,
   });
 
   if (!response.ok) {
-    throw new Error(await parseApiError(response));
+    const message = await parseApiError(response);
+    console.error('[Mobile API] POST failed', {
+      path,
+      status: response.status,
+      message,
+    });
+    throw new Error(message);
   }
 
   return (await response.json()) as T;
@@ -394,7 +443,12 @@ async function apiPostForm<T>(path: string, formData: FormData): Promise<T> {
 }
 
 export async function login(email: string, password: string): Promise<void> {
+  console.log('[Mobile API] login()', {
+    email,
+    apiBaseUrl: API_BASE_URL,
+  });
   const json = await apiPost<{ success?: boolean; error?: string }>('/api/auth/login', { email, password });
+  console.log('[Mobile API] login() payload', json);
   if (!json?.success) {
     throw new Error(json?.error || 'Login failed');
   }
@@ -415,7 +469,9 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function fetchMobileSession(): Promise<MobileSessionPayload> {
+  console.log('[Mobile API] fetchMobileSession()');
   const json = await apiGet<{ success?: boolean; data?: MobileSessionPayload; error?: string }>('/api/mobile/session');
+  console.log('[Mobile API] fetchMobileSession() payload', json);
   if (!json?.success || !json?.data) {
     throw new Error(json?.error || 'Session fetch failed');
   }

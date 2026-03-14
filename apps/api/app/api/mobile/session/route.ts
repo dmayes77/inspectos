@@ -62,7 +62,15 @@ async function resolveTenantForUser(userId: string) {
 
 export async function GET(request: NextRequest) {
   const origin = request.headers.get('origin') ?? null;
+  const cookieHeader = request.headers.get('cookie') ?? '';
   const { accessToken, refreshToken } = readSessionTokensFromCookies(request);
+  console.info('[api:mobile:session] GET start', {
+    origin,
+    hasCookieHeader: Boolean(cookieHeader),
+    cookieHeaderLength: cookieHeader.length,
+    hasAccessToken: Boolean(accessToken),
+    hasRefreshToken: Boolean(refreshToken),
+  });
   if (!accessToken && !refreshToken) {
     return applyCorsHeaders(unauthorized('Not authenticated'), request);
   }
@@ -96,6 +104,10 @@ export async function GET(request: NextRequest) {
   if (accessToken) {
     const { data, error } = await supabase.auth.getUser(accessToken);
     if (!error && data.user) {
+      console.info('[api:mobile:session] access token accepted', {
+        origin,
+        userId: data.user.id,
+      });
       const payload = await buildPayload(data.user);
       if (!payload) {
         return applyCorsHeaders(unauthorized('No business membership found for this account'), request);
@@ -117,6 +129,10 @@ export async function GET(request: NextRequest) {
   });
 
   if (refreshError || !refreshed.session || !refreshed.user) {
+    console.warn('[api:mobile:session] refresh failed', {
+      origin,
+      message: refreshError?.message ?? 'unknown',
+    });
     const response = NextResponse.json(
       { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired' } },
       { status: 401 }
@@ -130,6 +146,10 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.json(payload);
+  console.info('[api:mobile:session] refresh succeeded', {
+    origin,
+    userId: refreshed.user.id,
+  });
   return applyCorsHeaders(
     setSessionCookies(response, {
       accessToken: refreshed.session.access_token,
